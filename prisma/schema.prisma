@@ -12,6 +12,7 @@ model Licensee {
   name                     String
   vertical                 Vertical
   stripeConnectedAccountId String?
+  royaltyBps               Int           @default(1500)
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
 
@@ -30,6 +31,7 @@ model Transaction {
   id                    String            @id @default(cuid())
   licenseeId            String
   licensee              Licensee          @relation(fields: [licenseeId], references: [id])
+  checkoutReferenceId   String?           @unique
   grossAmountCents      Int
   currency              String            @default("GBP")
   status                TransactionStatus @default(PENDING)
@@ -47,6 +49,7 @@ enum TransactionStatus {
   SETTLED
   REFUNDED
   REVERSED
+  FAILED
 }
 
 model TriggerEvent {

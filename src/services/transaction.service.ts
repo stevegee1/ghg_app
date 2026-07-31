@@ -2,6 +2,7 @@ import { PrismaClient, TransactionStatus, VerificationSource } from '@prisma/cli
 
 export interface CreateTransactionInput {
   licenseeId: string;
+  checkoutReferenceId?: string;
   grossAmountCents: number;
   currency?: string;
   status?: TransactionStatus;
@@ -57,6 +58,7 @@ export class TransactionService {
     return this.prisma.transaction.create({
       data: {
         licenseeId: input.licenseeId,
+        checkoutReferenceId: input.checkoutReferenceId,
         grossAmountCents: input.grossAmountCents,
         currency: input.currency ?? 'GBP',
         status: input.status ?? TransactionStatus.PENDING,

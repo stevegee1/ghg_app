@@ -1,8 +1,11 @@
 import { prisma } from './db';
 import { TransactionService } from './services/transaction.service';
+import { CheckoutService } from './services/checkout.service';
+import { createApp } from './app';
+import { scheduleReconciliationJob } from './jobs/reconcile.job';
 
 async function main() {
-  console.log('GHG Logo Drop Backend - Milestone 1 Initialized');
+  console.log('GHG Logo Drop Backend - Milestone 2 Initialized');
   const licenseeCount = await prisma.licensee.count();
   const transactionCount = await prisma.transaction.count();
   console.log(`Database connected. Current stats: ${licenseeCount} Licensees, ${transactionCount} Transactions.`);
@@ -19,4 +22,4 @@ if (require.main === module) {
     });
 }
 
-export { prisma, TransactionService };
+export { prisma, TransactionService, CheckoutService, createApp, scheduleReconciliationJob };
