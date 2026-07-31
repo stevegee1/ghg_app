@@ -1,0 +1,97 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Licensee {
+  id                       String        @id @default(cuid())
+  name                     String
+  vertical                 Vertical
+  stripeConnectedAccountId String?
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+
+  transactions             Transaction[]
+  portalUsers              PortalUser[]
+}
+
+enum Vertical {
+  B2B_CLEAN_TECH
+  B2B_HEAVY_MANUFACTURING
+  B2C_SPORTS_MERCH
+  B2C_LIFESTYLE_EVENTS
+}
+
+model Transaction {
+  id                    String            @id @default(cuid())
+  licenseeId            String
+  licensee              Licensee          @relation(fields: [licenseeId], references: [id])
+  grossAmountCents      Int
+  currency              String            @default("GBP")
+  status                TransactionStatus @default(PENDING)
+  stripePaymentIntentId String?
+  createdAt             DateTime          @default(now())
+
+  triggerEvent          TriggerEvent?
+  financialSplit        FinancialSplit?
+
+  @@index([licenseeId])
+}
+
+enum TransactionStatus {
+  PENDING
+  SETTLED
+  REFUNDED
+  REVERSED
+}
+
+model TriggerEvent {
+  id                 String             @id @default(cuid())
+  transactionId      String             @unique
+  transaction        Transaction        @relation(fields: [transactionId], references: [id])
+  verificationSource VerificationSource
+  weatherCondition   String?
+  eventType          String?
+  policyMilestoneRef String?
+  rawPayload         Json?
+  createdAt          DateTime           @default(now())
+}
+
+enum VerificationSource {
+  THIRD_PARTY_API
+  MANUAL_ATTESTATION
+  CONSUMER_OPT_IN
+}
+
+model FinancialSplit {
+  id                     String      @id @default(cuid())
+  transactionId          String      @unique
+  transaction            Transaction @relation(fields: [transactionId], references: [id])
+  licensorRoyaltyCents   Int
+  charityGiftCents       Int
+  stripeTransferId       String?
+  charityStripeAccountId String?
+  settledAt              DateTime?
+  createdAt              DateTime    @default(now())
+}
+
+model PortalUser {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  licenseeId   String?
+  licensee     Licensee?  @relation(fields: [licenseeId], references: [id])
+  role         PortalRole @default(PARTNER)
+  createdAt    DateTime   @default(now())
+
+  @@index([licenseeId])
+}
+
+enum PortalRole {
+  PARTNER
+  ADMIN
+}
