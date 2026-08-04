@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GHG Logo Drop - Consumer Opt-In Checkout</title>
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <h1>Consumer Checkout (Demo Harness)</h1>
+
+  <div id="product-details">
+    <p><strong>Product:</strong> Arsenal FC Official Jersey (Demo Item)</p>
+    <p><strong>Price:</strong> £25.00</p>
+  </div>
+
+  <form id="checkout-form">
+    <div>
+      <label>
+        <input type="checkbox" id="logo-drop-optin" />
+        Add the GHG Accountability Logo Drop to this purchase
+      </label>
+    </div>
+
+    <br />
+
+    <div id="payment-element-container">
+      <div id="payment-element"></div>
+    </div>
+
+    <br />
+
+    <button type="submit" id="pay-button">Pay £25.00</button>
+  </form>
+
+  <div id="error-message" style="color: red; margin-top: 10px;"></div>
+  <div id="success-message" style="color: green; margin-top: 10px;"></div>
+
+  <script>
+    // Generate checkoutReferenceId once per page session
+    const checkoutReferenceId = crypto.randomUUID();
+    const licenseeId = 'lic_arsenal_fc';
+    const grossAmountCents = 2500;
+    const currency = 'GBP';
+
+    const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
+
+    const form = document.getElementById('checkout-form');
+    const payButton = document.getElementById('pay-button');
+    const optInCheckbox = document.getElementById('logo-drop-optin');
+    const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
+
+    let elements = null;
+    let currentClientSecret = null;
+    let currentTransactionId = null;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // Guard against double submission racing before disabled state is applied
+      if (payButton.disabled) return;
+
+      errorMessage.textContent = '';
+      successMessage.textContent = '';
+
+      // If opt-in checkbox is unchecked, do not call backend checkout API
+      if (!optInCheckbox.checked) {
+        alert('Logo Drop opt-in checkbox is unchecked. No backend API call made.');
+        return;
+      }
+
+      // Disable Pay button immediately on click to prevent double-submission
+      payButton.disabled = true;
+
+      try {
+        if (!elements || !currentClientSecret) {
+          const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              licenseeId,
+              checkoutReferenceId,
+              grossAmountCents,
+              currency,
+            }),
+          });
+
+          if (response.status === 409) {
+            const data = await response.json();
+            errorMessage.textContent = 'This checkout has already been completed';
+            payButton.disabled = true;
+            optInCheckbox.disabled = true;
+            return;
+          }
+
+          if (!response.ok) {
+            const data = await response.json();
+            errorMessage.textContent = data.error || 'An unexpected error occurred during checkout';
+            payButton.disabled = false;
+            return;
+          }
+
+          const data = await response.json();
+          currentClientSecret = data.clientSecret;
+          currentTransactionId = data.transactionId;
+
+          // Mount Stripe Payment Element
+          elements = stripe.elements({ clientSecret: currentClientSecret });
+          const paymentElement = elements.create('payment');
+          paymentElement.mount('#payment-element');
+        }
+
+        // Confirm Payment with Stripe
+        const { error } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: window.location.origin + '/checkout.html?status=success&tx=' + currentTransactionId,
+          },
+          redirect: 'if_required',
+        });
+
+        if (error) {
+          errorMessage.textContent = error.message || 'Payment confirmation failed';
+          payButton.disabled = false;
+        } else {
+          // Payment succeeded without redirect
+          form.style.display = 'none';
+          successMessage.innerHTML = '<h2>Payment Successful!</h2><p>Transaction ID: ' + currentTransactionId + '</p>';
+        }
+      } catch (err) {
+        console.error('Checkout error:', err);
+        errorMessage.textContent = 'An unexpected error occurred. Please try again.';
+        payButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
