@@ -7,6 +7,22 @@ const prisma = new PrismaClient();
 export async function seed() {
   console.log('Seeding database...');
 
+  // Ensure ghg_app_user role exists and has permissions for RLS testing
+  try {
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ghg_app_user') THEN
+          CREATE ROLE ghg_app_user NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
+        END IF;
+      END
+      $$;
+    `);
+    await prisma.$executeRawUnsafe(`GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ghg_app_user;`);
+  } catch (e) {
+    console.error('Seed RLS role setup error:', e);
+  }
+
   // 1. Seed Licensees
   const licenseesData = [
     {
@@ -14,18 +30,21 @@ export async function seed() {
       name: 'ITM Power Test',
       vertical: Vertical.B2B_CLEAN_TECH,
       stripeConnectedAccountId: 'acct_itm_12345',
+      isPubliclyVisible: false,
     },
     {
       id: 'lic_jcb_test',
       name: 'JCB Test',
       vertical: Vertical.B2B_HEAVY_MANUFACTURING,
       stripeConnectedAccountId: 'acct_jcb_67890',
+      isPubliclyVisible: false,
     },
     {
       id: 'lic_arsenal_fc',
       name: 'Arsenal FC Test',
       vertical: Vertical.B2C_SPORTS_MERCH,
       stripeConnectedAccountId: 'acct_arsenal_11223',
+      isPubliclyVisible: true,
     },
   ];
 
@@ -36,6 +55,7 @@ export async function seed() {
         name: lic.name,
         vertical: lic.vertical,
         stripeConnectedAccountId: lic.stripeConnectedAccountId,
+        isPubliclyVisible: lic.isPubliclyVisible,
       },
       create: lic,
     });
@@ -70,6 +90,22 @@ export async function seed() {
       email: 'partner@itm-power.com',
       passwordHash,
       licenseeId: 'lic_itm_power',
+      role: PortalRole.PARTNER,
+    },
+  });
+
+  await prisma.portalUser.upsert({
+    where: { email: 'partner@arsenal.com' },
+    update: {
+      passwordHash,
+      licenseeId: 'lic_arsenal_fc',
+      role: PortalRole.PARTNER,
+    },
+    create: {
+      id: 'usr_partner_002',
+      email: 'partner@arsenal.com',
+      passwordHash,
+      licenseeId: 'lic_arsenal_fc',
       role: PortalRole.PARTNER,
     },
   });

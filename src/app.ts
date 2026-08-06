@@ -3,6 +3,9 @@ import Stripe from 'stripe';
 import { prisma } from './db';
 import { createStripeWebhookRouter } from './routes/webhooks.stripe';
 import { createCheckoutRouter } from './routes/checkout.route';
+import { createAuthRouter } from './routes/auth.route';
+import { createPortalRouter } from './routes/portal.route';
+import { createTransparencyRouter } from './routes/transparency.route';
 import { CheckoutService } from './services/checkout.service';
 
 export function createApp(stripeInstance?: Stripe): Express {
@@ -30,6 +33,11 @@ export function createApp(stripeInstance?: Stripe): Express {
 
   // Mount checkout API router
   app.use(createCheckoutRouter(checkoutService));
+
+  // Mount auth, portal, and transparency routers
+  app.use(createAuthRouter(prisma));
+  app.use(createPortalRouter(prisma));
+  app.use(createTransparencyRouter(prisma));
 
   return app;
 }
