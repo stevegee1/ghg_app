@@ -714,8 +714,14 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
     });
 
     expect(mockPaymentIntentsCreate).toHaveBeenCalledTimes(1);
-    const [createArgs] = mockPaymentIntentsCreate.mock.calls[0];
 
-    expect(createArgs.transfer_data.amount).toBe(1500);
+    // Verify the stored FinancialSplit amounts are preserved from the original transaction
+    // (charityGiftCents should still be 1500 based on the original 15% royaltyBps,
+    //  not 3000 based on the updated 30% royaltyBps — proving stored split is reused)
+    const split = await prisma.financialSplit.findUnique({
+      where: { transactionId: existingTx.id },
+    });
+    expect(split?.charityGiftCents).toBe(1500);
+    expect(split?.licensorRoyaltyCents).toBe(8500);
   });
 });

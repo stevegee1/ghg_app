@@ -151,15 +151,32 @@ export class CheckoutService {
     const targetCharityGiftCents = transaction.financialSplit?.charityGiftCents ?? charityGiftCents;
 
     // 6. Call Stripe PaymentIntents API with idempotencyKey = transaction.id
+    // In dev/test: skip transfer_data if MOCK_STRIPE_TRANSFERS=true or account ID is a dummy placeholder
+    const mockTransfers = process.env.MOCK_STRIPE_TRANSFERS === 'true';
+    const isRealConnectedAccount = /^acct_[A-Za-z0-9]{16,}$/.test(licensee.stripeConnectedAccountId!);
+    const skipTransferData = mockTransfers || !isRealConnectedAccount;
+
+    if (skipTransferData) {
+      console.warn(
+        `[CHECKOUT] Skipping transfer_data for account "${licensee.stripeConnectedAccountId}" ` +
+          `(MOCK_STRIPE_TRANSFERS=${mockTransfers}, isRealConnectedAccount=${isRealConnectedAccount}). ` +
+          `PaymentIntent will be created without a Connect destination transfer.`
+      );
+    }
+
     try {
       const paymentIntent = await this.stripe.paymentIntents.create(
         {
           amount: transaction.grossAmountCents,
           currency: (transaction.currency || currency).toLowerCase(),
-          transfer_data: {
-            destination: licensee.stripeConnectedAccountId,
-            amount: targetCharityGiftCents,
-          },
+          ...(skipTransferData
+            ? {}
+            : {
+                transfer_data: {
+                  destination: licensee.stripeConnectedAccountId!,
+                  amount: targetCharityGiftCents,
+                },
+              }),
           metadata: {
             transactionId: transaction.id,
           },

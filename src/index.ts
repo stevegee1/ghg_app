@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { prisma } from './db';
 import { TransactionService } from './services/transaction.service';
 import { CheckoutService } from './services/checkout.service';

@@ -42,7 +42,7 @@
     const grossAmountCents = 2500;
     const currency = 'GBP';
 
-    const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
+    const stripe = Stripe('pk_test_51U0xUk4Iij0NtXMSGsB2PvSvZDw7WDH11rQpXa0hBCog9pQQZ8w6rH32IBw4PgCC9Cyyz3ixnauwVdYgWoqU7BQW00YWGiRwJ4');
 
     const form = document.getElementById('checkout-form');
     const payButton = document.getElementById('pay-button');
@@ -73,6 +73,8 @@
 
       try {
         if (!elements || !currentClientSecret) {
+          payButton.textContent = 'Loading Payment Gateway...';
+
           const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: {
@@ -90,6 +92,7 @@
             const data = await response.json();
             errorMessage.textContent = 'This checkout has already been completed';
             payButton.disabled = true;
+            payButton.textContent = 'Pay £25.00';
             optInCheckbox.disabled = true;
             return;
           }
@@ -98,6 +101,7 @@
             const data = await response.json();
             errorMessage.textContent = data.error || 'An unexpected error occurred during checkout';
             payButton.disabled = false;
+            payButton.textContent = 'Pay £25.00';
             return;
           }
 
@@ -109,7 +113,13 @@
           elements = stripe.elements({ clientSecret: currentClientSecret });
           const paymentElement = elements.create('payment');
           paymentElement.mount('#payment-element');
+
+          payButton.textContent = 'Confirm & Pay £25.00';
+          payButton.disabled = false;
+          return;
         }
+
+        payButton.textContent = 'Processing Payment...';
 
         // Confirm Payment with Stripe
         const { error } = await stripe.confirmPayment({
@@ -123,6 +133,7 @@
         if (error) {
           errorMessage.textContent = error.message || 'Payment confirmation failed';
           payButton.disabled = false;
+          payButton.textContent = 'Confirm & Pay £25.00';
         } else {
           // Payment succeeded without redirect
           form.style.display = 'none';
@@ -132,6 +143,7 @@
         console.error('Checkout error:', err);
         errorMessage.textContent = 'An unexpected error occurred. Please try again.';
         payButton.disabled = false;
+        payButton.textContent = elements ? 'Confirm & Pay £25.00' : 'Pay £25.00';
       }
     });
   </script>
