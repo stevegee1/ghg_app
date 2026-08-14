@@ -34,7 +34,15 @@ export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe):
 
           const transaction = await prisma.transaction.findUnique({
             where: { id: transactionId },
-            include: { financialSplit: true },
+            include: {
+              financialSplit: {
+                include: {
+                  charityAllocations: {
+                    include: { charity: true },
+                  },
+                },
+              },
+            },
           });
 
           if (!transaction) {
@@ -51,27 +59,84 @@ export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe):
             return res.status(200).json({ received: true, error: 'Missing FinancialSplit' });
           }
 
-          // Idempotency check
-          if (transaction.status === TransactionStatus.SETTLED) {
+          const isAlreadySettled = transaction.status === TransactionStatus.SETTLED;
+          const allocations = transaction.financialSplit.charityAllocations || [];
+          const hasPendingAllocations = allocations.some((a) => !a.stripeTransferId && a.charity.stripeConnectedAccountId);
+
+          if (isAlreadySettled && !hasPendingAllocations) {
             return res.status(200).json({ received: true, alreadySettled: true });
           }
 
-          const rawPaymentIntent = paymentIntent as any;
-          const stripeTransferId = typeof rawPaymentIntent.transfer === 'string' ? rawPaymentIntent.transfer : null;
+          // 1. Mark transaction as SETTLED if not already settled
+          if (!isAlreadySettled) {
+            await prisma.$transaction([
+              prisma.transaction.update({
+                where: { id: transactionId },
+                data: { status: TransactionStatus.SETTLED },
+              }),
+              prisma.financialSplit.update({
+                where: { transactionId },
+                data: {
+                  settledAt: new Date(),
+                },
+              }),
+            ]);
+          }
 
-          await prisma.$transaction([
-            prisma.transaction.update({
-              where: { id: transactionId },
-              data: { status: TransactionStatus.SETTLED },
-            }),
-            prisma.financialSplit.update({
-              where: { transactionId },
-              data: {
-                settledAt: new Date(),
-                stripeTransferId: stripeTransferId ?? transaction.financialSplit.stripeTransferId,
-              },
-            }),
-          ]);
+          // 2. Fan out per-charity Stripe transfers for untransferred allocations
+          for (const alloc of allocations) {
+            if (alloc.stripeTransferId) {
+              // Already transferred — idempotency check
+              continue;
+            }
+
+            if (!alloc.charity.stripeConnectedAccountId) {
+              console.warn(`[WEBHOOK WARN] Charity ${alloc.charity.id} has no stripeConnectedAccountId, marking transferFailed.`);
+              await prisma.charityAllocation.update({
+                where: { id: alloc.id },
+                data: { transferFailed: true },
+              });
+              continue;
+            }
+
+            const newRetryCount = alloc.retryCount + 1;
+
+            try {
+              const transfer = await stripe.transfers.create(
+                {
+                  amount: alloc.amountCents,
+                  currency: (transaction.currency || 'GBP').toLowerCase(),
+                  destination: alloc.charity.stripeConnectedAccountId,
+                  metadata: {
+                    allocationId: alloc.id,
+                    transactionId: transaction.id,
+                  },
+                },
+                {
+                  idempotencyKey: alloc.id,
+                }
+              );
+
+              await prisma.charityAllocation.update({
+                where: { id: alloc.id },
+                data: {
+                  stripeTransferId: transfer.id,
+                  transferFailed: false,
+                  retryCount: newRetryCount,
+                },
+              });
+            } catch (transferErr: any) {
+              console.error(`[WEBHOOK WARN] Charity transfer failed for allocation ${alloc.id}:`, transferErr);
+              await prisma.charityAllocation.update({
+                where: { id: alloc.id },
+                data: {
+                  transferFailed: true,
+                  retryCount: newRetryCount,
+                },
+              });
+              // Do NOT mark parent transaction as failed
+            }
+          }
 
           break;
         }

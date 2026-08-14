@@ -8,17 +8,20 @@ generator client {
 }
 
 model Licensee {
-  id                       String        @id @default(cuid())
+  id                       String               @id @default(cuid())
   name                     String
   vertical                 Vertical
   stripeConnectedAccountId String?
-  royaltyBps               Int           @default(1500)
-  isPubliclyVisible        Boolean       @default(false)
-  createdAt                DateTime      @default(now())
-  updatedAt                DateTime      @updatedAt
+  royaltyBps               Int                  @default(1500)
+  pricePerDropCents        Int?
+  b2bApiKeyHash            String?
+  isPubliclyVisible        Boolean              @default(false)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
 
   transactions             Transaction[]
   portalUsers              PortalUser[]
+  splitConfigs             SplitConfigHistory[]
 }
 
 enum Vertical {
@@ -57,7 +60,11 @@ model TriggerEvent {
   id                 String             @id @default(cuid())
   transactionId      String             @unique
   transaction        Transaction        @relation(fields: [transactionId], references: [id])
+  /// Describes data provenance (where a claim originated), NOT whether the claim has been independently verified.
   verificationSource VerificationSource
+  attestationNote    String?
+  deliveryType       DeliveryType
+  fulfillmentStatus  FulfillmentStatus?
   weatherCondition   String?
   eventType          String?
   policyMilestoneRef String?
@@ -65,32 +72,82 @@ model TriggerEvent {
   createdAt          DateTime           @default(now())
 }
 
+/// Describes the provenance of claim data submitted to the platform.
+/// Note: These values indicate where data originated, NOT whether the underlying environmental/emissions claim has been independently audited or verified.
 enum VerificationSource {
   THIRD_PARTY_API
   MANUAL_ATTESTATION
   CONSUMER_OPT_IN
 }
 
+enum DeliveryType {
+  DIGITAL
+  PHYSICAL
+}
+
+enum FulfillmentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+enum CharityStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+model Charity {
+  id                       String              @id @default(cuid())
+  name                     String
+  stripeConnectedAccountId String?
+  status                   CharityStatus       @default(ACTIVE)
+  createdAt                DateTime            @default(now())
+
+  allocations              CharityAllocation[]
+}
+
 model FinancialSplit {
-  id                     String      @id @default(cuid())
-  transactionId          String      @unique
-  transaction            Transaction @relation(fields: [transactionId], references: [id])
+  id                     String              @id @default(cuid())
+  transactionId          String              @unique
+  transaction            Transaction         @relation(fields: [transactionId], references: [id])
   licensorRoyaltyCents   Int
   charityGiftCents       Int
   stripeTransferId       String?
   charityStripeAccountId String?
+  allocationsFinalized   Boolean             @default(false)
   settledAt              DateTime?
-  createdAt              DateTime    @default(now())
+  createdAt              DateTime            @default(now())
+
+  charityAllocations     CharityAllocation[]
+}
+
+model CharityAllocation {
+  id               String         @id @default(cuid())
+  financialSplitId String
+  financialSplit   FinancialSplit @relation(fields: [financialSplitId], references: [id], onDelete: Cascade)
+  charityId        String
+  charity          Charity        @relation(fields: [charityId], references: [id])
+  amountCents      Int
+  stripeTransferId String?
+  transferFailed   Boolean        @default(false)
+  retryCount       Int            @default(0)
+  createdAt        DateTime       @default(now())
+
+  @@index([financialSplitId])
+  @@index([charityId])
 }
 
 model PortalUser {
-  id           String     @id @default(cuid())
-  email        String     @unique
+  id           String               @id @default(cuid())
+  email        String               @unique
   passwordHash String
   licenseeId   String?
-  licensee     Licensee?  @relation(fields: [licenseeId], references: [id])
-  role         PortalRole @default(PARTNER)
-  createdAt    DateTime   @default(now())
+  licensee     Licensee?            @relation(fields: [licenseeId], references: [id])
+  role         PortalRole           @default(PARTNER)
+  createdAt    DateTime             @default(now())
+
+  splitConfigs SplitConfigHistory[]
 
   @@index([licenseeId])
 }
@@ -98,4 +155,22 @@ model PortalUser {
 enum PortalRole {
   PARTNER
   ADMIN
+}
+
+model SplitConfigHistory {
+  id                   String               @id @default(cuid())
+  licenseeId           String?
+  licensee             Licensee?            @relation(fields: [licenseeId], references: [id])
+  royaltyBps           Int
+  charityAllocationBps Json
+  isActive             Boolean              @default(true)
+  changedByUserId      String
+  changedByUser        PortalUser           @relation(fields: [changedByUserId], references: [id])
+  changedAt            DateTime             @default(now())
+  previousConfigId     String?
+  previousConfig       SplitConfigHistory?  @relation("ConfigHistoryChain", fields: [previousConfigId], references: [id])
+  nextConfigs          SplitConfigHistory[] @relation("ConfigHistoryChain")
+
+  @@index([licenseeId, isActive])
+  @@index([changedByUserId])
 }

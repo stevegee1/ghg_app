@@ -1,4 +1,26 @@
-import { PrismaClient, TransactionStatus, VerificationSource } from '@prisma/client';
+import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, FulfillmentStatus } from '@prisma/client';
+import { getOrComputeDefaultCharityAllocations, CharityAllocationResult } from './charity-allocation.service';
+
+export const DEFAULT_ATTESTATION_NOTES: Record<VerificationSource, string> = {
+  THIRD_PARTY_API: "Data submitted via partner's own API/telemetry system. Not independently audited.",
+  MANUAL_ATTESTATION: "Manually attested by an authorized user. Not independently audited.",
+  CONSUMER_OPT_IN: "Consumer opt-in selection at checkout. No underlying emissions claim is made for this transaction type.",
+};
+
+const DISALLOWED_POSITIVE_CLAIM_REGEX =
+  /(?<!not\s+)(?<!not\s+independently\s+)\b(independently\s+(?:verified|audited)|certified|audited|carbon\s+offset\s+verified|verified\s+by\s+platform)\b/i;
+
+export function validateAttestationNote(note?: string | null): string | undefined {
+  if (!note || !note.trim()) return undefined;
+  const trimmed = note.trim();
+  if (Object.values(DEFAULT_ATTESTATION_NOTES).includes(trimmed)) {
+    return trimmed;
+  }
+  if (DISALLOWED_POSITIVE_CLAIM_REGEX.test(trimmed)) {
+    throw new Error('Custom attestationNote cannot claim independent verification or certification.');
+  }
+  return trimmed;
+}
 
 export interface CreateTransactionInput {
   licenseeId: string;
@@ -9,6 +31,9 @@ export interface CreateTransactionInput {
   stripePaymentIntentId?: string;
   triggerEvent: {
     verificationSource: VerificationSource;
+    attestationNote?: string;
+    deliveryType: DeliveryType;
+    fulfillmentStatus?: FulfillmentStatus | null;
     weatherCondition?: string;
     eventType?: string;
     policyMilestoneRef?: string;
@@ -20,6 +45,7 @@ export interface CreateTransactionInput {
     stripeTransferId?: string;
     charityStripeAccountId?: string;
     settledAt?: Date;
+    charityAllocations?: CharityAllocationResult[];
   };
 }
 
@@ -27,14 +53,14 @@ export class TransactionService {
   constructor(private prisma: PrismaClient) {}
 
   /**
-   * Creates a Transaction atomically with a mandatory linked TriggerEvent and FinancialSplit.
-   * Enforces that triggerEvent (with non-null verificationSource) and financialSplit are mandatory.
-   * Validates that licensorRoyaltyCents + charityGiftCents === grossAmountCents at the app layer,
-   * backed up by a PostgreSQL trigger at the database layer.
+   * Creates a Transaction atomically with a mandatory linked TriggerEvent, FinancialSplit, and CharityAllocations.
+   * Enforces that triggerEvent and financialSplit are mandatory.
+   * Enforces physical/digital fulfillmentStatus rules.
+   * Auto-populates attestationNote based on verificationSource unless custom non-disallowed note provided.
    */
   async createTransactionWithTrigger(input: CreateTransactionInput) {
-    if (!input.triggerEvent || !input.triggerEvent.verificationSource) {
-      throw new Error("TriggerEvent with a non-null verificationSource is mandatory to create a Transaction.");
+    if (!input.triggerEvent || !input.triggerEvent.verificationSource || !input.triggerEvent.deliveryType) {
+      throw new Error("TriggerEvent with a non-null verificationSource and deliveryType is mandatory to create a Transaction.");
     }
 
     if (!input.financialSplit) {
@@ -44,6 +70,10 @@ export class TransactionService {
     if (typeof input.grossAmountCents !== 'number' || !Number.isInteger(input.grossAmountCents)) {
       throw new Error("grossAmountCents must be an integer (cents/pence).");
     }
+
+    // Validate and resolve attestationNote
+    const customNote = validateAttestationNote(input.triggerEvent.attestationNote);
+    const resolvedAttestationNote = customNote ?? DEFAULT_ATTESTATION_NOTES[input.triggerEvent.verificationSource];
 
     const { licensorRoyaltyCents, charityGiftCents } = input.financialSplit;
     if (!Number.isInteger(licensorRoyaltyCents) || !Number.isInteger(charityGiftCents)) {
@@ -55,7 +85,20 @@ export class TransactionService {
       );
     }
 
-    return this.prisma.transaction.create({
+    const deliveryType = input.triggerEvent.deliveryType;
+    const fulfillmentStatus: FulfillmentStatus | null =
+      deliveryType === DeliveryType.PHYSICAL
+        ? input.triggerEvent.fulfillmentStatus ?? FulfillmentStatus.PENDING
+        : null;
+
+    // Resolve allocations: use provided allocations or compute default equal split across active charities
+    let allocations = input.financialSplit.charityAllocations;
+    if (!allocations || allocations.length === 0) {
+      allocations = await getOrComputeDefaultCharityAllocations(this.prisma, charityGiftCents);
+    }
+
+    // 1. Create Transaction + TriggerEvent + FinancialSplit + CharityAllocation rows
+    const createdTx = await this.prisma.transaction.create({
       data: {
         licenseeId: input.licenseeId,
         checkoutReferenceId: input.checkoutReferenceId,
@@ -66,6 +109,9 @@ export class TransactionService {
         triggerEvent: {
           create: {
             verificationSource: input.triggerEvent.verificationSource,
+            attestationNote: resolvedAttestationNote,
+            deliveryType,
+            fulfillmentStatus,
             weatherCondition: input.triggerEvent.weatherCondition,
             eventType: input.triggerEvent.eventType,
             policyMilestoneRef: input.triggerEvent.policyMilestoneRef,
@@ -79,14 +125,53 @@ export class TransactionService {
             stripeTransferId: input.financialSplit.stripeTransferId,
             charityStripeAccountId: input.financialSplit.charityStripeAccountId,
             settledAt: input.financialSplit.settledAt,
+            allocationsFinalized: false,
+            ...(allocations.length > 0
+              ? {
+                  charityAllocations: {
+                    create: allocations.map((a) => ({
+                      charityId: a.charityId,
+                      amountCents: a.amountCents,
+                    })),
+                  },
+                }
+              : {}),
           },
         },
       },
       include: {
         triggerEvent: true,
-        financialSplit: true,
+        financialSplit: {
+          include: {
+            charityAllocations: {
+              include: { charity: true },
+            },
+          },
+        },
       },
     });
+
+    // 2. Finalize allocations if allocations were created (fires DB trigger check_financial_split_allocations_finalized_trigger)
+    if (allocations.length > 0 && createdTx.financialSplit) {
+      await this.prisma.financialSplit.update({
+        where: { id: createdTx.financialSplit.id },
+        data: { allocationsFinalized: true },
+      });
+    }
+
+    return this.prisma.transaction.findUnique({
+      where: { id: createdTx.id },
+      include: {
+        triggerEvent: true,
+        financialSplit: {
+          include: {
+            charityAllocations: {
+              include: { charity: true },
+            },
+          },
+        },
+      },
+    }) as any;
   }
 
   /**

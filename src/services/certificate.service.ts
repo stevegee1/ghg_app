@@ -133,7 +133,12 @@ export async function generateCertificatePdf(data: CertificateAggregateData): Pr
         data.charityGiftCentsSum
       } cents)`
     );
-    doc.moveDown(2);
+    doc.moveDown(1);
+    doc.fontSize(9).text(
+      "Verification Disclaimer: This certificate reflects licensing transaction and charitable-routing data only. It does not independently verify any partner's environmental or carbon claims.",
+      { align: 'left' }
+    );
+    doc.moveDown(1.5);
 
     // Footer Integrity Check
     doc

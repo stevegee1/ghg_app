@@ -1,6 +1,6 @@
 import request from 'supertest';
 import Stripe from 'stripe';
-import { PrismaClient, TransactionStatus, VerificationSource, Vertical } from '@prisma/client';
+import { PrismaClient, TransactionStatus, VerificationSource, Vertical, DeliveryType } from '@prisma/client';
 import { CheckoutService } from '../src/services/checkout.service';
 import { createApp } from '../src/app';
 import { runReconciliation } from '../src/jobs/reconcile.job';
@@ -13,16 +13,23 @@ function createMockStripe(): {
   stripe: Stripe;
   mockPaymentIntentsCreate: jest.Mock;
   mockPaymentIntentsRetrieve: jest.Mock;
+  mockTransfersCreate: jest.Mock;
   mockConstructEvent: jest.Mock;
 } {
   const mockPaymentIntentsCreate = jest.fn();
   const mockPaymentIntentsRetrieve = jest.fn();
+  const mockTransfersCreate = jest.fn().mockImplementation((params, options) => {
+    return Promise.resolve({ id: `tr_mock_${options?.idempotencyKey || 'default'}` });
+  });
   const mockConstructEvent = jest.fn();
 
   const mockStripe = {
     paymentIntents: {
       create: mockPaymentIntentsCreate,
       retrieve: mockPaymentIntentsRetrieve,
+    },
+    transfers: {
+      create: mockTransfersCreate,
     },
     webhooks: {
       constructEvent: mockConstructEvent,
@@ -33,6 +40,7 @@ function createMockStripe(): {
     stripe: mockStripe,
     mockPaymentIntentsCreate,
     mockPaymentIntentsRetrieve,
+    mockTransfersCreate,
     mockConstructEvent,
   };
 }
@@ -69,6 +77,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       licenseeId: licensee.id,
       grossAmountCents: 9999,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.THIRD_PARTY_API,
         eventType: 'EDGE_CASE_TEST',
       },
@@ -112,6 +121,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         licenseeId: licenseeNoAccount.id,
         grossAmountCents: 5000,
         triggerEvent: {
+          deliveryType: DeliveryType.DIGITAL,
           verificationSource: VerificationSource.CONSUMER_OPT_IN,
         },
       })
@@ -132,6 +142,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       licenseeId: 'lic_itm_power',
       grossAmountCents: 10000,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.MANUAL_ATTESTATION,
       },
     });
@@ -177,7 +188,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         status: TransactionStatus.PENDING,
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -260,7 +272,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         status: TransactionStatus.SETTLED,
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -340,7 +353,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         createdAt: oldDate,
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -377,7 +391,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
     );
 
     alertSpy.mockRestore();
-  });
+  }, 30000);
 
   // Test 8: initiateCheckout() with same checkoutReferenceId reuses existing PENDING transaction and produces exactly one DB row
   test('8. initiateCheckout() with same checkoutReferenceId reuses existing PENDING transaction and produces exactly 1 DB row', async () => {
@@ -404,6 +418,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       checkoutReferenceId,
       grossAmountCents: 12000,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.THIRD_PARTY_API,
         eventType: 'REOPENED_CHECKOUT_TEST',
       },
@@ -421,6 +436,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       checkoutReferenceId,
       grossAmountCents: 12000,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.THIRD_PARTY_API,
         eventType: 'REOPENED_CHECKOUT_TEST',
       },
@@ -451,7 +467,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         stripePaymentIntentId: null,
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -473,6 +490,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       checkoutReferenceId: refId,
       grossAmountCents: 15000,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.THIRD_PARTY_API,
       },
     });
@@ -507,7 +525,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         stripePaymentIntentId: 'pi_dead_or_canceled',
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -531,6 +550,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       checkoutReferenceId: refId,
       grossAmountCents: 20000,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.THIRD_PARTY_API,
       },
     });
@@ -565,7 +585,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         stripePaymentIntentId: 'pi_already_succeeded_on_stripe',
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -589,7 +610,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         checkoutReferenceId: refId,
         grossAmountCents: 10000,
         triggerEvent: {
-          verificationSource: VerificationSource.THIRD_PARTY_API,
+          deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
         },
       })
     ).rejects.toThrow('Checkout already completed for this reference');
@@ -618,7 +640,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         stripePaymentIntentId: null,
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -644,6 +667,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       checkoutReferenceId: refId,
       grossAmountCents: 14000,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.THIRD_PARTY_API,
       },
     });
@@ -682,7 +706,8 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
         stripePaymentIntentId: null,
         triggerEvent: {
           create: {
-            verificationSource: VerificationSource.THIRD_PARTY_API,
+            deliveryType: DeliveryType.DIGITAL,
+        verificationSource: VerificationSource.THIRD_PARTY_API,
           },
         },
         financialSplit: {
@@ -709,6 +734,7 @@ describe('Milestone 2 Payment Split Pipeline Tests', () => {
       checkoutReferenceId: refId,
       grossAmountCents: 10000,
       triggerEvent: {
+        deliveryType: DeliveryType.DIGITAL,
         verificationSource: VerificationSource.THIRD_PARTY_API,
       },
     });

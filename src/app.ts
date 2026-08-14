@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import path from 'path';
 import Stripe from 'stripe';
 import { prisma } from './db';
 import { createStripeWebhookRouter } from './routes/webhooks.stripe';
@@ -6,6 +7,8 @@ import { createCheckoutRouter } from './routes/checkout.route';
 import { createAuthRouter } from './routes/auth.route';
 import { createPortalRouter } from './routes/portal.route';
 import { createTransparencyRouter } from './routes/transparency.route';
+import { createB2bTriggerRouter } from './routes/b2b-trigger.route';
+import { createAdminSplitConfigRouter } from './routes/admin-split-config.route';
 import { CheckoutService } from './services/checkout.service';
 
 export function createApp(stripeInstance?: Stripe): Express {
@@ -19,8 +22,14 @@ export function createApp(stripeInstance?: Stripe): Express {
 
   const checkoutService = new CheckoutService(prisma, stripe);
 
-  // Serve static files from 'public' directory
-  app.use(express.static('public'));
+  // Resolve the Vite dist directory relative to the project root (process.cwd())
+  // This works both in dev (ts-node from project root) and in production
+  // (compiled to dist/server/index.js, still launched from project root by Railway)
+  const distDir = path.join(process.cwd(), 'dist');
+
+  // Serve static files from Vite's 'dist' output and 'public'
+  app.use(express.static(distDir));
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
   // Use raw body parsing strictly for the webhook route
   app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
@@ -31,13 +40,29 @@ export function createApp(stripeInstance?: Stripe): Express {
   // Mount webhook router
   app.use(createStripeWebhookRouter(prisma, stripe));
 
-  // Mount checkout API router
+  // Mount checkout API router and B2B trigger router
   app.use(createCheckoutRouter(checkoutService));
+  app.use(createB2bTriggerRouter(checkoutService, prisma));
 
-  // Mount auth, portal, and transparency routers
+  // Mount auth, portal, transparency, and admin split-config routers
   app.use(createAuthRouter(prisma));
   app.use(createPortalRouter(prisma));
   app.use(createTransparencyRouter(prisma));
+  app.use(createAdminSplitConfigRouter(prisma));
+
+  // SPA Wildcard fallback — serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/webhooks')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(distDir, 'index.html'), (err) => {
+      if (err) {
+        res.status(404).send(
+          'Frontend build not found. Run `npm run build` or use the Vite dev server at http://localhost:5173'
+        );
+      }
+    });
+  });
 
   return app;
 }

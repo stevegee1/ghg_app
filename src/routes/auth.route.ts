@@ -43,7 +43,15 @@ export function createAuthRouter(prisma: PrismaClient): Router {
         { expiresIn: '15m' }
       );
 
-      return res.status(200).json({ token });
+      return res.status(200).json({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          licenseeId: user.licenseeId,
+        },
+      });
     } catch (err) {
       console.error('[AUTH API ERROR]', err);
       return res.status(500).json({ error: 'An unexpected error occurred during login' });

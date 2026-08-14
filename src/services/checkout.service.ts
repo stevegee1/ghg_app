@@ -1,6 +1,8 @@
-import { PrismaClient, TransactionStatus, VerificationSource } from '@prisma/client';
+import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType } from '@prisma/client';
 import Stripe from 'stripe';
 import { TransactionService } from './transaction.service';
+import { resolveActiveSplitConfig } from './split-config.service';
+import { computeCharityAllocations } from './charity-allocation.service';
 
 export interface InitiateCheckoutInput {
   licenseeId: string;
@@ -9,6 +11,8 @@ export interface InitiateCheckoutInput {
   currency?: string;
   triggerEvent: {
     verificationSource: VerificationSource;
+    attestationNote?: string;
+    deliveryType: DeliveryType;
     weatherCondition?: string;
     eventType?: string;
     policyMilestoneRef?: string;
@@ -29,11 +33,7 @@ export class CheckoutService {
   /**
    * Initiates checkout by computing server-side splits, creating DB records,
    * calling Stripe PaymentIntents API with destination transfer, and attaching the payment intent ID.
-   * Handles checkout retries cleanly:
-   * - If checkoutReferenceId exists and has a PENDING transaction with an active PaymentIntent, reuses its clientSecret.
-   * - If retrieve() returns 'succeeded', updates local status to SETTLED and throws error indicating checkout already completed.
-   * - Handles P2002 race conditions by re-fetching and continuing reuse logic.
-   * - Uses stored FinancialSplit amounts when reusing an existing transaction.
+   * Resolves active split config via resolveActiveSplitConfig (per-licensee or platform default).
    */
   async initiateCheckout(input: InitiateCheckoutInput) {
     const { licenseeId, checkoutReferenceId, grossAmountCents, currency = 'GBP', triggerEvent } = input;
@@ -47,10 +47,13 @@ export class CheckoutService {
       throw new Error('Licensee is not fully onboarded for payments');
     }
 
-    // 2. Compute exact integer split server-side from licensee.royaltyBps (for new transactions)
-    const royaltyBps = licensee.royaltyBps ?? 1500;
-    const charityGiftCents = Math.round((grossAmountCents * royaltyBps) / 10000);
-    const licensorRoyaltyCents = grossAmountCents - charityGiftCents;
+    // 2. Resolve currently active split configuration (per-licensee or platform default)
+    const resolvedConfig = await resolveActiveSplitConfig(this.prisma, licenseeId);
+
+    // Compute exact integer split server-side
+    const licensorRoyaltyCents = Math.round((grossAmountCents * resolvedConfig.royaltyBps) / 10000);
+    const charityGiftCents = grossAmountCents - licensorRoyaltyCents;
+    const charityAllocations = computeCharityAllocations(charityGiftCents, resolvedConfig.charityAllocationBps);
 
     let transaction: any = null;
 
@@ -79,18 +82,18 @@ export class CheckoutService {
                     where: { transactionId: existingTx.id },
                     data: {
                       settledAt: new Date(),
-                      stripeTransferId: stripeTransferId ?? undefined,
+                      stripeTransferId: stripeTransferId ?? existingTx.financialSplit?.stripeTransferId,
                     },
                   }),
                 ]);
 
                 throw new Error('Checkout already completed for this reference');
-              }
-
-              if (paymentIntent.status !== 'canceled' && paymentIntent.client_secret) {
+              } else if (paymentIntent.status !== 'canceled') {
                 return {
-                  clientSecret: paymentIntent.client_secret,
                   transactionId: existingTx.id,
+                  clientSecret: paymentIntent.client_secret,
+                  grossAmountCents: existingTx.grossAmountCents,
+                  currency: existingTx.currency,
                 };
               }
             }
@@ -109,7 +112,7 @@ export class CheckoutService {
       }
     }
 
-    // 4. If no reusable PENDING transaction exists, create Transaction + TriggerEvent + FinancialSplit
+    // 4. If no reusable PENDING transaction exists, create Transaction + TriggerEvent + FinancialSplit + CharityAllocations
     if (!transaction) {
       try {
         transaction = await this.transactionService.createTransactionWithTrigger({
@@ -122,6 +125,7 @@ export class CheckoutService {
           financialSplit: {
             licensorRoyaltyCents,
             charityGiftCents,
+            charityAllocations,
           },
         });
       } catch (createErr: any) {
@@ -147,36 +151,13 @@ export class CheckoutService {
       }
     }
 
-    // 5. Determine charity gift amount: use stored FinancialSplit if reusing existing transaction
-    const targetCharityGiftCents = transaction.financialSplit?.charityGiftCents ?? charityGiftCents;
-
-    // 6. Call Stripe PaymentIntents API with idempotencyKey = transaction.id
-    // In dev/test: skip transfer_data if MOCK_STRIPE_TRANSFERS=true or account ID is a dummy placeholder
-    const mockTransfers = process.env.MOCK_STRIPE_TRANSFERS === 'true';
-    const isRealConnectedAccount = /^acct_[A-Za-z0-9]{16,}$/.test(licensee.stripeConnectedAccountId!);
-    const skipTransferData = mockTransfers || !isRealConnectedAccount;
-
-    if (skipTransferData) {
-      console.warn(
-        `[CHECKOUT] Skipping transfer_data for account "${licensee.stripeConnectedAccountId}" ` +
-          `(MOCK_STRIPE_TRANSFERS=${mockTransfers}, isRealConnectedAccount=${isRealConnectedAccount}). ` +
-          `PaymentIntent will be created without a Connect destination transfer.`
-      );
-    }
-
+    // 5. Call Stripe PaymentIntents API with idempotencyKey = transaction.id
+    // Note (M5b): transfer_data is removed from PaymentIntent creation; per-charity transfers are executed upon settlement in the webhook handler.
     try {
       const paymentIntent = await this.stripe.paymentIntents.create(
         {
           amount: transaction.grossAmountCents,
           currency: (transaction.currency || currency).toLowerCase(),
-          ...(skipTransferData
-            ? {}
-            : {
-                transfer_data: {
-                  destination: licensee.stripeConnectedAccountId!,
-                  amount: targetCharityGiftCents,
-                },
-              }),
           metadata: {
             transactionId: transaction.id,
           },

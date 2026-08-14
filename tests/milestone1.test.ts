@@ -1,4 +1,4 @@
-import { PrismaClient, VerificationSource, TransactionStatus } from '@prisma/client';
+import { PrismaClient, VerificationSource, TransactionStatus, DeliveryType } from '@prisma/client';
 import { TransactionService } from '../src/services/transaction.service';
 import { seed } from '../prisma/seed';
 
@@ -29,13 +29,14 @@ describe('Milestone 1 Core Schema & Service Layer Tests', () => {
 
       await expect(
         transactionService.createTransactionWithTrigger(invalidInput)
-      ).rejects.toThrow('TriggerEvent with a non-null verificationSource is mandatory');
+      ).rejects.toThrow('TriggerEvent with a non-null verificationSource');
 
       const invalidInput2: any = {
         licenseeId: 'lic_itm_power',
         grossAmountCents: 1000,
         triggerEvent: {
           verificationSource: null,
+          deliveryType: DeliveryType.DIGITAL,
         },
         financialSplit: {
           licensorRoyaltyCents: 800,
@@ -45,7 +46,7 @@ describe('Milestone 1 Core Schema & Service Layer Tests', () => {
 
       await expect(
         transactionService.createTransactionWithTrigger(invalidInput2)
-      ).rejects.toThrow('TriggerEvent with a non-null verificationSource is mandatory');
+      ).rejects.toThrow('TriggerEvent with a non-null verificationSource');
     });
 
     test('should reject creating a transaction when financialSplit is missing', async () => {
@@ -54,6 +55,7 @@ describe('Milestone 1 Core Schema & Service Layer Tests', () => {
         grossAmountCents: 1000,
         triggerEvent: {
           verificationSource: VerificationSource.THIRD_PARTY_API,
+          deliveryType: DeliveryType.DIGITAL,
         },
         financialSplit: null,
       };
@@ -71,6 +73,7 @@ describe('Milestone 1 Core Schema & Service Layer Tests', () => {
         status: TransactionStatus.PENDING,
         triggerEvent: {
           verificationSource: VerificationSource.THIRD_PARTY_API,
+          deliveryType: DeliveryType.DIGITAL,
           eventType: 'SOLAR_CHECK',
         },
         financialSplit: {
@@ -98,6 +101,7 @@ describe('Milestone 1 Core Schema & Service Layer Tests', () => {
           grossAmountCents: 10000,
           triggerEvent: {
             verificationSource: VerificationSource.MANUAL_ATTESTATION,
+            deliveryType: DeliveryType.DIGITAL,
           },
           financialSplit: {
             licensorRoyaltyCents: 7000,
@@ -113,6 +117,7 @@ describe('Milestone 1 Core Schema & Service Layer Tests', () => {
         grossAmountCents: 10000,
         triggerEvent: {
           verificationSource: VerificationSource.MANUAL_ATTESTATION,
+          deliveryType: DeliveryType.DIGITAL,
         },
         financialSplit: {
           licensorRoyaltyCents: 8000,
@@ -137,6 +142,7 @@ describe('Milestone 1 Core Schema & Service Layer Tests', () => {
           triggerEvent: {
             create: {
               verificationSource: VerificationSource.THIRD_PARTY_API,
+              deliveryType: DeliveryType.DIGITAL,
             },
           },
         },

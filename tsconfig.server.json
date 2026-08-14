@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "outDir": "./dist/server",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node"
+  },
+  "include": [
+    "src/index.ts",
+    "src/app.ts",
+    "src/db.ts",
+    "src/routes/**/*",
+    "src/services/**/*",
+    "src/db/**/*",
+    "src/middleware/**/*",
+    "src/jobs/**/*"
+  ]
+}

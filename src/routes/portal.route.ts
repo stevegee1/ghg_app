@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, TransactionStatus } from '@prisma/client';
+import { PrismaClient, TransactionStatus, DeliveryType, FulfillmentStatus } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { runWithRls } from '../db/rls';
 import { getCertificateAggregateData, generateCertificatePdf } from '../services/certificate.service';
@@ -9,6 +9,59 @@ export function createPortalRouter(prisma: PrismaClient): Router {
 
   // Protect all portal routes with JWT authentication middleware
   router.use('/api/portal', authenticateToken);
+
+  /**
+   * PATCH /api/portal/transactions/:id/fulfillment
+   * Updates fulfillmentStatus for physical delivery trigger events.
+   * Authenticated via PARTNER portal JWT, RLS-scoped to caller's licensee.
+   * Body: { status: 'CONFIRMED' | 'FAILED' }
+   */
+  router.patch('/api/portal/transactions/:id/fulfillment', async (req: Request, res: Response) => {
+    const user = req.user!;
+    const transactionId = req.params.id;
+    const { status } = req.body || {};
+
+    if (status !== FulfillmentStatus.CONFIRMED && status !== FulfillmentStatus.FAILED) {
+      return res.status(400).json({ error: "Invalid input: status must be 'CONFIRMED' or 'FAILED'." });
+    }
+
+    try {
+      const result = await runWithRls(prisma, user, async (tx) => {
+        // Fetch transaction within RLS transaction block
+        const transaction = await tx.transaction.findUnique({
+          where: { id: transactionId },
+          include: { triggerEvent: true },
+        });
+
+        if (!transaction || !transaction.triggerEvent) {
+          return { error: 'NOT_FOUND', status: 404 };
+        }
+
+        if (transaction.triggerEvent.deliveryType !== DeliveryType.PHYSICAL) {
+          return { error: 'INVALID_DELIVERY_TYPE', status: 400 };
+        }
+
+        const updatedTriggerEvent = await tx.triggerEvent.update({
+          where: { id: transaction.triggerEvent.id },
+          data: { fulfillmentStatus: status },
+        });
+
+        return { data: { ...transaction, triggerEvent: updatedTriggerEvent } };
+      });
+
+      if ('error' in result) {
+        if (result.error === 'INVALID_DELIVERY_TYPE') {
+          return res.status(400).json({ error: 'Fulfillment status can only be updated for PHYSICAL delivery transactions.' });
+        }
+        return res.status(404).json({ error: 'Transaction not found or access denied.' });
+      }
+
+      return res.status(200).json(result.data);
+    } catch (err) {
+      console.error('[PORTAL FULFILLMENT ERROR]', err);
+      return res.status(500).json({ error: 'Failed to update fulfillment status' });
+    }
+  });
 
   /**
    * GET /api/portal/transactions

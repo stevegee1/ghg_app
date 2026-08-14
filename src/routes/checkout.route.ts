@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { VerificationSource } from '@prisma/client';
+import { VerificationSource, DeliveryType } from '@prisma/client';
 import { CheckoutService } from '../services/checkout.service';
 
 export function createCheckoutRouter(checkoutService: CheckoutService): Router {
@@ -24,7 +24,7 @@ export function createCheckoutRouter(checkoutService: CheckoutService): Router {
     }
 
     try {
-      // 2. Invoke checkoutService with server-side hardcoded verificationSource = CONSUMER_OPT_IN
+      // 2. Invoke checkoutService with server-side hardcoded verificationSource = CONSUMER_OPT_IN and deliveryType = DIGITAL
       const result = await checkoutService.initiateCheckout({
         licenseeId: licenseeId.trim(),
         checkoutReferenceId: checkoutReferenceId.trim(),
@@ -32,6 +32,7 @@ export function createCheckoutRouter(checkoutService: CheckoutService): Router {
         currency,
         triggerEvent: {
           verificationSource: VerificationSource.CONSUMER_OPT_IN,
+          deliveryType: DeliveryType.DIGITAL,
         },
       });
 

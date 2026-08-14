@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient, Vertical, TransactionStatus, VerificationSource, PortalRole } from '@prisma/client';
+import { PrismaClient, Vertical, TransactionStatus, VerificationSource, PortalRole, DeliveryType, CharityStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -23,13 +23,58 @@ export async function seed() {
     console.error('Seed RLS role setup error:', e);
   }
 
+  // 0. Seed Charities
+  const charitiesData = [
+    {
+      id: 'charity_green_earth',
+      name: 'Green Earth Foundation',
+      stripeConnectedAccountId: 'acct_charity_green',
+      status: CharityStatus.ACTIVE,
+    },
+    {
+      id: 'charity_ocean_clean',
+      name: 'Clean Oceans Trust',
+      stripeConnectedAccountId: 'acct_charity_ocean',
+      status: CharityStatus.ACTIVE,
+    },
+    {
+      id: 'charity_youth_sport',
+      name: 'Youth Eco Sports Alliance',
+      stripeConnectedAccountId: 'acct_charity_youth_sport',
+      status: CharityStatus.ACTIVE,
+    },
+    {
+      id: 'charity_legacy_inactive',
+      name: 'Inactive Legacy Fund',
+      stripeConnectedAccountId: 'acct_charity_inactive',
+      status: CharityStatus.INACTIVE,
+    },
+  ];
+
+  for (const char of charitiesData) {
+    await prisma.charity.upsert({
+      where: { id: char.id },
+      update: {
+        name: char.name,
+        stripeConnectedAccountId: char.stripeConnectedAccountId,
+        status: char.status,
+      },
+      create: char,
+    });
+  }
+
   // 1. Seed Licensees
+  const b2bApiKeyHashItm = await bcrypt.hash('b2b_key_itm_secret', 10);
+  const b2bApiKeyHashJcb = await bcrypt.hash('b2b_key_jcb_secret', 10);
+
   const licenseesData = [
     {
       id: 'lic_itm_power',
       name: 'ITM Power Test',
       vertical: Vertical.B2B_CLEAN_TECH,
       stripeConnectedAccountId: 'acct_itm_12345',
+      pricePerDropCents: 500,
+      b2bApiKeyHash: b2bApiKeyHashItm,
       isPubliclyVisible: false,
     },
     {
@@ -37,6 +82,8 @@ export async function seed() {
       name: 'JCB Test',
       vertical: Vertical.B2B_HEAVY_MANUFACTURING,
       stripeConnectedAccountId: 'acct_jcb_67890',
+      pricePerDropCents: 750,
+      b2bApiKeyHash: b2bApiKeyHashJcb,
       isPubliclyVisible: false,
     },
     {
@@ -44,6 +91,8 @@ export async function seed() {
       name: 'Arsenal FC Test',
       vertical: Vertical.B2C_SPORTS_MERCH,
       stripeConnectedAccountId: 'acct_arsenal_11223',
+      pricePerDropCents: null,
+      b2bApiKeyHash: null,
       isPubliclyVisible: true,
     },
   ];
@@ -55,6 +104,8 @@ export async function seed() {
         name: lic.name,
         vertical: lic.vertical,
         stripeConnectedAccountId: lic.stripeConnectedAccountId,
+        pricePerDropCents: lic.pricePerDropCents,
+        b2bApiKeyHash: lic.b2bApiKeyHash,
         isPubliclyVisible: lic.isPubliclyVisible,
       },
       create: lic,
@@ -109,6 +160,36 @@ export async function seed() {
       role: PortalRole.PARTNER,
     },
   });
+
+  // 3. Seed Platform Default Split Config
+  const adminUser = await prisma.portalUser.findUnique({ where: { email: 'admin@ghglogodrop.com' } });
+  if (adminUser) {
+    // Upsert default platform split config with 3 active charities
+    await prisma.splitConfigHistory.upsert({
+      where: { id: 'cfg_platform_default_001' },
+      update: {
+        royaltyBps: 8500,
+        charityAllocationBps: [
+          { charityId: 'charity_green_earth', bps: 3333 },
+          { charityId: 'charity_ocean_clean', bps: 3333 },
+          { charityId: 'charity_youth_sport', bps: 3334 },
+        ],
+        isActive: true,
+      },
+      create: {
+        id: 'cfg_platform_default_001',
+        licenseeId: null,
+        royaltyBps: 8500,
+        charityAllocationBps: [
+          { charityId: 'charity_green_earth', bps: 3333 },
+          { charityId: 'charity_ocean_clean', bps: 3333 },
+          { charityId: 'charity_youth_sport', bps: 3334 },
+        ],
+        isActive: true,
+        changedByUserId: adminUser.id,
+      },
+    });
+  }
 
   // 3. Seed Transactions with linked TriggerEvents and FinancialSplits
   const sampleTransactions = [
@@ -252,10 +333,20 @@ export async function seed() {
       create: txFields,
     });
 
+    const defaultAttestationNotes: Record<VerificationSource, string> = {
+      THIRD_PARTY_API: "Data submitted via partner's own API/telemetry system. Not independently audited.",
+      MANUAL_ATTESTATION: "Manually attested by an authorized user. Not independently audited.",
+      CONSUMER_OPT_IN: "Consumer opt-in selection at checkout. No underlying emissions claim is made for this transaction type.",
+    };
+    const attestationNote = defaultAttestationNotes[triggerEvent.verificationSource];
+
     await prisma.triggerEvent.upsert({
       where: { transactionId: txFields.id },
       update: {
         verificationSource: triggerEvent.verificationSource,
+        attestationNote,
+        deliveryType: DeliveryType.DIGITAL,
+        fulfillmentStatus: null,
         weatherCondition: triggerEvent.weatherCondition,
         eventType: triggerEvent.eventType,
         policyMilestoneRef: triggerEvent.policyMilestoneRef,
@@ -265,6 +356,9 @@ export async function seed() {
         id: triggerEvent.id,
         transactionId: txFields.id,
         verificationSource: triggerEvent.verificationSource,
+        attestationNote,
+        deliveryType: DeliveryType.DIGITAL,
+        fulfillmentStatus: null,
         weatherCondition: triggerEvent.weatherCondition,
         eventType: triggerEvent.eventType,
         policyMilestoneRef: triggerEvent.policyMilestoneRef,
