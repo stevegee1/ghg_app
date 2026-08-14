@@ -64,8 +64,7 @@ export const PartnerLicensingPage: React.FC = () => {
                 License Transaction Reference: <code>{successResult.transactionId}</code>
               </div>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div className="responsive-grid-2" style={{ marginBottom: '1.5rem' }}>
               <div>
                 <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Warranty Status</div>
                 <div className="warranty-badge warranty-active" style={{ marginTop: '0.25rem' }}>
@@ -112,7 +111,7 @@ export const PartnerLicensingPage: React.FC = () => {
         </div>
       ) : (
         <form onSubmit={handleAnnualLicensingSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="responsive-grid-2">
             {/* Left Column: Annual Carbon Emissions Input */}
             <div className="card">
               <div className="card-header">

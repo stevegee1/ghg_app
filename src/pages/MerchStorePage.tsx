@@ -98,8 +98,7 @@ export const MerchStorePage: React.FC = () => {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+      <div className="responsive-grid-2-1">
         {/* Left Column: Catalog Grid */}
         <div>
           <div className="merch-grid">

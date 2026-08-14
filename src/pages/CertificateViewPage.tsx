@@ -78,7 +78,7 @@ export const CertificateViewPage: React.FC = () => {
         </div>
 
         <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.875rem' }}>
+          <div className="responsive-grid-2" style={{ gap: '1rem', fontSize: '0.875rem' }}>
             <div>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Transaction Reference</div>
               <div style={{ fontWeight: 700 }}><code>{transaction.id}</code></div>

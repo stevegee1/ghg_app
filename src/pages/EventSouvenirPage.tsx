@@ -103,7 +103,7 @@ export const EventSouvenirPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <div className="responsive-grid-2" style={{ marginBottom: '1.5rem' }}>
             <div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Event Details</div>
               <div style={{ fontWeight: 700, fontSize: '1rem' }}>{successOrder.eventName}</div>
@@ -151,7 +151,7 @@ export const EventSouvenirPage: React.FC = () => {
         </div>
       ) : (
         <form onSubmit={handleOrderSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="responsive-grid-2">
             {/* Left Column: Event Form */}
             <div className="card">
               <div className="card-header">
@@ -226,7 +226,7 @@ export const EventSouvenirPage: React.FC = () => {
 
                 <div className="form-group">
                   <label className="form-label">Souvenir Item Type</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div className="responsive-grid-2" style={{ gap: '0.5rem' }}>
                     {SOUVENIR_ITEMS.map((item) => (
                       <button
                         key={item.id}

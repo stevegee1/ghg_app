@@ -45,8 +45,7 @@ export const BrandLogoUploader: React.FC<BrandLogoUploaderProps> = ({ onLogoSele
   return (
     <div>
       <div style={{ marginBottom: '1rem' }}>
-        <label className="form-label">Select Pre-loaded Partner Brand or Upload Custom Logo</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+        <div className="responsive-grid-3" style={{ gap: '0.5rem', marginBottom: '1rem' }}>
           {DEFAULT_PARTNERS.map((p) => (
             <button
               key={p.id}

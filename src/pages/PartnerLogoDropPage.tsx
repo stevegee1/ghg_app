@@ -86,8 +86,7 @@ export const PartnerLogoDropPage: React.FC = () => {
               Transaction Ref: <code>{successResult.transactionId}</code>
             </div>
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <div className="responsive-grid-2" style={{ marginBottom: '1.5rem' }}>
             <div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Settlement Status</div>
               <div style={{ marginTop: '0.25rem' }}><StatusBadge status="SETTLED" /></div>
@@ -130,7 +129,7 @@ export const PartnerLogoDropPage: React.FC = () => {
         </div>
       ) : (
         <form onSubmit={handleLicensingCheckout}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="responsive-grid-2">
             {/* Left Column: Brand Logo & Deployment Method */}
             <div className="card">
               <div className="card-header">
@@ -148,7 +147,7 @@ export const PartnerLogoDropPage: React.FC = () => {
 
               <div className="form-group" style={{ marginTop: '1.5rem' }}>
                 <label className="form-label">Deployment Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="responsive-grid-2" style={{ gap: '0.75rem' }}>
                   <label
                     style={{
                       display: 'flex',

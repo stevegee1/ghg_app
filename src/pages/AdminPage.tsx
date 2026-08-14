@@ -100,8 +100,7 @@ export const AdminPage: React.FC = () => {
 
       {error && <div className="alert alert-error">{error}</div>}
       {successMsg && <div className="alert alert-success">{successMsg}</div>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div className="responsive-grid-2">
         {/* Form Column */}
         <div className="card">
           <div className="card-header">

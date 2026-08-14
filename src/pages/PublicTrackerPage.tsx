@@ -124,7 +124,7 @@ export const PublicTrackerPage: React.FC = () => {
           </div>
 
           <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', marginTop: '1.5rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', fontSize: '0.875rem' }}>
+            <div className="responsive-grid-3-col">
               <div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Souvenir Item</div>
                 <div style={{ fontWeight: 600 }}>{order.itemTitle}</div>

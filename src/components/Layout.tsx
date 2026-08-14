@@ -1,10 +1,17 @@
-import React from 'react';
-import { NavLink, Link, Outlet } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isUsingMockData } from '../api/client';
 
 export const Layout: React.FC = () => {
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  // Close mobile menu when route changes
+  React.useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
 
   return (
     <div className="app-container">
@@ -16,12 +23,21 @@ export const Layout: React.FC = () => {
 
       <header className="navbar">
         <div className="navbar-inner">
-          <Link to="/" className="brand">
+          <Link to="/" className="brand" onClick={() => setMobileMenuOpen(false)}>
             <div className="brand-mark">⚡</div>
             <span>GHG Logo Drop</span>
           </Link>
 
-          <nav>
+          <button
+            className="mobile-menu-toggle"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? '✕' : '☰'}
+          </button>
+
+          <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <ul className="nav-links">
               <li>
                 <NavLink
@@ -83,9 +99,9 @@ export const Layout: React.FC = () => {
                       </NavLink>
                     </li>
                   )}
-                  <li>
+                  <li className="mobile-user-item">
                     <div className="user-badge">
-                      <span>{user?.email}</span>
+                      <span className="user-email">{user?.email}</span>
                       <span style={{ fontWeight: 600 }}>({user?.role})</span>
                       <button onClick={logout} className="btn-logout">
                         Logout
