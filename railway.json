@@ -6,7 +6,7 @@
   },
   "deploy": {
     "releaseCommand": "npm run db:deploy",
-    "startCommand": "node_modules/.bin/ts-node --skip-project src/index.ts",
+    "startCommand": "node_modules/.bin/ts-node -p tsconfig.server.json src/index.ts",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

@@ -9,7 +9,7 @@
     "build:server": "node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/server/index.js --external:@prisma/client --external:bcrypt --external:pdfkit --external:node-cron",
     "build:client": "vite build",
     "build": "npm run build:client",
-    "start": "node_modules/.bin/ts-node --skip-project src/index.ts",
+    "start": "node_modules/.bin/ts-node -p tsconfig.server.json src/index.ts",
     "db:deploy": "prisma migrate deploy && prisma db seed",
     "test": "jest --runInBand",
     "migrate": "prisma migrate dev",
