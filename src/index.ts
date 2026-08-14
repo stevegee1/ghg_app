@@ -9,10 +9,10 @@ async function main() {
   console.log('GHG Logo Drop Backend - Milestone 3 Initialized');
 
   const app = createApp();
-  const port = process.env.PORT || 3000;
+  const port = Number(process.env.PORT) || 8080;
 
-  // Start listening FIRST — Railway health checks need the port to respond
-  app.listen(port, () => {
+  // Start listening FIRST — Railway health checks need 0.0.0.0:PORT to respond
+  app.listen(port, '0.0.0.0', () => {
     console.log(`Express server running on http://0.0.0.0:${port}`);
     console.log(`- API mounted at /api`);
     console.log(`- Webhooks handler at POST /webhooks/stripe`);
