@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "frontend": "vite",
-    "build": "rm -rf dist/server && tsc -p tsconfig.server.json && vite build",
+    "build:server": "node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/server/index.js --external:@prisma/client --external:bcrypt --external:pdfkit --external:node-cron --define:import.meta.env.VITE_USE_MOCK=\"false\"",
+    "build:client": "vite build",
+    "build": "npm run build:server && npm run build:client",
     "start": "node dist/server/index.js",
     "db:deploy": "prisma migrate deploy && prisma db seed",
     "test": "jest --runInBand",
