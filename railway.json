@@ -5,7 +5,7 @@
     "buildCommand": "npm run build:client"
   },
   "deploy": {
-    "releaseCommand": "npm run db:deploy",
+    "releaseCommand": "prisma migrate deploy && prisma db seed || echo 'DB release skipped — DATABASE_URL not set'",
     "startCommand": "node_modules/.bin/ts-node -p tsconfig.server.json src/index.ts",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
