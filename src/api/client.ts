@@ -1,6 +1,5 @@
 import { mockApi } from './mockClient';
-
-const USE_MOCK_ENV = import.meta.env.VITE_USE_MOCK === 'true';
+const USE_MOCK_ENV = typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_USE_MOCK === 'true';
 
 export let isUsingMockData = USE_MOCK_ENV;
 

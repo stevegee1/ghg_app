@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "frontend": "vite",
-    "build:server": "node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/server/index.js --external:@prisma/client --external:bcrypt --external:pdfkit --external:node-cron",
+    "build:server": "node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --external:@prisma/client --external:bcrypt --external:pdfkit --external:node-cron",
     "build:client": "vite build",
-    "build": "npm run build:client",
-    "start": "node_modules/.bin/ts-node -p tsconfig.server.json src/index.ts",
+    "build": "npm run build:client && npm run build:server",
+    "start": "node dist/index.js",
     "db:deploy": "prisma migrate deploy && prisma db seed",
     "test": "jest --runInBand",
     "migrate": "prisma migrate dev",
