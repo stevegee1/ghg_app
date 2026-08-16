@@ -42,15 +42,6 @@ export const TransparencyPage: React.FC = () => {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {/* Mandatory Unconditional Verification Disclaimer (From M5d) */}
-      <div className="disclaimer-box">
-        <div className="disclaimer-title">Platform Verification Disclaimer</div>
-        <div className="disclaimer-text">
-          {data?.dataDisclaimer ||
-            'Figures reflect settled licensing transactions and charitable routing only. Partner environmental claims are not independently verified by this platform.'}
-        </div>
-      </div>
-
       {/* Aggregate Platform Metrics */}
       <div className="stats-grid">
         <div className="stat-card">

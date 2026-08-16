@@ -111,14 +111,6 @@ export const CertificateViewPage: React.FC = () => {
           />
         </div>
 
-        <div className="disclaimer-box">
-          <div className="disclaimer-title">Verification & Standing Legal Disclaimer</div>
-          <div className="disclaimer-text">
-            {transaction.triggerEvent?.attestationNote ||
-              'Figures reflect settled licensing transactions and charitable routing only. Partner environmental claims are not independently verified by this platform.'}
-          </div>
-        </div>
-
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
           <Link to="/transparency" className="btn btn-secondary">
             ← View Public Transparency Registry

@@ -102,7 +102,7 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
                 color: '#ffffff',
               }}
             >
-              ⚡
+              GHG
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>{partnerName}</div>

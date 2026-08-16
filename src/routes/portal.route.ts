@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, TransactionStatus, DeliveryType, FulfillmentStatus } from '@prisma/client';
+import { PrismaClient, TransactionStatus, DeliveryType, FulfillmentStatus, PeriodType, ReportSource } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { runWithRls } from '../db/rls';
 import { getCertificateAggregateData, generateCertificatePdf } from '../services/certificate.service';
+import { validateAttestationNote } from '../services/transaction.service';
 
 export function createPortalRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -209,6 +210,114 @@ export function createPortalRouter(prisma: PrismaClient): Router {
     } catch (err) {
       console.error('[PORTAL CERTIFICATE ERROR]', err);
       return res.status(500).json({ error: 'Failed to generate compliance certificate' });
+    }
+  });
+
+  /**
+   * POST /api/portal/job-reports
+   * Self-report submission endpoint for authenticated portal users.
+   * PARTNER role is strictly restricted to caller's req.user.licenseeId (ignoring any body override).
+   * Body: { periodType, periodStart, periodEnd, jobsCreated, attestationNote? }
+   */
+  router.post('/api/portal/job-reports', async (req: Request, res: Response) => {
+    const user = req.user!;
+    const targetLicenseeId =
+      user.role === 'ADMIN' ? (req.body.licenseeId as string) || user.licenseeId : user.licenseeId;
+
+    if (!targetLicenseeId) {
+      return res.status(403).json({ error: 'Access denied: Partner account has no associated licenseeId.' });
+    }
+
+    const { periodType, periodStart, periodEnd, jobsCreated, attestationNote: customNote } = req.body || {};
+
+    // 1. Validate periodType
+    if (periodType !== PeriodType.QUARTERLY && periodType !== PeriodType.ANNUAL) {
+      return res.status(400).json({ error: "Invalid input: periodType must be 'QUARTERLY' or 'ANNUAL'." });
+    }
+
+    // 2. Validate period dates
+    const startDate = new Date(periodStart);
+    const endDate = new Date(periodEnd);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid input: periodStart and periodEnd must be valid date strings.' });
+    }
+
+    if (endDate <= startDate) {
+      return res.status(400).json({ error: 'Invalid input: periodEnd must be after periodStart.' });
+    }
+
+    // 3. Validate jobsCreated (non-negative integer, 0 is explicitly valid)
+    if (typeof jobsCreated !== 'number' || !Number.isInteger(jobsCreated) || jobsCreated < 0) {
+      return res.status(400).json({ error: 'Invalid input: jobsCreated must be a non-negative integer.' });
+    }
+
+    // 4. Validate custom attestationNote if provided
+    let finalNote = "Self-reported by partner via portal. Not independently verified.";
+    if (customNote && typeof customNote === 'string' && customNote.trim().length > 0) {
+      try {
+        const validated = validateAttestationNote(customNote);
+        if (validated) {
+          finalNote = validated;
+        }
+      } catch (err: any) {
+        return res.status(400).json({ error: err.message });
+      }
+    }
+
+    try {
+      const report = await runWithRls(prisma, user, async (tx) => {
+        return tx.jobCreationReport.create({
+          data: {
+            licenseeId: targetLicenseeId,
+            periodType,
+            periodStart: startDate,
+            periodEnd: endDate,
+            jobsCreated,
+            reportSource: ReportSource.MANUAL_ATTESTATION,
+            attestationNote: finalNote,
+            submittedByUserId: user.userId,
+          },
+        });
+      });
+
+      return res.status(201).json(report);
+    } catch (err: any) {
+      if (err.code === 'P2002' || err.message?.includes('JobCreationReport_licenseeId_periodType_periodStart_period')) {
+        return res.status(409).json({ error: 'Duplicate report: A report for this exact period and type already exists.' });
+      }
+      console.error('[PORTAL JOB REPORT SUBMISSION ERROR]', err);
+      return res.status(500).json({ error: 'Failed to submit job creation report.' });
+    }
+  });
+
+  /**
+   * GET /api/portal/job-reports
+   * Retrieves list of submitted job creation reports for authenticated licensee.
+   * PARTNER role strictly restricted to req.user.licenseeId (RLS-backed).
+   * ADMIN may pass ?licenseeId=.
+   */
+  router.get('/api/portal/job-reports', async (req: Request, res: Response) => {
+    const user = req.user!;
+    const targetLicenseeId =
+      user.role === 'ADMIN' ? (req.query.licenseeId as string) || user.licenseeId : user.licenseeId;
+
+    if (!targetLicenseeId) {
+      return res.status(403).json({ error: 'Access denied: Partner account has no associated licenseeId.' });
+    }
+
+    try {
+      const reports = await runWithRls(prisma, user, async (tx) => {
+        return tx.jobCreationReport.findMany({
+          where: { licenseeId: targetLicenseeId },
+          orderBy: [{ periodEnd: 'desc' }, { createdAt: 'desc' }],
+        });
+      });
+
+      return res.status(200).json({ data: reports });
+    } catch (err) {
+      console.error('[PORTAL GET JOB REPORTS ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve job creation reports.' });
     }
   });
 

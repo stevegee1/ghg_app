@@ -60,13 +60,6 @@ export const OpenSeaBadge: React.FC<OpenSeaBadgeProps> = ({
               </div>
             </div>
 
-            <div className="disclaimer-box" style={{ margin: '1rem 0', padding: '0.75rem 1rem' }}>
-              <div className="disclaimer-title" style={{ fontSize: '0.75rem' }}>Standing Legal Disclaimer</div>
-              <div className="disclaimer-text" style={{ fontSize: '0.8125rem' }}>
-                Figures reflect settled licensing transactions and charitable routing only. Partner environmental claims are not independently verified by this platform.
-              </div>
-            </div>
-
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
               <button onClick={() => setShowModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>
                 Close

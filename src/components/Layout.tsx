@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isUsingMockData } from '../api/client';
+import { Footer } from './Footer';
 
 export const Layout: React.FC = () => {
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
@@ -15,17 +16,18 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="app-container">
+
       {isUsingMockData && (
         <div className="demo-banner">
-          <span>ⓘ DEMO DATA MODE ACTIVE — Mock client active for presentation preview.</span>
+          <span>DEMO DATA MODE ACTIVE — Mock client active for presentation preview.</span>
         </div>
       )}
 
       <header className="navbar">
         <div className="navbar-inner">
-          <Link to="/" className="brand" onClick={() => setMobileMenuOpen(false)}>
-            <div className="brand-mark">⚡</div>
-            <span>GHG Logo Drop</span>
+          <Link to="/" className="brand" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+            <img src="/images/nfty-logs-logo.png" alt="NFTY LOGS Official Logo" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+            <span>GHGEmissionLogs</span>
           </Link>
 
           <button
@@ -34,7 +36,7 @@ export const Layout: React.FC = () => {
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? '✕' : '☰'}
+            {mobileMenuOpen ? 'CLOSE' : 'MENU'}
           </button>
 
           <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
@@ -77,6 +79,14 @@ export const Layout: React.FC = () => {
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
                   Transparency Registry
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/about"
+                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                >
+                  About Us
                 </NavLink>
               </li>
               {isAuthenticated ? (
@@ -127,6 +137,8 @@ export const Layout: React.FC = () => {
       <main className="main-content">
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   );
 };

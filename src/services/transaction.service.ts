@@ -1,10 +1,12 @@
 import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, FulfillmentStatus } from '@prisma/client';
 import { getOrComputeDefaultCharityAllocations, CharityAllocationResult } from './charity-allocation.service';
 
-export const DEFAULT_ATTESTATION_NOTES: Record<VerificationSource, string> = {
+export const DEFAULT_ATTESTATION_NOTES: Record<string, string> = {
   THIRD_PARTY_API: "Data submitted via partner's own API/telemetry system. Not independently audited.",
   MANUAL_ATTESTATION: "Manually attested by an authorized user. Not independently audited.",
   CONSUMER_OPT_IN: "Consumer opt-in selection at checkout. No underlying emissions claim is made for this transaction type.",
+  JOB_REPORT_MANUAL: "Self-reported by partner via portal. Not independently verified.",
+  JOB_REPORT_API: "Submitted via partner's own system/API. Not independently verified.",
 };
 
 const DISALLOWED_POSITIVE_CLAIM_REGEX =

@@ -127,7 +127,7 @@ export const MerchStorePage: React.FC = () => {
                       fontWeight: 600,
                     }}
                   >
-                    ⚡ Printed GHG Logo Mark
+                    Printed GHG Logo Mark
                   </div>
                 </div>
 

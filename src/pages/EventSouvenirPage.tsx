@@ -17,28 +17,28 @@ const SOUVENIR_ITEMS: SouvenirCatalogItem[] = [
     title: 'Eco Organic Cotton Tote Bag',
     priceCents: 250, // £2.50
     description: '100% GOTS certified organic cotton with printed GHG verified logo drop mark',
-    icon: '🛍️',
+    icon: 'ORGANIC TOTE',
   },
   {
     id: 'item_ceramic_mug',
     title: 'Custom Printed Ceramic Souvenir Mug',
     priceCents: 300, // £3.00
     description: 'Matte finish ceramic mug with custom event text and GHG verified logo drop',
-    icon: '☕',
+    icon: 'CERAMIC MUG',
   },
   {
     id: 'item_tshirt',
     title: 'Organic Cotton Event T-Shirt',
     priceCents: 800, // £8.00
     description: 'Soft organic cotton apparel with custom front artwork & GHG logo mark on sleeve',
-    icon: '👕',
+    icon: 'COTTON SHIRT',
   },
   {
     id: 'item_gift_box',
     title: 'Premium Wooden Souvenir Gift Box',
     priceCents: 1200, // £12.00
     description: 'Sustainably sourced bamboo gift box engraved with GHG verified logo drop',
-    icon: '🎁',
+    icon: 'BAMBOO BOX',
   },
 ];
 
@@ -96,7 +96,7 @@ export const EventSouvenirPage: React.FC = () => {
         <div className="card">
           <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
             <div style={{ fontSize: '1.125rem', fontWeight: 700 }}>
-              🎉 Event Souvenir Order Confirmed & Production Scheduled!
+              Event Souvenir Order Confirmed & Production Scheduled
             </div>
             <div style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
               Order Reference ID: <code>{successOrder.orderId}</code> | Tracking: <code>{successOrder.trackingNumber}</code>
@@ -138,7 +138,7 @@ export const EventSouvenirPage: React.FC = () => {
               className="btn btn-primary"
               style={{ flex: 1 }}
             >
-              Monitor Dropshipping Tracker 🚚
+              Monitor Dropshipping Tracker →
             </Link>
             <button
               onClick={() => setSuccessOrder(null)}

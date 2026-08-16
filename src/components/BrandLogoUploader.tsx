@@ -113,7 +113,7 @@ export const BrandLogoUploader: React.FC<BrandLogoUploaderProps> = ({ onLogoSele
         <div className="logo-canvas-preview">
           <img src={selectedLogo} alt={logoName} className="base-logo" />
           <div className="overlay-badge">
-            <span style={{ color: 'var(--accent-emerald)' }}>⚡</span> GHG LOGO DROP VERIFIED
+            <span style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>GHG</span> LOGO DROP VERIFIED
           </div>
         </div>
       </div>

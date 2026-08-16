@@ -260,4 +260,51 @@ export const api = {
       return mockApi.createSplitConfig(data);
     }
   },
+
+  async getPortalJobReports(token: string) {
+    if (USE_MOCK_ENV) {
+      isUsingMockData = true;
+      return mockApi.getPortalJobReports();
+    }
+    try {
+      const res = await fetch('/api/portal/job-reports', {
+        headers: getAuthHeader(token),
+      });
+      if (!res.ok) throw new Error('Failed to fetch portal job reports');
+      isUsingMockData = false;
+      return res.json();
+    } catch (e) {
+      console.warn('[API Client] Backend unreachable, using mock getPortalJobReports', e);
+      isUsingMockData = true;
+      return mockApi.getPortalJobReports();
+    }
+  },
+
+  async submitPortalJobReport(token: string, data: { periodType: string; periodStart: string; periodEnd: string; jobsCreated: number; attestationNote?: string }) {
+    if (USE_MOCK_ENV) {
+      isUsingMockData = true;
+      return mockApi.submitPortalJobReport(data);
+    }
+    try {
+      const res = await fetch('/api/portal/job-reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(token),
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to submit job creation report' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      isUsingMockData = false;
+      return res.json();
+    } catch (e: any) {
+      if (e.message && !e.message.includes('fetch')) throw e;
+      console.warn('[API Client] Backend unreachable, using mock submitPortalJobReport', e);
+      isUsingMockData = true;
+      return mockApi.submitPortalJobReport(data);
+    }
+  },
 };

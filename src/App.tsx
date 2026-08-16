@@ -7,6 +7,8 @@ import { LoginPage } from './pages/LoginPage';
 import { PortalPage } from './pages/PortalPage';
 import { AdminPage } from './pages/AdminPage';
 import { TransparencyPage } from './pages/TransparencyPage';
+import { AboutPage } from './pages/AboutPage';
+import { BlogPage } from './pages/BlogPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({
   children,
@@ -30,6 +32,8 @@ export const AppRoutes: React.FC = () => {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/checkout" replace />} />
+        <Route path="about" element={<AboutPage />} />
+        <Route path="blog" element={<BlogPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="transparency" element={<TransparencyPage />} />
         <Route path="portal/login" element={<LoginPage />} />

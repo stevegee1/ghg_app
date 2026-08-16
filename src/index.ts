@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { prisma } from './db';
 import { TransactionService } from './services/transaction.service';
+import { CheckoutService } from './services/checkout.service';
 import { createApp } from './expressApp';
 import { scheduleReconciliationJob } from './jobs/reconcile.job';
 

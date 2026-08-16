@@ -22,6 +22,7 @@ model Licensee {
   transactions             Transaction[]
   portalUsers              PortalUser[]
   splitConfigs             SplitConfigHistory[]
+  jobReports               JobCreationReport[]
 }
 
 enum Vertical {
@@ -147,7 +148,8 @@ model PortalUser {
   role         PortalRole           @default(PARTNER)
   createdAt    DateTime             @default(now())
 
-  splitConfigs SplitConfigHistory[]
+  splitConfigs        SplitConfigHistory[]
+  submittedJobReports JobCreationReport[]
 
   @@index([licenseeId])
 }
@@ -173,4 +175,32 @@ model SplitConfigHistory {
 
   @@index([licenseeId, isActive])
   @@index([changedByUserId])
+}
+
+enum PeriodType {
+  QUARTERLY
+  ANNUAL
+}
+
+enum ReportSource {
+  MANUAL_ATTESTATION
+  THIRD_PARTY_API
+}
+
+model JobCreationReport {
+  id                String       @id @default(cuid())
+  licenseeId        String
+  licensee          Licensee     @relation(fields: [licenseeId], references: [id])
+  periodType        PeriodType
+  periodStart       DateTime
+  periodEnd         DateTime
+  jobsCreated       Int
+  reportSource      ReportSource
+  attestationNote   String
+  submittedByUserId String?
+  submittedByUser   PortalUser?  @relation(fields: [submittedByUserId], references: [id])
+  createdAt         DateTime     @default(now())
+
+  @@unique([licenseeId, periodType, periodStart, periodEnd])
+  @@index([licenseeId])
 }

@@ -405,8 +405,6 @@ export const mockApi = {
     await new Promise((r) => setTimeout(r, 300));
     const settled = mockTransactions.filter((t) => t.status === 'SETTLED');
     return {
-      dataDisclaimer:
-        'Figures reflect settled licensing transactions and charitable routing only. Partner environmental claims are not independently verified by this platform.',
       totalSettledTransactions: settled.length,
       totalCharityGiftCents: settled.reduce((sum, t) => sum + t.financialSplit.charityGiftCents, 0),
       charityPercentage: 15,
@@ -417,6 +415,8 @@ export const mockApi = {
           vertical: 'B2B_CLEAN_TECH',
           totalSettledTransactions: 1,
           totalCharityGiftCents: 2000,
+          jobsCreated: 340,
+          attestationNote: 'Self-reported by partner via portal. Not independently verified.',
         },
         {
           licenseeId: 'lic_jcb_test',
@@ -424,6 +424,8 @@ export const mockApi = {
           vertical: 'HEAVY_MANUFACTURING',
           totalSettledTransactions: 1,
           totalCharityGiftCents: 5000,
+          jobsCreated: 210,
+          attestationNote: 'Submitted via partner\'s own system/API. Not independently verified.',
         },
         {
           licenseeId: 'lic_arsenal_fc',
@@ -431,6 +433,8 @@ export const mockApi = {
           vertical: 'SPORTS_ENTERTAINMENT',
           totalSettledTransactions: 1,
           totalCharityGiftCents: 375,
+          jobsCreated: 150,
+          attestationNote: 'Self-reported by partner via portal. Not independently verified.',
         },
       ],
     };
@@ -463,4 +467,29 @@ export const mockApi = {
     mockSplitHistory.unshift(newCfg);
     return newCfg;
   },
+
+  async getPortalJobReports() {
+    await new Promise((r) => setTimeout(r, 200));
+    return { data: mockJobReports };
+  },
+
+  async submitPortalJobReport(data: { periodType: string; periodStart: string; periodEnd: string; jobsCreated: number; attestationNote?: string }) {
+    await new Promise((r) => setTimeout(r, 300));
+    const newReport = {
+      id: `jrep_${Date.now()}`,
+      licenseeId: 'lic_itm_power',
+      periodType: data.periodType,
+      periodStart: data.periodStart,
+      periodEnd: data.periodEnd,
+      jobsCreated: data.jobsCreated,
+      reportSource: 'MANUAL_ATTESTATION',
+      attestationNote: data.attestationNote || 'Self-reported by partner via portal. Not independently verified.',
+      submittedByUserId: 'usr_partner_001',
+      createdAt: new Date().toISOString(),
+    };
+    mockJobReports.unshift(newReport);
+    return newReport;
+  },
 };
+
+const mockJobReports: any[] = [];

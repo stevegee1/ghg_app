@@ -38,11 +38,11 @@ export const PublicTrackerPage: React.FC = () => {
   };
 
   const steps = [
-    { key: 'ORDER_PLACED', label: 'Order Placed & Secured', icon: '📝' },
-    { key: 'ARTWORK_APPROVED', label: 'Logo Overlay Approved', icon: '🎨' },
-    { key: 'LOGO_DROP_PRINTED', label: 'Logo Drop Printed', icon: '🖨️' },
-    { key: 'SHIPPED', label: 'Out for Dropshipping', icon: '🚚' },
-    { key: 'DELIVERED', label: 'Delivered Before Event', icon: '🎁' },
+    { key: 'ORDER_PLACED', label: 'Order Placed & Secured', icon: '1' },
+    { key: 'ARTWORK_APPROVED', label: 'Logo Overlay Approved', icon: '2' },
+    { key: 'LOGO_DROP_PRINTED', label: 'Logo Drop Printed', icon: '3' },
+    { key: 'SHIPPED', label: 'Out for Dropshipping', icon: '4' },
+    { key: 'DELIVERED', label: 'Delivered Before Event', icon: '5' },
   ];
 
   const getStepStatusClass = (stepKey: string) => {
