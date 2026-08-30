@@ -23,6 +23,11 @@ model Licensee {
   portalUsers              PortalUser[]
   splitConfigs             SplitConfigHistory[]
   jobReports               JobCreationReport[]
+  calibrationRecords       AssetCalibrationRecord[]
+  telemetryLogs            TelemetryLog[]
+  nonConformanceEvents     NonConformanceEvent[]
+  auditReports             AuditInspectionReport[]
+  evidenceDocuments        AuditEvidenceDocument[]
 }
 
 enum Vertical {
@@ -45,6 +50,8 @@ model Transaction {
 
   triggerEvent          TriggerEvent?
   financialSplit        FinancialSplit?
+  telemetryLog          TelemetryLog?
+  customKeepsakeSpec    CustomKeepsakeSpec?
 
   @@index([licenseeId])
 }
@@ -204,3 +211,191 @@ model JobCreationReport {
   @@unique([licenseeId, periodType, periodStart, periodEnd])
   @@index([licenseeId])
 }
+
+enum SensorType {
+  ELECTRICITY_SUB_METER
+  WATER_FLOW_METER
+  GAS_CHROMATOGRAPH
+  THERMAL_FLOW_METER
+  EMISSIONS_CEMS
+}
+
+enum MetricType {
+  PUE
+  WUE
+  MWH_LOAD
+  H2_PURITY_PCT
+  THERMAL_KW
+  CO2_PPM
+}
+
+model AssetCalibrationRecord {
+  id                String         @id @default(cuid())
+  licenseeId        String
+  licensee          Licensee       @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetTag          String         // e.g. "PDU-METER-04B", "ELECTROLYSER-SENS-01"
+  sensorType        SensorType
+  calibrationDate   DateTime
+  expiryDate        DateTime
+  certDocumentUrl   String         // URL/Path to certificate PDF
+  certIntegrityHash String         // SHA-256 hash of certificate file
+  isCurrentlyValid  Boolean        @default(true)
+  verifiedBy        String?
+  createdAt         DateTime       @default(now())
+
+  telemetryLogs     TelemetryLog[]
+
+  @@index([licenseeId, assetTag])
+  @@index([expiryDate, isCurrentlyValid])
+}
+
+model TelemetryLog {
+  id                 String                 @id @default(cuid())
+  licenseeId         String
+  licensee           Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetCalibrationId String
+  assetCalibration   AssetCalibrationRecord @relation(fields: [assetCalibrationId], references: [id])
+  assetTag           String
+  metricType         MetricType
+  numericValue       Float
+  rawUnit            String                 // e.g. "kW/h", "m3/h", "%", "ppm"
+  isWithinBaseline   Boolean                @default(true)
+  requiresSupervisor Boolean                @default(false)
+  rawTelemetryJson   Json?
+  transactionId      String?                @unique
+  transaction        Transaction?           @relation(fields: [transactionId], references: [id])
+  createdAt          DateTime               @default(now())
+
+  @@index([licenseeId, metricType])
+  @@index([assetTag, createdAt])
+}
+
+enum ConformanceGrade {
+  CONFORMANT
+  OPPORTUNITY_FOR_IMPROVEMENT
+  MINOR_NON_CONFORMANCE
+  MAJOR_NON_CONFORMANCE_GREENWASHING_RISK
+}
+
+model NonConformanceEvent {
+  id                 String           @id @default(cuid())
+  licenseeId         String
+  licensee           Licensee         @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  isoClause          String           // e.g. "ISO 50001:2018 Clause 9.1.1", "ISO 14001:2015 Clause 10.2"
+  assetTag           String
+  metricName         String           // "PUE", "WUE", "H2_PURITY_PCT"
+  baselineValue      Float
+  observedValue      Float
+  percentageVariance Float
+  conformanceGrade   ConformanceGrade @default(MINOR_NON_CONFORMANCE)
+  rootCauseAnalysis  String?
+  correctiveAction   String?
+  assignedOwner      String?
+  targetClosureDate  DateTime?
+  isResolved         Boolean          @default(false)
+  resolvedAt         DateTime?
+  signOffSupervisor  String?
+  createdAt          DateTime         @default(now())
+
+  @@index([licenseeId, isResolved])
+  @@index([assetTag, isResolved])
+}
+
+enum RiskLevel {
+  LOW_RISK_CONFORMANT
+  MEDIUM_RISK_OFI
+  HIGH_RISK_GREENWASHING_EXPOSURE
+}
+
+model AuditInspectionReport {
+  id                    String            @id @default(cuid())
+  licenseeId            String
+  licensee              Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  auditRefId            String            @unique // e.g. "AR-2026-DH-01", "SC-2026-AUTO-01"
+  facilityType          String            // "DATA_CENTRE", "GREEN_HYDROGEN_DRI", "COMMERCIAL_FLEET", "CLEANTECH_HARDWARE", "EVENT_MILESTONE"
+  leadAuditorName       String            // e.g. "Lead Assurance Officer, GMC, LL.B."
+  evaluationDate        DateTime
+  weightedScore         Float             // 0.0 to 5.0
+  overallGrade          ConformanceGrade
+  greenwashingRiskLevel RiskLevel
+  summaryNotes          String?
+  createdAt             DateTime          @default(now())
+
+  matrixRows            AuditMatrixRow[]
+  evidenceDocuments     AuditEvidenceDocument[]
+
+  @@index([licenseeId, facilityType])
+}
+
+model AuditMatrixRow {
+  id                       String            @id @default(cuid())
+  reportId                 String
+  report                   AuditInspectionReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  pillarIndex              Int               // 1 to 5
+  pillarName               String            // e.g. "Power Usage Effectiveness", "Lithium-Ion Battery Integrity"
+  isoClauseLink            String            // e.g. "ISO 50001:2018 Clause 9.1.1", "ISO 6469-1/-3"
+  legalMandate             String            // e.g. "UK SECR / Companies Regs 2018", "EU Battery Regulation"
+  targetDepartment         String            // e.g. "IT Infrastructure", "High-Voltage Engineering"
+  questionText             String
+  objectiveEvidenceTypes   String            // e.g. "SCADA Logs, Sub-Meter Calibration Certs"
+  auditorFindings          String?
+  scorePoints              Float             // 0.0 to 5.0 points
+  complianceGrading        ConformanceGrade
+  weight                   Float             // e.g. 0.25, 0.20, 0.15
+  rootCause                String?
+  mandatoryCorrectiveAction String?
+  assignedOwner            String?
+  targetClosureDate        DateTime?
+  verifiedBy               String?
+  verificationDate         DateTime?
+  createdAt                DateTime          @default(now())
+
+  @@index([reportId, pillarIndex])
+}
+
+model CustomKeepsakeSpec {
+  id                String       @id @default(cuid())
+  transactionId     String       @unique
+  transaction       Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  garmentModel      String       // "HEAVYWEIGHT_HOODIE", "STRUCTURED_CAP", "SOFTSHELL_VEST"
+  inscribedText     String       // e.g. "Bukayo Saka 89' Top-Corner Derby Winner"
+  threadColor       String       // "GOLD_METALLIC", "STERLING_SILVER", "EMERALD_GREEN"
+  placement         String       // "LEFT_CHEST", "RIGHT_SLEEVE", "BACK_COLLAR"
+  artisanLaborHours Float        @default(1.5)
+  lcaCarbonGrams    Int          @default(450)
+  openSeaTokenUri   String?
+  createdAt         DateTime     @default(now())
+}
+
+enum EvidenceCategory {
+  SCADA_TELEMETRY
+  WATER_TRADE_EFFLUENT_PERMIT
+  LAB_GAS_PURITY_CERT
+  STAGING_PAYROLL_REGISTER
+  CALIBRATION_CERTIFICATE
+  OTHER_AUDIT_PROOF
+}
+
+model AuditEvidenceDocument {
+  id            String            @id @default(cuid())
+  licenseeId    String
+  licensee      Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  reportId      String?
+  report        AuditInspectionReport? @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  matrixRowId   String?
+  fileName      String
+  category      EvidenceCategory
+  fileUrl       String
+  fileSizeBytes Int
+  mimeType      String
+  sha256Hash    String
+  uploadedBy    String
+  createdAt     DateTime          @default(now())
+
+  @@index([licenseeId, category])
+  @@index([reportId])
+}
+
+
+
+
