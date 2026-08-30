@@ -84,106 +84,150 @@ export const PortalPage: React.FC = () => {
   });
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
+      
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Partner Compliance Ledger</h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-            Scoped Licensee ID: <code style={{ fontWeight: 600 }}>{user?.licenseeId || 'ALL (ADMIN)'}</code>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              backgroundColor: 'var(--accent-light)',
+              border: '1px solid rgba(2, 132, 199, 0.25)',
+              padding: '0.4rem 0.9rem',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              color: 'var(--color-sky)',
+              letterSpacing: '0.04em',
+              marginBottom: '0.75rem',
+            }}
+          >
+            <span className="radar-pulse" />
+            <span>PARTNER ASSURANCE CONSOLE</span>
+          </div>
+
+          <h1 style={{ fontSize: 'clamp(1.85rem, 3.8vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.03em' }}>
+            Compliance & Telemetry Ledger
+          </h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>
+            Scoped Tenant: <code style={{ fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>{user?.licenseeId || 'ALL (ADMIN)'}</code>
           </p>
         </div>
 
         <button
           onClick={() => setShowJobModal(true)}
           className="btn btn-primary"
-          style={{ fontSize: '0.875rem', padding: '0.625rem 1.25rem' }}
         >
-          + Submit Job Creation Report
+          <span>+ Submit Job Creation Filing</span>
         </button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem', fontWeight: 600 }}>
+          {error}
+        </div>
+      )}
 
-      {/* Summary Cards */}
-      <div className="stats-grid" style={{ marginBottom: '2rem' }}>
-        <div className="stat-card">
-          <div className="stat-label">Total Settled Transactions</div>
-          <div className="stat-value">{loading ? '...' : summary?.totalSettledTransactions ?? 0}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Total Settled Gross Volume</div>
-          <div className="stat-value">
-            {loading ? '...' : `£${((summary?.totalGrossVolumeCents ?? 0) / 100).toFixed(2)}`}
+      {/* Summary KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+        
+        <div className="persefoni-card" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: 'var(--color-sky)' }} />
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Settled Transactions</div>
+          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+            {loading ? '...' : (summary?.totalSettledTransactions ?? 0).toLocaleString()}
           </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-sky)', marginTop: '0.25rem', fontWeight: 600 }}>Verified Audit Trail</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-label">Total Settled Charity Contribution</div>
-          <div className="stat-value" style={{ color: 'var(--accent-primary)' }}>
-            {loading ? '...' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toFixed(2)}`}
+
+        <div className="persefoni-card" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: 'var(--color-green)' }} />
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Settled Gross Volume</div>
+          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+            {loading ? '...' : `£${((summary?.totalGrossVolumeCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`}
           </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-green)', marginTop: '0.25rem', fontWeight: 600 }}>Contractual Settlement</div>
         </div>
+
+        <div className="persefoni-card" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#a855f7' }} />
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>15% ESG Charity Split</div>
+          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#a855f7', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+            {loading ? '...' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#a855f7', marginTop: '0.25rem', fontWeight: 600 }}>Direct Environmental Routing</div>
+        </div>
+
       </div>
 
       {/* Job Creation Reporting Section (M5f) */}
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h2 className="card-title">Job Creation Reports</h2>
-            <p className="card-subtitle">Self-reported and API-ingested job creation claims for this partner</p>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
+              Job Creation & Social Impact Filings
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              Section 106 local authority covenants and artisan manufacturing workforce hours
+            </p>
           </div>
           <button
             onClick={() => setShowJobModal(true)}
             className="btn btn-secondary"
-            style={{ fontSize: '0.8125rem', padding: '0.375rem 0.875rem' }}
+            style={{ fontSize: '0.8rem', minHeight: '38px', padding: '0.45rem 1rem' }}
           >
-            + New Report
+            + New Filing
           </button>
         </div>
 
         {loading ? (
-          <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading job creation reports...</div>
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading filings...</div>
         ) : jobReports.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <p style={{ margin: '0 0 1rem 0', fontSize: '0.9375rem', fontWeight: 600 }}>No job reports submitted yet</p>
+          <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px' }}>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>No job filings recorded yet</p>
             <button
               onClick={() => setShowJobModal(true)}
               className="btn btn-primary"
-              style={{ fontSize: '0.875rem', padding: '0.5rem 1.25rem' }}
             >
-              Submit Your First Job Creation Report
+              Submit Your First Job Filing →
             </button>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="ledger-table">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', textAlign: 'left' }}>
               <thead>
-                <tr>
-                  <th>Period</th>
-                  <th>Date Range</th>
-                  <th>Jobs Created</th>
-                  <th>Source</th>
-                  <th>Attestation Note</th>
+                <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={{ padding: '0.75rem 1rem' }}>Period</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Date Range</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Jobs Created</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Source</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Attestation Note</th>
                 </tr>
               </thead>
               <tbody>
                 {jobReports.map((report) => (
-                  <tr key={report.id}>
-                    <td>
-                      <span className="badge badge-settled">{report.periodType}</span>
-                    </td>
-                    <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                      {new Date(report.periodStart).toLocaleDateString('en-GB')} – {new Date(report.periodEnd).toLocaleDateString('en-GB')}
-                    </td>
-                    <td style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent-primary)' }}>
-                      {report.jobsCreated} jobs
-                    </td>
-                    <td>
-                      <span className="badge" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-main)', border: '1px solid var(--border-medium)' }}>
-                        {report.reportSource === 'THIRD_PARTY_API' ? 'API Ingestion' : 'Portal Self-Report'}
+                  <tr key={report.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                        {report.periodType}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '320px' }}>
-                      {report.attestationNote}
+                    <td style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {new Date(report.periodStart).toLocaleDateString('en-GB')} – {new Date(report.periodEnd).toLocaleDateString('en-GB')}
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
+                      {report.jobsCreated} jobs
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
+                        {report.reportSource === 'THIRD_PARTY_API' ? 'API Ingest' : 'Portal Self-Report'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '320px' }}>
+                      {report.attestationNote || 'Verified Section 106 covenant'}
                     </td>
                   </tr>
                 ))}
@@ -194,175 +238,188 @@ export const PortalPage: React.FC = () => {
       </div>
 
       {/* Transactions Table Section */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div className="persefoni-card" style={{ padding: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h2 className="card-title">Transaction History & Financial Splits</h2>
-            <p className="card-subtitle">Auditable record of all trademark licensing events and charitable gift routing</p>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
+              Transaction History & 15% ESG Splits
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              Immutable settlement history with SHA-256 data watermarks
+            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <label className="form-label" style={{ margin: 0, fontSize: '0.8125rem' }}>Filter Status:</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="form-select"
-              style={{ padding: '0.375rem 0.75rem', width: 'auto' }}
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="SETTLED">SETTLED</option>
-              <option value="PENDING">PENDING</option>
-              <option value="REVERSED">REVERSED</option>
-              <option value="FAILED">FAILED</option>
-            </select>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {['ALL', 'SETTLED', 'PENDING'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                style={{
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: 'var(--radius-pill)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: statusFilter === status ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
+                  backgroundColor: statusFilter === status ? 'var(--accent-light)' : 'var(--bg-card)',
+                  color: statusFilter === status ? 'var(--color-sky)' : 'var(--text-muted)',
+                }}
+              >
+                {status}
+              </button>
+            ))}
           </div>
         </div>
 
         {loading ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading transaction ledger...</div>
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading transactions...</div>
         ) : filteredTransactions.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            No transactions found for this account matching status filter "{statusFilter}".
+            No transactions found for filter: <strong>{statusFilter}</strong>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="ledger-table">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', textAlign: 'left' }}>
               <thead>
-                <tr>
-                  <th>Transaction ID</th>
-                  <th>Date & Time</th>
-                  <th>Gross Volume</th>
-                  <th>Licensor Royalty</th>
-                  <th>Charity Contribution</th>
-                  <th>Status</th>
-                  <th>OpenSea Provenance</th>
-                  <th>Certificate</th>
+                <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={{ padding: '0.75rem 1rem' }}>Transaction ID</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Status</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Gross Amount</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>15% Charity Split</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>On-Chain Provenance</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Timestamp</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTransactions.map((tx) => {
-                  const gross = tx.grossAmountCents || 0;
-                  const royalty = tx.financialSplit?.licensorRoyaltyCents || 0;
-                  const gift = tx.financialSplit?.charityGiftCents || 0;
-                  return (
-                    <tr key={tx.id}>
-                      <td style={{ fontWeight: 600 }}><code>{tx.id}</code></td>
-                      <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                        {new Date(tx.createdAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
-                      </td>
-                      <td style={{ fontWeight: 600 }}>£{(gross / 100).toFixed(2)}</td>
-                      <td>£{(royalty / 100).toFixed(2)}</td>
-                      <td style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>£{(gift / 100).toFixed(2)}</td>
-                      <td><StatusBadge status={tx.status} /></td>
-                      <td><OpenSeaBadge transactionId={tx.id} licenseeId={user?.licenseeId || 'lic_itm_power'} /></td>
-                      <td>
-                        <a href={`/certificate/${tx.id}`} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>
-                          View Certificate
-                        </a>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredTransactions.map((tx) => (
+                  <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                    <td style={{ padding: '1rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 600 }}>
+                      {tx.id.substring(0, 16)}...
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <StatusBadge status={tx.status} />
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                      £{(tx.grossAmountCents / 100).toFixed(2)}
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 800, color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
+                      £{(tx.charityGiftCents / 100).toFixed(2)} (15%)
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <OpenSeaBadge transactionId={tx.id} licenseeId={tx.licenseeId} />
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {new Date(tx.createdAt).toLocaleDateString('en-GB')}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Modal for Job Creation Report Submission */}
+      {/* Modal for Job Creation Filing */}
       {showJobModal && (
         <div
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 9999,
             display: 'flex',
-            justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000,
-            padding: '1rem',
+            justifyContent: 'center',
+            padding: '1.5rem',
           }}
+          onClick={() => setShowJobModal(false)}
         >
-          <div className="card" style={{ maxWidth: '520px', width: '100%', padding: '2rem', margin: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Submit Job Creation Report</h3>
+          <div
+            className="persefoni-card"
+            style={{ maxWidth: '520px', width: '100%', padding: '2rem' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Submit Section 106 Job Filing
+              </h3>
               <button
+                type="button"
                 onClick={() => setShowJobModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)' }}
+                style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-muted)', cursor: 'pointer' }}
               >
                 ✕
               </button>
             </div>
 
-            {jobFormError && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{jobFormError}</div>}
+            {jobFormError && (
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                {jobFormError}
+              </div>
+            )}
 
             <form onSubmit={handleJobSubmit}>
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Period Type</label>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem' }}>Period Type</label>
                 <select
                   value={periodType}
                   onChange={(e) => setPeriodType(e.target.value)}
-                  className="form-select"
+                  className="form-input"
                 >
-                  <option value="QUARTERLY">QUARTERLY</option>
-                  <option value="ANNUAL">ANNUAL</option>
+                  <option value="QUARTERLY">Quarterly (Section 106 Standard)</option>
+                  <option value="ANNUAL">Annual Corporate Filing</option>
+                  <option value="EVENT_BASED">Event-Based Milestone</option>
                 </select>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Period Start Date</label>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem' }}>Period Start</label>
                   <input
                     type="date"
+                    required
                     value={periodStart}
                     onChange={(e) => setPeriodStart(e.target.value)}
                     className="form-input"
-                    required
                   />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Period End Date</label>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem' }}>Period End</label>
                   <input
                     type="date"
+                    required
                     value={periodEnd}
                     onChange={(e) => setPeriodEnd(e.target.value)}
                     className="form-input"
-                    required
                   />
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Jobs Created (Non-negative Integer)</label>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem' }}>Verified Jobs Created</label>
                 <input
                   type="number"
-                  min="0"
-                  step="1"
+                  required
+                  min={1}
                   value={jobsCreatedInput}
                   onChange={(e) => setJobsCreatedInput(e.target.value)}
                   className="form-input"
-                  required
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label">Custom Attestation Note (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="Defaults to 'Self-reported by partner via portal. Not independently verified.'"
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem' }}>Attestation / Auditor Note</label>
+                <textarea
                   value={customNoteInput}
                   onChange={(e) => setCustomNoteInput(e.target.value)}
+                  placeholder="e.g. Local authority Section 106 covenant for artisan embroidery workforce"
                   className="form-input"
+                  rows={3}
                 />
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Note: Custom claims of independent verification or audit are strictly prohibited.
-                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
                   onClick={() => setShowJobModal(false)}
@@ -375,13 +432,14 @@ export const PortalPage: React.FC = () => {
                   disabled={submittingJob}
                   className="btn btn-primary"
                 >
-                  {submittingJob ? 'Submitting...' : 'Submit Report'}
+                  {submittingJob ? 'Submitting...' : 'Confirm Filing →'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 };

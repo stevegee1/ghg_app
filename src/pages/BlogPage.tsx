@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 
 interface BlogPost {
@@ -51,50 +52,97 @@ const BLOG_POSTS: BlogPost[] = [
 
 export const BlogPage: React.FC = () => {
   return (
-    <div style={{ maxWidth: '960px', margin: '0 auto', paddingBottom: '4rem' }}>
-      {/* Header Banner */}
-      <section style={{ textAlign: 'center', padding: '2.5rem 1rem 2rem 1rem' }}>
-        <div className="badge badge-settled" style={{ marginBottom: '0.75rem', fontSize: '0.8125rem' }}>
-          NFTYLOGS INSIGHTS & UPDATES
+    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
+      
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            backgroundColor: 'var(--accent-light)',
+            border: '1px solid rgba(2, 132, 199, 0.25)',
+            padding: '0.4rem 0.9rem',
+            borderRadius: 'var(--radius-pill)',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: 'var(--color-sky)',
+            letterSpacing: '0.04em',
+            marginBottom: '1rem',
+          }}
+        >
+          <span className="radar-pulse" />
+          <span>RESEARCH, STANDARDS & PLATFORM DISPATCHES</span>
         </div>
-        <h1 style={{ fontSize: '2.25rem', fontWeight: 800, lineHeight: 1.2, marginBottom: '1rem', color: 'var(--text-main)' }}>
-          Read Our Latest Blogs & Climate Insights
+
+        <h1 style={{ fontSize: 'clamp(2rem, 4.5vw, 2.75rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.75rem 0', letterSpacing: '-0.03em' }}>
+          Continuous Assurance Insights
         </h1>
-        <p style={{ fontSize: '1.0625rem', color: 'var(--text-muted)', maxWidth: '680px', margin: '0 auto', lineHeight: 1.6 }}>
-          Perspectives on global decarbonisation, green hydrogen innovations, Paris Agreement alignment, and automated financial split transparency.
+        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '650px', margin: '0 auto', lineHeight: 1.6 }}>
+          Articles, regulatory briefs, and field dispatches from the GHG continuous assurance and green job creation team.
         </p>
-      </section>
+      </div>
 
       {/* Blog Cards Grid */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
         {BLOG_POSTS.map((post) => (
-          <article className="card" key={post.id} style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <span className="badge badge-settled">{post.category}</span>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                {post.date} • {post.readTime}
-              </span>
+          <article
+            key={post.id}
+            className="persefoni-card"
+            style={{
+              padding: '2rem',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', fontSize: '0.75rem' }}>
+                <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}>
+                  {post.category}
+                </span>
+                <span style={{ color: 'var(--text-muted)' }}>{post.readTime}</span>
+              </div>
+
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.75rem 0', lineHeight: 1.35 }}>
+                {post.title}
+              </h2>
+
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 1.5rem 0' }}>
+                {post.summary}
+              </p>
             </div>
 
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
-              {post.title}
-            </h2>
-
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-              {post.summary}
-            </p>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)' }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                By {post.author}
-              </span>
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
-                Read Article →
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              <span>By <strong>{post.author}</strong></span>
+              <span>{post.date}</span>
             </div>
           </article>
         ))}
       </div>
+
+      {/* Newsletter Box */}
+      <div className="persefoni-card" style={{ marginTop: '4rem', padding: '2.5rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)' }}>
+        <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+          Subscribe to Our Regulatory & Tech Bulletins
+        </h3>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '550px', margin: '0 auto 1.5rem auto' }}>
+          Get notified when new ISO methodologies, UK CMA guidance updates, or case studies are published.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', maxWidth: '420px', margin: '0 auto', flexWrap: 'wrap' }}>
+          <input
+            type="email"
+            placeholder="Enter work email"
+            className="form-input"
+            style={{ flex: 1, minWidth: '200px' }}
+          />
+          <button className="btn btn-primary">
+            Subscribe →
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 };

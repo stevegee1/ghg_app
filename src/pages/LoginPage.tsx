@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
@@ -29,103 +29,96 @@ export const LoginPage: React.FC = () => {
         navigate('/portal');
       }
     } catch (err: any) {
-      // Security rule: Always display generic 401 response to prevent user enumeration
-      setError('Invalid email or password');
+      setError('Invalid email address or password.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillAdmin = () => {
-    setEmail('admin@ghglogodrop.com');
-    setPassword('SecurePassword123!');
-    setError(null);
-  };
-
-  const fillPartner = () => {
-    setEmail('partner@itm-power.com');
-    setPassword('SecurePassword123!');
-    setError(null);
-  };
-
   return (
-    <div style={{ maxWidth: '440px', margin: '2rem auto' }}>
-      <div className="card">
-        <div className="card-header">
-          <h1 className="card-title">
-            {isAdminRoute ? 'Admin Portal Login' : 'Partner Portal Login'}
-          </h1>
-          <p className="card-subtitle">
-            {isAdminRoute
-              ? 'Authenticate as System Administrator to manage split configurations and audit trails'
-              : 'Authenticate to access scoped transaction ledgers and compliance reports'}
-          </p>
+    <div style={{ maxWidth: '560px', margin: '3rem auto 5rem auto', padding: '0 1.5rem' }}>
+      
+      {/* Brand Header */}
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.5rem' }}>
+          <img
+            src="/images/nfty-logs-logo.png"
+            alt="GHGEmissionLogs Logo"
+            style={{ width: '36px', height: '36px', objectFit: 'contain' }}
+          />
+          <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+            GHGEmissionLogs
+          </span>
         </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">Email Address</label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. admin@ghglogodrop.com"
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '0.5rem' }}
-          >
-            {loading ? 'Authenticating...' : 'Sign In to Portal'}
-          </button>
-        </form>
-
-        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-          <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Quick Fill Demo Credentials:</div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <button
-              type="button"
-              onClick={fillAdmin}
-              className="btn btn-secondary"
-              style={{ flex: 1, padding: '0.375rem 0.5rem', fontSize: '0.75rem' }}
-            >
-              Fill Admin Account
-            </button>
-            <button
-              type="button"
-              onClick={fillPartner}
-              className="btn btn-secondary"
-              style={{ flex: 1, padding: '0.375rem 0.5rem', fontSize: '0.75rem' }}
-            >
-              Fill Partner Account
-            </button>
-          </div>
-          <div style={{ fontSize: '0.75rem', lineHeight: 1.4 }}>
-            <div>• <strong>Admin:</strong> <code>admin@ghglogodrop.com</code></div>
-            <div>• <strong>Partner:</strong> <code>partner@itm-power.com</code></div>
-          </div>
-        </div>
+        <h1 style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.03em' }}>
+          {isAdminRoute ? 'Admin Console Login' : 'Sign in to your account'}
+        </h1>
+        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', margin: 0 }}>
+          {isAdminRoute
+            ? 'Authenticate as System Administrator to manage audit trails.'
+            : 'Access your continuous climate telemetry and assurance console.'}
+        </p>
       </div>
+
+      {error && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.85rem 1.25rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.875rem', fontWeight: 600 }}>
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="persefoni-card" style={{ padding: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+        
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+            Email Address <span style={{ color: 'var(--google-red)' }}>*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@company.com"
+            className="form-input"
+          />
+        </div>
+
+        <div style={{ marginBottom: '1.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
+              Password <span style={{ color: 'var(--google-red)' }}>*</span>
+            </label>
+          </div>
+          <input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••••••"
+            className="form-input"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn btn-primary"
+          style={{ width: '100%', padding: '0.8rem 1.5rem', fontSize: '0.95rem', marginBottom: '1.5rem' }}
+        >
+          {loading ? 'Authenticating...' : 'Sign In →'}
+        </button>
+
+        <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Don't have an account?{' '}
+          <Link to="/create-account" style={{ color: 'var(--color-sky)', fontWeight: 700, textDecoration: 'none' }}>
+            Create your free account
+          </Link>
+        </div>
+
+      </form>
+
     </div>
   );
 };

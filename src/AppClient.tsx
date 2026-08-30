@@ -11,6 +11,8 @@ import { PartnerLogoDropPage } from './pages/PartnerLogoDropPage';
 import { CertificateViewPage } from './pages/CertificateViewPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { LoginPage } from './pages/LoginPage';
+import { SignUpPage } from './pages/SignUpPage';
+import { JobReportingPage } from './pages/JobReportingPage';
 import { PortalPage } from './pages/PortalPage';
 import { AdminPage } from './pages/AdminPage';
 import { TransparencyPage } from './pages/TransparencyPage';
@@ -42,6 +44,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="about" element={<AboutPage />} />
         <Route path="blog" element={<BlogPage />} />
         <Route path="licensing" element={<PartnerLicensingPage />} />
+        <Route path="job-reporting" element={<JobReportingPage />} />
+        <Route path="workforce-assurance" element={<JobReportingPage />} />
+        <Route path="jobs" element={<JobReportingPage />} />
         <Route path="souvenirs" element={<EventSouvenirPage />} />
         <Route path="public-tracker" element={<PublicTrackerPage />} />
         <Route path="merch" element={<MerchStorePage />} />
@@ -49,8 +54,17 @@ export const AppRoutes: React.FC = () => {
         <Route path="certificate/:id" element={<CertificateViewPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="transparency" element={<TransparencyPage />} />
+        
+        {/* Production Authentication & Self-Service Account Provisioning */}
+        <Route path="create-account" element={<SignUpPage />} />
+        <Route path="sign-up" element={<SignUpPage />} />
+        <Route path="register" element={<SignUpPage />} />
+        <Route path="portal/create-account" element={<SignUpPage />} />
+        <Route path="portal/sign-up" element={<SignUpPage />} />
+        <Route path="portal/register" element={<SignUpPage />} />
         <Route path="portal/login" element={<LoginPage />} />
         <Route path="admin/login" element={<LoginPage />} />
+        
         <Route
           path="portal"
           element={

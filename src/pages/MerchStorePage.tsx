@@ -13,57 +13,124 @@ interface MerchItem {
   imageUrl: string;
   category: string;
   description: string;
+  objectPosition?: string;
 }
 
 const MERCH_CATALOG: MerchItem[] = [
   {
-    id: 'item_ghg_sweatshirt',
-    title: 'GHG Logo Drop Heavyweight Sweatshirt',
+    id: 'item_nfty_cap',
+    title: 'NFTY LOGS® Vagaries of GHG Emissions Embroidered Cap',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'GHG Logo Drop Official Store',
-    priceCents: 4500, // £45.00
-    imageUrl: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
-    category: 'Official Company Apparel',
-    description: '400gsm organic cotton crewneck sweatshirt with embroidered official GHG verified logo drop mark on chest.',
-  },
-  {
-    id: 'item_ghg_cap',
-    title: 'GHG Logo Drop Official Embroidered Cap',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'GHG Logo Drop Official Store',
-    priceCents: 2000, // £20.00
-    imageUrl: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-    category: 'Official Accessories',
-    description: 'Adjustable 6-panel cotton twill cap featuring high-density embroidered GHG lightning accountability logo mark.',
-  },
-  {
-    id: 'item_ghg_tshirt',
-    title: 'GHG Logo Drop Organic Cotton T-Shirt',
+    partnerName: 'NFTY LOGS® Official Store',
     priceCents: 2500, // £25.00
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'GHG Logo Drop Official Store',
-    imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-    category: 'Official Company Apparel',
-    description: '100% GOTS certified organic ring-spun cotton tee with printed GHG verified logo drop mark.',
+    imageUrl: '/images/merch/804c16c8-6d00-4596-b456-dfe607b635b7.jpeg',
+    category: 'Official Headwear',
+    description: 'Black structured cotton cap with high-density embroidered multi-color NFTY LOGS® Vagaries of GHG Emissions accountability badge.',
+    objectPosition: 'center 0%',
   },
   {
-    id: 'item_ghg_bottle',
-    title: 'GHG Logo Drop Eco Stainless Water Bottle',
+    id: 'item_nfty_volcano_hoodie',
+    title: 'NFTY LOGS® "Vibing The Vagaries" Heavyweight Hoodie',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'GHG Logo Drop Official Store',
-    priceCents: 1800, // £18.00
-    imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
-    category: 'Eco Merchandise',
-    description: 'Double-wall vacuum insulated stainless steel water bottle laser-etched with official GHG verified mark.',
+    partnerName: 'NFTY LOGS® Official Store',
+    priceCents: 6500, // £65.00
+    imageUrl: '/images/merch/a014f871-4e03-4f3d-a056-47f3f3dbe729.jpeg',
+    category: 'Graphic Art Hoodies',
+    description: 'Heavyweight black pullover hoodie with embroidered "Re-awakened Volcanoes, Melting Glaciers" chest artwork and dual GHG logo drops.',
+    objectPosition: 'center 20%',
+  },
+  {
+    id: 'item_nfty_tech_fleece',
+    title: 'NFTY LOGS® Tech Fleece Full-Zip Performance Hoodie',
+    licenseeId: 'lic_ghg_official',
+    partnerName: 'NFTY LOGS® Official Store',
+    priceCents: 7500, // £75.00
+    imageUrl: '/images/merch/09acb896-19df-488f-9a9b-ac1241c6dc97.jpeg',
+    category: 'Performance Apparel',
+    description: 'Charcoal tech fleece full-zip hoodie with zippered sleeve utility pocket, tailored seamlines, and embroidered GHG accountability badges.',
+    objectPosition: 'center 25%',
+  },
+  {
+    id: 'item_nfty_arsenal_hoodie',
+    title: 'NFTY LOGS® Arsenal FC Milestone Match Commemorative Hoodie',
+    licenseeId: 'lic_arsenal_fc',
+    partnerName: 'Arsenal FC Merchandise',
+    priceCents: 8000, // £80.00
+    imageUrl: '/images/merch/fa1c261d-9fd9-4cb7-a5c3-a4425c641db7.jpeg',
+    category: 'Special Edition Sports',
+    description: 'Commemorative dark fleece hoodie celebrating the 2025 West Ham derby milestone with embroidered match narrative and official GHG badge.',
+    objectPosition: 'center 25%',
+  },
+  {
+    id: 'item_nfty_puffer_jacket',
+    title: 'NFTY LOGS® Heavyweight Insulated Puffer Jacket',
+    licenseeId: 'lic_ghg_official',
+    partnerName: 'NFTY LOGS® Official Store',
+    priceCents: 9500, // £95.00
+    imageUrl: '/images/merch/5df490db-a560-4754-924d-9a27581f0c23.jpeg',
+    category: 'Premium Winterwear',
+    description: 'High-loft quilted puffer jacket with full-length storm zip, insulated hood, and embroidered NFTY LOGS® Greenhouse Gas accountability mark.',
+    objectPosition: 'center 20%',
+  },
+  {
+    id: 'item_nfty_softshell_vest',
+    title: 'NFTY LOGS® Web3 Provenance Embroidered Softshell Vest',
+    licenseeId: 'lic_ghg_official',
+    partnerName: 'NFTY LOGS® Official Store',
+    priceCents: 5500, // £55.00
+    imageUrl: '/images/merch/ca6c871a-d643-4695-a605-9a357fb26ae3.jpeg',
+    category: 'Official Outerwear',
+    description: 'Sleeveless softshell vest embroidered with direct blockchain collectibles search paths for OpenSea, Rarible, and NFTY LOGS Labs.',
+    objectPosition: 'center 25%',
+  },
+  {
+    id: 'item_nfty_softshell_vest_back',
+    title: 'NFTY LOGS® Disaster Relief Charity Edition Softshell Vest',
+    licenseeId: 'lic_ghg_official',
+    partnerName: 'NFTY LOGS® Official Store',
+    priceCents: 5500, // £55.00
+    imageUrl: '/images/merch/3bf3f794-fcb4-412a-a556-b3289bbebd39.jpeg',
+    category: 'Official Outerwear',
+    description: 'Embroidered with worldwide extreme weather survivor succour donation mandate and "While..." prompt blockchain collectibles statement.',
+    objectPosition: 'center 25%',
+  },
+  {
+    id: 'item_nfty_joggers',
+    title: 'NFTY LOGS® Premium Embroidered Fleece Joggers',
+    licenseeId: 'lic_ghg_official',
+    partnerName: 'NFTY LOGS® Official Store',
+    priceCents: 4500, // £45.00
+    imageUrl: '/images/merch/66e17346-415e-4f20-9c86-3aa5c4587af6.jpeg',
+    category: 'Loungewear & Bottoms',
+    description: 'Organic heavyweight French terry fleece sweatpants with embroidered NFTY LOGS® Vagaries of Greenhouse Gases [GHGs] thigh badge.',
+    objectPosition: 'center 15%',
+  },
+  {
+    id: 'item_nfty_puffer_sleeve',
+    title: 'NFTY LOGS® Arm-Badge Puffer Jacket (Sleeve Detail Edition)',
+    licenseeId: 'lic_ghg_official',
+    partnerName: 'NFTY LOGS® Official Store',
+    priceCents: 9500, // £95.00
+    imageUrl: '/images/merch/82ccfad7-9e7b-4882-990d-f9805bc52a22.jpeg',
+    category: 'Premium Winterwear',
+    description: 'Close-up sleeve edition showcasing the intricate multi-thread embroidery of the official NFTY LOGS® Vagaries of Greenhouse Gases mark.',
+    objectPosition: 'center center',
   },
 ];
 
 export const MerchStorePage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<MerchItem>(MERCH_CATALOG[0]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [lightboxImage, setLightboxImage] = useState<MerchItem | null>(null);
   const [optInMark, setOptInMark] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<any | null>(null);
+
+  const categories = ['All', ...Array.from(new Set(MERCH_CATALOG.map((i) => i.category)))];
+  const filteredItems = selectedCategory === 'All'
+    ? MERCH_CATALOG
+    : MERCH_CATALOG.filter((i) => i.category === selectedCategory);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,95 +156,257 @@ export const MerchStorePage: React.FC = () => {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Official GHG Logo Drop Company Merchandise</h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-          Purchase official internal company caps, sweatshirts, hoodies, and eco gear printed with our verified GHG Accountability Mark.
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
+      
+      {/* Header */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            backgroundColor: 'var(--accent-light)',
+            border: '1px solid rgba(2, 132, 199, 0.25)',
+            padding: '0.4rem 0.9rem',
+            borderRadius: 'var(--radius-pill)',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: 'var(--color-sky)',
+            letterSpacing: '0.04em',
+            marginBottom: '1rem',
+          }}
+        >
+          <span className="radar-pulse" />
+          <span>VERIFIED MILESTONE KEEPSAKE STUDIO & ECO APPAREL</span>
+        </div>
+
+        <h1 style={{ fontSize: 'clamp(1.85rem, 3.8vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.75rem 0', letterSpacing: '-0.03em' }}>
+          Custom Keepsake Studio & Official Merch
+        </h1>
+        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '750px', margin: 0 }}>
+          Authentic heavyweight organic apparel embroidered with verified GHG accountability marks, embedded ISO 14067 LCA carbon tags, and automated 15% ESG charitable routing.
         </p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      <div className="responsive-grid-2-1">
-        {/* Left Column: Catalog Grid */}
-        <div>
-          <div className="merch-grid">
-            {MERCH_CATALOG.map((item) => (
-              <div
-                key={item.id}
-                className="merch-card"
+      {error && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem', fontWeight: 600 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Category Filter Pills */}
+      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setSelectedCategory(cat)}
+            style={{
+              padding: '0.5rem 1.15rem',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: selectedCategory === cat ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
+              backgroundColor: selectedCategory === cat ? 'var(--accent-light)' : 'var(--bg-card)',
+              color: selectedCategory === cat ? 'var(--color-sky)' : 'var(--text-muted)',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Full Photo Lightbox Modal */}
+      {lightboxImage && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+          }}
+          onClick={() => setLightboxImage(null)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '720px',
+              width: '100%',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '16px',
+              border: '1px solid var(--border-light)',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ position: 'relative', height: '480px', backgroundColor: '#020617' }}>
+              <img
+                src={lightboxImage.imageUrl}
+                alt={lightboxImage.title}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+              <button
+                type="button"
+                onClick={() => setLightboxImage(null)}
                 style={{
-                  borderColor: selectedItem.id === item.id ? 'var(--accent-primary)' : 'var(--border-light)',
-                  boxShadow: selectedItem.id === item.id ? '0 0 0 2px var(--accent-primary)' : 'none',
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  background: 'rgba(15, 23, 42, 0.8)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '50%',
+                  width: '36px',
+                  height: '36px',
+                  fontSize: '1.1rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                <div className="merch-image-placeholder">
-                  <img src={item.imageUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: '8px',
-                      left: '8px',
-                      background: 'rgba(15, 23, 42, 0.85)',
-                      backdropFilter: 'blur(4px)',
-                      color: '#ffffff',
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Printed GHG Logo Mark
-                  </div>
+                ✕
+              </button>
+            </div>
+            <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-card)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-sky)', fontWeight: 800, textTransform: 'uppercase' }}>
+                {lightboxImage.category}
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.25rem 0' }}>{lightboxImage.title}</h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>{lightboxImage.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main 2-Column Store Layout: Left Products (2fr) | Right Checkout Sidebar (1.2fr) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1.15fr)', gap: '2.5rem', alignItems: 'start' }}>
+        
+        {/* Left Column: Product Cards Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+          {filteredItems.map((item) => (
+            <div
+              key={item.id}
+              className="persefoni-card"
+              style={{
+                border: selectedItem.id === item.id ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div
+                style={{ position: 'relative', height: '240px', backgroundColor: 'var(--bg-subtle)', cursor: 'pointer', overflow: 'hidden' }}
+                onClick={() => setLightboxImage(item)}
+                title="Click to zoom image"
+              >
+                <img
+                  src={item.imageUrl}
+                  alt={item.title}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: item.objectPosition || 'center center',
+                    transition: 'transform 0.3s ease',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '8px',
+                    left: '8px',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    backdropFilter: 'blur(4px)',
+                    color: '#ffffff',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  Embroidered Mark
                 </div>
-
-                <div style={{ padding: '1rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
-                    {item.category}
-                  </div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0.25rem 0 0.25rem 0' }}>{item.title}</h3>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.4 }}>
-                    {item.description}
-                  </p>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>£{(item.priceCents / 100).toFixed(2)}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedItem(item);
-                        setSuccessResult(null);
-                      }}
-                      className={selectedItem.id === item.id ? 'btn btn-primary' : 'btn btn-secondary'}
-                      style={{ padding: '0.375rem 0.75rem', fontSize: '0.8125rem' }}
-                    >
-                      {selectedItem.id === item.id ? 'Selected' : 'Select Item'}
-                    </button>
-                  </div>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: 'rgba(15, 23, 42, 0.75)',
+                    color: '#94a3b8',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '0.7rem',
+                  }}
+                >
+                  🔍 Zoom
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    {item.category}
+                  </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.35rem 0' }}>{item.title}</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.45 }}>
+                    {item.description}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '0.85rem' }}>
+                  <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+                    £{(item.priceCents / 100).toFixed(2)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setSuccessResult(null);
+                    }}
+                    className={selectedItem.id === item.id ? 'btn btn-primary' : 'btn btn-secondary'}
+                    style={{ padding: '0.45rem 1rem', fontSize: '0.8rem', minHeight: '38px' }}
+                  >
+                    {selectedItem.id === item.id ? 'Selected ✓' : 'Select Item'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Right Column: Checkout Panel */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Order Summary & Stripe Payment</h2>
-            <p className="card-subtitle">Complete purchase for selected company merch</p>
+        <div className="persefoni-card" style={{ padding: '1.75rem', position: 'sticky', top: '100px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
+              Order & ESG Routing
+            </h2>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+              Complete purchase with automated 15% charity split
+            </p>
           </div>
 
           {successResult ? (
             <div>
-              <div className="alert alert-success" style={{ marginBottom: '1.25rem' }}>
-                <div style={{ fontWeight: 700 }}>Order Placed & Payment Settled!</div>
-                <div style={{ fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-                  Transaction ID: <code>{successResult.transactionId}</code>
+              <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
+                <div style={{ fontWeight: 800, color: 'var(--color-green-dark)', fontSize: '1rem' }}>Order Placed & Payment Settled!</div>
+                <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', fontFamily: 'var(--font-mono)' }}>
+                  Transaction: <code>{successResult.transactionId}</code>
                 </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.875rem' }}>Status:</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Status:</span>
                 <StatusBadge status="SETTLED" />
               </div>
 
@@ -203,39 +432,41 @@ export const MerchStorePage: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleCheckout}>
-              <div style={{ padding: '0.875rem', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
-                <div style={{ fontWeight: 700 }}>{selectedItem.title}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{selectedItem.partnerName}</div>
-                <div style={{ fontSize: '1.125rem', fontWeight: 700, marginTop: '0.25rem' }}>
+              <div style={{ padding: '1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
+                <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>{selectedItem.title}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{selectedItem.partnerName}</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-sky)', marginTop: '0.5rem', fontFamily: 'var(--font-mono)' }}>
                   £{(selectedItem.priceCents / 100).toFixed(2)}
                 </div>
               </div>
 
-              <div className="form-group" style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #99f6e4', padding: '0.875rem', borderRadius: 'var(--radius-sm)' }}>
-                <label style={{ display: 'flex', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem' }}>
+              <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', padding: '1rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
+                <label style={{ display: 'flex', gap: '0.65rem', cursor: 'pointer', fontSize: '0.8rem' }}>
                   <input
                     type="checkbox"
                     checked={optInMark}
                     onChange={(e) => setOptInMark(e.target.checked)}
-                    style={{ marginTop: '0.1rem' }}
+                    style={{ marginTop: '0.15rem', accentColor: 'var(--color-green)' }}
                   />
                   <div>
-                    <div style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>Includes Printed GHG Logo Mark</div>
-                    <div style={{ color: 'var(--text-main)', marginTop: '0.15rem' }}>
-                      15% of purchase price is automatically routed to verified environmental charity partners.
+                    <div style={{ fontWeight: 800, color: 'var(--color-green-dark)' }}>Verified GHG Accountability Mark</div>
+                    <div style={{ color: 'var(--text-main)', marginTop: '0.2rem', lineHeight: 1.4 }}>
+                      Exact 15% of purchase is automatically routed to verified local environmental restoration funds.
                     </div>
                   </div>
                 </label>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Payment Information (Stripe Test Mode)</label>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                  Payment Method (Stripe Test Mode)
+                </label>
                 <input
                   type="text"
                   readOnly
                   value="•••• •••• •••• 4242  |  Exp: 12/34  |  CVC: 123"
                   className="form-input"
-                  style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)' }}
+                  style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}
                 />
               </div>
 
@@ -243,14 +474,16 @@ export const MerchStorePage: React.FC = () => {
                 type="submit"
                 disabled={loading || !optInMark}
                 className="btn btn-primary"
-                style={{ width: '100%', padding: '0.75rem' }}
+                style={{ width: '100%' }}
               >
-                {loading ? 'Processing...' : `Pay £${(selectedItem.priceCents / 100).toFixed(2)}`}
+                {loading ? 'Processing...' : `Pay £${(selectedItem.priceCents / 100).toFixed(2)} →`}
               </button>
             </form>
           )}
         </div>
+
       </div>
+
     </div>
   );
 };

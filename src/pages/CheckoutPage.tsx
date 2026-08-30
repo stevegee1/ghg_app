@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 import { StatusBadge } from '../components/StatusBadge';
@@ -9,7 +9,6 @@ export const CheckoutPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<any | null>(null);
   
-  // Client-side in-memory session reference ID
   const [referenceId] = useState<string>(() => `ref_${crypto.randomUUID()}`);
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -23,7 +22,6 @@ export const CheckoutPage: React.FC = () => {
     setError(null);
 
     try {
-      // Call POST /api/checkout
       const result = await api.checkout({
         licenseeId: 'lic_arsenal_fc',
         grossAmountCents: 2500, // £25.00
@@ -39,33 +37,60 @@ export const CheckoutPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-      <div className="card">
-        <div className="card-header">
-          <h1 className="card-title">Arsenal FC Official Matchday Kit</h1>
-          <p className="card-subtitle">Verified Trademark Licensing & Environmental Royalty Checkout</p>
+    <div style={{ maxWidth: '640px', margin: '2rem auto', padding: '0 1rem' }}>
+      
+      <div className="persefoni-card" style={{ padding: 'clamp(1.75rem, 4vw, 2.75rem)' }}>
+        
+        {/* Header */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              backgroundColor: 'var(--accent-light)',
+              padding: '0.35rem 0.85rem',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              color: 'var(--color-sky)',
+              letterSpacing: '0.05em',
+              marginBottom: '0.75rem',
+            }}
+          >
+            <span className="radar-pulse" />
+            <span>CONSUMER CHECKOUT WIDGET</span>
+          </div>
+
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0' }}>
+            Arsenal FC Official Matchday Kit
+          </h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
+            Verified Trademark Licensing & Environmental Royalty Checkout
+          </p>
         </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && (
+          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.85rem 1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
+            {error}
+          </div>
+        )}
 
         {successResult ? (
           <div>
-            <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
-              <strong>Payment & Royalty Licensing Complete!</strong>
-              <div style={{ fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-                Transaction ID: <code style={{ fontWeight: 600 }}>{successResult.transactionId}</code>
+            <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.5rem' }}>
+              <div style={{ fontWeight: 800, color: 'var(--color-green-dark)', fontSize: '1rem' }}>Payment & Royalty Licensing Complete!</div>
+              <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', fontFamily: 'var(--font-mono)' }}>
+                Transaction ID: <strong>{successResult.transactionId}</strong>
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Settlement Status:</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Status:</span>
               <StatusBadge status="SETTLED" />
             </div>
 
-            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1rem', marginTop: '1rem' }}>
-              <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                Royalty & Charity Split Breakdown
-              </h3>
+            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem', marginTop: '1.25rem' }}>
               <FinancialSplitBar
                 grossAmountCents={successResult.grossAmountCents}
                 licensorRoyaltyCents={successResult.licensorRoyaltyCents}
@@ -74,72 +99,70 @@ export const CheckoutPage: React.FC = () => {
             </div>
 
             <button
-              onClick={() => {
-                setSuccessResult(null);
-                setError(null);
-              }}
+              onClick={() => setSuccessResult(null)}
               className="btn btn-secondary"
               style={{ width: '100%', marginTop: '1.5rem' }}
             >
-              Start New Test Checkout
+              Start New Checkout Demo
             </button>
           </div>
         ) : (
           <form onSubmit={handleCheckout}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem' }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>2026 Season Home Jersey</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Quantity: 1 | Licensee: Arsenal FC (lic_arsenal_fc)</div>
+            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', marginBottom: '1.5rem', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)' }}>Arsenal FC 2026 Derby Kit</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Standard Consumer Checkout</div>
+                </div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
+                  £25.00
+                </div>
               </div>
-              <div style={{ fontWeight: 700, fontSize: '1.125rem' }}>£25.00</div>
             </div>
 
-            <div className="form-group" style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #99f6e4', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+            <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'flex', gap: '0.65rem', cursor: 'pointer', fontSize: '0.8rem' }}>
                 <input
                   type="checkbox"
                   checked={optIn}
                   onChange={(e) => setOptIn(e.target.checked)}
-                  style={{ marginTop: '0.2rem', width: '16px', height: '16px' }}
+                  style={{ marginTop: '0.15rem', accentColor: 'var(--color-green)' }}
                 />
                 <div>
-                  <div style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>
-                    Add the GHG Accountability Logo Drop (+£0.00)
-                  </div>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-main)', marginTop: '0.25rem' }}>
-                    Opt in to license the official verified logo drop mark. 15% of licensing royalties are automatically allocated to verified environmental charity partners.
+                  <div style={{ fontWeight: 800, color: 'var(--color-green-dark)' }}>Apply Printed GHG Accountability Mark</div>
+                  <div style={{ color: 'var(--text-main)', marginTop: '0.2rem', lineHeight: 1.4 }}>
+                    15% (£3.75) of this purchase will be automatically routed to verified climate action and tree planting funds.
                   </div>
                 </div>
               </label>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Payment Information</label>
-              <div style={{ padding: '0.75rem', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-card)' }}>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                  Stripe Test Mode (Card: 4242 4242 4242 4242)
-                </div>
-                <input
-                  type="text"
-                  readOnly
-                  value="•••• •••• •••• 4242  |  Exp: 12/34  |  CVC: 123"
-                  className="form-input"
-                  style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)' }}
-                />
-              </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.35rem' }}>
+                Payment Method (Stripe Test Mode)
+              </label>
+              <input
+                type="text"
+                readOnly
+                value="•••• •••• •••• 4242  |  Exp: 12/34  |  CVC: 123"
+                className="form-input"
+                style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}
+              />
             </div>
 
             <button
               type="submit"
               disabled={loading || !optIn}
               className="btn btn-primary"
-              style={{ width: '100%', padding: '0.875rem' }}
+              style={{ width: '100%' }}
             >
-              {loading ? 'Processing Transaction...' : 'Pay £25.00 & Apply Logo Drop'}
+              {loading ? 'Authorizing Payment...' : 'Pay £25.00 & Mint Digital Provenance →'}
             </button>
           </form>
         )}
+
       </div>
+
     </div>
   );
 };
