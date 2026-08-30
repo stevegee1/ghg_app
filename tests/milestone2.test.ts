@@ -2,7 +2,7 @@ import request from 'supertest';
 import Stripe from 'stripe';
 import { PrismaClient, TransactionStatus, VerificationSource, Vertical, DeliveryType } from '@prisma/client';
 import { CheckoutService } from '../src/services/checkout.service';
-import { createApp } from '../src/app';
+import { createApp } from '../src/expressApp';
 import { runReconciliation } from '../src/jobs/reconcile.job';
 import * as complianceService from '../src/services/compliance.service';
 import { seed } from '../prisma/seed';

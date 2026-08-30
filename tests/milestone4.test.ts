@@ -2,7 +2,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import zlib from 'zlib';
 import { PrismaClient } from '@prisma/client';
-import { createApp } from '../src/app';
+import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { getCertificateAggregateData } from '../src/services/certificate.service';
 import { runWithRls } from '../src/db/rls';

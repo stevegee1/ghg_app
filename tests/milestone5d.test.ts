@@ -4,7 +4,7 @@ import { PrismaClient, VerificationSource, DeliveryType } from '@prisma/client';
 import { CheckoutService } from '../src/services/checkout.service';
 import { TransactionService } from '../src/services/transaction.service';
 import { generateCertificatePdf, getCertificateAggregateData } from '../src/services/certificate.service';
-import { createApp } from '../src/app';
+import { createApp } from '../src/expressApp';
 import { seed } from '../prisma/seed';
 
 const prisma = new PrismaClient();

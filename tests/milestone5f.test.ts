@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { PrismaClient, PeriodType, ReportSource } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import { createApp } from '../src/app';
+import { createApp } from '../src/expressApp';
 import { seed } from '../prisma/seed';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
@@ -30,10 +30,10 @@ describe('Milestone 5f: Job Creation Reporting & Licensing Tests', () => {
     publicLicensee = licensees[0];
     privateLicensee = licensees[1];
 
-    // Ensure publicLicensee is publicly visible and privateLicensee is not
+    const keyHash = await bcrypt.hash(rawApiKey, 10);
     await prisma.licensee.update({
       where: { id: publicLicensee.id },
-      data: { isPubliclyVisible: true },
+      data: { isPubliclyVisible: true, b2bApiKeyHash: keyHash },
     });
     await prisma.licensee.update({
       where: { id: privateLicensee.id },

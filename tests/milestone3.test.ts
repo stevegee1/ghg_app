@@ -1,7 +1,7 @@
 import request from 'supertest';
 import Stripe from 'stripe';
 import { PrismaClient, VerificationSource } from '@prisma/client';
-import { createApp } from '../src/app';
+import { createApp } from '../src/expressApp';
 import { CheckoutService } from '../src/services/checkout.service';
 import { seed } from '../prisma/seed';
 

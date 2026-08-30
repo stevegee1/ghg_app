@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, CharityStatus } from '@prisma/client';
 import { CheckoutService } from '../src/services/checkout.service';
 import { computeCharityAllocations, getOrComputeDefaultCharityAllocations } from '../src/services/charity-allocation.service';
-import { createApp } from '../src/app';
+import { createApp } from '../src/expressApp';
 import { runReconciliation } from '../src/jobs/reconcile.job';
 import { seed } from '../prisma/seed';
 

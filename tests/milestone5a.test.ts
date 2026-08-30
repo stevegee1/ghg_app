@@ -1,17 +1,53 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import Stripe from 'stripe';
 import { PrismaClient, DeliveryType, FulfillmentStatus, VerificationSource, TransactionStatus } from '@prisma/client';
-import { createApp } from '../src/app';
+import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { seed } from '../prisma/seed';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
-const app = createApp();
+
+function createMockStripe() {
+  const mockPaymentIntentsCreate = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      id: 'pi_b2b_mock',
+      client_secret: 'pi_b2b_mock_secret',
+    })
+  );
+  const mockPaymentIntentsRetrieve = jest.fn();
+
+  const mockStripe = {
+    paymentIntents: {
+      create: mockPaymentIntentsCreate,
+      retrieve: mockPaymentIntentsRetrieve,
+    },
+    webhooks: {
+      constructEvent: jest.fn(),
+    },
+  } as unknown as Stripe;
+
+  return {
+    stripe: mockStripe,
+    mockPaymentIntentsCreate,
+    mockPaymentIntentsRetrieve,
+  };
+}
+
+const { stripe, mockPaymentIntentsCreate } = createMockStripe();
+const app = createApp(stripe);
 
 describe('Milestone 5a: B2B Trigger Integration & Quantity Pricing Tests', () => {
   beforeAll(async () => {
     await seed();
+  });
+
+  beforeEach(() => {
+    mockPaymentIntentsCreate.mockResolvedValue({
+      id: 'pi_b2b_mock',
+      client_secret: 'pi_b2b_mock_secret',
+    });
   });
 
   afterAll(async () => {
@@ -217,7 +253,7 @@ describe('Milestone 5a: B2B Trigger Integration & Quantity Pricing Tests', () =>
       .post('/api/checkout')
       .send({
         licenseeId: 'lic_itm_power',
-        checkoutReferenceId: 'm3_consumer_optin_deliv_test_1',
+        checkoutReferenceId: `m3_consumer_optin_deliv_test_${Date.now()}`,
         grossAmountCents: 5000,
         currency: 'GBP',
       });
