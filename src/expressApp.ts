@@ -9,6 +9,12 @@ import { createPortalRouter } from './routes/portal.route';
 import { createTransparencyRouter } from './routes/transparency.route';
 import { createB2bTriggerRouter } from './routes/b2b-trigger.route';
 import { createAdminSplitConfigRouter } from './routes/admin-split-config.route';
+import { createIsoTelemetryRouter } from './routes/iso-telemetry.route';
+import { createIsoAuditRouter } from './routes/iso-audit.route';
+import { createCustomKeepsakeRouter } from './routes/custom-keepsake.route';
+import { createIsoEvidenceRouter } from './routes/iso-evidence.route';
+import { createIsoLegalRouter } from './routes/iso-legal.route';
+import { createJobReportingRouter } from './routes/job-reporting.route';
 import { CheckoutService } from './services/checkout.service';
 
 export function createApp(stripeInstance?: Stripe): Express {
@@ -49,6 +55,12 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createPortalRouter(prisma));
   app.use(createTransparencyRouter(prisma));
   app.use(createAdminSplitConfigRouter(prisma));
+  app.use(createIsoTelemetryRouter(prisma));
+  app.use(createIsoAuditRouter(prisma));
+  app.use(createCustomKeepsakeRouter(prisma, checkoutService));
+  app.use(createIsoEvidenceRouter(prisma));
+  app.use(createIsoLegalRouter(prisma));
+  app.use(createJobReportingRouter(prisma));
 
   // SPA Wildcard fallback — serve index.html for all non-API routes
   app.get('*', (req, res) => {

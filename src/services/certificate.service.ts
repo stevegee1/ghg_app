@@ -102,9 +102,9 @@ export async function generateCertificatePdf(data: CertificateAggregateData): Pr
     const doc = new PDFDocument({ margin: 50, compress: false });
     const buffers: Buffer[] = [];
 
-    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('data', (chunk: any) => buffers.push(chunk));
     doc.on('end', () => resolve(Buffer.concat(buffers)));
-    doc.on('error', (err) => reject(err));
+    doc.on('error', (err: any) => reject(err));
 
     // Document Header
     doc.fontSize(20).text('GHG Logo Drop — Compliance Certificate', { align: 'center' });

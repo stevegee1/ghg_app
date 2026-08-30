@@ -72,6 +72,8 @@ export function createTransparencyRouter(prisma: PrismaClient): Router {
         totalSettledTransactions,
         totalCharityGiftCents,
         charityPercentage: 15,
+        dataDisclaimer:
+          'Figures reflect settled licensing transactions and charitable routing only. Partner environmental claims are not independently verified by this platform.',
         publicPartners,
       });
     } catch (err: any) {

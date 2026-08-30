@@ -1,4 +1,4 @@
-import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType } from '@prisma/client';
+import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, FulfillmentStatus } from '@prisma/client';
 import Stripe from 'stripe';
 import { TransactionService } from './transaction.service';
 import { resolveActiveSplitConfig } from './split-config.service';
@@ -13,6 +13,7 @@ export interface InitiateCheckoutInput {
     verificationSource: VerificationSource;
     attestationNote?: string;
     deliveryType: DeliveryType;
+    fulfillmentStatus?: FulfillmentStatus | null;
     weatherCondition?: string;
     eventType?: string;
     policyMilestoneRef?: string;
