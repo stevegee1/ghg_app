@@ -119,6 +119,31 @@ export const api = {
     }
   },
 
+  async register(params: { firstName: string; lastName: string; email: string; password: string; companyName: string }) {
+    if (USE_MOCK_ENV) {
+      isUsingMockData = true;
+      return mockApi.register(params);
+    }
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Account registration failed' }));
+        throw new Error(err.error || 'Registration failed');
+      }
+      isUsingMockData = false;
+      return res.json();
+    } catch (e: any) {
+      if (e.message && !e.message.includes('fetch')) throw e;
+      console.warn('[API Client] Backend unreachable for register, using mock API', e);
+      isUsingMockData = true;
+      return mockApi.register(params);
+    }
+  },
+
   async login(email: string, password: string) {
     if (USE_MOCK_ENV) {
       isUsingMockData = true;
@@ -305,6 +330,34 @@ export const api = {
       console.warn('[API Client] Backend unreachable, using mock submitPortalJobReport', e);
       isUsingMockData = true;
       return mockApi.submitPortalJobReport(data);
+    }
+  },
+
+  async assessJobCompliance(params: {
+    projectValueGbp?: number;
+    totalWorkers: number;
+    localWorkers: number;
+    apprenticeCount: number;
+    livingWageCompliant: boolean;
+    trainingHours?: number;
+  }) {
+    if (USE_MOCK_ENV) {
+      isUsingMockData = true;
+      return mockApi.assessJobCompliance(params);
+    }
+    try {
+      const res = await fetch('/api/jobs/assess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error('Assessment calculation failed');
+      isUsingMockData = false;
+      return res.json();
+    } catch (e) {
+      console.warn('[API Client] Backend unreachable, using mock assessJobCompliance', e);
+      isUsingMockData = true;
+      return mockApi.assessJobCompliance(params);
     }
   },
 };

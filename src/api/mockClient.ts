@@ -362,6 +362,23 @@ export const mockApi = {
     return found || mockSouvenirOrders[0];
   },
 
+  async register(params: { firstName: string; lastName: string; email: string; password: string; companyName: string }) {
+    await new Promise((r) => setTimeout(r, 400));
+    const licenseeId = `lic_${params.companyName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString(36)}`;
+    return {
+      token: `mock_jwt_token_${licenseeId}`,
+      user: {
+        id: `usr_${Date.now().toString(36)}`,
+        email: params.email.toLowerCase(),
+        role: 'PARTNER',
+        licenseeId,
+        firstName: params.firstName,
+        lastName: params.lastName,
+        companyName: params.companyName,
+      },
+    };
+  },
+
   async login(email: string, password: string) {
     await new Promise((r) => setTimeout(r, 300));
     if (email === 'admin@ghglogodrop.com' && (password === 'SecurePassword123!' || password === 'AdminPass123!')) {
@@ -374,6 +391,13 @@ export const mockApi = {
       return {
         token: 'mock_jwt_token_partner_itm',
         user: { id: 'usr_partner_001', email, role: 'PARTNER', licenseeId: 'lic_itm_power' },
+      };
+    }
+    // Accept newly registered mock accounts
+    if (email && password && password.length >= 8) {
+      return {
+        token: `mock_jwt_token_${Date.now().toString(36)}`,
+        user: { id: `usr_${Date.now().toString(36)}`, email, role: 'PARTNER', licenseeId: 'lic_enterprise' },
       };
     }
     throw new Error('Invalid email or password');
@@ -489,6 +513,57 @@ export const mockApi = {
     };
     mockJobReports.unshift(newReport);
     return newReport;
+  },
+
+  async assessJobCompliance(params: {
+    projectValueGbp?: number;
+    totalWorkers: number;
+    localWorkers: number;
+    apprenticeCount: number;
+    livingWageCompliant: boolean;
+    trainingHours?: number;
+  }) {
+    await new Promise((r) => setTimeout(r, 200));
+    const total = params.totalWorkers || 1;
+    const localRatio = (params.localWorkers / total) * 100;
+    const apprenticeRatio = (params.apprenticeCount / total) * 100;
+    let score = 0;
+    const notes: string[] = [];
+
+    if (localRatio >= 25) {
+      score += 40;
+      notes.push(`Local resident employment (${localRatio.toFixed(1)}%) exceeds 20% Section 106 threshold.`);
+    } else if (localRatio >= 15) {
+      score += 25;
+      notes.push(`Local employment ratio (${localRatio.toFixed(1)}%) requires minor improvement.`);
+    } else {
+      score += 10;
+      notes.push(`Local labor deficit: ${localRatio.toFixed(1)}% is below statutory planning covenant.`);
+    }
+
+    if (apprenticeRatio >= 5) {
+      score += 30;
+      notes.push(`Apprentice density (${apprenticeRatio.toFixed(1)}%) conforms with City & Guilds standard.`);
+    } else {
+      score += 10;
+      notes.push(`Apprentice quota deficit.`);
+    }
+
+    if (params.livingWageCompliant) score += 20;
+    if ((params.trainingHours || 0) >= 1000) score += 10;
+
+    const grade = score >= 85 ? 'CONFORMANT_GRADE_A' : score >= 65 ? 'ACTION_REQUIRED' : 'CRITICAL_DEFICIT';
+
+    return {
+      score,
+      grade,
+      localLaborRatio: parseFloat(localRatio.toFixed(1)),
+      apprenticeRatio: parseFloat(apprenticeRatio.toFixed(1)),
+      livingWageCompliant: params.livingWageCompliant,
+      provisionalSealHash: '7f9a8b1c4e2d3f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a',
+      notes,
+      isAuditReady: score >= 80,
+    };
   },
 };
 

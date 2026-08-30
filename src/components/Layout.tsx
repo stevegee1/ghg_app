@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { isUsingMockData } from '../api/client';
 import { Footer } from './Footer';
 
 export const Layout: React.FC = () => {
@@ -16,20 +15,24 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="app-container">
-
-      {isUsingMockData && (
-        <div className="demo-banner">
-          <span>DEMO DATA MODE ACTIVE — Mock client active for presentation preview.</span>
-        </div>
-      )}
-
       <header className="navbar">
         <div className="navbar-inner">
-          <Link to="/" className="brand" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-            <img src="/images/nfty-logs-logo.png" alt="NFTY LOGS Official Logo" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+          
+          {/* 1. Left Brand Identity */}
+          <Link
+            to="/"
+            className="brand"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <img
+              src="/images/nfty-logs-logo.png"
+              alt="GHGEmissionLogs Official Logo"
+              style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+            />
             <span>GHGEmissionLogs</span>
           </Link>
 
+          {/* Mobile Menu Toggle Button */}
           <button
             className="mobile-menu-toggle"
             aria-label="Toggle navigation menu"
@@ -39,6 +42,7 @@ export const Layout: React.FC = () => {
             {mobileMenuOpen ? 'CLOSE' : 'MENU'}
           </button>
 
+          {/* 2. Center Nav Menu (Clean Google B2B Architecture) */}
           <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <ul className="nav-links">
               <li>
@@ -46,7 +50,15 @@ export const Layout: React.FC = () => {
                   to="/licensing"
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
-                  Annual Licensing
+                  Assurance Suite
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/job-reporting"
+                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                >
+                  Workforce & Jobs
                 </NavLink>
               </li>
               <li>
@@ -54,23 +66,7 @@ export const Layout: React.FC = () => {
                   to="/souvenirs"
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
-                  Event Souvenirs
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/public-tracker"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                >
-                  Dropshipping Tracker
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/merch"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                >
-                  Merch Store
+                  Event Keepsakes
                 </NavLink>
               </li>
               <li>
@@ -78,7 +74,7 @@ export const Layout: React.FC = () => {
                   to="/transparency"
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
-                  Transparency Registry
+                  Transparency
                 </NavLink>
               </li>
               <li>
@@ -86,51 +82,106 @@ export const Layout: React.FC = () => {
                   to="/about"
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
-                  About Us
+                  About
                 </NavLink>
               </li>
-              {isAuthenticated ? (
-                <>
-                  <li>
-                    <NavLink
-                      to="/portal"
-                      className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                    >
-                      Partner Portal
+
+              {/* Mobile Only Auth Links */}
+              <li className="mobile-only-auth">
+                {isAuthenticated ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <NavLink to="/portal" className="nav-link">
+                      Partner Console ({user?.email})
                     </NavLink>
-                  </li>
-                  {isAdmin && (
-                    <li>
-                      <NavLink
-                        to="/admin"
-                        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                      >
+                    {isAdmin && (
+                      <NavLink to="/admin" className="nav-link">
                         Admin Config
                       </NavLink>
-                    </li>
-                  )}
-                  <li className="mobile-user-item">
-                    <div className="user-badge">
-                      <span className="user-email">{user?.email}</span>
-                      <span style={{ fontWeight: 600 }}>({user?.role})</span>
-                      <button onClick={logout} className="btn-logout">
-                        Logout
-                      </button>
-                    </div>
-                  </li>
-                </>
-              ) : (
-                <li>
-                  <NavLink
-                    to="/portal/login"
-                    className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                  >
-                    Portal Login
-                  </NavLink>
-                </li>
-              )}
+                    )}
+                    <button onClick={logout} className="btn btn-secondary" style={{ padding: '0.45rem 1rem', width: 'fit-content' }}>
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                    <Link to="/portal/login" className="nav-link" style={{ alignSelf: 'center' }}>
+                      Portal Login
+                    </Link>
+                    <Link
+                      to="/create-account"
+                      className="btn btn-primary"
+                      style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
+                    >
+                      <span>Sign Up Free</span>
+                      <span>→</span>
+                    </Link>
+                  </div>
+                )}
+              </li>
             </ul>
           </nav>
+
+          {/* 3. Right Action Area (Desktop) */}
+          <div className="navbar-actions-desktop">
+            {isAuthenticated ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <NavLink
+                  to="/portal"
+                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                >
+                  Console
+                </NavLink>
+                {isAdmin && (
+                  <NavLink
+                    to="/admin"
+                    className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  >
+                    Admin
+                  </NavLink>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-subtle)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-light)', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>{user?.email}</span>
+                  <button
+                    onClick={logout}
+                    style={{ background: 'none', border: 'none', color: 'var(--google-red)', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem' }}
+                  >
+                    Exit
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+                <NavLink
+                  to="/portal/login"
+                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                >
+                  Portal Login
+                </NavLink>
+                <Link
+                  to="/create-account"
+                  style={{
+                    backgroundColor: 'var(--color-sky)',
+                    color: '#ffffff',
+                    padding: '0.5rem 1.25rem',
+                    borderRadius: 'var(--radius-pill)',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
+                  }}
+                >
+                  <span>Sign Up Free</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            )}
+          </div>
+
         </div>
       </header>
 
