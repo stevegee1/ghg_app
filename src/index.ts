@@ -18,20 +18,14 @@ async function main() {
     console.log(`- Webhooks handler at POST /webhooks/stripe`);
   });
 
-  // Then check DB — non-fatal so a missing DATABASE_URL doesn't kill the process
+  // Check DB connection on startup
   try {
-    let licenseeCount = await prisma.licensee.count();
-    if (licenseeCount === 0) {
-      console.log('Database empty on startup — running initial seed...');
-      const { seed } = await import('../prisma/seed');
-      await seed();
-      licenseeCount = await prisma.licensee.count();
-    }
+    const licenseeCount = await prisma.licensee.count();
     const transactionCount = await prisma.transaction.count();
     console.log(`Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
   } catch (e: any) {
     console.error('⚠️  DB connection failed (check DATABASE_URL):', e?.message ?? e);
-    // Don't exit — API will return 500s for DB-dependent routes until DB is reachable
+    // Don't exit — server remains up to handle health checks and API errors gracefully
   }
 }
 
