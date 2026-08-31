@@ -123,6 +123,9 @@ export const MerchStorePage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [lightboxImage, setLightboxImage] = useState<MerchItem | null>(null);
   const [optInMark, setOptInMark] = useState<boolean>(true);
+  const [cardNumber, setCardNumber] = useState<string>('');
+  const [cardExpiry, setCardExpiry] = useState<string>('');
+  const [cardCvc, setCardCvc] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<any | null>(null);
@@ -132,10 +135,26 @@ export const MerchStorePage: React.FC = () => {
     ? MERCH_CATALOG
     : MERCH_CATALOG.filter((i) => i.category === selectedCategory);
 
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '').substring(0, 16);
+    const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+    setCardNumber(formatted);
+  };
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '').substring(0, 4);
+    const formatted = val.length >= 3 ? `${val.substring(0, 2)}/${val.substring(2)}` : val;
+    setCardExpiry(formatted);
+  };
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!optInMark) {
-      alert('Please check the GHG Accountability Mark opt-in box to proceed.');
+      setError('Please check the GHG Accountability Mark opt-in box to proceed.');
+      return;
+    }
+    if (cardNumber.replace(/\s/g, '').length < 15) {
+      setError('Please enter a valid card number.');
       return;
     }
     setLoading(true);
@@ -458,16 +477,48 @@ export const MerchStorePage: React.FC = () => {
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                  Payment Method (Stripe Test Mode)
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value="•••• •••• •••• 4242  |  Exp: 12/34  |  CVC: 123"
-                  className="form-input"
-                  style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}
-                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    Payment Details
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    🔒 256-Bit SSL Encrypted
+                  </span>
+                </div>
+
+                <div style={{ marginBottom: '0.65rem' }}>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Card number (4242 •••• •••• ••••)"
+                    value={cardNumber}
+                    onChange={handleCardNumberChange}
+                    className="form-input"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  <input
+                    type="text"
+                    required
+                    placeholder="MM / YY"
+                    value={cardExpiry}
+                    onChange={handleExpiryChange}
+                    className="form-input"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  />
+                  <input
+                    type="password"
+                    required
+                    maxLength={4}
+                    placeholder="CVC"
+                    value={cardCvc}
+                    onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
+                    className="form-input"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  />
+                </div>
               </div>
 
               <button

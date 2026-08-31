@@ -261,17 +261,17 @@ export const PartnerLogoDropPage: React.FC = () => {
               {/* Stripe Checkout Card */}
               <div className="card">
                 <div className="card-header" style={{ marginBottom: '0.75rem' }}>
-                  <h2 className="card-title">3. Stripe Licensing Settlement</h2>
-                  <p className="card-subtitle">Pay B2B licensing fee via Stripe test mode</p>
+                  <h2 className="card-title">3. Payment & Licensing Settlement</h2>
+                  <p className="card-subtitle">Encrypted 256-bit SSL transaction settlement via Stripe</p>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: '1rem' }}>
                   <input
                     type="text"
-                    readOnly
-                    value="•••• •••• •••• 4242  |  Exp: 12/34  |  CVC: 123"
+                    required
+                    placeholder="Card number (4242 •••• •••• ••••)"
                     className="form-input"
-                    style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)' }}
+                    style={{ fontFamily: 'var(--font-mono)' }}
                   />
                 </div>
 
