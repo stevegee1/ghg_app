@@ -6,21 +6,20 @@ export const Footer: React.FC = () => {
     <footer style={{ borderTop: '1px solid var(--border-light)', backgroundColor: 'var(--bg-card)', marginTop: 'auto', padding: '4.5rem 1.5rem 2.5rem 1.5rem' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
         
-        {/* Main 2-Column Desktop Grid: Left Brand & Newsletter (1.2fr) | Right 4 Link Columns (2.8fr) */}
+        {/* Main 2-Column Desktop Grid: Left Brand & Mission | Right 4 Link Columns */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '3.5rem', marginBottom: '3.5rem' }}>
           
-          {/* Left Column: Brand, Mission & Social Icons */}
+          {/* Left Column: Brand & Mission */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1rem' }}>
               <img src="/images/nfty-logs-logo.png" alt="Official Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
               <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>GHGEmissionLogs</span>
             </div>
 
-            <p style={{ fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--text-muted)', marginBottom: '1.25rem', maxWidth: '380px' }}>
-              The continuous climate assurance and dual-impact governance engine. Ingesting calibrated OT telemetry, enforcing 15% baseline anomaly locks, and automating exact 15% ESG charitable routing.
+            <p style={{ fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--text-muted)', marginBottom: '1.5rem', maxWidth: '380px' }}>
+              The continuous climate assurance and statutory workforce governance engine. Ingesting calibrated OT telemetry, enforcing 15% baseline anomaly locks, and guaranteeing Section 106 municipal planning audit-readiness.
             </p>
 
-            {/* Social Vector Icons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               {/* TikTok */}
               <a
@@ -106,9 +105,10 @@ export const Footer: React.FC = () => {
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.84rem', lineHeight: 2.2 }}>
                 <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Assurance Engine</Link></li>
-                <li><Link to="/merch" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Keepsake Studio</Link></li>
-                <li><Link to="/souvenirs" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Event Souvenirs</Link></li>
-                <li><Link to="/public-tracker" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Public Tracker</Link></li>
+                <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Workforce & Section 106</Link></li>
+                <li><Link to="/souvenirs" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Event Keepsakes</Link></li>
+                <li><Link to="/merch" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Merch Studio</Link></li>
+                <li><Link to="/public-tracker" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Dropshipping Tracker</Link></li>
               </ul>
             </div>
 
@@ -120,34 +120,77 @@ export const Footer: React.FC = () => {
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.84rem', lineHeight: 2.2 }}>
                 <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Hyperscale Data Centres</Link></li>
                 <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Green Hydrogen & DRI</Link></li>
-                <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Commercial Fleet</Link></li>
-                <li><Link to="/merch" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Merch Store</Link></li>
+                <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Industrial Manufacturing</Link></li>
+                <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Municipal Planning Defense</Link></li>
+                <li><Link to="/souvenirs" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Sports & Event Souvenirs</Link></li>
               </ul>
             </div>
 
-            {/* Column 3: Compliance & Legal */}
+            {/* Column 3: Statutory Compliance (Official Government & Standards Authority Links) */}
             <div>
               <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                Compliance
+                Compliance & Trust
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.84rem', lineHeight: 2.2 }}>
-                <li><Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Nice Class 35 Scope</Link></li>
-                <li><Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>ISO 14065 Readiness</Link></li>
-                <li><Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>UK CMA Code</Link></li>
-                <li><Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Addendum B Contract</Link></li>
+                <li>
+                  <a
+                    href="https://www.wipo.int/classifications/nice/en/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+                  >
+                    WIPO Nice Class 35 ↗
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.iso.org/standard/74257.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+                  >
+                    ISO 14065 Standard ↗
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.gov.uk/government/publications/green-claims-code-making-environmental-claims"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+                  >
+                    UK Gov CMA Code ↗
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.legislation.gov.uk/ukpga/1990/8/section/106"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+                  >
+                    UK S106 Planning Act ↗
+                  </a>
+                </li>
+                <li>
+                  <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+                    Addendum B Contract
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            {/* Column 4: Web3 & Portals */}
+            {/* Column 4: Enterprise Trust & Console (Google B2B Standard) */}
             <div>
               <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                Portals & Web3
+                Trust & Console
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.84rem', lineHeight: 2.2 }}>
-                <li><Link to="/transparency" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Transparency Registry</Link></li>
-                <li><Link to="/portal/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Partner Portal Login</Link></li>
-                <li><a href="https://opensea.io" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>OpenSea Marketplace ↗</a></li>
-                <li><a href="https://rarible.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Rarible Marketplace ↗</a></li>
+                <li><Link to="/transparency" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Transparency Ledger</Link></li>
+                <li><Link to="/portal/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Partner Console Login</Link></li>
+                <li><Link to="/create-account" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Create Free Tenant</Link></li>
+                <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Section 106 Auditor</Link></li>
+                <li><Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Security & Architecture</Link></li>
               </ul>
             </div>
 
