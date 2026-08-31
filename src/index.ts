@@ -20,7 +20,13 @@ async function main() {
 
   // Then check DB — non-fatal so a missing DATABASE_URL doesn't kill the process
   try {
-    const licenseeCount = await prisma.licensee.count();
+    let licenseeCount = await prisma.licensee.count();
+    if (licenseeCount === 0) {
+      console.log('Database empty on startup — running initial seed...');
+      const { seed } = await import('../prisma/seed');
+      await seed();
+      licenseeCount = await prisma.licensee.count();
+    }
     const transactionCount = await prisma.transaction.count();
     console.log(`Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
   } catch (e: any) {
