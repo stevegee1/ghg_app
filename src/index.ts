@@ -18,7 +18,26 @@ async function main() {
     console.log(`- Webhooks handler at POST /webhooks/stripe`);
   });
 
-  // Check DB connection on startup
+  // 1. Apply database migrations to ensure all tables exist in PostgreSQL
+  if (process.env.DATABASE_URL) {
+    try {
+      console.log('🔄 Running database migrations on startup...');
+      const { execSync } = require('child_process');
+      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+      console.log('✅ Database schema and migrations up to date.');
+    } catch (migErr: any) {
+      console.warn('⚠️  Prisma migrate deploy warning (trying db push fallback):', migErr?.message ?? migErr);
+      try {
+        const { execSync } = require('child_process');
+        execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
+        console.log('✅ Database schema pushed successfully.');
+      } catch (pushErr: any) {
+        console.error('❌ Failed to ensure database tables exist:', pushErr?.message ?? pushErr);
+      }
+    }
+  }
+
+  // 2. Check DB connection on startup
   try {
     const licenseeCount = await prisma.licensee.count();
     const transactionCount = await prisma.transaction.count();
