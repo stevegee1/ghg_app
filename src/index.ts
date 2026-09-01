@@ -37,11 +37,44 @@ async function main() {
     }
   }
 
-  // 2. Check DB connection on startup
+  // 2. Ensure statutory platform charities and platform licensee exist in database
   try {
+    const statutoryCharities = [
+      { id: 'charity_green_earth', name: 'Green Earth Foundation', stripeConnectedAccountId: 'acct_charity_green', defaultShareBps: 5000 },
+      { id: 'charity_ocean_clean', name: 'Clean Oceans Trust', stripeConnectedAccountId: 'acct_charity_ocean', defaultShareBps: 3000 },
+      { id: 'charity_youth_sport', name: 'Youth Eco Sports Trust', stripeConnectedAccountId: 'acct_charity_youth_sport', defaultShareBps: 2000 },
+    ];
+
+    for (const c of statutoryCharities) {
+      await prisma.charity.upsert({
+        where: { id: c.id },
+        update: { isActive: true },
+        create: {
+          id: c.id,
+          name: c.name,
+          stripeConnectedAccountId: c.stripeConnectedAccountId,
+          defaultShareBps: c.defaultShareBps,
+          isActive: true,
+        },
+      });
+    }
+
+    await prisma.licensee.upsert({
+      where: { id: 'lic_ghg_official' },
+      update: { stripeConnectedAccountId: 'acct_platform_default_001' },
+      create: {
+        id: 'lic_ghg_official',
+        name: 'NFTY LOGS® Official Store',
+        vertical: 'B2C_SPORTS_MERCH' as any,
+        royaltyBps: 8500,
+        pricePerDropCents: 500,
+        stripeConnectedAccountId: 'acct_platform_default_001',
+      },
+    });
+
     const licenseeCount = await prisma.licensee.count();
     const transactionCount = await prisma.transaction.count();
-    console.log(`Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
+    console.log(`✅ Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
   } catch (e: any) {
     console.error('⚠️  DB connection failed (check DATABASE_URL):', e?.message ?? e);
     // Don't exit — server remains up to handle health checks and API errors gracefully

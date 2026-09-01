@@ -25,10 +25,13 @@ export const api = {
       }
       isUsingMockData = false;
       return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, falling back to mock API', e);
-      isUsingMockData = true;
-      return mockApi.checkout(params);
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+      if (USE_MOCK_ENV) {
+        isUsingMockData = true;
+        return mockApi.checkout(params);
+      }
+      throw e;
     }
   },
 
