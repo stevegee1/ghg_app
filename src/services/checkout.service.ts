@@ -224,4 +224,71 @@ export class CheckoutService {
       throw error;
     }
   }
+
+  /**
+   * Creates a real Stripe Checkout Session for live redirect to https://checkout.stripe.com
+   */
+  async createCheckoutSession(params: {
+    licenseeId: string;
+    itemTitle: string;
+    grossAmountCents: number;
+    currency?: string;
+    successUrl: string;
+    cancelUrl: string;
+  }) {
+    const { licenseeId, itemTitle, grossAmountCents, currency = 'GBP', successUrl, cancelUrl } = params;
+
+    const refId = `stripe_cs_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const checkoutResult = await this.initiateCheckout({
+      licenseeId,
+      checkoutReferenceId: refId,
+      grossAmountCents,
+      currency,
+      triggerEvent: {
+        verificationSource: VerificationSource.CONSUMER_OPT_IN,
+        deliveryType: DeliveryType.DIGITAL,
+      },
+    });
+
+    try {
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: {
+                name: itemTitle,
+                description: 'Authentic NFTY LOGS® merchandise with verified 15% statutory ESG charitable split.',
+              },
+              unit_amount: grossAmountCents,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&tx_id=${checkoutResult.transactionId}`,
+        cancel_url: cancelUrl,
+        metadata: {
+          transactionId: checkoutResult.transactionId,
+          licenseeId,
+        },
+      });
+
+      return {
+        sessionUrl: session.url,
+        sessionId: session.id,
+        transactionId: checkoutResult.transactionId,
+      };
+    } catch (sessionErr: any) {
+      console.error('[STRIPE CHECKOUT SESSION ERROR]', sessionErr);
+      // If Stripe restricted key does not have Checkout Sessions enabled, return transactionId and fallback
+      return {
+        sessionUrl: null,
+        sessionId: null,
+        transactionId: checkoutResult.transactionId,
+        clientSecret: checkoutResult.clientSecret,
+      };
+    }
+  }
 }

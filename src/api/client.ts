@@ -35,6 +35,24 @@ export const api = {
     }
   },
 
+  async createCheckoutSession(params: {
+    licenseeId: string;
+    itemTitle: string;
+    grossAmountCents: number;
+    currency?: string;
+  }) {
+    const res = await fetch('/api/checkout/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to create Stripe checkout session' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
   async b2bTrigger(params: {
     licenseeId: string;
     quantity: number;

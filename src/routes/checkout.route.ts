@@ -47,5 +47,38 @@ export function createCheckoutRouter(checkoutService: CheckoutService): Router {
     }
   });
 
+  /**
+   * POST /api/checkout/session
+   * Generates a direct Stripe Checkout Session URL for real hosted card payments
+   */
+  router.post('/api/checkout/session', async (req: Request, res: Response) => {
+    const { licenseeId, itemTitle, grossAmountCents, currency, successUrl, cancelUrl } = req.body || {};
+
+    if (!licenseeId || !grossAmountCents || typeof grossAmountCents !== 'number') {
+      return res.status(400).json({ error: 'licenseeId and grossAmountCents are required.' });
+    }
+
+    try {
+      const host = req.get('host') || 'localhost:8080';
+      const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const defaultSuccessUrl = `${protocol}://${host}/checkout/success`;
+      const defaultCancelUrl = `${protocol}://${host}/merch`;
+
+      const session = await checkoutService.createCheckoutSession({
+        licenseeId: licenseeId.trim(),
+        itemTitle: itemTitle || 'NFTY LOGS® Climate Apparel',
+        grossAmountCents,
+        currency: currency || 'GBP',
+        successUrl: successUrl || defaultSuccessUrl,
+        cancelUrl: cancelUrl || defaultCancelUrl,
+      });
+
+      return res.status(200).json(session);
+    } catch (err: any) {
+      console.error('[CHECKOUT SESSION ROUTE ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to create Stripe checkout session' });
+    }
+  });
+
   return router;
 }

@@ -147,6 +147,37 @@ export const MerchStorePage: React.FC = () => {
     setCardExpiry(formatted);
   };
 
+  const handleStripeHostedCheckout = async () => {
+    if (!optInMark) {
+      setError('Please check the GHG Accountability Mark opt-in box to proceed.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const session = await api.createCheckoutSession({
+        licenseeId: selectedItem.licenseeId,
+        itemTitle: selectedItem.title,
+        grossAmountCents: selectedItem.priceCents,
+        currency: 'GBP',
+      });
+      if (session?.sessionUrl) {
+        window.location.href = session.sessionUrl;
+      } else {
+        const result = await api.checkout({
+          licenseeId: selectedItem.licenseeId,
+          grossAmountCents: selectedItem.priceCents,
+          checkoutReferenceId: `ref_merch_${Date.now()}`,
+        });
+        setSuccessResult(result);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to initiate Stripe checkout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!optInMark) {
@@ -521,13 +552,47 @@ export const MerchStorePage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Stripe Hosted Checkout (Primary Instant Option) */}
+              <button
+                type="button"
+                onClick={handleStripeHostedCheckout}
+                disabled={loading || !optInMark}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem 1.25rem',
+                  backgroundColor: '#635BFF',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  borderRadius: '10px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '1rem',
+                  transition: 'opacity 0.2s',
+                  boxShadow: '0 4px 12px rgba(99, 91, 255, 0.25)',
+                }}
+              >
+                <span>💳 Pay with Stripe</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>(Cards, Apple Pay, Google Pay)</span>
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1rem 0' }}>
+                <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-light)' }} />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>OR PAY DIRECTLY</span>
+                <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-light)' }} />
+              </div>
+
               <button
                 type="submit"
                 disabled={loading || !optInMark}
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 style={{ width: '100%' }}
               >
-                {loading ? 'Processing...' : `Pay £${(selectedItem.priceCents / 100).toFixed(2)} →`}
+                {loading ? 'Processing...' : `Pay £${(selectedItem.priceCents / 100).toFixed(2)} with Encrypted Card →`}
               </button>
             </form>
           )}
