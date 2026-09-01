@@ -147,18 +147,21 @@ model CharityAllocation {
 }
 
 model PortalUser {
-  id           String               @id @default(cuid())
-  email        String               @unique
-  passwordHash String
-  licenseeId   String?
-  licensee     Licensee?            @relation(fields: [licenseeId], references: [id])
-  role         PortalRole           @default(PARTNER)
-  createdAt    DateTime             @default(now())
+  id                     String               @id @default(cuid())
+  email                  String               @unique
+  passwordHash           String
+  licenseeId             String?
+  licensee               Licensee?            @relation(fields: [licenseeId], references: [id])
+  role                   PortalRole           @default(PARTNER)
+  passwordResetToken     String?              // SHA-256 hash of password reset token
+  passwordResetExpiresAt DateTime?            // Expiration timestamp for reset token
+  createdAt              DateTime             @default(now())
 
   splitConfigs        SplitConfigHistory[]
   submittedJobReports JobCreationReport[]
 
   @@index([licenseeId])
+  @@index([passwordResetToken])
 }
 
 enum PortalRole {

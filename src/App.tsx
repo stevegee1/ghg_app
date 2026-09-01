@@ -17,6 +17,8 @@ import { AboutPage } from './pages/AboutPage';
 import { BlogPage } from './pages/BlogPage';
 import { CertificateViewPage } from './pages/CertificateViewPage';
 import { SignUpPage } from './pages/SignUpPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { JobReportingPage } from './pages/JobReportingPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({
@@ -60,6 +62,11 @@ export const AppRoutes: React.FC = () => {
         <Route path="create-account" element={<SignUpPage />} />
         <Route path="register" element={<SignUpPage />} />
         <Route path="portal/login" element={<LoginPage />} />
+        <Route path="admin/login" element={<LoginPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="portal/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="portal/reset-password" element={<ResetPasswordPage />} />
         
         {/* Protected Partner Assurance Portal & Admin Console */}
         <Route

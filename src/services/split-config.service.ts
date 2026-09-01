@@ -59,8 +59,15 @@ export async function resolveActiveSplitConfig(
     };
   }
 
-  // 3. Neither exists -> Hard error
-  throw new Error(
-    `No active split configuration found for licensee '${trimmedLicenseeId ?? 'null'}' or platform default.`
-  );
+  // 3. Neither exists in DB -> Auto-return statutory platform default (85% royalty / 15% charity)
+  return {
+    configId: 'cfg_platform_statutory_default',
+    licenseeId: null,
+    royaltyBps: 8500,
+    charityAllocationBps: [
+      { charityId: 'charity_green_earth', bps: 750 },
+      { charityId: 'charity_ocean_clean', bps: 450 },
+      { charityId: 'charity_youth_sport', bps: 300 },
+    ],
+  };
 }

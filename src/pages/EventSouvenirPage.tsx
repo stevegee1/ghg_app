@@ -108,9 +108,27 @@ export const EventSouvenirPage: React.FC = () => {
         <h1 style={{ fontSize: 'clamp(1.85rem, 3.8vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.75rem 0', letterSpacing: '-0.03em' }}>
           Custom Event Keepsakes & Souvenir Ordering
         </h1>
-        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '750px', margin: 0 }}>
+        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '750px', margin: '0 0 1.5rem 0' }}>
           Celebrate weddings, birthdays, sports tournaments, and corporate milestones with custom-printed eco souvenirs carrying the verified GHG Accountability Mark and automatic 15% ESG charitable routing.
         </p>
+
+        {/* Quick Switcher between Souvenirs & Merch Store */}
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <Link
+            to="/souvenirs"
+            className="btn btn-primary"
+            style={{ fontSize: '0.85rem', padding: '0.55rem 1.25rem' }}
+          >
+            Custom Event Keepsakes (Active)
+          </Link>
+          <Link
+            to="/merch"
+            className="btn btn-secondary"
+            style={{ fontSize: '0.85rem', padding: '0.55rem 1.25rem', textDecoration: 'none' }}
+          >
+            Official Merchandise & Jackets Studio →
+          </Link>
+        </div>
       </div>
 
       {error && (

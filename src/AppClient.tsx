@@ -12,6 +12,8 @@ import { CertificateViewPage } from './pages/CertificateViewPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { JobReportingPage } from './pages/JobReportingPage';
 import { PortalPage } from './pages/PortalPage';
 import { AdminPage } from './pages/AdminPage';
@@ -64,6 +66,10 @@ export const AppRoutes: React.FC = () => {
         <Route path="portal/register" element={<SignUpPage />} />
         <Route path="portal/login" element={<LoginPage />} />
         <Route path="admin/login" element={<LoginPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="portal/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="portal/reset-password" element={<ResetPasswordPage />} />
         
         <Route
           path="portal"

@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { PrismaClient, PeriodType, ReportSource } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { createApp } from '../src/expressApp';
 import { seed } from '../prisma/seed';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';

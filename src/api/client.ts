@@ -183,6 +183,88 @@ export const api = {
     }
   },
 
+  async forgotPassword(email: string) {
+    if (USE_MOCK_ENV) {
+      isUsingMockData = true;
+      return mockApi.forgotPassword(email);
+    }
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to request password reset' }));
+        throw new Error(err.error || 'Failed to request password reset');
+      }
+      isUsingMockData = false;
+      return res.json();
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+      console.warn('[API Client] Backend unreachable for forgot password, using mock API', e);
+      isUsingMockData = true;
+      return mockApi.forgotPassword(email);
+    }
+  },
+
+  async resetPassword(params: { token: string; email: string; password: string }) {
+    if (USE_MOCK_ENV) {
+      isUsingMockData = true;
+      return mockApi.resetPassword(params);
+    }
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to reset password' }));
+        throw new Error(err.error || 'Failed to reset password');
+      }
+      isUsingMockData = false;
+      return res.json();
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+      console.warn('[API Client] Backend unreachable for reset password, using mock API', e);
+      isUsingMockData = true;
+      return mockApi.resetPassword(params);
+    }
+  },
+
+  async createEventSouvenirOrder(params: {
+    eventName: string;
+    eventType: string;
+    eventDate: string;
+    itemId: string;
+    quantity: number;
+    shippingAddress: string;
+  }) {
+    if (USE_MOCK_ENV) {
+      isUsingMockData = true;
+      return mockApi.createEventSouvenirOrder(params);
+    }
+    try {
+      const res = await fetch('/api/souvenirs/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to place souvenir order' }));
+        throw new Error(err.error || 'Failed to place souvenir order');
+      }
+      isUsingMockData = false;
+      return res.json();
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+      console.warn('[API Client] Backend unreachable for souvenir order, using mock API', e);
+      isUsingMockData = true;
+      return mockApi.createEventSouvenirOrder(params);
+    }
+  },
+
   async getPortalSummary(token: string) {
     if (USE_MOCK_ENV) {
       isUsingMockData = true;

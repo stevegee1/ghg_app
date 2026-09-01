@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { JWT_SECRET } from '../middleware/auth.middleware';
+import { emailService } from '../services/email.service';
 
 export function createAuthRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -165,6 +167,121 @@ export function createAuthRouter(prisma: PrismaClient): Router {
 
   router.post('/api/auth/login', handleLogin);
   router.post('/api/v1/auth/login', handleLogin);
+
+  /**
+   * POST /api/auth/forgot-password
+   * Enterprise Anti-Enumeration Password Reset Request
+   */
+  const handleForgotPassword = async (req: Request, res: Response) => {
+    const { email } = req.body || {};
+
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ error: 'Valid work email address is required' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    try {
+      const user = await prisma.portalUser.findUnique({
+        where: { email: normalizedEmail },
+      });
+
+      if (user) {
+        // Generate secure 32-byte cryptographic token
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+        const expiresAt = new Date(Date.now() + 3600 * 1000); // 1-hour expiration
+
+        await prisma.portalUser.update({
+          where: { id: user.id },
+          data: {
+            passwordResetToken: hashedToken,
+            passwordResetExpiresAt: expiresAt,
+          },
+        });
+
+        // Dispatch via production EmailService (Resend / SendGrid / local fallback)
+        const host = req.get('host') || 'localhost:8080';
+        const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+        const resetUrl = `${protocol}://${host}/portal/reset-password?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
+
+        await emailService.sendPasswordResetEmail({
+          toEmail: normalizedEmail,
+          resetUrl,
+          expiresInHours: 1,
+        });
+      }
+
+      // Always return 200 OK to prevent email enumeration
+      return res.status(200).json({
+        message: 'If an account exists with this email address, password reset instructions have been dispatched.',
+      });
+    } catch (err) {
+      console.error('[FORGOT PASSWORD ERROR]', err);
+      return res.status(500).json({ error: 'An unexpected error occurred while processing your request' });
+    }
+  };
+
+  router.post('/api/auth/forgot-password', handleForgotPassword);
+  router.post('/api/v1/auth/forgot-password', handleForgotPassword);
+
+  /**
+   * POST /api/auth/reset-password
+   * Validates SHA-256 hashed reset token and updates password
+   */
+  const handleResetPassword = async (req: Request, res: Response) => {
+    const { token, email, password } = req.body || {};
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Invalid or missing password reset token' });
+    }
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Valid email address is required' });
+    }
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
+
+    try {
+      const user = await prisma.portalUser.findUnique({
+        where: { email: normalizedEmail },
+      });
+
+      if (
+        !user ||
+        !user.passwordResetToken ||
+        user.passwordResetToken !== hashedToken ||
+        !user.passwordResetExpiresAt ||
+        new Date(user.passwordResetExpiresAt) < new Date()
+      ) {
+        return res.status(400).json({ error: 'The password reset token is invalid or has expired. Please request a new link.' });
+      }
+
+      // Hash new password & clear reset token
+      const newPasswordHash = await bcrypt.hash(password, 10);
+      await prisma.portalUser.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: newPasswordHash,
+          passwordResetToken: null,
+          passwordResetExpiresAt: null,
+        },
+      });
+
+      return res.status(200).json({
+        message: 'Your password has been successfully reset. You may now sign in with your new credentials.',
+      });
+    } catch (err) {
+      console.error('[RESET PASSWORD ERROR]', err);
+      return res.status(500).json({ error: 'An unexpected error occurred while resetting your password' });
+    }
+  };
+
+  router.post('/api/auth/reset-password', handleResetPassword);
+  router.post('/api/v1/auth/reset-password', handleResetPassword);
 
   /**
    * POST /api/auth/logout

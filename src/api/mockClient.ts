@@ -403,6 +403,45 @@ export const mockApi = {
     throw new Error('Invalid email or password');
   },
 
+  async forgotPassword(email: string) {
+    await new Promise((r) => setTimeout(r, 300));
+    return {
+      message: 'If an account exists with this email address, password reset instructions have been dispatched.',
+    };
+  },
+
+  async resetPassword(params: { token: string; email: string; password: string }) {
+    await new Promise((r) => setTimeout(r, 300));
+    if (!params.token || !params.password || params.password.length < 8) {
+      throw new Error('Invalid or expired password reset token');
+    }
+    return {
+      message: 'Your password has been successfully reset. You may now sign in with your new credentials.',
+    };
+  },
+
+  async createEventSouvenirOrder(params: {
+    eventName: string;
+    eventType: string;
+    eventDate: string;
+    itemId: string;
+    quantity: number;
+    shippingAddress: string;
+  }) {
+    await new Promise((r) => setTimeout(r, 400));
+    const txId = `tx_souvenir_${Date.now()}`;
+    return {
+      success: true,
+      orderId: `ord_souvenir_${Date.now().toString(36)}`,
+      transactionId: txId,
+      eventName: params.eventName,
+      quantity: params.quantity,
+      shippingAddress: params.shippingAddress,
+      status: 'CONFIRMED',
+      message: 'Event keepsakes batch registered with 15% statutory ESG charitable split.',
+    };
+  },
+
   async getPortalSummary(licenseeId?: string | null) {
     await new Promise((r) => setTimeout(r, 200));
     const txs = licenseeId

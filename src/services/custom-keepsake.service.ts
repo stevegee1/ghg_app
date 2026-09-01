@@ -1,7 +1,14 @@
 import { PrismaClient, TransactionStatus } from '@prisma/client';
 
 export interface KeepsakePreviewInput {
-  garmentModel: 'HEAVYWEIGHT_HOODIE' | 'STRUCTURED_CAP' | 'SOFTSHELL_VEST' | 'VINTAGE_TEE';
+  garmentModel:
+    | 'INSULATED_PUFFER_JACKET'
+    | 'TECH_FLEECE_JACKET'
+    | 'HEAVYWEIGHT_HOODIE'
+    | 'SOFTSHELL_VEST'
+    | 'FLEECE_JOGGERS'
+    | 'STRUCTURED_CAP'
+    | 'VINTAGE_TEE';
   inscribedText: string;
   threadColor: 'GOLD_METALLIC' | 'STERLING_SILVER' | 'EMERALD_GREEN' | 'PURE_WHITE';
   placement: 'LEFT_CHEST' | 'RIGHT_SLEEVE' | 'BACK_COLLAR';
@@ -34,7 +41,7 @@ export class CustomKeepsakeService {
       threadColor,
       placement,
       quantity = 1,
-      unitPriceCents = 8500, // e.g. £85.00 default for bespoke organic heavyweight hoodie
+      unitPriceCents = 8500, // e.g. £85.00 default
     } = input;
 
     if (!inscribedText || !inscribedText.trim()) {
@@ -50,17 +57,29 @@ export class CustomKeepsakeService {
     let baseLaborHours = 1.5;
 
     switch (garmentModel) {
+      case 'INSULATED_PUFFER_JACKET':
+        baseLcaGrams = 780;
+        baseLaborHours = 3.0;
+        break;
+      case 'TECH_FLEECE_JACKET':
+        baseLcaGrams = 620;
+        baseLaborHours = 2.5;
+        break;
       case 'HEAVYWEIGHT_HOODIE':
         baseLcaGrams = 520;
         baseLaborHours = 2.0;
         break;
-      case 'STRUCTURED_CAP':
-        baseLcaGrams = 210;
-        baseLaborHours = 1.0;
-        break;
       case 'SOFTSHELL_VEST':
         baseLcaGrams = 410;
         baseLaborHours = 1.5;
+        break;
+      case 'FLEECE_JOGGERS':
+        baseLcaGrams = 440;
+        baseLaborHours = 1.6;
+        break;
+      case 'STRUCTURED_CAP':
+        baseLcaGrams = 210;
+        baseLaborHours = 1.0;
         break;
       case 'VINTAGE_TEE':
         baseLcaGrams = 290;

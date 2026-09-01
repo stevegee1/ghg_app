@@ -71,6 +71,14 @@ export const Layout: React.FC = () => {
               </li>
               <li>
                 <NavLink
+                  to="/merch"
+                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                >
+                  Merch Studio
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
                   to="/transparency"
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
