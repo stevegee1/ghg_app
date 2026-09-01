@@ -150,7 +150,7 @@ export const EventSouvenirPage: React.FC = () => {
           </p>
 
           <div style={{ maxWidth: '580px', margin: '0 auto 2rem auto', textAlign: 'left', backgroundColor: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            <div className="form-grid-2col" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
               <div>
                 <span style={{ color: 'var(--text-muted)' }}>Event:</span> <strong>{successOrder.eventName}</strong>
               </div>

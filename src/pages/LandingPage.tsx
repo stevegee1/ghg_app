@@ -196,7 +196,7 @@ export const LandingPage: React.FC = () => {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1.25fr 1fr',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
                   gap: '1rem',
                   marginBottom: '1rem',
                 }}

@@ -172,7 +172,7 @@ export const CheckoutPage: React.FC = () => {
               </div>
 
               {/* Expiry & CVC Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-grid-2col" style={{ gap: '0.75rem' }}>
                 <input
                   type="text"
                   required

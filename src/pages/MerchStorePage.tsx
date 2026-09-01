@@ -338,8 +338,8 @@ export const MerchStorePage: React.FC = () => {
         </div>
       )}
 
-      {/* Main 2-Column Store Layout: Left Products (2fr) | Right Checkout Sidebar (1.2fr) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1.15fr)', gap: '2.5rem', alignItems: 'start' }}>
+      {/* Main Responsive Store Layout */}
+      <div className="store-layout-grid">
         
         {/* Left Column: Product Cards Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>

@@ -85,7 +85,7 @@ export const SignUpPage: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="persefoni-card" style={{ padding: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+        <div className="form-grid-2col" style={{ marginBottom: '1.25rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
               First Name <span style={{ color: 'var(--google-red)' }}>*</span>

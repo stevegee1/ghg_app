@@ -401,6 +401,27 @@ h1, h2, h3, h4, .font-heading {
   gap: 2rem;
 }
 
+/* Store & Product Grids */
+.store-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.15fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.form-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.table-container-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
 @media (max-width: 960px) {
   .hero-layout-grid {
     grid-template-columns: 1fr;
@@ -408,6 +429,11 @@ h1, h2, h3, h4, .font-heading {
   }
 
   .keepsake-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .store-layout-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
@@ -421,6 +447,26 @@ h1, h2, h3, h4, .font-heading {
     grid-template-columns: repeat(2, 1fr);
     text-align: center;
     gap: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid-2col {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .persefoni-card {
+    padding: 1.25rem !important;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .navbar-inner {
+    padding: 0.75rem 1rem;
   }
 }
 
