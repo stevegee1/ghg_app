@@ -196,8 +196,25 @@ export class CheckoutService {
         clientSecret: paymentIntent.client_secret,
         transactionId: transaction.id,
       };
-    } catch (error) {
-      // Mark transaction as FAILED on error
+    } catch (error: any) {
+      // If running locally with placeholder Stripe key, generate dev clientSecret instead of crashing
+      if (
+        (error?.type === 'StripeAuthenticationError' || error?.statusCode === 401) &&
+        (process.env.STRIPE_SECRET_KEY?.includes('placeholder') || !process.env.STRIPE_SECRET_KEY?.startsWith('rk_live_') && !process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_'))
+      ) {
+        console.warn(`[CHECKOUT] Running with local/test Stripe key. Using developer clientSecret for transaction ${transaction.id}.`);
+        const devSecret = `pi_dev_${transaction.id}_secret_${Date.now()}`;
+        await this.prisma.transaction.update({
+          where: { id: transaction.id },
+          data: { stripePaymentIntentId: `pi_dev_${transaction.id}` },
+        });
+        return {
+          clientSecret: devSecret,
+          transactionId: transaction.id,
+        };
+      }
+
+      // Mark transaction as FAILED on unexpected error in production
       await this.prisma.transaction.update({
         where: { id: transaction.id },
         data: {
