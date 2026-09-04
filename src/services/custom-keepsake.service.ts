@@ -1,14 +1,42 @@
 import { PrismaClient, TransactionStatus } from '@prisma/client';
 
+export type GarmentModelType =
+  | 'T_SHIRT'
+  | 'PUFF_JACKET'
+  | 'HOODIE'
+  | 'BACKPACK'
+  | 'SCHOOL_BAG'
+  | 'SOCKS'
+  | 'INSULATED_PUFFER_JACKET'
+  | 'TECH_FLEECE_JACKET'
+  | 'HEAVYWEIGHT_HOODIE'
+  | 'SOFTSHELL_VEST'
+  | 'FLEECE_JOGGERS'
+  | 'STRUCTURED_CAP'
+  | 'VINTAGE_TEE';
+
+export const SUPPLIER_PRICING_SCHEDULE: Record<
+  string,
+  { name: string; baseSupplierCostCents: number; description: string; defaultLcaGrams: number }
+> = {
+  T_SHIRT: { name: 'Organic Cotton T-Shirt', baseSupplierCostCents: 2200, description: '100% GOTS certified organic combed cotton', defaultLcaGrams: 290 },
+  PUFF_JACKET: { name: 'Recycled Down Puffer Jacket', baseSupplierCostCents: 6500, description: 'Post-consumer recycled ripstop with 700 fill down', defaultLcaGrams: 780 },
+  HOODIE: { name: 'Heavyweight Commemorative Hoodie', baseSupplierCostCents: 4200, description: '450gsm cross-grain French terry fleece', defaultLcaGrams: 520 },
+  BACKPACK: { name: 'Industrial Canvas Backpack', baseSupplierCostCents: 3800, description: 'Water-resistant 16oz recycled canvas with laptop divider', defaultLcaGrams: 680 },
+  SCHOOL_BAG: { name: 'Student & Youth School Bag', baseSupplierCostCents: 2800, description: 'Reinforced dual-compartment ergonomic backpack', defaultLcaGrams: 540 },
+  SOCKS: { name: 'Performance Technical Socks', baseSupplierCostCents: 1200, description: 'Merino blend anti-blister archival sports socks', defaultLcaGrams: 120 },
+  // Backward compatibility mappings
+  VINTAGE_TEE: { name: 'Organic Cotton T-Shirt', baseSupplierCostCents: 2200, description: '100% GOTS certified organic combed cotton', defaultLcaGrams: 290 },
+  INSULATED_PUFFER_JACKET: { name: 'Recycled Down Puffer Jacket', baseSupplierCostCents: 6500, description: 'Post-consumer recycled ripstop with 700 fill down', defaultLcaGrams: 780 },
+  HEAVYWEIGHT_HOODIE: { name: 'Heavyweight Commemorative Hoodie', baseSupplierCostCents: 4200, description: '450gsm cross-grain French terry fleece', defaultLcaGrams: 520 },
+  STRUCTURED_CAP: { name: 'Embroidered Structured Cap', baseSupplierCostCents: 1800, description: 'Six-panel twill cap with brass buckle', defaultLcaGrams: 210 },
+  SOFTSHELL_VEST: { name: 'Thermal Softshell Vest', baseSupplierCostCents: 3500, description: 'Windproof technical utility vest', defaultLcaGrams: 410 },
+  TECH_FLEECE_JACKET: { name: 'Technical Fleece Jacket', baseSupplierCostCents: 4800, description: 'Thermal bonded zip jacket', defaultLcaGrams: 620 },
+  FLEECE_JOGGERS: { name: 'Heavyweight Fleece Joggers', baseSupplierCostCents: 3600, description: 'Relaxed fit heavyweight fleece trousers', defaultLcaGrams: 440 },
+};
+
 export interface KeepsakePreviewInput {
-  garmentModel:
-    | 'INSULATED_PUFFER_JACKET'
-    | 'TECH_FLEECE_JACKET'
-    | 'HEAVYWEIGHT_HOODIE'
-    | 'SOFTSHELL_VEST'
-    | 'FLEECE_JOGGERS'
-    | 'STRUCTURED_CAP'
-    | 'VINTAGE_TEE';
+  garmentModel: GarmentModelType | string;
   inscribedText: string;
   threadColor: 'GOLD_METALLIC' | 'STERLING_SILVER' | 'EMERALD_GREEN' | 'PURE_WHITE';
   placement: 'LEFT_CHEST' | 'RIGHT_SLEEVE' | 'BACK_COLLAR';
@@ -32,7 +60,7 @@ export class CustomKeepsakeService {
 
   /**
    * Generates a preview specification including canvas placement, ISO 14067 LCA carbon grams,
-   * local artisan embroidery labor hours, and the mandatory 15% charitable gift split.
+   * local artisan embroidery labor hours, supplier base cost, and the mandatory 15% charitable gift split.
    */
   generateKeepsakePreview(input: KeepsakePreviewInput) {
     const {
@@ -41,7 +69,6 @@ export class CustomKeepsakeService {
       threadColor,
       placement,
       quantity = 1,
-      unitPriceCents = 8500, // e.g. £85.00 default
     } = input;
 
     if (!inscribedText || !inscribedText.trim()) {
@@ -52,38 +79,44 @@ export class CustomKeepsakeService {
       throw new Error('Invalid input: inscribedText exceeds 80 characters maximum.');
     }
 
+    const itemMeta = SUPPLIER_PRICING_SCHEDULE[garmentModel] || SUPPLIER_PRICING_SCHEDULE.HOODIE;
+    
+    // Dynamic price calculation: base supplier cost represents exactly 85% of total.
+    // 15% is added as the statutory charity endowment.
+    const calculatedUnitPriceCents = input.unitPriceCents || Math.round(itemMeta.baseSupplierCostCents / 0.85);
+    const unitPriceCents = calculatedUnitPriceCents;
+
     // LCA Carbon Footprint computation under ISO 14067 (Cradle-to-Gate)
-    let baseLcaGrams = 450;
-    let baseLaborHours = 1.5;
+    let baseLcaGrams = itemMeta.defaultLcaGrams || 500;
+    let baseLaborHours = 1.8;
 
     switch (garmentModel) {
+      case 'PUFF_JACKET':
       case 'INSULATED_PUFFER_JACKET':
-        baseLcaGrams = 780;
         baseLaborHours = 3.0;
         break;
       case 'TECH_FLEECE_JACKET':
-        baseLcaGrams = 620;
         baseLaborHours = 2.5;
         break;
+      case 'HOODIE':
       case 'HEAVYWEIGHT_HOODIE':
-        baseLcaGrams = 520;
         baseLaborHours = 2.0;
         break;
-      case 'SOFTSHELL_VEST':
-        baseLcaGrams = 410;
-        baseLaborHours = 1.5;
+      case 'BACKPACK':
+        baseLaborHours = 2.2;
         break;
-      case 'FLEECE_JOGGERS':
-        baseLcaGrams = 440;
-        baseLaborHours = 1.6;
+      case 'SCHOOL_BAG':
+        baseLaborHours = 1.8;
         break;
-      case 'STRUCTURED_CAP':
-        baseLcaGrams = 210;
-        baseLaborHours = 1.0;
+      case 'SOCKS':
+        baseLaborHours = 0.5;
         break;
+      case 'T_SHIRT':
       case 'VINTAGE_TEE':
-        baseLcaGrams = 290;
         baseLaborHours = 0.8;
+        break;
+      default:
+        baseLaborHours = 1.5;
         break;
     }
 

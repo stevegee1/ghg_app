@@ -107,7 +107,7 @@ export const Footer: React.FC = () => {
                 <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Assurance Engine</Link></li>
                 <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Workforce & Section 106</Link></li>
                 <li><Link to="/souvenirs" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Event Keepsakes</Link></li>
-                <li><Link to="/merch" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Merch Studio</Link></li>
+                <li><Link to="/merch" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Survivors Donation Keepsake</Link></li>
                 <li><Link to="/public-tracker" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Dropshipping Tracker</Link></li>
               </ul>
             </div>
@@ -139,7 +139,7 @@ export const Footer: React.FC = () => {
                     rel="noopener noreferrer"
                     style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
                   >
-                    WIPO Nice Class 35 ↗
+                    WIPO Nice Classes 25 & 35 ↗
                   </a>
                 </li>
                 <li>
@@ -201,7 +201,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Horizontal Legal & Copyright Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '2rem', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            © 2026 GHG Emission Logs (NFTY LOGS®). Registered Nice Class 35 Trademark. All rights reserved.
+            © 2026 GHG Emission Logs. GHG Emissions Registered Trade Mark (Nice Classes 25 & 35). All rights reserved.
           </div>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Legal & Class 35</Link>

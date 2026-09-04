@@ -134,15 +134,16 @@ export const PartnerLicensingPage: React.FC = () => {
                 Statutory Compliance
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-                Ideal for organizations required to file annual UK SECR, EU CSRD, or California SB 253 disclosures.
+                Ideal for organizations required to file annual UK SECR, EU CSRD, California SB 253, or UAE SCA ESG disclosures.
               </p>
 
               <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>Included Features:</div>
                 <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                  <li>Annual Scope 1, 2, and 3 accounting</li>
-                  <li>UK SECR & EU CSRD reporting packs</li>
-                  <li>5-Pillar Speedometer Risk Scorecard</li>
+                  <li>Annual Scope 1, 2, and 3 carbon accounting</li>
+                  <li>UK SECR, EU CSRD, and UAE SCA reporting packs</li>
+                  <li>ISO 14001 & ISO 50001 system readiness diagnostics</li>
+                  <li>ISO 19011:2026 Annex A remote review seals</li>
                   <li>Cryptographic SHA-256 watermark seals</li>
                   <li>Boardroom PDF Report Generation</li>
                 </ul>
@@ -167,6 +168,7 @@ export const PartnerLicensingPage: React.FC = () => {
               <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>Everything in Tier 1, plus:</div>
                 <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                  <li>80% remote audit execution under ISO 19011:2026</li>
                   <li>Live PDU, SCADA, & sub-meter telemetry streaming</li>
                   <li>ISO 17025 Database Calibration Gatekeeper</li>
                   <li>±15% Baseline Anomaly Lock Engine (HTTP 423)</li>
@@ -188,13 +190,13 @@ export const PartnerLicensingPage: React.FC = () => {
                 Dual-Impact Enterprise
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-                Complete continuous telemetry assurance, custom keepsake studio licensing, and Section 106 job creation.
+                Complete continuous telemetry assurance, Survivors Donation Keepsake licensing, and Section 106 job creation.
               </p>
 
               <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>Everything in Tier 2, plus:</div>
                 <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                  <li>Milestone Keepsake Studio licensing & LCA tags</li>
+                  <li>Survivors Donation Keepsake studio licensing & LCA tags</li>
                   <li>Automated 15.00% ESG charitable routing</li>
                   <li>Section 106 green job tracking & covenants</li>
                   <li>Dedicated external auditor portal access</li>
@@ -206,6 +208,106 @@ export const PartnerLicensingPage: React.FC = () => {
             <Link to="/portal/login" className="btn btn-secondary" style={{ width: '100%', textAlign: 'center' }}>
               Contact Enterprise Sales
             </Link>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4b. Preparation Services Pricing Schedule */}
+      <section style={{ marginBottom: '5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
+            Statutory Preparation Services
+          </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+            ISO 14001/50001 & ISO 19011:2026 Preparation Pricing
+          </h2>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', marginTop: '0.5rem', maxWidth: '640px', margin: '0.5rem auto 0 auto' }}>
+            Fixed-price automated preparation tiers designed for swift, uncompromised certification before external auditor arrival.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          
+          <div className="persefoni-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Tier 1 Readiness
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', margin: '0.35rem 0' }}>
+                Single-Site Remote Readiness
+              </h3>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)', margin: '0.75rem 0' }}>
+                £1,250 <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>/ assessment</span>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+                Single-site ISO 14001 / ISO 50001 energy and environmental diagnostic with remote ICT verification certificate.
+              </p>
+              <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                <li>Baseline telemetry gap evaluation</li>
+                <li>ISO 19011:2026 Annex A remote review stamp</li>
+                <li>72-hour turnaround time</li>
+              </ul>
+            </div>
+            <div style={{ marginTop: '1.5rem' }}>
+              <Link to="/create-account" className="btn btn-secondary" style={{ width: '100%', textAlign: 'center' }}>
+                Order Preparation →
+              </Link>
+            </div>
+          </div>
+
+          <div className="persefoni-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid var(--color-sky)' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-sky)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Tier 2 Protocol (Recommended)
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', margin: '0.35rem 0' }}>
+                Continuous Assurance Protocol
+              </h3>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)', margin: '0.75rem 0' }}>
+                £3,500 <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>/ quarter</span>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+                Continuous telemetry indexing, 80% remote audit protocol compliance, and quarterly SECR & UAE SCA draft dossiers.
+              </p>
+              <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                <li>Automated ISO 17025 sensor calibration gatekeeper</li>
+                <li>±15% baseline drift lock and alert dispatch</li>
+                <li>Continuous evidence locker synchronization</li>
+              </ul>
+            </div>
+            <div style={{ marginTop: '1.5rem' }}>
+              <Link to="/create-account" className="btn btn-primary" style={{ width: '100%', textAlign: 'center' }}>
+                Enroll Facility →
+              </Link>
+            </div>
+          </div>
+
+          <div className="persefoni-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Tier 3 Global
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', margin: '0.35rem 0' }}>
+                Enterprise Multi-Jurisdiction
+              </h3>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)', margin: '0.75rem 0' }}>
+                £8,500 <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>/ year</span>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+                Unified statutory compliance package for UK SECR, EU CSRD ESRS, California SB 253/261, and UAE Cabinet Resolution Net Zero 2050.
+              </p>
+              <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                <li>Multi-facility aggregation and consolidation</li>
+                <li>Direct external registrar portal access</li>
+                <li>Dedicated regulatory defense advisory</li>
+              </ul>
+            </div>
+            <div style={{ marginTop: '1.5rem' }}>
+              <Link to="/portal/login" className="btn btn-secondary" style={{ width: '100%', textAlign: 'center' }}>
+                Request Consultation →
+              </Link>
+            </div>
           </div>
 
         </div>
@@ -229,7 +331,7 @@ export const PartnerLicensingPage: React.FC = () => {
 
       {/* 6. Bottom Sign Up & Sign In CTA */}
       <section className="persefoni-card" style={{ textAlign: 'center', padding: '3.5rem 2rem', backgroundColor: 'var(--bg-subtle)' }}>
-        <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem', letterSpacing: '-0.025em' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
           Ready to achieve continuous audit readiness?
         </h2>
         <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2rem auto', lineHeight: 1.6 }}>

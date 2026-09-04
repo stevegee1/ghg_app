@@ -80,7 +80,7 @@ export const PartnerLogoDropPage: React.FC = () => {
         <div className="card">
           <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
             <div style={{ fontSize: '1.125rem', fontWeight: 700 }}>
-              🎉 B2B Logo Drop Licensing & Settlement Complete!
+              B2B Logo Drop Licensing & Settlement Complete
             </div>
             <div style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
               Transaction Ref: <code>{successResult.transactionId}</code>
@@ -93,7 +93,7 @@ export const PartnerLogoDropPage: React.FC = () => {
 
               <div style={{ marginTop: '1rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Deployment Type</div>
               <div style={{ fontWeight: 600 }}>
-                {deliveryType === 'DIGITAL' ? '🌐 Software / Website Drop' : '📦 Physical Merch / Product Application'}
+                {deliveryType === 'DIGITAL' ? 'Digital / Software Application' : 'Physical Keepsake / Product Application'}
               </div>
             </div>
 
@@ -193,7 +193,7 @@ export const PartnerLogoDropPage: React.FC = () => {
                       onChange={() => setDeliveryType('PHYSICAL')}
                     />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>📦 Physical Merch</div>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>Physical Keepsake</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Printed gear & products</div>
                     </div>
                   </label>

@@ -50,17 +50,17 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ documents, onUpl
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'SCADA_TELEMETRY':
-        return '📊';
+        return 'SCADA';
       case 'WATER_TRADE_EFFLUENT_PERMIT':
-        return '💧';
+        return 'PERMIT';
       case 'LAB_GAS_PURITY_CERT':
-        return '🧪';
+        return 'PURITY';
       case 'STAGING_PAYROLL_REGISTER':
-        return '👷';
+        return 'PAYROLL';
       case 'CALIBRATION_CERTIFICATE':
-        return '⚖️';
+        return 'CALIB';
       default:
-        return '📁';
+        return 'DOC';
     }
   };
 
@@ -85,11 +85,11 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ documents, onUpl
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
         {[
           { key: 'ALL', label: 'All Files' },
-          { key: 'SCADA_TELEMETRY', label: '📊 SCADA Telemetry' },
-          { key: 'WATER_TRADE_EFFLUENT_PERMIT', label: '💧 Water Permits' },
-          { key: 'LAB_GAS_PURITY_CERT', label: '🧪 Gas Purity Certs' },
-          { key: 'STAGING_PAYROLL_REGISTER', label: '👷 Payroll / Jobs' },
-          { key: 'CALIBRATION_CERTIFICATE', label: '⚖️ Calibration' },
+          { key: 'SCADA_TELEMETRY', label: 'SCADA Telemetry' },
+          { key: 'WATER_TRADE_EFFLUENT_PERMIT', label: 'Water Permits' },
+          { key: 'LAB_GAS_PURITY_CERT', label: 'Gas Purity Certs' },
+          { key: 'STAGING_PAYROLL_REGISTER', label: 'Payroll / Jobs' },
+          { key: 'CALIBRATION_CERTIFICATE', label: 'Calibration' },
         ].map((tab) => (
           <button
             key={tab.key}

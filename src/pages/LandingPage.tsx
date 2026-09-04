@@ -79,6 +79,14 @@ export const LandingPage: React.FC = () => {
             
             {/* Left Hero Column */}
             <div>
+              {/* Statutory Trademark Tag */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-pill)', padding: '0.25rem 0.75rem', marginBottom: '1rem' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-sky)' }} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  GHG Emissions Registered Trade Mark (Nice Classes 25 & 35)
+                </span>
+              </div>
+
               {/* Persefoni Headline */}
               <h1
                 style={{
@@ -99,12 +107,22 @@ export const LandingPage: React.FC = () => {
                   fontSize: '0.9375rem',
                   color: 'var(--text-muted)',
                   lineHeight: 1.55,
-                  marginBottom: '2rem',
+                  marginBottom: '1rem',
                   maxWidth: '560px',
                 }}
               >
-                Respond with confidence to disclosure requests from customers, investors, and regulators. Measure, report, and decarbonize with calibrated continuous telemetry.
+                Specialising in ISO 14001/50001 system readiness aligned with the newly published ISO 19011:2026 remote auditing guidelines. Respond with confidence to statutory disclosure requests across the UK, EU, US, and UAE.
               </p>
+
+              {/* Assurance Protocol Badges */}
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+                <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '3px 8px', borderRadius: '4px', color: 'var(--text-main)', fontWeight: 600 }}>
+                  80% Remote Digital Data Protocol
+                </span>
+                <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '3px 8px', borderRadius: '4px', color: 'var(--text-main)', fontWeight: 600 }}>
+                  ISO 19011:2026 Annex A Audit Verification
+                </span>
+              </div>
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -186,9 +204,9 @@ export const LandingPage: React.FC = () => {
                   Leading clean-tech data infrastructure specializing in green hydrogen & continuous energy optimization.
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                  <span>🏢 Technology</span>
-                  <span>🇬🇧 United Kingdom</span>
-                  <span style={{ color: 'var(--color-sky)' }}>🔗 www.apex-hyperscale.com</span>
+                  <span>Sector: Clean Technology</span>
+                  <span>Jurisdiction: United Kingdom</span>
+                  <span style={{ color: 'var(--color-sky)' }}>apex-hyperscale.internal</span>
                 </div>
               </div>
 
@@ -239,7 +257,7 @@ export const LandingPage: React.FC = () => {
               {/* Equipment / Sensor Callout Rows */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.75rem' }}>
-                  <span style={{ fontWeight: 600 }}>🚛 EV-Fleet-Truck-1802 (Heavy Duty)</span>
+                  <span style={{ fontWeight: 600 }}>EV-Fleet-Truck-1802 (Heavy Duty)</span>
                   <span style={{ color: 'var(--color-green)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <span className="radar-pulse" style={{ width: '6px', height: '6px' }} />
                     <span>Fuel Verified</span>
@@ -247,7 +265,7 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.75rem' }}>
-                  <span style={{ fontWeight: 600 }}>⚡ NH-Gen-011 (H2 Electrolyzer)</span>
+                  <span style={{ fontWeight: 600 }}>NH-Gen-011 (H2 Electrolyzer)</span>
                   <span style={{ color: 'var(--color-sky)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: 'var(--font-mono)' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-sky)' }} />
                     <span>{livePurity.toFixed(2)}% Purity</span>
@@ -369,6 +387,106 @@ export const LandingPage: React.FC = () => {
                 <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)', letterSpacing: '0.04em' }}>TCFD / CDP</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 500 }}>Financial Governance</div>
               </div>
+            </div>
+
+            {/* 7. ISO 19011:2026 Standard Emblem */}
+            <div style={{ padding: '1.25rem 1rem', borderRadius: '12px', border: '1px solid var(--border-light)', backgroundColor: 'var(--bg-subtle)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#4338ca', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(67, 56, 202, 0.25)' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)', letterSpacing: '0.04em' }}>ISO 19011:2026</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 500 }}>Remote ICT Auditing</div>
+              </div>
+            </div>
+
+            {/* 8. UAE SCA & Net Zero 2050 Standard Emblem */}
+            <div style={{ padding: '1.25rem 1rem', borderRadius: '12px', border: '1px solid var(--border-light)', backgroundColor: 'var(--bg-subtle)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#b45309', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(180, 83, 9, 0.25)' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M16 8l-8 8" />
+                  <path d="M8 8h8v8" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)', letterSpacing: '0.04em' }}>UAE SCA / ESG</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 500 }}>ADX & DFM Mandate</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 2b. ISO 19011:2026 Remote Auditing & Evidence Ledger Architecture */}
+      <section style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: 'var(--bg-subtle)', padding: '3.5rem 1.5rem' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '820px', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
+              Statutory Remote Verification Protocol
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+              80% Remote Auditing via Trademarked Class 35 Digital Data Protocol
+            </h2>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', marginTop: '0.75rem', lineHeight: 1.6 }}>
+              Under the newly published ISO 19011:2026 guidelines, corporate operators can conduct 80% of management audits remotely through our accredited Class 35 digital data protocol, significantly reducing client on-site disruption, operational footprint, and corporate travel emissions.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            
+            {/* Card 1: Evidence Ledger & Annex A Isolation */}
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.75rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                Deploying the Evidence Ledger
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+                Integrated Audit Report Matrix
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
+                When logging operational metrics, every entry is systematically stamped:
+              </p>
+              <div style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--color-sky)', lineHeight: 1.5 }}>
+                Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A.
+              </div>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.75rem', lineHeight: 1.5 }}>
+                This immutable ledger stamp isolates our Class 35 data protocol from risks of regulatory greenwashing and compliance pushback during external assurance reviews.
+              </p>
+            </div>
+
+            {/* Card 2: Multi-Jurisdiction Statutory Disclosures */}
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.75rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                Global Regulatory Matrix
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+                Unified International Filings
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
+                Single-source telemetry mapped directly to four statutory disclosure regimes:
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                <div style={{ padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                  UK SECR / Companies Act
+                </div>
+                <div style={{ padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                  EU CSRD / ESRS E1
+                </div>
+                <div style={{ padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                  California SB 253 / 261
+                </div>
+                <div style={{ padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                  UAE SCA / ADX-DFM ESG
+                </div>
+              </div>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.75rem', lineHeight: 1.5 }}>
+                Full conformity with UAE Cabinet Resolution on the Green Agenda and UAE Net Zero 2050 framework.
+              </p>
             </div>
 
           </div>

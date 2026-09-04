@@ -86,8 +86,8 @@ export class CmaValidatorService {
       flaggedPhrases,
       suggestedCompliantText: isValid ? input : compliantDraft,
       legalGuidance: isValid
-        ? '✅ Text complies with UK CMA Green Claims Code principles (Specific, Substantiated, and Clear).'
-        : '⚠️ Prohibited or absolute environmental claims detected. Apply suggested legal phrasing to prevent CMA regulatory penalties.',
+        ? 'Conformant: Text complies with UK CMA Green Claims Code principles (Specific, Substantiated, and Clear).'
+        : 'Notice: Prohibited or absolute environmental claims detected. Apply suggested legal phrasing to prevent CMA regulatory penalties.',
     };
   }
 }

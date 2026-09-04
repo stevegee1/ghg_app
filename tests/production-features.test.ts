@@ -207,4 +207,84 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
       expect(res.body.error).toContain('frenzyClub');
     });
   });
+
+  describe('4. Preparation Services Pricing, Survivors Donation Keepsake & ISO 19011:2026 Protocol', () => {
+    it('GET /api/preparation/pricing returns 3 statutory tiers with ISO 19011:2026 Annex A verification stamp', async () => {
+      const res = await request(app)
+        .get('/api/preparation/pricing')
+        .expect(200);
+
+      expect(res.body).toHaveProperty('success', true);
+      expect(res.body.trademark).toContain('GHG Emissions Registered Trade Mark (Nice Class 35)');
+      expect(res.body.remoteProtocol).toContain('80% Remote Digital Data Protocol');
+      expect(res.body.verificationStamp).toBe(
+        'Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A'
+      );
+      expect(Array.isArray(res.body.tiers)).toBe(true);
+      expect(res.body.tiers.length).toBe(3);
+
+      const [tier1, tier2, tier3] = res.body.tiers;
+      expect(tier1.priceGbp).toBe(1250);
+      expect(tier2.priceGbp).toBe(3500);
+      expect(tier3.priceGbp).toBe(8500);
+      expect(tier2.isRecommended).toBe(true);
+    });
+
+    it('GET /api/custom-merch/products returns 6 product categories with strict 85/15 supplier vs charity split', async () => {
+      const res = await request(app)
+        .get('/api/custom-merch/products')
+        .expect(200);
+
+      expect(res.body).toHaveProperty('success', true);
+      expect(res.body.studioName).toBe('Survivors Donation Keepsake');
+      expect(res.body.trademark).toContain('GHG Emissions Registered Trade Mark (Nice Class 25)');
+      expect(Array.isArray(res.body.products)).toBe(true);
+      expect(res.body.products.length).toBe(6);
+
+      const productIds = res.body.products.map((p: any) => p.id);
+      expect(productIds).toEqual(
+        expect.arrayContaining(['T_SHIRT', 'PUFF_JACKET', 'HOODIE', 'BACKPACK', 'SCHOOL_BAG', 'SOCKS'])
+      );
+
+      // Verify each product has strict 85% supplier / 15% charity split
+      for (const p of res.body.products) {
+        expect(p.supplierSharePct).toBe(85);
+        expect(p.charitySharePct).toBe(15);
+        expect(p.baseSupplierCostCents + p.charityGiftCents).toBe(p.retailPriceCents);
+      }
+    });
+
+    it('POST /api/custom-merch/preview dynamically calculates unit price and LCA for PUFF_JACKET and SOCKS', async () => {
+      const resPuffer = await request(app)
+        .post('/api/custom-merch/preview')
+        .send({
+          garmentModel: 'PUFF_JACKET',
+          inscribedText: 'Disaster Relief Expedition Keepsake',
+          threadColor: 'GOLD_METALLIC',
+          placement: 'LEFT_CHEST',
+          quantity: 1,
+        })
+        .expect(200);
+
+      expect(resPuffer.body.preview.garmentModel).toBe('PUFF_JACKET');
+      expect(resPuffer.body.preview.financialSummary.charityGiftCents).toBe(
+        Math.round(resPuffer.body.preview.financialSummary.grossAmountCents * 0.15)
+      );
+      expect(resPuffer.body.preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(780);
+
+      const resSocks = await request(app)
+        .post('/api/custom-merch/preview')
+        .send({
+          garmentModel: 'SOCKS',
+          inscribedText: 'Peak District 2026 Trail Run',
+          threadColor: 'PURE_WHITE',
+          placement: 'LEFT_CHEST',
+          quantity: 3,
+        })
+        .expect(200);
+
+      expect(resSocks.body.preview.garmentModel).toBe('SOCKS');
+      expect(resSocks.body.preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(360); // 120 * 3
+    });
+  });
 });

@@ -119,12 +119,15 @@ const MERCH_CATALOG: MerchItem[] = [
 ];
 
 const GARMENT_OPTIONS = [
-  { id: 'HEAVYWEIGHT_HOODIE', label: 'Heavyweight Fleece Hoodie', priceCents: 8500, baseLca: 520, laborHours: 2.0 },
-  { id: 'TECH_FLEECE_JACKET', label: 'Tech Fleece Full-Zip Hoodie', priceCents: 7500, baseLca: 620, laborHours: 2.5 },
-  { id: 'INSULATED_PUFFER_JACKET', label: 'Insulated Puffer Jacket', priceCents: 9500, baseLca: 780, laborHours: 3.0 },
-  { id: 'SOFTSHELL_VEST', label: 'All-Weather Softshell Vest', priceCents: 5500, baseLca: 410, laborHours: 1.5 },
-  { id: 'VINTAGE_TEE', label: 'Vintage Heavyweight Organic Tee', priceCents: 4000, baseLca: 290, laborHours: 0.8 },
-  { id: 'STRUCTURED_CAP', label: 'Structured Cotton Cap', priceCents: 2500, baseLca: 210, laborHours: 1.0 },
+  { id: 'T_SHIRT', label: 'Organic Cotton T-Shirt', supplierCostCents: 2200, priceCents: 2588, baseLca: 290, laborHours: 0.8 },
+  { id: 'PUFF_JACKET', label: 'Recycled Down Puffer Jacket', supplierCostCents: 6500, priceCents: 7647, baseLca: 780, laborHours: 3.0 },
+  { id: 'HOODIE', label: 'Heavyweight Commemorative Hoodie', supplierCostCents: 4200, priceCents: 4941, baseLca: 520, laborHours: 2.0 },
+  { id: 'BACKPACK', label: 'Industrial Canvas Backpack', supplierCostCents: 3800, priceCents: 4471, baseLca: 680, laborHours: 2.2 },
+  { id: 'SCHOOL_BAG', label: 'Student & Youth School Bag', supplierCostCents: 2800, priceCents: 3294, baseLca: 540, laborHours: 1.8 },
+  { id: 'SOCKS', label: 'Performance Technical Socks', supplierCostCents: 1200, priceCents: 1412, baseLca: 120, laborHours: 0.5 },
+  { id: 'HEAVYWEIGHT_HOODIE', label: 'Archival Matchday Hoodie', supplierCostCents: 4200, priceCents: 4941, baseLca: 520, laborHours: 2.0 },
+  { id: 'INSULATED_PUFFER_JACKET', label: 'Extreme Climate Puffer Jacket', supplierCostCents: 6500, priceCents: 7647, baseLca: 780, laborHours: 3.0 },
+  { id: 'STRUCTURED_CAP', label: 'Structured Cotton Cap', supplierCostCents: 1800, priceCents: 2118, baseLca: 210, laborHours: 1.0 },
 ];
 
 const THREAD_COLORS = [
@@ -383,14 +386,14 @@ export const MerchStorePage: React.FC = () => {
           }}
         >
           <span className="radar-pulse" />
-          <span>VERIFIED MILESTONE KEEPSAKE STUDIO & ECO APPAREL</span>
+          <span>GHG EMISSIONS REGISTERED TRADE MARK (NICE CLASS 25)</span>
         </div>
 
         <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
-          Custom Keepsake Studio & Official Merch
+          Survivors Donation Keepsake
         </h1>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: '780px', margin: 0 }}>
-          Certified organic apparel embroidered with verified GHG accountability marks, embedded ISO 14067 LCA carbon tags, and automated 15% ESG charitable routing.
+          Certified bespoke apparel and disaster survivor keepsakes. Unit prices are determined by supplier base production specifications, with an immediate contractual 85% supplier fulfillment / 15% statutory charity split at checkout.
         </p>
 
         {/* Tab Switcher */}
@@ -414,7 +417,7 @@ export const MerchStorePage: React.FC = () => {
               transition: 'all 0.2s ease',
             }}
           >
-            Official Merch Catalog
+            Survivors Keepsake Catalog
           </button>
           <button
             type="button"

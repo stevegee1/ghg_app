@@ -132,15 +132,21 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
 
       // Header
       doc
-        .fontSize(22)
+        .fontSize(18)
         .font('Helvetica-Bold')
-        .text('GHG App — ESG Tax Invoice & Receipt', { align: 'center' });
-      doc.moveDown(0.5);
+        .text('GHG Emissions Registered Trade Mark', { align: 'center' });
+      doc.moveDown(0.25);
       doc
-        .fontSize(10)
+        .fontSize(12)
+        .font('Helvetica')
+        .fillColor('#0f172a')
+        .text('Survivors Donation Keepsake — ESG Tax & Audit Invoice', { align: 'center' });
+      doc.moveDown(0.25);
+      doc
+        .fontSize(9)
         .font('Helvetica')
         .fillColor('#64748b')
-        .text(`ISO 14067 Certified  |  Statutory 85/15 ESG Charitable Routing`, { align: 'center' });
+        .text('Nice Classes 25 & 35  |  ISO 14067 Certified  |  85/15 Statutory Charitable Routing', { align: 'center' });
       doc.moveDown(1.5);
 
       // Order Reference
@@ -158,7 +164,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       doc.moveDown(0.75);
 
       // Event Details
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Event Details');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Order & Keepsake Specifications');
       doc.moveDown(0.25);
       doc.fontSize(10).font('Helvetica').fillColor('#334155');
       doc.text(`Category:       ${order.eventCategory.replace(/_/g, ' ')}`);
@@ -180,7 +186,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       const licensor = (order.licensorCents / 100).toFixed(2);
       const charity = (order.charityCents / 100).toFixed(2);
       doc.text(`Gross Payment:                    £${gross}`);
-      doc.text(`Platform Licensor (85%):          £${licensor}`);
+      doc.text(`Supplier Production & Licensor (85%): £${licensor}`);
       doc.text(`Statutory ESG Charity Pool (15%): £${charity}`);
       doc.moveDown(0.75);
 
@@ -199,9 +205,14 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e2e8f0').stroke();
       doc.moveDown(0.75);
       doc
-        .fontSize(9)
+        .fontSize(8.5)
+        .fillColor('#0284c7')
+        .text('Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A.', { align: 'center' });
+      doc.moveDown(0.25);
+      doc
+        .fontSize(8)
         .fillColor('#94a3b8')
-        .text('This document is an official GHG App ESG Tax Invoice, compliant with ISO 14067 lifecycle assessment standards.', { align: 'center' });
+        .text('Official statutory ESG invoice issued under GHG Emissions Registered Trade Mark (Nice Classes 25 & 35).', { align: 'center' });
       doc.text('GHG App | ghgapp-production.up.railway.app', { align: 'center' });
 
       doc.end();

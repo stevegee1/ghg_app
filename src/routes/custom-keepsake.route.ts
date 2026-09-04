@@ -8,6 +8,129 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
   const keepsakeService = new CustomKeepsakeService(prisma);
 
   /**
+   * GET /api/preparation/pricing
+   * Returns official SaaS preparation services pricing schedule under ISO 14001/50001
+   * and ISO 19011:2026 Remote Auditing guidelines.
+   */
+  router.get('/api/preparation/pricing', (_req: Request, res: Response) => {
+    return res.status(200).json({
+      success: true,
+      trademark: 'GHG Emissions Registered Trade Mark (Nice Class 35)',
+      remoteProtocol: '80% Remote Digital Data Protocol (ISO 19011:2026)',
+      verificationStamp: 'Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A',
+      tiers: [
+        {
+          id: 'TIER_1_READINESS',
+          name: 'Single-Site Remote Readiness',
+          priceGbp: 1250,
+          billingPeriod: 'per assessment',
+          isoAlignment: ['ISO 14001', 'ISO 50001', 'ISO 19011:2026 Annex A'],
+          turnaroundHours: 72,
+        },
+        {
+          id: 'TIER_2_CONTINUOUS',
+          name: 'Continuous Assurance Protocol',
+          priceGbp: 3500,
+          billingPeriod: 'per quarter',
+          isoAlignment: ['ISO 17025', 'ISO 50001', 'ISO 19011:2026', 'UK SECR', 'UAE SCA'],
+          isRecommended: true,
+        },
+        {
+          id: 'TIER_3_GLOBAL',
+          name: 'Enterprise Multi-Jurisdiction Dossier',
+          priceGbp: 8500,
+          billingPeriod: 'per year',
+          isoAlignment: ['UK SECR', 'EU CSRD', 'California SB 253/261', 'UAE Net Zero 2050', 'ISO 14064'],
+        },
+      ],
+    });
+  });
+
+  /**
+   * GET /api/custom-merch/products
+   * Returns available products under Nice Class 25 with base supplier production cost
+   * and automated 15% charity split computation.
+   */
+  router.get('/api/custom-merch/products', (_req: Request, res: Response) => {
+    const products = [
+      {
+        id: 'T_SHIRT',
+        name: 'Organic Cotton T-Shirt',
+        description: '100% GOTS certified organic combed cotton with bespoke embroidery.',
+        baseSupplierCostCents: 2200,
+        retailPriceCents: Math.round(2200 / 0.85),
+        charityGiftCents: Math.round(2200 / 0.85) - 2200,
+        supplierSharePct: 85,
+        charitySharePct: 15,
+        lcaGrams: 290,
+      },
+      {
+        id: 'PUFF_JACKET',
+        name: 'Recycled Down Puffer Jacket',
+        description: 'Post-consumer recycled ripstop with 700 fill ethical down.',
+        baseSupplierCostCents: 6500,
+        retailPriceCents: Math.round(6500 / 0.85),
+        charityGiftCents: Math.round(6500 / 0.85) - 6500,
+        supplierSharePct: 85,
+        charitySharePct: 15,
+        lcaGrams: 780,
+      },
+      {
+        id: 'HOODIE',
+        name: 'Heavyweight Commemorative Hoodie',
+        description: '450gsm cross-grain French terry fleece with high-density gold stitch.',
+        baseSupplierCostCents: 4200,
+        retailPriceCents: Math.round(4200 / 0.85),
+        charityGiftCents: Math.round(4200 / 0.85) - 4200,
+        supplierSharePct: 85,
+        charitySharePct: 15,
+        lcaGrams: 520,
+      },
+      {
+        id: 'BACKPACK',
+        name: 'Industrial Canvas Backpack',
+        description: 'Water-resistant 16oz recycled canvas with padded laptop compartment.',
+        baseSupplierCostCents: 3800,
+        retailPriceCents: Math.round(3800 / 0.85),
+        charityGiftCents: Math.round(3800 / 0.85) - 3800,
+        supplierSharePct: 85,
+        charitySharePct: 15,
+        lcaGrams: 680,
+      },
+      {
+        id: 'SCHOOL_BAG',
+        name: 'Student & Youth School Bag',
+        description: 'Ergonomic dual-compartment school bag with reflective safety trim.',
+        baseSupplierCostCents: 2800,
+        retailPriceCents: Math.round(2800 / 0.85),
+        charityGiftCents: Math.round(2800 / 0.85) - 2800,
+        supplierSharePct: 85,
+        charitySharePct: 15,
+        lcaGrams: 540,
+      },
+      {
+        id: 'SOCKS',
+        name: 'Performance Technical Socks',
+        description: 'Merino wool blend anti-blister technical sports socks (pair).',
+        baseSupplierCostCents: 1200,
+        retailPriceCents: Math.round(1200 / 0.85),
+        charityGiftCents: Math.round(1200 / 0.85) - 1200,
+        supplierSharePct: 85,
+        charitySharePct: 15,
+        lcaGrams: 120,
+      },
+    ];
+
+    return res.status(200).json({
+      success: true,
+      trademark: 'GHG Emissions Registered Trade Mark (Nice Class 25)',
+      studioName: 'Survivors Donation Keepsake',
+      splitRule: '85% Supplier Production & Fulfillment / 15% Statutory Charity Endowment',
+      products,
+    });
+  });
+
+  /**
    * POST /api/custom-merch/preview
    * Generates live canvas embroidery configuration, LCA carbon grams, and 15% charity split.
    */

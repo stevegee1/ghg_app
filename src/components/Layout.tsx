@@ -74,7 +74,7 @@ export const Layout: React.FC = () => {
                   to="/merch"
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
-                  Merch Studio
+                  Survivors Donation Keepsake
                 </NavLink>
               </li>
               <li>

@@ -306,6 +306,24 @@ export const JobReportingPage: React.FC = () => {
               </ul>
             </div>
 
+            {/* Integrated Audit Report Matrix: ISO 19011:2026 Annex A Stamp */}
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.04em', marginBottom: '0.35rem' }}>
+                Integrated Audit Report Matrix
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-sky)', fontFamily: 'var(--font-mono)', lineHeight: 1.45, backgroundColor: 'var(--bg-subtle)', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A.
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.68rem', backgroundColor: 'var(--bg-subtle)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  ISO 50001 Energy Alignment
+                </span>
+                <span style={{ fontSize: '0.68rem', backgroundColor: 'var(--bg-subtle)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  UAE SCA & ADX-DFM Compatible
+                </span>
+              </div>
+            </div>
+
             {/* Cryptographic Seal Preview */}
             <div style={{ backgroundColor: 'var(--bg-card)', padding: '0.85rem', borderRadius: '6px', border: '1px solid var(--border-light)', fontSize: '0.72rem' }}>
               <div style={{ fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
@@ -328,7 +346,7 @@ export const JobReportingPage: React.FC = () => {
 
       {/* 5. Bottom Sign Up & Sign In CTA */}
       <section className="persefoni-card" style={{ textAlign: 'center', padding: '3.5rem 2rem', backgroundColor: 'var(--bg-subtle)' }}>
-        <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem', letterSpacing: '-0.025em' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
           Prepare your infrastructure project for planning authority audit.
         </h2>
         <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2rem auto', lineHeight: 1.6 }}>

@@ -118,7 +118,7 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
               color: '#ffffff',
             }}
           >
-            📜 MSA Addendum B Contract
+            MSA Addendum B Contract
           </button>
 
           <button
@@ -135,7 +135,7 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
               color: '#ffffff',
             }}
           >
-            🗺️ 30-60-90 Day Consultant Roadmap
+            30-60-90 Day Consultant Roadmap
           </button>
         </div>
 
