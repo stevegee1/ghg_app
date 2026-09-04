@@ -41,6 +41,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
    * POST /api/custom-merch/checkout
    * Initiates bespoke keepsake checkout, creating the Transaction, 15% FinancialSplit,
    * TriggerEvent, and CustomKeepsakeSpec atomically.
+   * Supports Goal Frenzy fields for sports moment merchandise.
    */
   router.post('/api/custom-merch/checkout', async (req: Request, res: Response) => {
     try {
@@ -54,6 +55,13 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         quantity = 1,
         unitPriceCents = 8500,
         currency = 'GBP',
+        // Goal Frenzy fields
+        isGoalFrenzy = false,
+        frenzyClub,
+        frenzyOpponent,
+        frenzyMinute,
+        frenzyMoment,
+        frenzyQuote,
       } = req.body || {};
 
       if (!licenseeId || typeof licenseeId !== 'string') {
@@ -62,6 +70,10 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
       if (!inscribedText || typeof inscribedText !== 'string') {
         return res.status(400).json({ error: 'Invalid input: inscribedText is required.' });
+      }
+
+      if (isGoalFrenzy && !frenzyClub) {
+        return res.status(400).json({ error: 'Goal Frenzy orders require frenzyClub.' });
       }
 
       // Generate preview metrics
@@ -93,11 +105,13 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
             placement: preview.placement,
             lcaCarbonGrams: preview.dualImpactMetrics.estimatedLcaCarbonGrams,
             artisanLaborHours: preview.dualImpactMetrics.artisanLaborHours,
+            isGoalFrenzy,
+            frenzyClub: frenzyClub || null,
           },
         },
       });
 
-      // 2. Persist CustomKeepsakeSpec linked to this transaction
+      // 2. Persist CustomKeepsakeSpec with Goal Frenzy fields
       const keepsakeSpec = await keepsakeService.recordKeepsakeSpec({
         transactionId: checkoutResult.transactionId,
         garmentModel: preview.garmentModel,
@@ -106,7 +120,16 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         placement: preview.placement,
         artisanLaborHours: preview.dualImpactMetrics.artisanLaborHours,
         lcaCarbonGrams: preview.dualImpactMetrics.estimatedLcaCarbonGrams,
-      });
+        // Goal Frenzy
+        ...(isGoalFrenzy && {
+          isGoalFrenzy: true,
+          frenzyClub: frenzyClub || null,
+          frenzyOpponent: frenzyOpponent || null,
+          frenzyMinute: frenzyMinute || null,
+          frenzyMoment: frenzyMoment || null,
+          frenzyQuote: frenzyQuote || null,
+        }),
+      } as any);
 
       return res.status(201).json({
         message: 'Custom milestone keepsake order successfully initiated.',
@@ -124,86 +147,161 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
   /**
    * POST /api/souvenirs/order
-   * Handles Event Souvenirs batch ordering with 15% statutory ESG allocation.
+   * Handles Event Souvenir Logo Drop ordering.
+   * Users select: eventCategory (SPORTS|GALA|TECH_SUMMIT|WEDDING), eventName,
+   * logoDropCount (10, 25, 50, 100, 250, 500), shippingAddress, customerEmail.
+   * No user artwork upload — GHG Logo Drop mark is applied by the printing store.
+   * Returns a Stripe Hosted Checkout URL and tracking URL.
    */
   router.post('/api/souvenirs/order', async (req: Request, res: Response) => {
     try {
       const {
+        customerEmail,
+        customerName,
+        eventCategory,
         eventName,
-        eventType,
-        eventDate,
-        itemId,
-        quantity = 100,
+        logoDropCount,
         shippingAddress,
+        currency = 'GBP',
       } = req.body || {};
 
-      if (!eventName || typeof eventName !== 'string') {
-        return res.status(400).json({ error: 'Event name is required' });
-      }
-      if (!shippingAddress || typeof shippingAddress !== 'string') {
-        return res.status(400).json({ error: 'Shipping address is required' });
+      // --- Validation ---
+      if (!customerEmail || typeof customerEmail !== 'string' || !customerEmail.includes('@')) {
+        return res.status(400).json({ error: 'A valid customer email address is required.' });
       }
 
-      // Base price in pence (e.g. £5.00 default = 500 pence)
-      const unitPriceCents = 500;
-      const grossAmountCents = Number(quantity) * unitPriceCents;
-      const refId = `souvenir_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const validCategories = ['SPORTS', 'GALA', 'TECH_SUMMIT', 'WEDDING'];
+      if (!eventCategory || !validCategories.includes(eventCategory)) {
+        return res.status(400).json({
+          error: `eventCategory must be one of: ${validCategories.join(', ')}`,
+        });
+      }
 
-      // Find an active onboarded licensee or create default platform licensee
+      if (!eventName || typeof eventName !== 'string' || !eventName.trim()) {
+        return res.status(400).json({ error: 'Event name is required.' });
+      }
+
+      const validCounts = [10, 25, 50, 100, 250, 500];
+      const count = Number(logoDropCount);
+      if (!validCounts.includes(count)) {
+        return res.status(400).json({
+          error: `logoDropCount must be one of: ${validCounts.join(', ')}`,
+        });
+      }
+
+      if (!shippingAddress || typeof shippingAddress !== 'object') {
+        return res.status(400).json({ error: 'shippingAddress object is required (street, city, country, postalCode).' });
+      }
+
+      // --- Pricing: £5.00 per logo drop unit ---
+      const unitPriceCents = 500; // £5.00
+      const grossAmountCents = count * unitPriceCents;
+      const licensorCents = Math.round((grossAmountCents * 8500) / 10000); // 85%
+      const charityCents = grossAmountCents - licensorCents; // 15%
+
+      // --- Find platform licensee ---
       let targetLicensee = await prisma.licensee.findFirst({
-        where: {
-          stripeConnectedAccountId: { not: null },
-        },
+        where: { stripeConnectedAccountId: { not: null } },
       });
 
       if (!targetLicensee) {
         targetLicensee = await prisma.licensee.upsert({
           where: { id: 'lic_ghg_official' },
-          update: {
-            stripeConnectedAccountId: 'acct_platform_default_001',
-          },
+          update: {},
           create: {
             id: 'lic_ghg_official',
             name: 'NFTY LOGS® Official Store',
             vertical: 'B2C_SPORTS_MERCH' as any,
             royaltyBps: 8500,
             pricePerDropCents: 500,
-            stripeConnectedAccountId: 'acct_platform_default_001',
+            stripeConnectedAccountId: process.env.STRIPE_PLATFORM_ACCOUNT_ID || null,
           },
         });
       }
 
-      // Execute checkout via checkoutService
-      const checkoutResult = await checkoutService.initiateCheckout({
-        licenseeId: targetLicensee.id,
-        checkoutReferenceId: refId,
-        grossAmountCents,
-        currency: 'GBP',
-        triggerEvent: {
-          verificationSource: VerificationSource.CONSUMER_OPT_IN,
-          deliveryType: DeliveryType.PHYSICAL,
-          fulfillmentStatus: FulfillmentStatus.PENDING,
-          rawPayload: {
-            eventName,
-            eventType: eventType || 'MARATHON',
-            eventDate: eventDate || new Date().toISOString().split('T')[0],
-            itemId: itemId || 'item_finisher_medal',
-            quantity: Number(quantity),
-            shippingAddress,
-          },
+      // --- Generate order number ---
+      const year = new Date().getFullYear();
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const suffix = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      const orderNumber = `GHG-ORD-${year}-${suffix}`;
+      const refId = `souvenir_${Date.now()}_${suffix.toLowerCase()}`;
+
+      // --- Create SouvenirOrder record in DB (pre-payment) ---
+      const souvenirOrder = await prisma.souvenirOrder.create({
+        data: {
+          orderNumber,
+          customerEmail: customerEmail.toLowerCase().trim(),
+          customerName: customerName?.trim() || null,
+          eventCategory: eventCategory as any,
+          eventName: eventName.trim(),
+          logoDropCount: count,
+          itemType: 'GHG_LOGO_DROP',
+          shippingAddress: shippingAddress as any,
+          grossAmountCents,
+          licensorCents,
+          charityCents,
+          status: 'ORDER_PLACED',
         },
       });
 
+      // --- Create Stripe Checkout Session ---
+      let sessionUrl: string | null = null;
+      let transactionId: string | null = null;
+
+      try {
+        const checkoutResult = await checkoutService.initiateCheckout({
+          licenseeId: targetLicensee.id,
+          checkoutReferenceId: refId,
+          grossAmountCents,
+          currency,
+          triggerEvent: {
+            verificationSource: VerificationSource.CONSUMER_OPT_IN,
+            deliveryType: DeliveryType.PHYSICAL,
+            fulfillmentStatus: FulfillmentStatus.PENDING,
+            rawPayload: {
+              orderNumber,
+              eventCategory,
+              eventName: eventName.trim(),
+              logoDropCount: count,
+              customerEmail,
+            },
+          },
+        });
+
+        transactionId = checkoutResult.transactionId;
+        sessionUrl = (checkoutResult as any).sessionUrl || null;
+
+        // Link transaction to the souvenir order
+        if (transactionId) {
+          await prisma.souvenirOrder.update({
+            where: { orderNumber },
+            data: {
+              transactionId,
+              status: 'ORDER_PLACED',
+            },
+          });
+        }
+      } catch (stripeErr: any) {
+        console.error('[SOUVENIR STRIPE ERROR]', stripeErr);
+        // Soft fail: order is recorded, stripe session failed — return order ref so customer can retry
+      }
+
+      const trackUrl = `/track/${orderNumber}`;
+
       return res.status(201).json({
         success: true,
-        orderId: `ord_${refId}`,
-        transactionId: checkoutResult.transactionId,
-        clientSecret: checkoutResult.clientSecret,
-        eventName,
-        quantity: Number(quantity),
+        orderNumber,
+        trackUrl,
+        sessionUrl,
+        transactionId,
+        eventCategory,
+        eventName: eventName.trim(),
+        logoDropCount: count,
         grossAmountCents,
-        status: 'CONFIRMED',
-        message: 'Event keepsakes batch registered with 15% statutory ESG charitable split.',
+        licensorCents,
+        charityCents,
+        status: souvenirOrder.status,
+        message: '15% statutory ESG charitable routing applied. Track your order at /track/' + orderNumber,
       });
     } catch (err: any) {
       console.error('[EVENT SOUVENIR ORDER ERROR]', err);

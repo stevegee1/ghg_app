@@ -1,62 +1,61 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 
-interface SouvenirCatalogItem {
-  id: string;
-  title: string;
-  priceCents: number;
-  description: string;
-  icon: string;
-}
+type EventCategory = 'SPORTS' | 'GALA' | 'TECH_SUMMIT' | 'WEDDING';
+type LogoDropCount = 10 | 25 | 50 | 100 | 250 | 500;
 
-const SOUVENIR_ITEMS: SouvenirCatalogItem[] = [
-  {
-    id: 'item_tote_bag',
-    title: 'Eco Organic Cotton Tote Bag',
-    priceCents: 250, // £2.50
-    description: '100% GOTS certified organic cotton with printed GHG verified logo drop mark',
-    icon: '👜 ORGANIC TOTE',
+const CATEGORY_META: Record<EventCategory, { label: string; description: string; bgClass: string }> = {
+  SPORTS: {
+    label: 'Sports',
+    description: 'Marathons, football matches, tennis opens, athletics meets, golf invitationals & all sporting occasions.',
+    bgClass: '#0369a1',
   },
-  {
-    id: 'item_ceramic_mug',
-    title: 'Custom Printed Ceramic Souvenir Mug',
-    priceCents: 300, // £3.00
-    description: 'Matte finish ceramic mug with custom event text and GHG verified logo drop',
-    icon: '☕ CERAMIC MUG',
+  GALA: {
+    label: 'Gala',
+    description: 'Charity balls, award galas, black-tie dinners, fundraising soirees & formal celebrations.',
+    bgClass: '#7c3aed',
   },
-  {
-    id: 'item_tshirt',
-    title: 'Organic Cotton Event T-Shirt',
-    priceCents: 800, // £8.00
-    description: 'Soft organic cotton apparel with custom front artwork & GHG logo mark on sleeve',
-    icon: '👕 COTTON SHIRT',
+  TECH_SUMMIT: {
+    label: 'Tech Summit',
+    description: 'Developer conferences, AI symposiums, startup showcases, hackathons & corporate showcases.',
+    bgClass: '#0891b2',
   },
-  {
-    id: 'item_gift_box',
-    title: 'Premium Wooden Souvenir Gift Box',
-    priceCents: 1200, // £12.00
-    description: 'Sustainably sourced bamboo gift box engraved with GHG verified logo drop',
-    icon: '📦 BAMBOO BOX',
+  WEDDING: {
+    label: 'Wedding',
+    description: 'Sustainable weddings, eco-friendly luxury receptions, celebratory banquets & anniversary events.',
+    bgClass: '#be185d',
   },
-];
+};
+
+const DROP_COUNTS: LogoDropCount[] = [10, 25, 50, 100, 250, 500];
+const UNIT_PRICE_GBP = 5.0; // £5.00 per logo drop unit
 
 export const EventSouvenirPage: React.FC = () => {
-  const [eventName, setEventName] = useState<string>('Sarah & Alex Wedding Celebration');
-  const [eventType, setEventType] = useState<string>('Wedding Souvenirs');
-  const [eventDate, setEventDate] = useState<string>('2026-09-15');
-  const [selectedItem, setSelectedItem] = useState<SouvenirCatalogItem>(SOUVENIR_ITEMS[0]);
-  const [quantity, setQuantity] = useState<number>(150);
-  const [shippingAddress, setShippingAddress] = useState<string>('124 Kensington High Street, London W8 7RG, UK');
+  const navigate = useNavigate();
+
+  // Step tracking
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // Order fields
+  const [eventCategory, setEventCategory] = useState<EventCategory>('SPORTS');
+  const [eventName, setEventName] = useState<string>('');
+  const [logoDropCount, setLogoDropCount] = useState<LogoDropCount>(50);
+  const [customerEmail, setCustomerEmail] = useState<string>('');
+  const [customerName, setCustomerName] = useState<string>('');
+  const [street, setStreet] = useState<string>('');
+  const [city, setCity] = useState<string>('');
+  const [country, setCountry] = useState<string>('United Kingdom');
+  const [postalCode, setPostalCode] = useState<string>('');
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successOrder, setSuccessOrder] = useState<any | null>(null);
 
-  const grossCents = quantity * selectedItem.priceCents;
-  const royaltyCents = Math.round((grossCents * 8500) / 10000);
-  const charityCents = grossCents - royaltyCents;
+  const grossCents = logoDropCount * UNIT_PRICE_GBP * 100;
+  const licensorCents = Math.round((grossCents * 8500) / 10000);
+  const charityCents = grossCents - licensorCents;
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,14 +64,23 @@ export const EventSouvenirPage: React.FC = () => {
 
     try {
       const res = await api.createEventSouvenirOrder({
-        eventName,
-        eventType,
-        eventDate,
-        itemId: selectedItem.id,
-        quantity,
-        shippingAddress,
+        customerEmail: customerEmail.trim(),
+        customerName: customerName.trim() || undefined,
+        eventCategory,
+        eventName: eventName.trim(),
+        logoDropCount,
+        shippingAddress: { street, city, country, postalCode },
       });
+
       setSuccessOrder(res);
+
+      // If Stripe session URL available, redirect immediately
+      if (res.sessionUrl) {
+        window.location.href = res.sessionUrl;
+      } else {
+        // Navigate to tracker page
+        navigate(`/track/${res.orderNumber}`);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to submit event souvenir order');
     } finally {
@@ -81,243 +89,304 @@ export const EventSouvenirPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
-      
+    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '1.5rem var(--page-px, 1.25rem) 4rem' }}>
+
       {/* Header */}
       <div style={{ marginBottom: '2.5rem' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            backgroundColor: 'var(--accent-light)',
-            border: '1px solid rgba(2, 132, 199, 0.25)',
-            padding: '0.4rem 0.9rem',
-            borderRadius: 'var(--radius-pill)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            color: 'var(--color-sky)',
-            letterSpacing: '0.04em',
-            marginBottom: '1rem',
-          }}
-        >
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+          backgroundColor: 'var(--accent-light)', border: '1px solid rgba(2, 132, 199, 0.25)',
+          padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-pill)',
+          fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)',
+          letterSpacing: '0.04em', marginBottom: '0.75rem',
+        }}>
           <span className="radar-pulse" />
-          <span>EVENT DROPS & CELEBRATORY SOUVENIRS</span>
+          <span>EVENT SOUVENIR PROCUREMENT</span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(1.85rem, 3.8vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.75rem 0', letterSpacing: '-0.03em' }}>
-          Custom Event Keepsakes & Souvenir Ordering
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+          Event Souvenir Logo Drops
         </h1>
-        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '750px', margin: '0 0 1.5rem 0' }}>
-          Celebrate weddings, birthdays, sports tournaments, and corporate milestones with custom-printed eco souvenirs carrying the verified GHG Accountability Mark and automatic 15% ESG charitable routing.
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: '750px', margin: '0 0 1.25rem 0' }}>
+          Select an event category and required logo drop volume. Orders are processed with the certified GHG accountability mark and include statutory 15% ESG charitable routing.
         </p>
 
-        {/* Quick Switcher between Souvenirs & Merch Store */}
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <Link
-            to="/souvenirs"
-            className="btn btn-primary"
-            style={{ fontSize: '0.85rem', padding: '0.55rem 1.25rem' }}
-          >
-            Custom Event Keepsakes (Active)
+          <Link to="/souvenirs" className="btn btn-primary" style={{ fontSize: '0.8125rem', padding: '0.5rem 1.15rem' }}>
+            Logo Drops (Active)
           </Link>
-          <Link
-            to="/merch"
-            className="btn btn-secondary"
-            style={{ fontSize: '0.85rem', padding: '0.55rem 1.25rem', textDecoration: 'none' }}
-          >
-            Official Merchandise & Jackets Studio →
+          <Link to="/merch" className="btn btn-secondary" style={{ fontSize: '0.8125rem', padding: '0.5rem 1.15rem', textDecoration: 'none' }}>
+            Custom Merch Studio
           </Link>
         </div>
       </div>
 
       {error && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem', fontWeight: 600 }}>
+        <div style={{
+          backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)',
+          color: 'var(--google-red)', padding: '0.875rem 1.25rem', borderRadius: '8px',
+          marginBottom: '1.5rem', fontWeight: 500, fontSize: '0.875rem',
+        }}>
           {error}
         </div>
       )}
 
-      {successOrder ? (
-        <div className="persefoni-card" style={{ padding: '2.5rem', textAlign: 'center' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'var(--color-green-light)', color: 'var(--color-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem auto', fontSize: '1.75rem' }}>
-            ✓
-          </div>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-            Event Souvenir Order Confirmed!
-          </h2>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-            Order Reference: <code style={{ fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>{successOrder.orderId}</code>
-          </p>
-
-          <div style={{ maxWidth: '580px', margin: '0 auto 2rem auto', textAlign: 'left', backgroundColor: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-            <div className="form-grid-2col" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
-              <div>
-                <span style={{ color: 'var(--text-muted)' }}>Event:</span> <strong>{successOrder.eventName}</strong>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)' }}>Date:</span> <strong>{successOrder.eventDate}</strong>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)' }}>Item:</span> <strong>{selectedItem.title}</strong>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)' }}>Quantity:</span> <strong>{quantity} units</strong>
-              </div>
+      {/* Step Progress Indicator */}
+      <div style={{ display: 'flex', gap: '0', marginBottom: '2rem', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+        {(['1. Event Category', '2. Quantity & Delivery', '3. Review & Payment'] as const).map((label, i) => {
+          const s = (i + 1) as 1 | 2 | 3;
+          const active = step === s;
+          const done = step > s;
+          return (
+            <div key={label} style={{
+              flex: 1, padding: '0.7rem 0.5rem', textAlign: 'center',
+              fontSize: '0.75rem', fontWeight: 600,
+              backgroundColor: active ? 'var(--color-sky)' : done ? 'var(--color-green-light)' : 'var(--bg-subtle)',
+              color: active ? '#fff' : done ? 'var(--color-green-dark)' : 'var(--text-muted)',
+              borderRight: i < 2 ? '1px solid var(--border-light)' : 'none',
+              transition: 'all 0.2s',
+            }}>
+              {done ? `${label.split('.')[0]}. Complete` : label}
             </div>
+          );
+        })}
+      </div>
 
-            <FinancialSplitBar
-              grossAmountCents={successOrder.grossAmountCents}
-              licensorRoyaltyCents={successOrder.licensorRoyaltyCents}
-              charityGiftCents={successOrder.charityGiftCents}
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setSuccessOrder(null)}
-              className="btn btn-secondary"
-            >
-              Order More Souvenirs
-            </button>
-            <Link to="/public-tracker" className="btn btn-primary">
-              <span>Track Drop on Ledger →</span>
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <form onSubmit={handleOrderSubmit}>
-          {/* 1. Item Selection Grid */}
-          <div style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
-              1. Choose Your Eco Souvenir Product
+      <form onSubmit={handleOrderSubmit}>
+        {/* STEP 1: Event Category Selection */}
+        {step === 1 && (
+          <div>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '1rem' }}>
+              1. Select event category
             </h2>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-              {SOUVENIR_ITEMS.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedItem(item)}
-                  className="persefoni-card"
-                  style={{
-                    padding: '1.5rem',
-                    cursor: 'pointer',
-                    border: selectedItem.id === item.id ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                    backgroundColor: selectedItem.id === item.id ? 'var(--accent-light)' : 'var(--bg-card)',
-                  }}
-                >
-                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-sky)', marginBottom: '0.5rem' }}>
-                    {item.icon}
-                  </div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0' }}>{item.title}</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.45 }}>
-                    {item.description}
-                  </p>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
-                    £{(item.priceCents / 100).toFixed(2)} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ unit</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 2. Event Details & Logistics Card */}
-          <div className="persefoni-card" style={{ padding: 'clamp(1.5rem, 3.5vw, 2.5rem)', marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1.5rem' }}>
-              2. Event Inscription & Delivery Details
-            </h2>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>Event Name / Inscription</label>
-                <input
-                  type="text"
-                  required
-                  value={eventName}
-                  onChange={(e) => setEventName(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>Event Category</label>
-                <select
-                  value={eventType}
-                  onChange={(e) => setEventType(e.target.value)}
-                  className="form-input"
-                >
-                  <option value="Wedding Souvenirs">Wedding Celebration</option>
-                  <option value="Sports Tournament">Sports Tournament / Match Day</option>
-                  <option value="Corporate CleanTech Milestone">Corporate CleanTech Milestone</option>
-                  <option value="Birthday Celebration">Milestone Birthday Celebration</option>
-                </select>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+              {(Object.keys(CATEGORY_META) as EventCategory[]).map((cat) => {
+                const meta = CATEGORY_META[cat];
+                const selected = eventCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setEventCategory(cat)}
+                    style={{
+                      padding: '1.5rem', borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
+                      border: selected ? `2px solid ${meta.bgClass}` : '1px solid var(--border-light)',
+                      backgroundColor: selected ? `${meta.bgClass}18` : 'var(--bg-card)',
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                    }}
+                  >
+                    <div style={{
+                      display: 'inline-block', padding: '4px 10px', borderRadius: 'var(--radius-pill)',
+                      backgroundColor: meta.bgClass, color: '#fff',
+                      fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em',
+                      marginBottom: '0.75rem', textTransform: 'uppercase',
+                    }}>
+                      {meta.label}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      {meta.description}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>Event Date</label>
-                <input
-                  type="date"
-                  required
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>Order Quantity (Units)</label>
-                <input
-                  type="number"
-                  required
-                  min={10}
-                  step={10}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(10, parseInt(e.target.value) || 10))}
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '1.75rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>Shipping Destination Address</label>
-              <textarea
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>
+                Event Name / Occasion *
+              </label>
+              <input
+                type="text"
                 required
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
+                placeholder={`e.g. "${eventCategory === 'SPORTS' ? 'London Marathon 2026' : eventCategory === 'WEDDING' ? 'Sarah & Alex Wedding Celebration' : eventCategory === 'GALA' ? 'Annual Green Earth Gala 2026' : 'GreenTech AI Summit London 2026'}"`}
+                value={eventName}
+                onChange={(e) => setEventName(e.target.value)}
                 className="form-input"
-                rows={2}
               />
             </div>
 
-            {/* Financial Summary & Split */}
-            <div style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: '12px', padding: '1.5rem', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Total Order Value ({quantity} units):</span>
-                <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
+            <button
+              type="button"
+              onClick={() => { if (!eventName.trim()) { setError('Please enter an event name.'); return; } setError(null); setStep(2); }}
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '0.85rem' }}
+            >
+              Continue: Select Quantity
+            </button>
+          </div>
+        )}
+
+        {/* STEP 2: Quantity & Contact Details */}
+        {step === 2 && (
+          <div>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '1rem' }}>
+              2. Quantity and delivery details
+            </h2>
+
+            {/* Drop Count Selector */}
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-main)' }}>
+                Logo drop volume (units)
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {DROP_COUNTS.map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    onClick={() => setLogoDropCount(count)}
+                    style={{
+                      padding: '0.5rem 1.15rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600,
+                      fontSize: '0.875rem', border: logoDropCount === count ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
+                      backgroundColor: logoDropCount === count ? 'var(--accent-light)' : 'var(--bg-card)',
+                      color: logoDropCount === count ? 'var(--color-sky)' : 'var(--text-main)',
+                      transition: 'all 0.15s',
+                      minWidth: '64px', minHeight: '38px',
+                    }}
+                  >
+                    {count}
+                  </button>
+                ))}
+              </div>
+              <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                Unit price: £{UNIT_PRICE_GBP.toFixed(2)} • Order subtotal: <strong style={{ color: 'var(--text-main)' }}>£{(logoDropCount * UNIT_PRICE_GBP).toFixed(2)}</strong>
+              </div>
+            </div>
+
+            {/* Live 85/15 Split Preview */}
+            <div style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', padding: '1.25rem', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>{logoDropCount} units — {CATEGORY_META[eventCategory].label}</span>
+                <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
                   £{(grossCents / 100).toFixed(2)}
                 </span>
               </div>
-
               <FinancialSplitBar
                 grossAmountCents={grossCents}
-                licensorRoyaltyCents={royaltyCents}
+                licensorRoyaltyCents={licensorCents}
                 charityGiftCents={charityCents}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-            >
-              {loading ? 'Processing Souvenir Order...' : `Place Custom Event Order (£${(grossCents / 100).toFixed(2)}) →`}
-            </button>
-          </div>
-        </form>
-      )}
+            {/* Contact & Shipping */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--text-main)' }}>Email address for confirmation and tax invoice *</label>
+                <input type="email" required value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="form-input" placeholder="procurement@organization.com" />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--text-main)' }}>Primary contact name</label>
+                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="form-input" placeholder="Authorized Representative" />
+              </div>
+            </div>
 
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--text-main)' }}>Delivery address *</label>
+              <input type="text" required value={street} onChange={(e) => setStreet(e.target.value)} className="form-input" placeholder="Facility / Suite Address" />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--text-main)' }}>City *</label>
+                <input type="text" required value={city} onChange={(e) => setCity(e.target.value)} className="form-input" placeholder="London" />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--text-main)' }}>Country *</label>
+                <input type="text" required value={country} onChange={(e) => setCountry(e.target.value)} className="form-input" placeholder="United Kingdom" />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--text-main)' }}>Postal code *</label>
+                <input type="text" required value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="form-input" placeholder="SW1A 1AA" />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => setStep(1)} className="btn btn-secondary" style={{ flex: '1 1 120px' }}>
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!customerEmail.includes('@')) { setError('Please enter a valid email address.'); return; }
+                  if (!street || !city || !postalCode) { setError('Please complete all shipping address fields.'); return; }
+                  setError(null);
+                  setStep(3);
+                }}
+                className="btn btn-primary"
+                style={{ flex: '3 1 240px' }}
+              >
+                Continue to Review
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Review & Pay */}
+        {step === 3 && (
+          <div>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '1rem' }}>
+              3. Review order specification
+            </h2>
+
+            <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.87rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Event Category</div>
+                  <div style={{ fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>{CATEGORY_META[eventCategory].label}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Event Name</div>
+                  <div style={{ fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>{eventName}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Logo Drops</div>
+                  <div style={{ fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>{logoDropCount} units</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Receipt Email</div>
+                  <div style={{ fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>{customerEmail}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Shipping To</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)', marginTop: '2px', fontSize: '0.82rem' }}>{street}, {city}, {country} {postalCode}</div>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', padding: '1.25rem', border: '1px solid var(--border-light)' }}>
+                <FinancialSplitBar
+                  grossAmountCents={grossCents}
+                  licensorRoyaltyCents={licensorCents}
+                  charityGiftCents={charityCents}
+                />
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', borderRadius: '8px', padding: '0.875rem 1.25rem', marginBottom: '1.5rem', fontSize: '0.8125rem', color: 'var(--color-green-dark)', fontWeight: 500, lineHeight: 1.5 }}>
+              15% of this transaction is automatically routed to verified statutory environmental restoration funds. A formal GHG Tax Invoice will be generated and dispatched to {customerEmail}.
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => setStep(2)} className="btn btn-secondary" style={{ flex: '1 1 120px' }}>
+                Previous
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  flex: '3 1 240px', padding: '0.8125rem 1.25rem',
+                  backgroundColor: '#635BFF', color: '#ffffff', fontWeight: 600,
+                  fontSize: '0.875rem', borderRadius: '8px', border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 2px 8px rgba(99, 91, 255, 0.25)', transition: 'opacity 0.2s',
+                  opacity: loading ? 0.7 : 1,
+                }}
+              >
+                {loading ? 'Processing...' : `Pay £${(grossCents / 100).toFixed(2)} via Stripe Checkout`}
+              </button>
+            </div>
+          </div>
+        )}
+      </form>
     </div>
   );
 };

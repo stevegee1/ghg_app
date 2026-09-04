@@ -8,31 +8,31 @@ export const PartnerLicensingPage: React.FC = () => {
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 5rem 0' }}>
       
       {/* 1. Hero Section (Clean Google B2B Layout — Zero Badges) */}
-      <section style={{ textAlign: 'center', padding: '3.5rem 1rem 4rem 1rem' }}>
-        <h1 style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 auto 1.25rem auto', letterSpacing: '-0.035em', maxWidth: '850px', lineHeight: 1.15 }}>
-          The future of continuous climate assurance is here.
+      <section style={{ textAlign: 'center', padding: '2.5rem 1rem 3rem 1rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 auto 0.75rem auto', letterSpacing: '-0.025em', maxWidth: '780px', lineHeight: 1.25 }}>
+          The continuous climate assurance platform
         </h1>
         
-        <p style={{ fontSize: 'clamp(1.05rem, 2.2vw, 1.2rem)', color: 'var(--text-muted)', maxWidth: '780px', margin: '0 auto 2.5rem auto', lineHeight: 1.6 }}>
-          Natively embedded anomaly detection, mandatory ISO 17025 sensor calibration gatekeepers, and automated compliance reporting for ISO 14064, ISO 50001, UK SECR, and EU CSRD.
+        <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '720px', margin: '0 auto 2rem auto', lineHeight: 1.55 }}>
+          Natively embedded anomaly detection, mandatory ISO 17025 sensor calibration verification, and automated compliance reporting for ISO 14064, ISO 50001, UK SECR, and EU CSRD.
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <Link to="/create-account" className="btn btn-primary" style={{ padding: '0.85rem 2rem', fontSize: '1rem' }}>
+          <Link to="/create-account" className="btn btn-primary" style={{ padding: '0.65rem 1.75rem', fontSize: '0.875rem', fontWeight: 600 }}>
             <span>Sign Up Free</span>
             <span>→</span>
           </Link>
-          <Link to="/portal/login" className="btn btn-secondary" style={{ padding: '0.85rem 2rem', fontSize: '1rem' }}>
+          <Link to="/portal/login" className="btn btn-secondary" style={{ padding: '0.65rem 1.75rem', fontSize: '0.875rem', fontWeight: 600 }}>
             <span>Sign In to Console</span>
           </Link>
         </div>
       </section>
 
       {/* 2. Embedded Assurance Prominence Banner */}
-      <section className="persefoni-card" style={{ padding: '2rem 2.5rem', marginBottom: '4rem', backgroundColor: 'var(--bg-card)', borderLeft: '4px solid var(--color-sky)' }}>
+      <section className="persefoni-card" style={{ padding: '1.5rem 2rem', marginBottom: '3rem', backgroundColor: 'var(--bg-card)', borderLeft: '4px solid var(--color-sky)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-            Continuous Assurance <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>natively embedded and accessible in every plan.</span>
+          <div style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+            Continuous Assurance <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>natively embedded and accessible in every plan.</span>
           </div>
           <div>
             <Link to="/create-account" style={{ color: 'var(--color-sky)', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none' }}>
@@ -45,7 +45,7 @@ export const PartnerLicensingPage: React.FC = () => {
       {/* 3. Core Capabilities Bento Grid */}
       <section style={{ marginBottom: '5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.025em' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
             What Continuous Climate Assurance Entails
           </h2>
           <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
@@ -117,7 +117,7 @@ export const PartnerLicensingPage: React.FC = () => {
       {/* 4. Enterprise Continuous Assurance Plans */}
       <section style={{ marginBottom: '5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.025em' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
             Enterprise Continuous Assurance Plans
           </h2>
           <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>

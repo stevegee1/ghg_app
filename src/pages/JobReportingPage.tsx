@@ -40,16 +40,16 @@ export const JobReportingPage: React.FC = () => {
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 5rem 0' }}>
       
       {/* 1. Hero Section (Clean Google B2B Layout — Zero Badges) */}
-      <section style={{ textAlign: 'center', padding: '3.5rem 1rem 4rem 1rem' }}>
+      <section style={{ textAlign: 'center', padding: '2.5rem 1rem 3rem 1rem' }}>
         <h1
           style={{
-            fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
-            fontWeight: 800,
+            fontSize: '1.75rem',
+            fontWeight: 600,
             color: 'var(--text-main)',
-            margin: '0 auto 1.25rem auto',
-            letterSpacing: '-0.035em',
-            maxWidth: '900px',
-            lineHeight: 1.15,
+            margin: '0 auto 0.75rem auto',
+            letterSpacing: '-0.025em',
+            maxWidth: '850px',
+            lineHeight: 1.25,
           }}
         >
           Audit-Ready Job Creation & Section 106 Planning Compliance
@@ -57,38 +57,38 @@ export const JobReportingPage: React.FC = () => {
 
         <p
           style={{
-            fontSize: 'clamp(1.05rem, 2.2vw, 1.2rem)',
+            fontSize: '0.9375rem',
             color: 'var(--text-muted)',
-            maxWidth: '800px',
-            margin: '0 auto 2.5rem auto',
-            lineHeight: 1.6,
+            maxWidth: '780px',
+            margin: '0 auto 2rem auto',
+            lineHeight: 1.55,
           }}
         >
           Guarantee continuous audit-readiness for municipal planning covenants, the UK Social Value Act, and EU CSRD ESRS S1. Ingest verified payroll records, track local apprentice quotas, and export cryptographically sealed compliance dossiers before council inspection.
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <Link to="/create-account" className="btn btn-primary" style={{ padding: '0.85rem 2rem', fontSize: '1rem' }}>
+          <Link to="/create-account" className="btn btn-primary" style={{ padding: '0.65rem 1.75rem', fontSize: '0.875rem', fontWeight: 600 }}>
             <span>Sign Up Free</span>
             <span>→</span>
           </Link>
-          <a href="#auditor" className="btn btn-secondary" style={{ padding: '0.85rem 2rem', fontSize: '1rem', textDecoration: 'none' }}>
+          <a href="#auditor" className="btn btn-secondary" style={{ padding: '0.65rem 1.75rem', fontSize: '0.875rem', fontWeight: 600, textDecoration: 'none' }}>
             <span>Launch Compliance Auditor</span>
           </a>
         </div>
       </section>
 
       {/* 2. Visual Feature Strip with Attached Executive Audit Asset */}
-      <section className="persefoni-card" style={{ padding: '2.5rem', marginBottom: '4.5rem', backgroundColor: 'var(--bg-card)' }}>
+      <section className="persefoni-card" style={{ padding: '2rem', marginBottom: '3rem', backgroundColor: 'var(--bg-card)' }}>
         <div className="hero-layout-grid" style={{ alignItems: 'center' }}>
           <div>
-            <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.25rem)', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1.25rem', letterSpacing: '-0.025em' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
               Eliminate Planning Permit Revocation Risk
             </h2>
-            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '1.25rem' }}>
               Under Town and Country Planning Act 1990 covenants, industrial infrastructure builders face financial penalties and permit revocation if local workforce commitments cannot be proven during annual audits.
             </p>
-            <ul style={{ paddingLeft: '1.25rem', margin: '0 0 1.75rem 0', fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>
+            <ul style={{ paddingLeft: '1.25rem', margin: '0 0 1.5rem 0', fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <li><strong>Local Labor Quotas</strong>: Automatic distance-based resident filtering (within 15-mile council boundaries).</li>
               <li><strong>Apprentice Accreditations</strong>: Immutable storage of NVQ Level 2/3 indentures and City & Guilds logs.</li>
               <li><strong>Statutory Living Wage</strong>: Real-time validation against the UK Real Living Wage and EU Fair Wage mandates.</li>
@@ -111,7 +111,7 @@ export const JobReportingPage: React.FC = () => {
       {/* 3. Core Pillars Bento Grid */}
       <section style={{ marginBottom: '5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.025em' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
             Three Pillars of Workforce Audit Readiness
           </h2>
           <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
@@ -167,13 +167,13 @@ export const JobReportingPage: React.FC = () => {
       </section>
 
       {/* 4. Interactive Self-Service Planning Compliance Auditor */}
-      <section id="auditor" className="persefoni-card" style={{ padding: 'clamp(1.75rem, 4vw, 3rem)', marginBottom: '5rem', backgroundColor: 'var(--bg-card)' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.025em' }}>
-            Test Your Facility's Section 106 Compliance Grade
+      <section id="auditor" className="persefoni-card" style={{ padding: '2rem', marginBottom: '3.5rem', backgroundColor: 'var(--bg-card)' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+            Section 106 Planning Compliance Auditor
           </h2>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-            Adjust your facility's workforce parameters to evaluate audit readiness under municipal planning benchmarks.
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+            Adjust workforce metrics to evaluate audit readiness under municipal planning benchmarks.
           </p>
         </div>
 
@@ -274,7 +274,7 @@ export const JobReportingPage: React.FC = () => {
           {/* Real-time Assessment Card */}
           <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '2rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '3rem', fontWeight: 900, color: assessmentResult?.isAuditReady ? 'var(--color-green)' : 'var(--google-red)', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: assessmentResult?.isAuditReady ? 'var(--color-green)' : 'var(--google-red)', fontFamily: 'var(--font-mono)' }}>
                 {assessmentResult?.score ?? 85}<span style={{ fontSize: '1.25rem', color: 'var(--text-muted)' }}>/100</span>
               </div>
               <div style={{ fontSize: '1rem', fontWeight: 800, color: assessmentResult?.isAuditReady ? 'var(--color-green)' : 'var(--google-red)' }}>

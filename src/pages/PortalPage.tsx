@@ -109,10 +109,10 @@ export const PortalPage: React.FC = () => {
             <span>PARTNER ASSURANCE CONSOLE</span>
           </div>
 
-          <h1 style={{ fontSize: 'clamp(1.85rem, 3.8vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.03em' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
             Compliance & Telemetry Ledger
           </h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
             Scoped Tenant: <code style={{ fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>{user?.licenseeId || 'ALL (ADMIN)'}</code>
           </p>
         </div>
@@ -137,7 +137,7 @@ export const PortalPage: React.FC = () => {
         <div className="persefoni-card" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: 'var(--color-sky)' }} />
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Settled Transactions</div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
             {loading ? '...' : (summary?.totalSettledTransactions ?? 0).toLocaleString()}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-sky)', marginTop: '0.25rem', fontWeight: 600 }}>Verified Audit Trail</div>
@@ -146,7 +146,7 @@ export const PortalPage: React.FC = () => {
         <div className="persefoni-card" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: 'var(--color-green)' }} />
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Settled Gross Volume</div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
             {loading ? '...' : `£${((summary?.totalGrossVolumeCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-green)', marginTop: '0.25rem', fontWeight: 600 }}>Contractual Settlement</div>
@@ -155,7 +155,7 @@ export const PortalPage: React.FC = () => {
         <div className="persefoni-card" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#a855f7' }} />
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>15% ESG Charity Split</div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#a855f7', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#a855f7', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
             {loading ? '...' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#a855f7', marginTop: '0.25rem', fontWeight: 600 }}>Direct Environmental Routing</div>

@@ -15,6 +15,8 @@ import { createCustomKeepsakeRouter } from './routes/custom-keepsake.route';
 import { createIsoEvidenceRouter } from './routes/iso-evidence.route';
 import { createIsoLegalRouter } from './routes/iso-legal.route';
 import { createJobReportingRouter } from './routes/job-reporting.route';
+import { createOrdersRouter } from './routes/orders.route';
+import { createCharitiesRouter } from './routes/charities.route';
 import { CheckoutService } from './services/checkout.service';
 
 export function createApp(stripeInstance?: Stripe): Express {
@@ -61,6 +63,8 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createIsoEvidenceRouter(prisma));
   app.use(createIsoLegalRouter(prisma));
   app.use(createJobReportingRouter(prisma));
+  app.use(createOrdersRouter(prisma));
+  app.use(createCharitiesRouter(prisma));
 
   // SPA Wildcard fallback — serve index.html for all non-API routes
   app.get('*', (req, res) => {

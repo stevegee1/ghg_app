@@ -69,11 +69,11 @@ export const SignUpPage: React.FC = () => {
           </span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.03em' }}>
-          Create your free account
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
+          Create your account
         </h1>
-        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', margin: 0 }}>
-          100% free. No credit card required.
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
+          Provision your continuous climate telemetry and assurance tenant.
         </p>
       </div>
 
@@ -83,7 +83,7 @@ export const SignUpPage: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="persefoni-card" style={{ padding: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+      <form onSubmit={handleSubmit} className="persefoni-card" style={{ padding: '1.75rem' }}>
         
         <div className="form-grid-2col" style={{ marginBottom: '1.25rem' }}>
           <div>

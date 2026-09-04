@@ -52,10 +52,10 @@ export const LoginPage: React.FC = () => {
           </span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.03em' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
           {isAdminRoute ? 'Admin Console Login' : 'Sign in to your account'}
         </h1>
-        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', margin: 0 }}>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
           {isAdminRoute
             ? 'Authenticate as System Administrator to manage audit trails.'
             : 'Access your continuous climate telemetry and assurance console.'}
@@ -68,7 +68,7 @@ export const LoginPage: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="persefoni-card" style={{ padding: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+      <form onSubmit={handleSubmit} className="persefoni-card" style={{ padding: '1.75rem' }}>
         
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>

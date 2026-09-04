@@ -127,17 +127,17 @@ export const api = {
   },
 
   async getSouvenirTracker(orderId?: string) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.getSouvenirTracker(orderId);
+    // Public endpoint — no mock fallback in production
+    const orderNumber = orderId?.trim().toUpperCase();
+    if (!orderNumber) return null;
+    const res = await fetch(`/api/orders/track/${encodeURIComponent(orderNumber)}`);
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      const err = await res.json().catch(() => ({ error: 'Failed to track order' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      isUsingMockData = false;
-      return mockApi.getSouvenirTracker(orderId);
-    } catch (e) {
-      isUsingMockData = true;
-      return mockApi.getSouvenirTracker(orderId);
-    }
+    isUsingMockData = false;
+    return res.json();
   },
 
   async register(params: { firstName: string; lastName: string; email: string; password: string; companyName: string }) {
@@ -255,35 +255,126 @@ export const api = {
   },
 
   async createEventSouvenirOrder(params: {
+    customerEmail: string;
+    customerName?: string;
+    eventCategory: 'SPORTS' | 'GALA' | 'TECH_SUMMIT' | 'WEDDING';
     eventName: string;
-    eventType: string;
-    eventDate: string;
-    itemId: string;
-    quantity: number;
-    shippingAddress: string;
+    logoDropCount: 10 | 25 | 50 | 100 | 250 | 500;
+    shippingAddress: { street: string; city: string; country: string; postalCode: string };
+    currency?: string;
   }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.createEventSouvenirOrder(params);
+    const res = await fetch('/api/souvenirs/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to place souvenir order' }));
+      throw new Error(err.error || 'Failed to place souvenir order');
     }
-    try {
-      const res = await fetch('/api/souvenirs/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+    isUsingMockData = false;
+    return res.json();
+  },
+
+  /** GET /api/charities/active — public */
+  async getActiveCharities() {
+    const res = await fetch('/api/charities/active');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to load charities' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    isUsingMockData = false;
+    return res.json();
+  },
+
+  /** POST /api/charities/register — capacity-gated on the server */
+  async registerCharity(params: {
+    legalEntityName: string;
+    registrationNumber: string;
+    registrationJurisdiction: string;
+    headquartersAddress: string;
+    focusPillar: 'REFORESTATION_AND_LAND' | 'OCEAN_AND_WATER' | 'COMMUNITY_AND_YOUTH';
+    primaryContactName: string;
+    primaryContactEmail: string;
+    stripeConnectedAccountId?: string;
+    annualFinancialStatementUrl?: string;
+    impactMetricDescription: string;
+    authorizedSignatoryName: string;
+    authorizedSignatoryTitle: string;
+    agreedToTerms: boolean;
+  }) {
+    const res = await fetch('/api/charities/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Registration failed' }));
+      throw Object.assign(new Error(err.error || `HTTP ${res.status}`), {
+        status: res.status,
+        body: err,
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Failed to place souvenir order' }));
-        throw new Error(err.error || 'Failed to place souvenir order');
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (e.message && !e.message.includes('Failed to fetch')) throw e;
-      console.warn('[API Client] Backend unreachable for souvenir order, using mock API', e);
-      isUsingMockData = true;
-      return mockApi.createEventSouvenirOrder(params);
     }
+    isUsingMockData = false;
+    return res.json();
+  },
+
+  /** POST /api/custom-merch/preview */
+  async previewCustomKeepsake(params: {
+    garmentModel: string;
+    inscribedText: string;
+    threadColor: string;
+    placement: string;
+    quantity?: number;
+    unitPriceCents?: number;
+  }) {
+    const res = await fetch('/api/custom-merch/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Preview failed' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    isUsingMockData = false;
+    return res.json();
+  },
+
+  /** POST /api/custom-merch/checkout */
+  async checkoutCustomKeepsake(params: {
+    licenseeId: string;
+    garmentModel: string;
+    inscribedText: string;
+    threadColor: string;
+    placement: string;
+    quantity?: number;
+    unitPriceCents?: number;
+    currency?: string;
+    checkoutReferenceId?: string;
+    isGoalFrenzy?: boolean;
+    frenzyClub?: string;
+    frenzyOpponent?: string;
+    frenzyMinute?: string;
+    frenzyMoment?: string;
+    frenzyQuote?: string;
+  }) {
+    const res = await fetch('/api/custom-merch/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Custom merch checkout failed' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    isUsingMockData = false;
+    return res.json();
+  },
+
+  /** Returns the URL for downloading a PDF invoice */
+  getInvoicePdfUrl(orderNumber: string): string {
+    return `/api/orders/${encodeURIComponent(orderNumber.trim().toUpperCase())}/invoice-pdf`;
   },
 
   async getPortalSummary(token: string) {

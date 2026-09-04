@@ -52,6 +52,7 @@ model Transaction {
   financialSplit        FinancialSplit?
   telemetryLog          TelemetryLog?
   customKeepsakeSpec    CustomKeepsakeSpec?
+  souvenirOrder         SouvenirOrder?
 
   @@index([licenseeId])
 }
@@ -367,6 +368,13 @@ model CustomKeepsakeSpec {
   artisanLaborHours Float        @default(1.5)
   lcaCarbonGrams    Int          @default(450)
   openSeaTokenUri   String?
+  // Goal Frenzy sports moment customizer fields
+  isGoalFrenzy      Boolean      @default(false)
+  frenzyClub        String?      // e.g. "Arsenal FC"
+  frenzyOpponent    String?      // e.g. "Tottenham Hotspur"
+  frenzyMinute      String?      // e.g. "89'"
+  frenzyMoment      String?      // e.g. "Last-minute top-corner winner, Emirates Stadium"
+  frenzyQuote       String?      // e.g. "Absolute limbs in the North Bank!"
   createdAt         DateTime     @default(now())
 }
 
@@ -399,6 +407,93 @@ model AuditEvidenceDocument {
   @@index([reportId])
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SOUVENIR ORDERS: Amazon/Jumia-style public order tracking
+// ─────────────────────────────────────────────────────────────────────────────
 
+enum SouvenirOrderStatus {
+  ORDER_PLACED
+  SPLIT_DISBURSED
+  QUEUED_FOR_PRINT
+  IN_PRODUCTION
+  QUALITY_INSPECTED
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
 
+enum SouvenirEventCategory {
+  SPORTS
+  GALA
+  TECH_SUMMIT
+  WEDDING
+}
 
+model SouvenirOrder {
+  id                String                @id @default(cuid())
+  orderNumber       String                @unique // e.g. "GHG-ORD-2026-X8F9K"
+  customerEmail     String
+  customerName      String?
+  eventCategory     SouvenirEventCategory
+  eventName         String                // e.g. "Arsenal FC Community Day 2026"
+  logoDropCount     Int                   // 10, 25, 50, 100, 250, 500
+  itemType          String                @default("GHG_LOGO_DROP") // always GHG verified mark
+  shippingAddress   Json?                 // { street, city, country, postalCode }
+  status            SouvenirOrderStatus   @default(ORDER_PLACED)
+  courierName       String?               // "DHL Express", "FedEx"
+  trackingNumber    String?
+  trackingUrl       String?
+  estimatedDelivery DateTime?
+  stripeSessionId   String?
+  grossAmountCents  Int
+  licensorCents     Int                   // 85%
+  charityCents      Int                   // 15%
+  transactionId     String?               @unique
+  transaction       Transaction?          @relation(fields: [transactionId], references: [id])
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([customerEmail])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHARITY APPLICATIONS: Legal intake, capacity-gated to max 3 active charities
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum CharityFocusPillar {
+  REFORESTATION_AND_LAND
+  OCEAN_AND_WATER
+  COMMUNITY_AND_YOUTH
+}
+
+enum CharityApplicationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  WAITLISTED
+}
+
+model CharityApplication {
+  id                        String                   @id @default(cuid())
+  legalEntityName           String
+  registrationNumber        String                   // e.g. UK Charity Commission No., US EIN
+  registrationJurisdiction  String                   // e.g. "England & Wales", "United States"
+  headquartersAddress       String
+  focusPillar               CharityFocusPillar
+  primaryContactName        String
+  primaryContactEmail       String
+  stripeConnectedAccountId  String?                  // For direct Stripe disbursements
+  annualFinancialStatementUrl String?                // PDF upload URL
+  impactMetricDescription   String                   // e.g. "12,000 trees planted per £10,000"
+  authorizedSignatoryName   String
+  authorizedSignatoryTitle  String
+  agreedToTerms             Boolean                  @default(false)
+  applicationStatus         CharityApplicationStatus @default(PENDING_REVIEW)
+  reviewNotes               String?
+  reviewedAt                DateTime?
+  createdAt                 DateTime                 @default(now())
+
+  @@index([applicationStatus])
+  @@index([primaryContactEmail])
+}

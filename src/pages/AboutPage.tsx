@@ -27,22 +27,22 @@ export const AboutPage: React.FC = () => {
           <span>NICE CLASS 35 CONTINUOUS ASSURANCE & TRADEMARK AUTHENTICATION</span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.25rem', color: 'var(--text-main)', letterSpacing: '-0.035em' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 600, lineHeight: 1.25, marginBottom: '0.75rem', color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
           About GHG Logo Drop (NFTY LOGS®)
         </h1>
-        <p style={{ fontSize: 'clamp(1rem, 2vw, 1.15rem)', color: 'var(--text-muted)', maxWidth: '760px', margin: '0 auto 2rem auto', lineHeight: 1.6 }}>
+        <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '760px', margin: '0 auto 2rem auto', lineHeight: 1.55 }}>
           Leveraging digital technology, trademark optics, and continuous telemetry verification to ensure audit-readiness and trigger direct 15% ESG support for verified environmental funds.
         </p>
       </section>
 
       {/* Official Corporate Registration Card */}
-      <section className="persefoni-card" style={{ marginBottom: '2.5rem', padding: '2rem', borderLeft: '4px solid var(--color-sky)' }}>
+      <section className="persefoni-card" style={{ marginBottom: '2.5rem', padding: '1.75rem', borderLeft: '4px solid var(--color-sky)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
               UNITED KINGDOM CORPORATE REGISTRATION
             </div>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
               NFTYLOGS LTD
             </h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: '0.35rem 0 0 0' }}>

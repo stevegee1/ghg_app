@@ -52,6 +52,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="jobs" element={<JobReportingPage />} />
         <Route path="souvenirs" element={<EventSouvenirPage />} />
         <Route path="merch" element={<MerchStorePage />} />
+        <Route path="track" element={<PublicTrackerPage />} />
+        <Route path="track/:orderNumber" element={<PublicTrackerPage />} />
         <Route path="public-tracker" element={<PublicTrackerPage />} />
         <Route path="transparency" element={<TransparencyPage />} />
         <Route path="checkout" element={<CheckoutPage />} />

@@ -69,10 +69,10 @@ export const ResetPasswordPage: React.FC = () => {
           </span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(1.85rem, 4vw, 2.25rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.03em' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
           Create new password
         </h1>
-        <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
           Enter a secure password for your console account <strong style={{ color: 'var(--text-main)' }}>{email}</strong>.
         </p>
       </div>
@@ -83,7 +83,7 @@ export const ResetPasswordPage: React.FC = () => {
         </div>
       )}
 
-      <div className="persefoni-card" style={{ padding: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+      <div className="persefoni-card" style={{ padding: '1.75rem' }}>
         
         {success ? (
           <div style={{ textAlign: 'center' }}>

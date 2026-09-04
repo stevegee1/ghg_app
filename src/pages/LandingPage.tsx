@@ -82,12 +82,12 @@ export const LandingPage: React.FC = () => {
               {/* Persefoni Headline */}
               <h1
                 style={{
-                  fontSize: 'clamp(2.4rem, 4.8vw, 3.85rem)',
-                  fontWeight: 800,
-                  lineHeight: 1.08,
-                  marginBottom: '1.5rem',
+                  fontSize: '2rem',
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  marginBottom: '1rem',
                   color: 'var(--text-main)',
-                  letterSpacing: '-0.04em',
+                  letterSpacing: '-0.025em',
                 }}
               >
                 Carbon Footprint & Sustainability Assurance
@@ -96,10 +96,10 @@ export const LandingPage: React.FC = () => {
               {/* Subtitle */}
               <p
                 style={{
-                  fontSize: 'clamp(1.05rem, 2.2vw, 1.2rem)',
+                  fontSize: '0.9375rem',
                   color: 'var(--text-muted)',
-                  lineHeight: 1.6,
-                  marginBottom: '2.5rem',
+                  lineHeight: 1.55,
+                  marginBottom: '2rem',
                   maxWidth: '560px',
                 }}
               >
@@ -376,16 +376,16 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 3. Persefoni Feature Section 1: "Measure, Report, Decarbonize." */}
-      <section style={{ maxWidth: '1280px', margin: '4.5rem auto 0 auto', padding: '0 1.5rem' }}>
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+      <section style={{ maxWidth: '1280px', margin: '3.5rem auto 0 auto', padding: '0 1.5rem' }}>
+        <div style={{ marginBottom: '1.75rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
             Measure, Report, Decarbonize.
           </h2>
         </div>
 
         <div className="hero-layout-grid" style={{ alignItems: 'center' }}>
           <div>
-            <h3 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.35rem)', fontWeight: 800, lineHeight: 1.2, color: 'var(--text-main)', marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3, color: 'var(--text-main)', marginBottom: '1rem' }}>
               Scope 1, 2, and 3 carbon footprints for businesses of all sizes and complexities.
             </h3>
 
@@ -444,19 +444,19 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div>
-            <h3 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.35rem)', fontWeight: 800, lineHeight: 1.2, color: 'var(--text-main)', marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3, color: 'var(--text-main)', marginBottom: '1rem' }}>
               Assurance-grade GHG emissions reporting and verifiable nature-positive climate impact.
             </h3>
 
-            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.75rem' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '1.5rem' }}>
               Pre-configured for UK SECR, EU CSRD, California SB 253/261, and ISO 14064 standards with immutable cryptographic SHA-256 data watermarks and direct 15% ESG fund routing to local nature projects.
             </p>
 
             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <Link to="/about" style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', textDecoration: 'none' }}>
+              <Link to="/about" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', textDecoration: 'none' }}>
                 Regulatory Reporting →
               </Link>
-              <Link to="/transparency" style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', textDecoration: 'none' }}>
+              <Link to="/transparency" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', textDecoration: 'none' }}>
                 Investor Reporting →
               </Link>
             </div>
@@ -466,19 +466,19 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 5. Persefoni Feature Section 3: Decarbonization Management */}
-      <section style={{ maxWidth: '1280px', margin: '5rem auto 0 auto', padding: '0 1.5rem' }}>
+      <section style={{ maxWidth: '1280px', margin: '4rem auto 0 auto', padding: '0 1.5rem' }}>
         <div className="hero-layout-grid" style={{ alignItems: 'center' }}>
           
           <div>
-            <h3 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.35rem)', fontWeight: 800, lineHeight: 1.2, color: 'var(--text-main)', marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3, color: 'var(--text-main)', marginBottom: '1rem' }}>
               Net-zero target setting, reduction modeling, and supplier engagement for advanced decarbonization.
             </h3>
 
-            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.75rem' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '1.5rem' }}>
               Continuous sensor models tracking 15% anomaly variance limits and supplier compliance scorecards under ISO Clause 10.2.
             </p>
 
-            <Link to="/portal/login" style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', textDecoration: 'none' }}>
+            <Link to="/portal/login" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', textDecoration: 'none' }}>
               Decarbonization Management →
             </Link>
           </div>
@@ -487,16 +487,16 @@ export const LandingPage: React.FC = () => {
           <div
             style={{
               backgroundColor: '#fff7ed',
-              borderRadius: '16px',
+              borderRadius: '14px',
               border: '1px solid #fed7aa',
-              padding: '2.5rem',
+              padding: '2rem',
             }}
           >
-            <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Reduction Ambition</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Annual reduction trajectory</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#ea580c', margin: '0.5rem 0' }}>
-                100 <span style={{ fontSize: '1.25rem' }}>%</span>
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Reduction Ambition</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Annual reduction trajectory</div>
+              <div style={{ fontSize: '2rem', fontWeight: 700, color: '#ea580c', margin: '0.35rem 0' }}>
+                100 <span style={{ fontSize: '1.1rem' }}>%</span>
               </div>
             </div>
 
@@ -519,30 +519,30 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 6. Section 106 & Social Value Job Creation Feature Section */}
-      <section style={{ maxWidth: '1280px', margin: '5rem auto 0 auto', padding: '0 1.5rem' }}>
+      <section style={{ maxWidth: '1280px', margin: '4rem auto 0 auto', padding: '0 1.5rem' }}>
         <div className="hero-layout-grid" style={{ alignItems: 'center' }}>
           
           <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
               MUNICIPAL & STATUTORY WORKFORCE ASSURANCE
             </div>
 
-            <h3 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.35rem)', fontWeight: 800, lineHeight: 1.2, color: 'var(--text-main)', marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3, color: 'var(--text-main)', marginBottom: '1rem' }}>
               Section 106 & Social Value Job Creation Reporting, Certified for Planning Authorities.
             </h3>
 
-            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '1.25rem' }}>
               Ensure continuous audit-readiness for municipal planning covenants, the UK Social Value Act, and EU CSRD ESRS S1. Ingest verified payroll records, track local apprentice quotas, and export cryptographically sealed compliance dossiers before council inspection.
             </p>
 
-            <ul style={{ paddingLeft: '1.25rem', margin: '0 0 1.75rem 0', fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>
+            <ul style={{ paddingLeft: '1.25rem', margin: '0 0 1.5rem 0', fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <li><strong>Section 106 Local Labor Quotas</strong>: Automated resident radius verification.</li>
               <li><strong>NVQ Training Evidence Locker</strong>: Cryptographically hashed apprentice credentials.</li>
               <li><strong>One-Click Planning Dossiers</strong>: Certified reports ready for council submission.</li>
             </ul>
 
             <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
-              <Link to="/job-reporting" style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-sky)', textDecoration: 'none' }}>
+              <Link to="/job-reporting" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-sky)', textDecoration: 'none' }}>
                 Explore Workforce Assurance →
               </Link>
               <button
@@ -552,14 +552,14 @@ export const LandingPage: React.FC = () => {
                   const el = document.getElementById('demonstrator-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', cursor: 'pointer', textDecoration: 'underline' }}
+                style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', textDecoration: 'underline' }}
               >
                 Test Section 106 Auditor →
               </button>
             </div>
           </div>
 
-          <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-light)', boxShadow: '0 15px 35px rgba(0,0,0,0.08)' }}>
+          <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border-light)', boxShadow: '0 10px 25px rgba(0,0,0,0.06)' }}>
             <img
               src="/images/workforce-audit.jpg"
               alt="Executive Review of Workforce Quotas and Audit Graphs"
@@ -571,12 +571,12 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 7. Interactive System Demonstrator Tabs */}
-      <section id="demonstrator-section" style={{ maxWidth: '1280px', margin: '5rem auto 0 auto', padding: '0 1.5rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+      <section id="demonstrator-section" style={{ maxWidth: '1280px', margin: '4rem auto 0 auto', padding: '0 1.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
             CONTINUOUS ASSURANCE ENGINES
           </div>
-          <h2 style={{ fontSize: 'clamp(1.85rem, 4vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
             Test Our Continuous Assurance Engines Live
           </h2>
         </div>
@@ -822,7 +822,7 @@ export const LandingPage: React.FC = () => {
                     return (
                       <div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                          <span style={{ fontSize: '2.5rem', fontWeight: 900, color: isPassing ? 'var(--color-green)' : 'var(--google-red)', fontFamily: 'var(--font-mono)' }}>
+                          <span style={{ fontSize: '2rem', fontWeight: 800, color: isPassing ? 'var(--color-green)' : 'var(--google-red)', fontFamily: 'var(--font-mono)' }}>
                             {score}/100
                           </span>
                           <span style={{ fontSize: '0.85rem', fontWeight: 800, color: isPassing ? 'var(--color-green)' : 'var(--google-red)' }}>
