@@ -21,14 +21,36 @@ const TIERS = [
     id: 'TIER_1_READINESS',
     name: 'Single-Site Remote Readiness',
     price: '£1,250',
-    description: 'ISO 14001 / ISO 50001 / ISO 19011:2026 assessment. 72-hour turnaround.',
+    grossCents: 125000,
+    softwareCents: 106250,
+    charityCents: 18750,
+    turnaround: '72-Hour Expedited',
+    standards: 'ISO 14001 / ISO 50001 / ISO 19011:2026',
+    description: 'Single-site management system diagnostic and remote verification docket.',
+    features: [
+      'Automated ISO 14001, ISO 50001 & ISO 14064 diagnostic review',
+      'Remote ICT verification stamp under ISO 19011:2026 Annex A.16',
+      'Expedited 72-hour lead assurance review turnaround',
+      'Digital provenance warranty NFT token on Polygon PoS',
+    ],
   },
   {
     id: 'TIER_2_CONTINUOUS',
     name: 'Continuous Assurance Protocol',
     price: '£3,500',
-    description: 'Quarterly multi-jurisdiction protocol. UK SECR, UAE SCA, EU CSRD aligned.',
+    grossCents: 350000,
+    softwareCents: 297500,
+    charityCents: 52500,
+    turnaround: 'Continuous Quarterly',
+    standards: 'ISO 14001 · ISO 50001 · UK SECR · UAE SCA · EU CSRD',
+    description: 'Continuous quarterly assurance protocol with automated telemetry monitoring and statutory filings.',
     recommended: true,
+    features: [
+      'Continuous telemetry ingestion & real-time anomaly alerts',
+      'Quarterly UK SECR, UAE SCA & EU CSRD draft statutory dossiers',
+      'ISO 17025 equipment calibration gatekeeper protocol',
+      'Priority lead auditor consultation & assurance warranty badge',
+    ],
   },
 ];
 
@@ -55,8 +77,12 @@ export const PortalPage: React.FC = () => {
   const [isoStatus, setIsoStatus] = useState<any | null>(null);
   const [isoStatusLoading, setIsoStatusLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<any[]>([]);
+  const [activeSectionFilter, setActiveSectionFilter] = useState<string>('ALL');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    S1: true, S2: true, S3: true, S4: true, S5: true, S6: true,
+  });
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
   // ── Credential Studio State ────────────────────────────────────────────────
   const [clientMessage, setClientMessage] = useState<string>('');
@@ -300,10 +326,26 @@ export const PortalPage: React.FC = () => {
     ? `ghg_api_${user.licenseeId.replace(/-/g, '').substring(0, 24)}`
     : 'ghg_api_pending_payment';
 
-  // ── Progress indicator ────────────────────────────────────────────────────
-  const totalQuestions = framework?.sections.flatMap((s: any) => s.questions).length || 0;
-  const answeredQuestions = Object.values(answers).filter((v) => v).length;
+  // ── Progress & Conformity Index Calculation ───────────────────────────────
+  const allQuestions = (framework?.sections || []).flatMap((s: any) => s.questions || []);
+  const totalQuestions = allQuestions.length;
+  const answeredQuestions = allQuestions.filter((q: any) => Boolean(answers[q.questionId])).length;
   const progressPct = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
+
+  // Real-time compliance score estimator (0 to 100%)
+  const scoreMetrics = allQuestions.reduce(
+    (acc: { score: number; count: number }, q: any) => {
+      const ans = answers[q.questionId];
+      if (!ans) return acc;
+      if (ans === 'Yes, fully in place') return { score: acc.score + 100, count: acc.count + 1 };
+      if (ans === 'Partially implemented') return { score: acc.score + 50, count: acc.count + 1 };
+      if (ans === 'Not yet implemented') return { score: acc.score + 0, count: acc.count + 1 };
+      return acc; // N/A is neutral
+    },
+    { score: 0, count: 0 }
+  );
+  const estimatedComplianceScore =
+    scoreMetrics.count > 0 ? Math.round(scoreMetrics.score / scoreMetrics.count) : 0;
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
@@ -359,40 +401,65 @@ export const PortalPage: React.FC = () => {
       {/* ── ISO Audit Workflow ── 5-Step tabbed stepper ───────────────────── */}
       <div className="persefoni-card" style={{ padding: '0', marginBottom: '2.5rem', overflow: 'hidden' }}>
 
-        {/* Step tab bar */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', overflowX: 'auto' }}>
-          {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step) => {
+        {/* ── Google Cloud Connected Stepper Bar ──────────────────────────────── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '1.25rem 2rem', borderBottom: '1px solid var(--border-light)',
+          backgroundColor: 'var(--bg-card)', position: 'relative', overflowX: 'auto',
+        }}>
+          {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step, idx) => {
             const isActive = activeStep === step;
-            const isComplete = isoStatus?.status === 'APPROVED' || (step < activeStep);
+            const isCompleted = step < activeStep || (step === 1 && progressPct === 100);
+            const canClick = isCompleted || step <= activeStep;
+
             return (
-              <button
-                key={step}
-                onClick={() => setActiveStep(step)}
-                style={{
-                  flex: '1 0 auto',
-                  minWidth: '120px',
-                  padding: '1rem 1.25rem',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid var(--color-sky)' : '2px solid transparent',
-                  background: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  backgroundColor: isComplete ? 'var(--color-green)' : isActive ? 'var(--color-sky)' : 'var(--bg-subtle)',
-                  color: isComplete || isActive ? '#fff' : 'var(--text-muted)',
-                  fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.35rem',
-                }}>
-                  {isComplete ? '✓' : step}
-                </div>
-                <div style={{ fontSize: '0.72rem', fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--color-sky)' : 'var(--text-muted)', letterSpacing: '0.03em' }}>
-                  {STEP_LABELS[step]}
-                </div>
-              </button>
+              <React.Fragment key={step}>
+                <button
+                  type="button"
+                  onClick={() => canClick && setActiveStep(step)}
+                  disabled={!canClick}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.65rem',
+                    background: 'none', border: 'none', padding: '0.5rem 0.25rem',
+                    cursor: canClick ? 'pointer' : 'not-allowed',
+                    opacity: canClick ? 1 : 0.45,
+                    transition: 'all 0.2s', flexShrink: 0,
+                  }}
+                >
+                  <div style={{
+                    width: '28px', height: '28px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.78rem', fontWeight: 700,
+                    backgroundColor: isCompleted
+                      ? 'var(--color-green)'
+                      : isActive
+                      ? 'var(--color-sky)'
+                      : 'var(--bg-subtle)',
+                    color: isCompleted || isActive ? '#fff' : 'var(--text-muted)',
+                    boxShadow: isActive ? '0 0 0 4px rgba(2,132,199,0.2)' : 'none',
+                    transition: 'all 0.2s',
+                  }}>
+                    {isCompleted ? '✓' : step}
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{
+                      fontSize: '0.8rem', fontWeight: isActive ? 700 : 500,
+                      color: isActive ? 'var(--color-sky)' : isCompleted ? 'var(--text-main)' : 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {STEP_LABELS[step]}
+                    </div>
+                  </div>
+                </button>
+
+                {idx < 4 && (
+                  <div style={{
+                    flex: 1, height: '2px', margin: '0 0.75rem',
+                    backgroundColor: step < activeStep ? 'var(--color-green)' : 'var(--border-light)',
+                    minWidth: '24px', transition: 'background-color 0.3s',
+                  }} />
+                )}
+              </React.Fragment>
             );
           })}
         </div>
@@ -400,25 +467,63 @@ export const PortalPage: React.FC = () => {
         {/* Step content */}
         <div style={{ padding: '2rem' }}>
 
-          {/* ── STEP 1: ISO Diagnostic ────────────────────────────────────── */}
+          {/* ── STEP 1: ISO Diagnostic (Google Cloud Architecture Assessment Pattern) ── */}
           {activeStep === 1 && (
             <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.4rem 0' }}>
-                  ISO Audit-Readiness Diagnostic
-                </h2>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
-                  Respond to all questions aligned with ISO 14001, ISO 50001, ISO 14064, and ISO 19011:2026 remote auditing guidelines.
-                  Answers are saved and queued for review by our lead assurance officer.
-                </p>
-                {totalQuestions > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: progressPct === 100 ? 'var(--color-green)' : 'var(--color-sky)', borderRadius: '3px', transition: 'width 0.3s ease' }} />
-                    </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {answeredQuestions}/{totalQuestions} answered
+              {/* Assessment Header & Live Gauge Card */}
+              <div style={{
+                backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)',
+                borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
+                      ISO Audit-Readiness Diagnostic Assessment
+                    </h2>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px', lineHeight: 1.5 }}>
+                      Structured statutory screening aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
+                    </p>
+                  </div>
+
+                  {/* Real-time compliance score badge */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem',
+                    padding: '0.5rem 1rem', borderRadius: '8px',
+                    backgroundColor: estimatedComplianceScore >= 80 ? 'rgba(16,185,129,0.1)' : 'rgba(2,132,199,0.1)',
+                    border: `1px solid ${estimatedComplianceScore >= 80 ? 'rgba(16,185,129,0.3)' : 'rgba(2,132,199,0.3)'}`,
+                  }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      Readiness Index:
                     </span>
+                    <span style={{
+                      fontSize: '1.1rem', fontWeight: 800, fontFamily: 'var(--font-mono)',
+                      color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
+                    }}>
+                      {estimatedComplianceScore}%
+                    </span>
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: 600,
+                      color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
+                    }}>
+                      ({estimatedComplianceScore >= 80 ? 'Audit-Ready' : estimatedComplianceScore >= 50 ? 'In Progress' : 'Initial'})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Material Progress bar */}
+                {totalQuestions > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                      <span>Assessment Completion</span>
+                      <span>{answeredQuestions} of {totalQuestions} answered ({progressPct}%)</span>
+                    </div>
+                    <div style={{ height: '8px', backgroundColor: 'var(--bg-card)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                      <div style={{
+                        width: `${progressPct}%`, height: '100%',
+                        backgroundColor: progressPct === 100 ? 'var(--color-green)' : 'var(--color-sky)',
+                        borderRadius: '4px', transition: 'width 0.3s ease',
+                      }} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -429,132 +534,254 @@ export const PortalPage: React.FC = () => {
 
               {!frameworkLoading && framework && (
                 <div>
-                  {framework.sections.map((section: any) => (
-                    <div key={section.sectionId} style={{ marginBottom: '2rem' }}>
-                      <div style={{
-                        backgroundColor: 'var(--bg-subtle)', borderLeft: '3px solid var(--color-sky)',
-                        padding: '0.65rem 1rem', marginBottom: '1rem', borderRadius: '0 6px 6px 0',
-                      }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>{section.sectionTitle}</div>
-                      </div>
+                  {/* Interactive Clause Sub-Navigation Chips */}
+                  <div style={{
+                    display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem', marginBottom: '1.5rem',
+                    scrollbarWidth: 'none',
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSectionFilter('ALL')}
+                      style={{
+                        padding: '0.4rem 0.85rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                        border: activeSectionFilter === 'ALL' ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
+                        backgroundColor: activeSectionFilter === 'ALL' ? 'var(--color-sky)' : 'var(--bg-card)',
+                        color: activeSectionFilter === 'ALL' ? '#fff' : 'var(--text-muted)',
+                        cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                      }}
+                    >
+                      All Clauses ({answeredQuestions}/{totalQuestions})
+                    </button>
 
-                      {section.questions.map((q: any) => (
-                        <div key={q.questionId} style={{ marginBottom: '1.25rem', paddingLeft: '0.5rem' }}>
-                          <div style={{ marginBottom: '0.5rem' }}>
-                            <span style={{
-                              display: 'inline-block', fontSize: '0.68rem', fontWeight: 700,
-                              color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)',
-                              padding: '2px 6px', borderRadius: '4px', marginRight: '0.5rem',
-                            }}>
-                              {q.isoClause.split('/')[0].trim()}
-                            </span>
-                            {q.legalMandate && (
-                              <span style={{
-                                display: 'inline-block', fontSize: '0.68rem', fontWeight: 700,
-                                color: '#a855f7', backgroundColor: 'rgba(168,85,247,0.1)',
-                                padding: '2px 6px', borderRadius: '4px',
-                              }}>
-                                {q.legalMandate.split('—')[0].trim()}
-                              </span>
-                            )}
-                          </div>
-                          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem', lineHeight: 1.5 }}>
-                            {q.questionId}: {q.questionText}
-                          </label>
-                          {q.evidenceRequired && (
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.4rem 0', fontStyle: 'italic' }}>
-                              Evidence: {q.evidenceRequired}
-                            </p>
-                          )}
-                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
-                            {['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'].map((opt) => (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => handleAnswerChange(q.questionId, opt)}
-                                style={{
-                                  padding: '0.35rem 0.8rem',
-                                  borderRadius: '20px',
-                                  fontSize: '0.78rem',
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                  border: answers[q.questionId] === opt
-                                    ? '1px solid var(--color-sky)'
-                                    : '1px solid var(--border-light)',
-                                  backgroundColor: answers[q.questionId] === opt
-                                    ? 'var(--accent-light)'
-                                    : 'var(--bg-card)',
-                                  color: answers[q.questionId] === opt
-                                    ? 'var(--color-sky)'
-                                    : 'var(--text-muted)',
-                                  transition: 'all 0.15s',
-                                }}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                          <textarea
-                            rows={2}
-                            placeholder="Supporting notes or evidence description (optional)"
-                            value={typeof answers[`${q.questionId}_notes`] === 'string' ? answers[`${q.questionId}_notes`] : ''}
-                            onChange={(e) => handleAnswerChange(`${q.questionId}_notes`, e.target.value)}
-                            className="form-input"
-                            style={{ fontSize: '0.8rem', resize: 'vertical' }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                    {framework.sections.map((sec: any) => {
+                      const secQuestions = sec.questions || [];
+                      const secAnswered = secQuestions.filter((q: any) => Boolean(answers[q.questionId])).length;
+                      const isComplete = secAnswered === secQuestions.length && secQuestions.length > 0;
+                      const isSelected = activeSectionFilter === sec.sectionId;
 
-                  {/* Tier selection */}
-                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
-                      Select Preparation Service Tier
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                      {TIERS.map((tier) => (
+                      return (
                         <button
-                          key={tier.id}
+                          key={sec.sectionId}
                           type="button"
-                          onClick={() => setSelectedTier(tier.id)}
+                          onClick={() => setActiveSectionFilter(sec.sectionId)}
                           style={{
-                            padding: '1.25rem', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
-                            border: selectedTier === tier.id ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                            backgroundColor: selectedTier === tier.id ? 'var(--accent-light)' : 'var(--bg-card)',
-                            transition: 'all 0.15s', position: 'relative',
+                            padding: '0.4rem 0.85rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                            border: isSelected ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
+                            backgroundColor: isSelected ? 'var(--color-sky)' : 'var(--bg-card)',
+                            color: isSelected ? '#fff' : isComplete ? 'var(--color-green)' : 'var(--text-muted)',
+                            cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                            display: 'flex', alignItems: 'center', gap: '0.35rem',
                           }}
                         >
-                          {tier.recommended && (
-                            <span style={{
-                              position: 'absolute', top: '-10px', right: '12px',
-                              backgroundColor: 'var(--color-green)', color: '#fff',
-                              fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
-                            }}>
-                              RECOMMENDED
-                            </span>
-                          )}
-                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.25rem' }}>{tier.name}</div>
-                          <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-sky)', marginBottom: '0.35rem' }}>{tier.price}</div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{tier.description}</div>
+                          {isComplete && <span style={{ fontSize: '0.7rem' }}>✓</span>}
+                          <span>{sec.sectionTitle.split('(')[0].trim()}</span>
+                          <span style={{ opacity: 0.75, fontSize: '0.7rem' }}>({secAnswered}/{secQuestions.length})</span>
                         </button>
-                      ))}
+                      );
+                    })}
+                  </div>
+
+                  {/* Clause Accordion Sections */}
+                  {framework.sections
+                    .filter((sec: any) => activeSectionFilter === 'ALL' || activeSectionFilter === sec.sectionId)
+                    .map((section: any) => {
+                      const secQuestions = section.questions || [];
+                      const secAnswered = secQuestions.filter((q: any) => Boolean(answers[q.questionId])).length;
+                      const isSecComplete = secAnswered === secQuestions.length && secQuestions.length > 0;
+                      const isExpanded = expandedSections[section.sectionId] ?? true;
+
+                      return (
+                        <div
+                          key={section.sectionId}
+                          style={{
+                            border: '1px solid var(--border-light)', borderRadius: '12px',
+                            marginBottom: '1.25rem', overflow: 'hidden', backgroundColor: 'var(--bg-card)',
+                          }}
+                        >
+                          {/* Accordion Section Header */}
+                          <div
+                            onClick={() => setExpandedSections((prev) => ({ ...prev, [section.sectionId]: !isExpanded }))}
+                            style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '1rem 1.25rem', cursor: 'pointer',
+                              backgroundColor: 'var(--bg-subtle)',
+                              borderBottom: isExpanded ? '1px solid var(--border-light)' : 'none',
+                              userSelect: 'none',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span style={{
+                                width: '20px', height: '20px', borderRadius: '50%',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                backgroundColor: isSecComplete ? 'var(--color-green)' : 'rgba(2,132,199,0.15)',
+                                color: isSecComplete ? '#fff' : 'var(--color-sky)',
+                                fontSize: '0.7rem', fontWeight: 700,
+                              }}>
+                                {isSecComplete ? '✓' : section.sectionId}
+                              </span>
+                              <div>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                                  {section.sectionTitle}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span style={{
+                                fontSize: '0.72rem', fontWeight: 600,
+                                color: isSecComplete ? 'var(--color-green)' : 'var(--text-muted)',
+                                backgroundColor: isSecComplete ? 'rgba(16,185,129,0.1)' : 'var(--bg-card)',
+                                padding: '2px 8px', borderRadius: '6px',
+                              }}>
+                                {secAnswered} of {secQuestions.length} completed
+                              </span>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                {isExpanded ? '▲' : '▼'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Section Questions */}
+                          {isExpanded && (
+                            <div style={{ padding: '1.25rem 1.5rem' }}>
+                              {secQuestions.map((q: any, qIdx: number) => {
+                                const selectedAnswer = answers[q.questionId];
+                                const hasNote = Boolean(answers[`${q.questionId}_notes`]);
+                                const isNoteExpanded = expandedNotes[q.questionId] || hasNote;
+
+                                return (
+                                  <div
+                                    key={q.questionId}
+                                    style={{
+                                      paddingBottom: qIdx < secQuestions.length - 1 ? '1.5rem' : '0.5rem',
+                                      marginBottom: qIdx < secQuestions.length - 1 ? '1.5rem' : 0,
+                                      borderBottom: qIdx < secQuestions.length - 1 ? '1px solid var(--border-light)' : 'none',
+                                    }}
+                                  >
+                                    {/* Clause & Mandate Badges */}
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                                      <span style={{
+                                        fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-sky)',
+                                        backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '4px',
+                                        fontFamily: 'var(--font-mono)',
+                                      }}>
+                                        {q.questionId}
+                                      </span>
+                                      <span style={{
+                                        fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-sky)',
+                                        backgroundColor: 'rgba(2,132,199,0.08)', padding: '2px 8px', borderRadius: '4px',
+                                      }}>
+                                        {q.isoClause.split('/')[0].trim()}
+                                      </span>
+                                      {q.legalMandate && (
+                                        <span style={{
+                                          fontSize: '0.7rem', fontWeight: 600, color: '#a855f7',
+                                          backgroundColor: 'rgba(168,85,247,0.08)', padding: '2px 8px', borderRadius: '4px',
+                                        }}>
+                                          {q.legalMandate.split('—')[0].trim()}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Question Text */}
+                                    <label style={{ display: 'block', fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem', lineHeight: 1.45 }}>
+                                      {q.questionText}
+                                    </label>
+
+                                    {/* Evidence Requirement Hint */}
+                                    {q.evidenceRequired && (
+                                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+                                        <span style={{ fontWeight: 600 }}>Evidence required:</span> {q.evidenceRequired}
+                                      </div>
+                                    )}
+
+                                    {/* Segmented Button Group */}
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+                                      {['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'].map((opt) => {
+                                        const isSelected = selectedAnswer === opt;
+                                        return (
+                                          <button
+                                            key={opt}
+                                            type="button"
+                                            onClick={() => handleAnswerChange(q.questionId, opt)}
+                                            style={{
+                                              padding: '0.45rem 0.9rem',
+                                              borderRadius: '6px',
+                                              fontSize: '0.8rem',
+                                              fontWeight: isSelected ? 700 : 500,
+                                              cursor: 'pointer',
+                                              border: isSelected ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
+                                              backgroundColor: isSelected ? 'var(--color-sky)' : 'var(--bg-card)',
+                                              color: isSelected ? '#fff' : 'var(--text-main)',
+                                              boxShadow: isSelected ? '0 1px 2px rgba(2,132,199,0.2)' : 'none',
+                                              transition: 'all 0.15s ease',
+                                            }}
+                                          >
+                                            {isSelected ? `✓ ${opt}` : opt}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+
+                                    {/* Collapsible Evidence Notes */}
+                                    {!isNoteExpanded ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedNotes((prev) => ({ ...prev, [q.questionId]: true }))}
+                                        style={{
+                                          background: 'none', border: 'none', padding: 0,
+                                          fontSize: '0.75rem', color: 'var(--color-sky)',
+                                          cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                                        }}
+                                      >
+                                        + Add evidence description or document reference (optional)
+                                      </button>
+                                    ) : (
+                                      <div style={{ marginTop: '0.5rem' }}>
+                                        <textarea
+                                          rows={2}
+                                          placeholder="Enter supporting evidence reference, document title, or internal control docket..."
+                                          value={typeof answers[`${q.questionId}_notes`] === 'string' ? answers[`${q.questionId}_notes`] : ''}
+                                          onChange={(e) => handleAnswerChange(`${q.questionId}_notes`, e.target.value)}
+                                          className="form-input"
+                                          style={{ fontSize: '0.8rem', resize: 'vertical', width: '100%' }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                  {submitError && (
+                    <div style={{ color: 'var(--google-red)', fontSize: '0.85rem', margin: '1rem 0', fontWeight: 600 }}>
+                      {submitError}
+                    </div>
+                  )}
+
+                  {/* Material 3 Bottom Action Bar (No checkout pricing here) */}
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '1.25rem 0 0.5rem 0', borderTop: '1px solid var(--border-light)',
+                    marginTop: '1.5rem', flexWrap: 'wrap', gap: '1rem',
+                  }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ color: 'var(--color-green)', fontWeight: 700 }}>✓</span>
+                      <span>Real-time tenant diagnostic autosave active</span>
                     </div>
 
-                    {submitError && (
-                      <div style={{ color: 'var(--google-red)', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>
-                        {submitError}
-                      </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                       {submissionId && (
                         <button
                           type="button"
                           onClick={() => setActiveStep(2)}
                           className="btn btn-secondary"
                         >
-                          Already Submitted — Go to Checkout
+                          Skip to Checkout →
                         </button>
                       )}
                       <button
@@ -562,8 +789,13 @@ export const PortalPage: React.FC = () => {
                         onClick={handleIsoSubmit}
                         disabled={submitting || progressPct < 100}
                         className="btn btn-primary"
+                        style={{ minWidth: '220px' }}
                       >
-                        {submitting ? 'Submitting…' : progressPct < 100 ? `Answer ${totalQuestions - answeredQuestions} more question(s)` : 'Submit Diagnostic →'}
+                        {submitting
+                          ? 'Saving Diagnostic…'
+                          : progressPct < 100
+                          ? `Answer ${totalQuestions - answeredQuestions} more to continue`
+                          : 'Save & Proceed to Checkout →'}
                       </button>
                     </div>
                   </div>
@@ -572,59 +804,188 @@ export const PortalPage: React.FC = () => {
             </div>
           )}
 
-          {/* ── STEP 2: Stripe Checkout ───────────────────────────────────── */}
+          {/* ── STEP 2: Stripe Checkout (Google Cloud Billing Two-Column Pattern) ── */}
           {activeStep === 2 && (
-            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-                Secure Flat-Rate Checkout
-              </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                All preparation service fees are settled with automatic 85% software revenue / 15% disaster relief endowment routing.
-              </p>
-
-              {TIERS.map((tier) => (
-                <button
-                  key={tier.id}
-                  type="button"
-                  onClick={() => setSelectedTier(tier.id)}
-                  style={{
-                    width: '100%', marginBottom: '0.75rem', padding: '1.25rem', borderRadius: '12px',
-                    textAlign: 'left', cursor: 'pointer',
-                    border: selectedTier === tier.id ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                    backgroundColor: selectedTier === tier.id ? 'var(--accent-light)' : 'var(--bg-card)',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.2rem' }}>{tier.name}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{tier.description}</div>
-                    </div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-sky)', marginLeft: '1rem', whiteSpace: 'nowrap' }}>{tier.price}</div>
-                  </div>
-                </button>
-              ))}
-
-              <div style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', padding: '1rem', marginBottom: '1.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <strong style={{ color: 'var(--text-main)' }}>Submission ID:</strong>{' '}
-                <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--color-sky)' }}>{submissionId || 'pending'}</code>
+            <div>
+              <div style={{ marginBottom: '2rem' }}>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
+                  Select Statutory Assurance Tier &amp; Checkout
+                </h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px' }}>
+                  Preparation service fees are administered under UKIPO Class 35 data administration utility. All checkouts strictly enforce the 85% software licensing and 15% disaster relief endowment routing.
+                </p>
               </div>
 
-              {checkoutError && (
-                <div style={{ color: 'var(--google-red)', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>{checkoutError}</div>
-              )}
+              {/* Two-column layout */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '2rem',
+                alignItems: 'start',
+              }}>
+                {/* Left column — Tier Selection Cards */}
+                <div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem' }}>
+                    Available Preparation Tiers
+                  </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between' }}>
-                <button type="button" onClick={() => setActiveStep(1)} className="btn btn-secondary">Back</button>
-                <button
-                  type="button"
-                  onClick={handleCheckout}
-                  disabled={checkoutLoading || !submissionId}
-                  className="btn btn-primary"
-                  style={{ minWidth: '200px' }}
-                >
-                  {checkoutLoading ? 'Redirecting…' : `Pay ${TIERS.find((t) => t.id === selectedTier)?.price} via Stripe →`}
-                </button>
+                  {TIERS.map((tier) => {
+                    const isSelected = selectedTier === tier.id;
+                    return (
+                      <div
+                        key={tier.id}
+                        onClick={() => setSelectedTier(tier.id)}
+                        style={{
+                          padding: '1.5rem',
+                          borderRadius: '12px',
+                          border: isSelected ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
+                          backgroundColor: isSelected ? 'rgba(2,132,199,0.04)' : 'var(--bg-card)',
+                          cursor: 'pointer',
+                          marginBottom: '1rem',
+                          position: 'relative',
+                          boxShadow: isSelected ? '0 2px 8px rgba(2,132,199,0.12)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {tier.recommended && (
+                          <span style={{
+                            position: 'absolute', top: '14px', right: '16px',
+                            backgroundColor: 'var(--color-sky)', color: '#fff',
+                            fontSize: '0.65rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px',
+                            letterSpacing: '0.04em',
+                          }}>
+                            RECOMMENDED
+                          </span>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                          {/* Radio circle */}
+                          <div style={{
+                            width: '18px', height: '18px', borderRadius: '50%',
+                            border: isSelected ? '5px solid var(--color-sky)' : '2px solid var(--border-light)',
+                            backgroundColor: '#fff', marginTop: '3px', flexShrink: 0,
+                          }} />
+
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                                {tier.name}
+                              </div>
+                              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
+                                {tier.price}
+                              </div>
+                            </div>
+
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 0.85rem 0', lineHeight: 1.4 }}>
+                              {tier.description}
+                            </p>
+
+                            {/* Features list */}
+                            <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.78rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
+                              {tier.features.map((feat, fIdx) => (
+                                <li key={fIdx} style={{ marginBottom: '0.2rem' }}>{feat}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right column — Sticky Order Summary Card */}
+                <div style={{
+                  backgroundColor: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  padding: '1.75rem',
+                  position: 'sticky',
+                  top: '2rem',
+                }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1.25rem' }}>
+                    Assurance Order Summary
+                  </div>
+
+                  {(() => {
+                    const activeTierData = TIERS.find((t) => t.id === selectedTier) || TIERS[0];
+                    return (
+                      <div>
+                        <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
+                          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.2rem' }}>
+                            {activeTierData.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {activeTierData.turnaround} · {activeTierData.standards}
+                          </div>
+                        </div>
+
+                        {/* Statutory Split Breakdown */}
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span>Software &amp; Assurance Base (85%)</span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+                              £{(activeTierData.softwareCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span>Disaster Relief Charity Endowment (15%)</span>
+                            <span style={{ fontWeight: 600, color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
+                              £{(activeTierData.charityCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Total Due */}
+                        <div style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                          paddingTop: '0.75rem', borderTop: '2px solid var(--border-light)', marginBottom: '1.5rem',
+                        }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>Total Investment</span>
+                          <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
+                            {activeTierData.price}
+                          </span>
+                        </div>
+
+                        {/* Metadata chips */}
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                          <div>Scoped Tenant: <strong style={{ color: 'var(--text-main)' }}>{user?.licenseeId}</strong></div>
+                          <div>Diagnostic State: <span style={{ color: 'var(--color-green)', fontWeight: 600 }}>{answeredQuestions} of {totalQuestions} answered ✓</span></div>
+                        </div>
+
+                        {checkoutError && (
+                          <div style={{ color: 'var(--google-red)', fontSize: '0.8rem', marginBottom: '1rem', fontWeight: 600 }}>
+                            {checkoutError}
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <button
+                          type="button"
+                          onClick={handleCheckout}
+                          disabled={checkoutLoading || !submissionId}
+                          className="btn btn-primary"
+                          style={{ width: '100%', padding: '0.85rem', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}
+                        >
+                          {checkoutLoading ? 'Connecting to Stripe…' : `Pay ${activeTierData.price} via Stripe Checkout →`}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveStep(1)}
+                          className="btn btn-secondary"
+                          style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
+                        >
+                          ← Review Diagnostic Answers
+                        </button>
+
+                        {/* Security notice */}
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem', lineHeight: 1.4 }}>
+                          🔒 256-bit TLS encrypted · B2B telemetry API key provisioned instantly upon settlement
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           )}
