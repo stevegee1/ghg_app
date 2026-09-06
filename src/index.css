@@ -1639,45 +1639,114 @@ h1, h2, h3, h4, .font-heading {
   color: var(--text-muted);
 }
 
-/* Mobile Tabs */
+/* Mobile Tabs (legacy – now hidden always) */
 .portal-mobile-tabs {
   display: none;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.85rem;
-  margin-bottom: 1.5rem;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
 }
 
-.portal-mobile-tabs::-webkit-scrollbar {
+/* ── Off-Canvas Sidebar Drawer (mobile) ───────────────────────────────────── */
+.portal-sidebar-backdrop {
   display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+  animation: fadeInBackdrop 0.2s ease;
 }
 
-.portal-mobile-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 0.9rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-light);
+@keyframes fadeInBackdrop {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.portal-sidebar-drawer {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 290px;
   background: var(--bg-card);
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
+  border-right: 1px solid var(--border-light);
+  z-index: 1001;
+  transform: translateX(-100%);
+  transition: transform 0.28s cubic-bezier(0.2, 0, 0, 1);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+.portal-sidebar-drawer.open {
+  transform: translateX(0);
+}
+
+.portal-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
+}
+
+.portal-drawer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.portal-drawer-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.portal-mobile-tab-btn.active {
-  background: var(--color-sky);
-  color: #ffffff;
-  border-color: var(--color-sky);
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+.portal-drawer-close:hover {
+  background: var(--bg-subtle);
+  color: var(--text-main);
 }
 
+/* ── Hamburger button (mobile only, hidden on desktop) ────────────────────── */
+.portal-hamburger-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: var(--text-muted);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.portal-hamburger-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+.portal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ── Responsive: tablet + mobile (≤ 960px) ────────────────────────────────── */
 @media (max-width: 960px) {
   .portal-dashboard-layout {
     flex-direction: column;
@@ -1685,16 +1754,57 @@ h1, h2, h3, h4, .font-heading {
     gap: 1.25rem;
   }
 
+  /* Desktop sidebar — hidden on mobile (drawer replaces it) */
   .portal-sidebar {
     display: none;
   }
 
-  .portal-mobile-tabs {
+  /* Show backdrop when drawer is open */
+  .portal-sidebar-backdrop {
+    display: block;
+  }
+
+  /* Drawer is always mounted; open class slides it in */
+  .portal-sidebar-drawer {
     display: flex;
-    width: 100%;
+  }
+
+  /* Show hamburger button */
+  .portal-hamburger-btn {
+    display: flex;
   }
 
   .portal-workspace-header {
     margin-bottom: 1.5rem;
+  }
+
+  .portal-page-heading {
+    font-size: 1.2rem;
+  }
+}
+
+/* ── Narrow mobile adjustments (≤ 480px) ─────────────────────────────────── */
+@media (max-width: 480px) {
+  .portal-sidebar-drawer {
+    width: 80vw;
+    max-width: 310px;
+  }
+
+  .portal-workspace-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+
+  .google-m3-scope-container {
+    width: 100%;
+  }
+
+  .google-m3-segmented-control {
+    width: 100%;
+  }
+
+  .google-m3-segment-btn {
+    flex: 1;
   }
 }

@@ -195,6 +195,7 @@ export const PortalPage: React.FC = () => {
 
   // ── Dashboard Navigation View ─────────────────────────────────────────────
   const [activeView, setActiveView] = useState<DashboardView>('workflow');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
   const [copiedApiKey, setCopiedApiKey] = useState<boolean>(false);
   const [copiedClientId, setCopiedClientId] = useState<boolean>(false);
 
@@ -626,135 +627,162 @@ export const PortalPage: React.FC = () => {
         { label: 'Audited Covenants', value: jobReports.length > 0 ? '100% Verified' : 'Filing Required', sub: 'ISO 19011:2026 Assured', accent: '#f59e0b' },
       ];
 
+  // ── Sidebar nav items helper (shared desktop + mobile drawer) ───────────
+  const SidebarContent = ({ onNav }: { onNav?: () => void }) => (
+    <>
+      {/* Client Profile Card */}
+      <div className="portal-sidebar-profile">
+        <div className="portal-profile-avatar">
+          <GoogleIcons.Building />
+        </div>
+        <div className="portal-profile-info">
+          <div className="portal-profile-role">Client Account</div>
+          <div className="portal-profile-name" title={user?.licenseeId || 'Enterprise Client'}>
+            {user?.licenseeId || 'Enterprise Client'}
+          </div>
+          <div className="portal-profile-status">
+            <span className="portal-status-dot" />
+            <span>Active Licensee</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Nav Items */}
+      <nav className="portal-sidebar-nav" aria-label="Dashboard Navigation">
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'workflow' ? 'active' : ''}`}
+          onClick={() => { setActiveView('workflow'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
+          <span className="portal-nav-label">Assurance Workflow</span>
+          <span className="portal-nav-badge">Step {activeStep}/5</span>
+        </button>
+
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'overview' ? 'active' : ''}`}
+          onClick={() => { setActiveView('overview'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Overview /></span>
+          <span className="portal-nav-label">KPI Overview</span>
+        </button>
+
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'credentials' ? 'active' : ''}`}
+          onClick={() => { setActiveView('credentials'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Credentials /></span>
+          <span className="portal-nav-label">Issued Credentials</span>
+          {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
+        </button>
+
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'jobs' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveView('jobs');
+            if (auditScope !== 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
+            onNav?.();
+          }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
+          <span className="portal-nav-label">Workforce &amp; Jobs</span>
+          {jobReports.length > 0 && <span className="portal-nav-badge count">{jobReports.length}</span>}
+        </button>
+
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'transactions' ? 'active' : ''}`}
+          onClick={() => { setActiveView('transactions'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Ledger /></span>
+          <span className="portal-nav-label">Settlement Ledger</span>
+          {transactions.length > 0 && <span className="portal-nav-badge count">{transactions.length}</span>}
+        </button>
+
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'profile' ? 'active' : ''}`}
+          onClick={() => { setActiveView('profile'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Profile /></span>
+          <span className="portal-nav-label">Profile &amp; API Keys</span>
+        </button>
+      </nav>
+
+      {/* Quick Utilities in Sidebar Footer */}
+      <div className="portal-sidebar-footer">
+        <a href="/portal/evidence" className="portal-sidebar-link">
+          <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
+          <span>Evidence Locker</span>
+          <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
+        </a>
+        <div className="portal-sidebar-security">
+          <span className="portal-status-dot" />
+          <span>ISO 19011:2026 Engine Online</span>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div className="portal-dashboard-layout">
 
-      {/* ── Left Sidebar: Client Profile & Navigation ──────────────────────── */}
+      {/* ── Mobile Backdrop Overlay ──────────────────────────────────────────── */}
+      {mobileSidebarOpen && (
+        <div
+          className="portal-sidebar-backdrop"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── Mobile Off-Canvas Sidebar Drawer ─────────────────────────────────── */}
+      <aside className={`portal-sidebar-drawer ${mobileSidebarOpen ? 'open' : ''}`} aria-label="Mobile navigation">
+        <div className="portal-drawer-header">
+          <span className="portal-drawer-title">My Dashboard</span>
+          <button
+            type="button"
+            className="portal-drawer-close"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label="Close navigation"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <SidebarContent onNav={() => setMobileSidebarOpen(false)} />
+      </aside>
+
+      {/* ── Left Sidebar: Desktop (always visible >= 961px) ───────────────────── */}
       <aside className="portal-sidebar">
-        {/* Client Profile Card */}
-        <div className="portal-sidebar-profile">
-          <div className="portal-profile-avatar">
-            <GoogleIcons.Building />
-          </div>
-          <div className="portal-profile-info">
-            <div className="portal-profile-role">Client Account</div>
-            <div className="portal-profile-name" title={user?.licenseeId || 'Enterprise Client'}>
-              {user?.licenseeId || 'Enterprise Client'}
-            </div>
-            <div className="portal-profile-status">
-              <span className="portal-status-dot" />
-              <span>Active Licensee</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar Nav Items */}
-        <nav className="portal-sidebar-nav" aria-label="Dashboard Navigation">
-          <button
-            type="button"
-            className={`portal-nav-btn ${activeView === 'workflow' ? 'active' : ''}`}
-            onClick={() => setActiveView('workflow')}
-          >
-            <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
-            <span className="portal-nav-label">Assurance Workflow</span>
-            <span className="portal-nav-badge">Step {activeStep}/5</span>
-          </button>
-
-          <button
-            type="button"
-            className={`portal-nav-btn ${activeView === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveView('overview')}
-          >
-            <span className="portal-nav-icon"><GoogleIcons.Overview /></span>
-            <span className="portal-nav-label">KPI Overview</span>
-          </button>
-
-          <button
-            type="button"
-            className={`portal-nav-btn ${activeView === 'credentials' ? 'active' : ''}`}
-            onClick={() => setActiveView('credentials')}
-          >
-            <span className="portal-nav-icon"><GoogleIcons.Credentials /></span>
-            <span className="portal-nav-label">Issued Credentials</span>
-            {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
-          </button>
-
-          <button
-            type="button"
-            className={`portal-nav-btn ${activeView === 'jobs' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveView('jobs');
-              if (auditScope !== 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
-            }}
-          >
-            <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
-            <span className="portal-nav-label">Workforce &amp; Jobs</span>
-            {jobReports.length > 0 && <span className="portal-nav-badge count">{jobReports.length}</span>}
-          </button>
-
-          <button
-            type="button"
-            className={`portal-nav-btn ${activeView === 'transactions' ? 'active' : ''}`}
-            onClick={() => setActiveView('transactions')}
-          >
-            <span className="portal-nav-icon"><GoogleIcons.Ledger /></span>
-            <span className="portal-nav-label">Settlement Ledger</span>
-            {transactions.length > 0 && <span className="portal-nav-badge count">{transactions.length}</span>}
-          </button>
-
-          <button
-            type="button"
-            className={`portal-nav-btn ${activeView === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveView('profile')}
-          >
-            <span className="portal-nav-icon"><GoogleIcons.Profile /></span>
-            <span className="portal-nav-label">Profile &amp; API Keys</span>
-          </button>
-        </nav>
-
-        {/* Quick Utilities in Sidebar Footer */}
-        <div className="portal-sidebar-footer">
-          <a href="/portal/evidence" className="portal-sidebar-link">
-            <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
-            <span>Evidence Locker</span>
-            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-          </a>
-          <div className="portal-sidebar-security">
-            <span className="portal-status-dot" />
-            <span>ISO 19011:2026 Engine Online</span>
-          </div>
-        </div>
+        <SidebarContent />
       </aside>
 
       {/* ── Main Workspace ─────────────────────────────────────────────────── */}
       <main className="portal-main-workspace">
-        {/* Mobile Horizontal Tabs (<= 960px) */}
-        <div className="portal-mobile-tabs" role="tablist" aria-label="Mobile Dashboard Navigation">
-          {[
-            { id: 'workflow', label: `Workflow (${activeStep}/5)` },
-            { id: 'overview', label: 'KPIs' },
-            { id: 'credentials', label: `Credentials (${credentials.length})` },
-            { id: 'jobs', label: `Jobs (${jobReports.length})` },
-            { id: 'transactions', label: `Ledger (${transactions.length})` },
-            { id: 'profile', label: 'Profile' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`portal-mobile-tab-btn ${activeView === tab.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveView(tab.id as DashboardView);
-                if (tab.id === 'jobs' && auditScope !== 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
 
         {/* Workspace Header Bar - Clean Google Standard */}
         <div className="portal-workspace-header">
-          <div>
+          <div className="portal-header-left">
+            {/* Hamburger: mobile only */}
+            <button
+              type="button"
+              className="portal-hamburger-btn"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open navigation"
+              aria-expanded={mobileSidebarOpen}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
             <h1 className="portal-page-heading">
               {getViewTitle()}
             </h1>
