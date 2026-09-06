@@ -102,8 +102,15 @@ const JOB_TIERS = [
   },
 ];
 
+export type DashboardView = 'workflow' | 'overview' | 'credentials' | 'jobs' | 'transactions' | 'profile';
+
 export const PortalPage: React.FC = () => {
   const { token, user } = useAuth();
+
+  // ── Dashboard Navigation View ─────────────────────────────────────────────
+  const [activeView, setActiveView] = useState<DashboardView>('workflow');
+  const [copiedApiKey, setCopiedApiKey] = useState<boolean>(false);
+  const [copiedClientId, setCopiedClientId] = useState<boolean>(false);
 
   // ── Global portal data ────────────────────────────────────────────────────
   const [summary, setSummary] = useState<any | null>(null);
@@ -430,13 +437,59 @@ export const PortalPage: React.FC = () => {
     setActiveStep(2);
   };
 
-  // ── Read URL params on mount (post-checkout redirect) ─────────────────────
+  // ── Read URL params on mount (post-checkout redirect & deep links) ───────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const step = params.get('step');
     if (step === '3') setActiveStep(3);
     if (step === '4') setActiveStep(4);
+    const scopeParam = params.get('scope');
+    if (scopeParam === 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
+    else if (scopeParam === 'CARBON_EMISSION') setAuditScope('CARBON_EMISSION');
+    const viewParam = params.get('view') || params.get('tab');
+    if (viewParam === 'overview' || viewParam === 'kpis') setActiveView('overview');
+    else if (viewParam === 'credentials') setActiveView('credentials');
+    else if (viewParam === 'jobs' || viewParam === 'job-reporting') {
+      setActiveView('jobs');
+      setAuditScope('JOB_REPORTING');
+    }
+    else if (viewParam === 'transactions' || viewParam === 'settlement') setActiveView('transactions');
+    else if (viewParam === 'profile') setActiveView('profile');
+    else if (viewParam === 'workflow' || viewParam === 'telemetry' || viewParam === 'diagnostic') setActiveView('workflow');
   }, []);
+
+  const copyClientId = () => {
+    if (user?.licenseeId) {
+      navigator.clipboard.writeText(user.licenseeId);
+      setCopiedClientId(true);
+      setTimeout(() => setCopiedClientId(false), 2000);
+    }
+  };
+
+  const copyApiKey = () => {
+    navigator.clipboard.writeText(telemetryApiKey);
+    setCopiedApiKey(true);
+    setTimeout(() => setCopiedApiKey(false), 2000);
+  };
+
+  const getViewTitle = () => {
+    switch (activeView) {
+      case 'workflow':
+        return 'Assurance Workflow Studio';
+      case 'overview':
+        return 'Executive Overview & KPIs';
+      case 'credentials':
+        return 'Issued Audit Warranty Credentials';
+      case 'jobs':
+        return 'Workforce & Social Impact Filings';
+      case 'transactions':
+        return 'Settlement History & 15% ESG Splits';
+      case 'profile':
+        return 'Client Profile & API Ingestion';
+      default:
+        return 'Client Profile Dashboard';
+    }
+  };
 
   const filteredTransactions = transactions.filter((t) => {
     if (statusFilter === 'ALL') return true;
@@ -488,107 +541,230 @@ export const PortalPage: React.FC = () => {
       ];
 
   return (
-    <div className="portal-container" style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 1rem 4rem 1rem' }}>
+    <div className="portal-dashboard-layout">
 
-      {/* ── Page Header & Scope Selector ──────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.25rem' }}>
-        <div>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-            backgroundColor: 'var(--accent-light)', border: '1px solid rgba(2,132,199,0.25)',
-            padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-pill)',
-            fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)',
-            letterSpacing: '0.04em', marginBottom: '0.75rem',
-          }}>
-            <span className="radar-pulse" />
-            <span>PARTNER ASSURANCE CONSOLE</span>
+      {/* ── Left Sidebar: Client Profile & Navigation ──────────────────────── */}
+      <aside className="portal-sidebar">
+        {/* Client Profile Card */}
+        <div className="portal-sidebar-profile">
+          <div className="portal-profile-avatar">
+            <span>🏢</span>
           </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
-            Compliance, Telemetry &amp; Credential Studio
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
-            Scoped Tenant: <code style={{ fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>{user?.licenseeId || 'ALL (ADMIN)'}</code>
-          </p>
+          <div className="portal-profile-info">
+            <div className="portal-profile-role">Client Account</div>
+            <div className="portal-profile-name" title={user?.licenseeId || 'Enterprise Client'}>
+              {user?.licenseeId || 'Enterprise Client'}
+            </div>
+            <div className="portal-profile-status">
+              <span className="portal-status-dot" />
+              <span>Active Licensee</span>
+            </div>
+          </div>
         </div>
 
-        {/* Google Material 3 Dual-Scope Segmented Switcher */}
-        <div className="google-m3-scope-container">
-          <div className="google-m3-scope-label">
-            <span className="google-m3-scope-tag">AUDIT-READY SCOPE</span>
-          </div>
+        {/* Sidebar Nav Items */}
+        <nav className="portal-sidebar-nav" aria-label="Dashboard Navigation">
+          <div className="portal-nav-section-title">MY DASHBOARD</div>
 
-          <div className="google-m3-segmented-control" role="tablist" aria-label="Audit-Ready Scope Selector">
+          <button
+            type="button"
+            className={`portal-nav-btn ${activeView === 'workflow' ? 'active' : ''}`}
+            onClick={() => setActiveView('workflow')}
+          >
+            <span className="portal-nav-icon">🛡️</span>
+            <span className="portal-nav-label">Assurance Workflow</span>
+            <span className="portal-nav-badge">Step {activeStep}/5</span>
+          </button>
+
+          <button
+            type="button"
+            className={`portal-nav-btn ${activeView === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveView('overview')}
+          >
+            <span className="portal-nav-icon">📊</span>
+            <span className="portal-nav-label">KPI Overview</span>
+          </button>
+
+          <button
+            type="button"
+            className={`portal-nav-btn ${activeView === 'credentials' ? 'active' : ''}`}
+            onClick={() => setActiveView('credentials')}
+          >
+            <span className="portal-nav-icon">📜</span>
+            <span className="portal-nav-label">Issued Credentials</span>
+            {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`portal-nav-btn ${activeView === 'jobs' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveView('jobs');
+              if (auditScope !== 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
+            }}
+          >
+            <span className="portal-nav-icon">👥</span>
+            <span className="portal-nav-label">Workforce &amp; Jobs</span>
+            {jobReports.length > 0 && <span className="portal-nav-badge count">{jobReports.length}</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`portal-nav-btn ${activeView === 'transactions' ? 'active' : ''}`}
+            onClick={() => setActiveView('transactions')}
+          >
+            <span className="portal-nav-icon">💳</span>
+            <span className="portal-nav-label">Settlement Ledger</span>
+            {transactions.length > 0 && <span className="portal-nav-badge count">{transactions.length}</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`portal-nav-btn ${activeView === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveView('profile')}
+          >
+            <span className="portal-nav-icon">👤</span>
+            <span className="portal-nav-label">Profile &amp; API Keys</span>
+          </button>
+        </nav>
+
+        {/* Quick Utilities in Sidebar Footer */}
+        <div className="portal-sidebar-footer">
+          <a href="/portal/evidence" className="portal-sidebar-link">
+            <span>📁 Evidence Locker</span>
+            <span>↗</span>
+          </a>
+          <div className="portal-sidebar-security">
+            <span>🔒 ISO 19011:2026 Engine</span>
+            <span className="portal-security-badge">ONLINE</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main Workspace ─────────────────────────────────────────────────── */}
+      <main className="portal-main-workspace">
+        {/* Mobile Horizontal Tabs (<= 960px) */}
+        <div className="portal-mobile-tabs" role="tablist" aria-label="Mobile Dashboard Navigation">
+          {[
+            { id: 'workflow', label: `🛡️ Workflow (${activeStep}/5)` },
+            { id: 'overview', label: '📊 KPIs' },
+            { id: 'credentials', label: `📜 Credentials (${credentials.length})` },
+            { id: 'jobs', label: `👥 Jobs (${jobReports.length})` },
+            { id: 'transactions', label: `💳 Ledger (${transactions.length})` },
+            { id: 'profile', label: '👤 Profile' },
+          ].map((tab) => (
             <button
+              key={tab.id}
               type="button"
-              role="tab"
-              id="scope-tab-carbon"
-              aria-selected={auditScope === 'CARBON_EMISSION'}
+              className={`portal-mobile-tab-btn ${activeView === tab.id ? 'active' : ''}`}
               onClick={() => {
-                setAuditScope('CARBON_EMISSION');
-                setActiveStep(1);
+                setActiveView(tab.id as DashboardView);
+                if (tab.id === 'jobs' && auditScope !== 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
               }}
-              className={`google-m3-segment-btn ${auditScope === 'CARBON_EMISSION' ? 'active-carbon' : ''}`}
             >
-              <span className="m3-segment-icon">🌱</span>
-              <div className="m3-segment-text">
-                <span className="m3-segment-title">Carbon Emission</span>
-                <span className="m3-segment-subtitle">ISO 14001 / 50001</span>
-              </div>
-              {auditScope === 'CARBON_EMISSION' && <span className="m3-check-indicator">✓</span>}
+              {tab.label}
             </button>
+          ))}
+        </div>
 
-            <button
-              type="button"
-              role="tab"
-              id="scope-tab-jobs"
-              aria-selected={auditScope === 'JOB_REPORTING'}
-              onClick={() => {
-                setAuditScope('JOB_REPORTING');
-                setActiveStep(1);
-              }}
-              className={`google-m3-segment-btn ${auditScope === 'JOB_REPORTING' ? 'active-jobs' : ''}`}
-            >
-              <span className="m3-segment-icon">👥</span>
-              <div className="m3-segment-text">
-                <span className="m3-segment-title">Job Creation</span>
-                <span className="m3-segment-subtitle">Section 106 Social</span>
-              </div>
-              {auditScope === 'JOB_REPORTING' && <span className="m3-check-indicator">✓</span>}
-            </button>
+        {/* Workspace Header Bar */}
+        <div className="portal-workspace-header">
+          <div>
+            <div className="portal-breadcrumb">
+              <span>My Dashboard</span>
+              <span> / </span>
+              <span className="active">{getViewTitle()}</span>
+            </div>
+            <h1 className="portal-page-heading">
+              {getViewTitle()}
+            </h1>
+            <div className="portal-client-id-bar">
+              <span className="portal-client-id-label">Client Profile:</span>
+              <code className="portal-client-id-code">{user?.licenseeId || 'ALL (ADMIN)'}</code>
+              {user?.email && <span className="portal-client-email">· {user.email}</span>}
+              {user?.licenseeId && (
+                <button
+                  type="button"
+                  onClick={copyClientId}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-sky)',
+                    cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '2px 6px',
+                  }}
+                  title="Copy Client ID"
+                >
+                  {copiedClientId ? '✓ Copied' : '📋 Copy ID'}
+                </button>
+              )}
+            </div>
           </div>
 
-          {auditScope === 'JOB_REPORTING' && (
-            <button
-              type="button"
-              onClick={() => setShowJobModal(true)}
-              className="btn btn-primary m3-job-submit-btn"
-            >
-              + Submit Job Filing
-            </button>
-          )}
-        </div>
-      </div>
+          {/* Google Material 3 Dual-Scope Segmented Switcher */}
+          <div className="google-m3-scope-container">
+            <div className="google-m3-scope-label">
+              <span className="google-m3-scope-tag">AUDIT-READY SCOPE</span>
+            </div>
 
-      {error && (
-        <div style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem', fontWeight: 600 }}>
-          {error}
-        </div>
-      )}
+            <div className="google-m3-segmented-control" role="tablist" aria-label="Audit-Ready Scope Selector">
+              <button
+                type="button"
+                role="tab"
+                id="scope-tab-carbon"
+                aria-selected={auditScope === 'CARBON_EMISSION'}
+                onClick={() => {
+                  setAuditScope('CARBON_EMISSION');
+                  setActiveStep(1);
+                }}
+                className={`google-m3-segment-btn ${auditScope === 'CARBON_EMISSION' ? 'active-carbon' : ''}`}
+              >
+                <span className="m3-segment-icon">🌱</span>
+                <div className="m3-segment-text">
+                  <span className="m3-segment-title">Carbon Emission</span>
+                  <span className="m3-segment-subtitle">ISO 14001 / 50001</span>
+                </div>
+                {auditScope === 'CARBON_EMISSION' && <span className="m3-check-indicator">✓</span>}
+              </button>
 
-      {/* ── Adaptive KPI Summary Cards ────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="persefoni-card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: kpi.accent }} />
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>{kpi.label}</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.3rem', fontFamily: 'var(--font-mono)' }}>{kpi.value}</div>
-            <div style={{ fontSize: '0.72rem', color: kpi.accent, marginTop: '0.2rem', fontWeight: 600 }}>{kpi.sub}</div>
+              <button
+                type="button"
+                role="tab"
+                id="scope-tab-jobs"
+                aria-selected={auditScope === 'JOB_REPORTING'}
+                onClick={() => {
+                  setAuditScope('JOB_REPORTING');
+                  setActiveStep(1);
+                }}
+                className={`google-m3-segment-btn ${auditScope === 'JOB_REPORTING' ? 'active-jobs' : ''}`}
+              >
+                <span className="m3-segment-icon">👥</span>
+                <div className="m3-segment-text">
+                  <span className="m3-segment-title">Job Creation</span>
+                  <span className="m3-segment-subtitle">Section 106 Social</span>
+                </div>
+                {auditScope === 'JOB_REPORTING' && <span className="m3-check-indicator">✓</span>}
+              </button>
+            </div>
+
+            {auditScope === 'JOB_REPORTING' && (
+              <button
+                type="button"
+                onClick={() => setShowJobModal(true)}
+                className="btn btn-primary m3-job-submit-btn"
+              >
+                + Submit Job Filing
+              </button>
+            )}
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* ── Assurance Workflow ── 5-Step Connected Stepper ─────────────────── */}
-      <div className="persefoni-card no-padding" style={{ padding: '0', marginBottom: '2.5rem', overflow: 'hidden' }}>
+        {error && (
+          <div style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem', fontWeight: 600 }}>
+            {error}
+          </div>
+        )}
+
+        {/* ── VIEW 1: Assurance Workflow (Step 1-5) ─────────────────────────── */}
+        {activeView === 'workflow' && (
+          <div className="persefoni-card no-padding" style={{ padding: '0', marginBottom: '2.5rem', overflow: 'hidden' }}>
 
         {/* ── Google Cloud Connected Stepper Bar ──────────────────────────────── */}
         <div className="portal-stepper-bar" style={{
@@ -1049,7 +1225,7 @@ export const PortalPage: React.FC = () => {
                   }}>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ color: 'var(--color-green)', fontWeight: 700 }}>✓</span>
-                      <span>Real-time tenant diagnostic autosave active</span>
+                      <span>Real-time diagnostic autosave active</span>
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1157,7 +1333,7 @@ export const PortalPage: React.FC = () => {
                     </p>
                   </div>
                   <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', fontWeight: 700 }}>
-                    Active Tenant: {user?.licenseeId}
+                    Client Account: {user?.licenseeId}
                   </span>
                 </div>
 
@@ -1503,7 +1679,7 @@ export const PortalPage: React.FC = () => {
 
                         {/* Metadata chips */}
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                          <div>Scoped Tenant: <strong style={{ color: 'var(--text-main)' }}>{user?.licenseeId}</strong></div>
+                          <div>Client Account: <strong style={{ color: 'var(--text-main)' }}>{user?.licenseeId}</strong></div>
                           <div>
                             Diagnostic State:{' '}
                             <span style={{ color: 'var(--color-green)', fontWeight: 600 }}>
@@ -1928,58 +2104,195 @@ export const PortalPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
-      {/* ── Existing Credentials Table ────────────────────────────────────────── */}
-      {credentials.length > 0 && (
-        <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 1.25rem 0' }}>
-            Issued Audit Warranty Credentials
-          </h2>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Credential ID</th>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Token ID</th>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Status</th>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Warranty Expires</th>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>OpenSea</th>
-                </tr>
-              </thead>
-              <tbody>
-                {credentials.map((cred: any) => (
-                  <tr key={cred.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {cred.id.substring(0, 18)}…
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--color-sky)' }}>
-                      {cred.tokenId || '—'}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <StatusBadge status={cred.status} />
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
-                      {cred.warrantyExpiresAt
-                        ? new Date(cred.warrantyExpiresAt).toLocaleDateString('en-GB')
-                        : '—'}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      {cred.openSeaUrl ? (
-                        <a href={cred.openSeaUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2081E2', fontSize: '0.8rem', fontWeight: 600 }}>
-                          OpenSea
-                        </a>
-                      ) : <span style={{ color: 'var(--text-muted)' }}>Pending</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* ── VIEW 2: Executive Overview & KPIs ────────────────────────────── */}
+      {activeView === 'overview' && (
+        <div>
+          {/* 4 Adaptive KPI Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
+            {kpis.map((kpi) => (
+              <div key={kpi.label} className="persefoni-card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: kpi.accent }} />
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>{kpi.label}</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.3rem', fontFamily: 'var(--font-mono)' }}>{kpi.value}</div>
+                <div style={{ fontSize: '0.72rem', color: kpi.accent, marginTop: '0.2rem', fontWeight: 600 }}>{kpi.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Workflow Quick Action Card */}
+          <div className="persefoni-card" style={{ padding: '1.75rem', marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, rgba(2,132,199,0.06), rgba(16,185,129,0.06))', border: '1px solid rgba(2,132,199,0.2)' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.04em' }}>
+                ACTIVE ASSURANCE WORKFLOW
+              </div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                Step {activeStep} of 5: {STEP_LABELS[auditScope][activeStep]}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Scope: {auditScope === 'CARBON_EMISSION' ? '🌱 Carbon Emission (ISO 14001 / 50001)' : '👥 Job Creation (Section 106 Social)'} · Diagnostic: {progressPct}% complete
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveView('workflow')}
+              className="btn btn-primary"
+              style={{ fontSize: '0.875rem', padding: '0.65rem 1.5rem', fontWeight: 700 }}
+            >
+              Resume Workflow Studio →
+            </button>
+          </div>
+
+          {/* Recent Credentials and Settlements Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem' }}>
+            {/* Recent Credentials Preview */}
+            <div className="persefoni-card" style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Recent Credentials</h3>
+                <button type="button" onClick={() => setActiveView('credentials')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>
+                  View All ({credentials.length}) →
+                </button>
+              </div>
+              {credentials.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
+                  <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No credentials issued yet.</p>
+                  <button type="button" onClick={() => { setActiveView('workflow'); setActiveStep(4); }} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
+                    Open Credential Studio
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {credentials.slice(0, 3).map((c: any) => (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-light)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-main)' }}>{c.id.substring(0, 14)}…</span>
+                      <StatusBadge status={c.status} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Settlements Preview */}
+            <div className="persefoni-card" style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Recent Settlements</h3>
+                <button type="button" onClick={() => setActiveView('transactions')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>
+                  View All ({transactions.length}) →
+                </button>
+              </div>
+              {transactions.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
+                  <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No transactions recorded yet.</p>
+                  <button type="button" onClick={() => { setActiveView('workflow'); setActiveStep(2); }} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
+                    Review Commercial Scope
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {transactions.slice(0, 3).map((t: any) => (
+                    <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-light)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>£{(t.grossAmountCents / 100).toFixed(2)}</span>
+                      <StatusBadge status={t.status} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Job Creation Reporting ────────────────────────────────────────────── */}
-      {auditScope === 'JOB_REPORTING' && (
+      {/* ── VIEW 3: Issued Credentials ───────────────────────────────────── */}
+      {activeView === 'credentials' && (
+        <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
+                Issued Audit Warranty Credentials
+              </h2>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                Polygon PoS ERC-1155 tokens attesting 1-year statutory audit warranty
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView('workflow');
+                setActiveStep(4);
+              }}
+              className="btn btn-primary"
+              style={{ fontSize: '0.8rem', minHeight: '38px' }}
+            >
+              + Issue New Credential
+            </button>
+          </div>
+
+          {credentials.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📜</div>
+              <p style={{ margin: '0 0 0.5rem 0', fontWeight: 700, color: 'var(--text-main)' }}>No credentials issued yet</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 1.25rem 0', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto' }}>
+                Complete your diagnostic evaluation in the Assurance Workflow Studio to generate and mint your tokenized audit badge.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveView('workflow');
+                  setActiveStep(4);
+                }}
+                className="btn btn-primary"
+              >
+                Go to Credential Studio (Step 4) →
+              </button>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Credential ID</th>
+                    <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Token ID</th>
+                    <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Status</th>
+                    <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Warranty Expires</th>
+                    <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>OpenSea</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {credentials.map((cred: any) => (
+                    <tr key={cred.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {cred.id.substring(0, 18)}…
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--color-sky)' }}>
+                        {cred.tokenId || '—'}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <StatusBadge status={cred.status} />
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
+                        {cred.warrantyExpiresAt
+                          ? new Date(cred.warrantyExpiresAt).toLocaleDateString('en-GB')
+                          : '—'}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        {cred.openSeaUrl ? (
+                          <a href={cred.openSeaUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2081E2', fontSize: '0.8rem', fontWeight: 600 }}>
+                            OpenSea
+                          </a>
+                        ) : <span style={{ color: 'var(--text-muted)' }}>Pending</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── VIEW 4: Workforce & Job Filings ──────────────────────────────── */}
+      {activeView === 'jobs' && (
         <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
@@ -2042,76 +2355,170 @@ export const PortalPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Transaction History ───────────────────────────────────────────────── */}
-      <div className="persefoni-card" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
-              Transaction History &amp; 15% ESG Splits
-            </h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>Immutable settlement history with SHA-256 data watermarks</p>
+      {/* ── VIEW 5: Settlement History & 15% ESG Splits ──────────────────── */}
+      {activeView === 'transactions' && (
+        <div className="persefoni-card" style={{ padding: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
+                Transaction History &amp; 15% ESG Splits
+              </h2>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>Immutable settlement history with SHA-256 data watermarks</p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {['ALL', 'SETTLED', 'PENDING'].map((s) => (
+                <button key={s} onClick={() => setStatusFilter(s)} style={{
+                  padding: '0.35rem 0.85rem', borderRadius: 'var(--radius-pill)', fontSize: '0.75rem', fontWeight: 700,
+                  cursor: 'pointer',
+                  border: statusFilter === s ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
+                  backgroundColor: statusFilter === s ? 'var(--accent-light)' : 'var(--bg-card)',
+                  color: statusFilter === s ? 'var(--color-sky)' : 'var(--text-muted)',
+                }}>
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {['ALL', 'SETTLED', 'PENDING'].map((s) => (
-              <button key={s} onClick={() => setStatusFilter(s)} style={{
-                padding: '0.35rem 0.85rem', borderRadius: 'var(--radius-pill)', fontSize: '0.75rem', fontWeight: 700,
-                cursor: 'pointer',
-                border: statusFilter === s ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
-                backgroundColor: statusFilter === s ? 'var(--accent-light)' : 'var(--bg-card)',
-                color: statusFilter === s ? 'var(--color-sky)' : 'var(--text-muted)',
+          {loading ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading transactions…</div>
+          ) : filteredTransactions.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              No transactions for filter: <strong>{statusFilter}</strong>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '0.75rem 1rem' }}>Transaction ID</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Status</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Gross Amount</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>15% Charity Split</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>On-Chain</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((tx) => (
+                    <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 600 }}>
+                        {tx.id.substring(0, 16)}…
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <StatusBadge status={tx.status} />
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                        £{(tx.grossAmountCents / 100).toFixed(2)}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontWeight: 800, color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
+                        £{(tx.charityGiftCents / 100).toFixed(2)}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <OpenSeaBadge transactionId={tx.id} licenseeId={tx.licenseeId} />
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        {new Date(tx.createdAt).toLocaleDateString('en-GB')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── VIEW 6: Client Profile & Ingestion API Keys ──────────────────── */}
+      {activeView === 'profile' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1.5rem', marginBottom: '1.75rem' }}>
+            {/* Account Identity Card */}
+            <div className="persefoni-card" style={{ padding: '1.75rem' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                Client Profile &amp; Organization
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                  🏢
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+                    {user?.licenseeId || 'Enterprise Client'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-green)', fontWeight: 600 }}>
+                    ● Verified Statutory Licensee
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.82rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Registered Email:</span>
+                  <strong style={{ color: 'var(--text-main)' }}>{user?.email || 'N/A'}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Security Role:</span>
+                  <strong style={{ color: 'var(--text-main)' }}>{user?.role || 'PARTNER'}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Transport Security:</span>
+                  <span style={{ color: 'var(--color-sky)', fontWeight: 600 }}>256-bit TLS Encrypted</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Assurance Standard:</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>ISO 19011:2026 Ready</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ingestion API Credentials Card */}
+            <div className="persefoni-card" style={{ padding: '1.75rem' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                Telemetry Ingestion API Key
+              </div>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
+                Use this key for programmatic REST telemetry feeds from meters, IoT sensors, or workforce HR platforms.
+              </p>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--color-sky)',
+                backgroundColor: 'var(--bg-subtle)', padding: '0.75rem 1rem', borderRadius: '8px',
+                wordBreak: 'break-all', marginBottom: '0.75rem', border: '1px solid var(--border-light)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem',
               }}>
-                {s}
-              </button>
-            ))}
+                <span>{telemetryApiKey}</span>
+                <button
+                  type="button"
+                  onClick={copyApiKey}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', flexShrink: 0 }}
+                >
+                  {copiedApiKey ? 'Copied!' : 'Copy Key'}
+                </button>
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                🔒 Transmit via <code style={{ color: 'var(--color-sky)' }}>x-api-key</code> HTTP Header.
+              </div>
+            </div>
+          </div>
+
+          {/* Evidence Locker Shortcut Card */}
+          <div className="persefoni-card" style={{ padding: '1.75rem', marginBottom: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>
+                  Multi-Tenant Evidence Locker
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Store, manage, and verify SHA-256 watermarked audit evidence documents, utility bills, and covenant filings.
+                </p>
+              </div>
+              <a href="/portal/evidence" className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '0.6rem 1.25rem' }}>
+                Open Evidence Locker →
+              </a>
+            </div>
           </div>
         </div>
-        {loading ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading transactions…</div>
-        ) : filteredTransactions.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            No transactions for filter: <strong>{statusFilter}</strong>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.75rem 1rem' }}>Transaction ID</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Status</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Gross Amount</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>15% Charity Split</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>On-Chain</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTransactions.map((tx) => (
-                  <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 600 }}>
-                      {tx.id.substring(0, 16)}…
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <StatusBadge status={tx.status} />
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                      £{(tx.grossAmountCents / 100).toFixed(2)}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', fontWeight: 800, color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
-                      £{(tx.charityGiftCents / 100).toFixed(2)}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <OpenSeaBadge transactionId={tx.id} licenseeId={tx.licenseeId} />
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {new Date(tx.createdAt).toLocaleDateString('en-GB')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* ── Job Filing Modal ──────────────────────────────────────────────────── */}
       {showJobModal && (
@@ -2165,6 +2572,7 @@ export const PortalPage: React.FC = () => {
           </div>
         </div>
       )}
+      </main>
     </div>
   );
 };

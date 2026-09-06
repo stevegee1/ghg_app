@@ -447,7 +447,7 @@ export const Layout: React.FC = () => {
                 {isAuthenticated ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
                     <NavLink to="/portal" className="nav-link" onClick={closeDropdowns}>
-                      Partner Console ({user?.email})
+                      My Dashboard ({user?.email})
                     </NavLink>
                     {isAdmin && (
                       <NavLink to="/admin" className="nav-link" onClick={closeDropdowns}>
@@ -491,7 +491,7 @@ export const Layout: React.FC = () => {
                   to="/portal"
                   className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
                 >
-                  Console
+                  My Dashboard
                 </NavLink>
                 {isAdmin && (
                   <NavLink
