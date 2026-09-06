@@ -656,6 +656,17 @@ export const PortalPage: React.FC = () => {
             <span>Active Licensee</span>
           </div>
         </div>
+        {onNav && (
+          <button
+            type="button"
+            className="portal-mobile-profile-close-btn"
+            onClick={onNav}
+            aria-label="Close sidebar"
+            title="Close sidebar"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Sidebar Nav Items */}
@@ -752,21 +763,35 @@ export const PortalPage: React.FC = () => {
 
       {/* ── Mobile Off-Canvas Sidebar Drawer ─────────────────────────────────── */}
       <aside className={`portal-sidebar-drawer ${mobileSidebarOpen ? 'open' : ''}`} aria-label="Mobile navigation">
-        <div className="portal-drawer-header">
-          <span className="portal-drawer-title">My Dashboard</span>
+        <div className="portal-drawer-topbar">
+          <div className="portal-drawer-brand">
+            <img
+              src="/images/nfty-logs-logo.png"
+              alt="GHGEmissionLogs Logo"
+              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+            />
+            <span className="portal-drawer-brand-text">GHGEmissionLogs</span>
+          </div>
           <button
             type="button"
-            className="portal-drawer-close"
+            className="portal-drawer-cancel-btn"
             onClick={() => setMobileSidebarOpen(false)}
             aria-label="Close navigation"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <span className="portal-drawer-cancel-x">✕</span>
+            <span className="portal-drawer-cancel-label">CLOSE</span>
           </button>
         </div>
         <SidebarContent onNav={() => setMobileSidebarOpen(false)} />
+        <div className="portal-drawer-bottom-close">
+          <button
+            type="button"
+            className="portal-drawer-full-close-btn"
+            onClick={() => setMobileSidebarOpen(false)}
+          >
+            ✕ Close Sidebar Menu
+          </button>
+        </div>
       </aside>
 
       {/* ── Left Sidebar: Desktop (always visible >= 961px) ───────────────────── */}
@@ -950,7 +975,7 @@ export const PortalPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleQuickFillCompliant}
-                      className="btn btn-secondary assessment-autofill-btn"
+                      className="assessment-autofill-btn"
                       title="Auto-fill 15 ISO clauses with verified compliant answers for demonstration"
                     >
                       <GoogleIcons.AutoFix />
@@ -964,16 +989,18 @@ export const PortalPage: React.FC = () => {
                       <span className="assessment-readiness-label">
                         Readiness Index:
                       </span>
-                      <span className="assessment-readiness-val" style={{
-                        color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
-                      }}>
-                        {estimatedComplianceScore}%
-                      </span>
-                      <span className="assessment-readiness-tag" style={{
-                        color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
-                      }}>
-                        ({estimatedComplianceScore >= 80 ? 'Audit-Ready' : estimatedComplianceScore >= 50 ? 'In Progress' : 'Initial'})
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span className="assessment-readiness-val" style={{
+                          color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
+                        }}>
+                          {estimatedComplianceScore}%
+                        </span>
+                        <span className="assessment-readiness-tag" style={{
+                          color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
+                        }}>
+                          ({estimatedComplianceScore >= 80 ? 'Audit-Ready' : estimatedComplianceScore >= 50 ? 'In Progress' : 'Initial'})
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

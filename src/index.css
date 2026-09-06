@@ -2110,39 +2110,118 @@ h1, h2, h3, h4, .font-heading {
   transform: translateX(0);
 }
 
-.portal-drawer-header {
+/* ── Top Bar inside Mobile Drawer ────────────────────────────────────────── */
+.portal-drawer-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 1rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
+  width: 100%;
 }
 
-.portal-drawer-title {
-  font-size: 1rem;
+.portal-drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.portal-drawer-brand-text {
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.01em;
 }
 
-.portal-drawer-close {
-  width: 36px;
-  height: 36px;
+.portal-drawer-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.85rem;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
-  border: 1px solid var(--border-light);
-  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.portal-drawer-cancel-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--google-red);
+  color: var(--google-red);
+}
+
+.portal-drawer-cancel-x {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.portal-drawer-cancel-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 0.35rem;
+  letter-spacing: 0.05em;
+}
+
+/* Close button inside profile card */
+.portal-mobile-profile-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-medium);
+  background: var(--bg-subtle);
   color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  margin-left: auto;
 }
 
-.portal-drawer-close:hover {
+.portal-mobile-profile-close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--google-red);
+  border-color: var(--google-red);
+}
+
+/* Bottom close button in drawer */
+.portal-drawer-bottom-close {
+  padding-top: 1rem;
+  margin-top: auto;
+  border-top: 1px solid var(--border-light);
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.portal-drawer-full-close-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 8px;
   background: var(--bg-subtle);
   color: var(--text-main);
+  border: 1px solid var(--border-medium);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal-drawer-full-close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--google-red);
+  border-color: var(--google-red);
 }
 
 /* ── Hamburger button ─────────────────────────────────────────────────────── */
@@ -2244,21 +2323,39 @@ h1, h2, h3, h4, .font-heading {
 @media (max-width: 640px) {
   .portal-dashboard-layout {
     padding: 0.75rem 0.5rem 3rem 0.5rem;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  .portal-main-workspace {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .persefoni-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .portal-sidebar-drawer {
-    width: 82vw;
+    width: 84vw;
     max-width: 320px;
   }
 
   .portal-step-content-box,
   .portal-card-pad {
     padding: 0.875rem 0.5rem;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .assessment-summary-card {
     padding: 0.875rem 0.75rem;
     margin-bottom: 1.25rem;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .assessment-header-grid {
@@ -2271,24 +2368,51 @@ h1, h2, h3, h4, .font-heading {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: 0.5rem;
+    gap: 0.6rem;
   }
 
   .assessment-autofill-btn {
     width: 100%;
     justify-content: center;
-    padding: 0.65rem;
+    padding: 0.65rem 1rem;
     font-size: 0.82rem;
+    font-weight: 700;
+    color: #0284c7 !important;
+    background-color: #ffffff !important;
+    border: 1.5px solid #0284c7 !important;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.15);
+  }
+
+  .assessment-autofill-btn:hover {
+    background-color: var(--accent-light) !important;
   }
 
   .assessment-readiness-badge {
     width: 100%;
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 0.75rem;
+    padding: 0.65rem 0.85rem;
+    box-sizing: border-box;
+  }
+
+  .m3-chip-carousel-container {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden;
+  }
+
+  .m3-chip-scroll-track {
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .portal-section-questions-container {
     padding: 0.85rem 0.65rem;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* Full-width touch cards for diagnostic questions on mobile */
@@ -2306,6 +2430,7 @@ h1, h2, h3, h4, .font-heading {
     border-radius: 8px;
     justify-content: flex-start;
     font-size: 0.84rem;
+    box-sizing: border-box;
   }
 
   .portal-workspace-header {
