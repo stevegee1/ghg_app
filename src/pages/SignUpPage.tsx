@@ -73,7 +73,7 @@ export const SignUpPage: React.FC = () => {
           Create your account
         </h1>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
-          Provision your continuous climate telemetry and assurance tenant.
+          Provision your continuous climate telemetry and assurance client profile.
         </p>
       </div>
 

@@ -36,7 +36,7 @@ export const PartnerLicensingPage: React.FC = () => {
           </div>
           <div>
             <Link to="/create-account" style={{ color: 'var(--color-sky)', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none' }}>
-              Create sandbox tenant →
+              Create sandbox profile →
             </Link>
           </div>
         </div>
@@ -86,7 +86,7 @@ export const PartnerLicensingPage: React.FC = () => {
           <div className="persefoni-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
-                Multi-Tenant Evidence Locker
+                Audit Evidence Locker
               </h3>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
                 Maintains immutable, time-stamped proof of raw telemetry payloads, meter calibration records, and non-conformance remediation logs protected by strict row-level security (RLS) and statutory non-brokerage rules.
@@ -173,7 +173,7 @@ export const PartnerLicensingPage: React.FC = () => {
                   <li>ISO 17025 Database Calibration Gatekeeper</li>
                   <li>±15% Baseline Anomaly Lock Engine (HTTP 423)</li>
                   <li>ISO Clause 10.2 non-conformance incident logs</li>
-                  <li>Dedicated multi-tenant evidence locker</li>
+                  <li>Dedicated audit evidence locker</li>
                 </ul>
               </div>
             </div>
@@ -335,7 +335,7 @@ export const PartnerLicensingPage: React.FC = () => {
           Ready to achieve continuous audit readiness?
         </h2>
         <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2rem auto', lineHeight: 1.6 }}>
-          Set up your organization's sandbox tenant in under 60 seconds. Free access to sensor calibration gatekeepers and anomaly simulators.
+          Set up your organization's client profile in under 60 seconds. Free access to sensor calibration gatekeepers and anomaly simulators.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <Link to="/create-account" className="btn btn-primary" style={{ padding: '0.85rem 2rem' }}>

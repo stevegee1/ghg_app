@@ -564,8 +564,6 @@ export const PortalPage: React.FC = () => {
 
         {/* Sidebar Nav Items */}
         <nav className="portal-sidebar-nav" aria-label="Dashboard Navigation">
-          <div className="portal-nav-section-title">MY DASHBOARD</div>
-
           <button
             type="button"
             className={`portal-nav-btn ${activeView === 'workflow' ? 'active' : ''}`}
@@ -667,42 +665,16 @@ export const PortalPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Workspace Header Bar */}
+        {/* Workspace Header Bar - Clean Google Standard */}
         <div className="portal-workspace-header">
           <div>
-            <div className="portal-breadcrumb">
-              <span>My Dashboard</span>
-              <span> / </span>
-              <span className="active">{getViewTitle()}</span>
-            </div>
             <h1 className="portal-page-heading">
               {getViewTitle()}
             </h1>
-            <div className="portal-client-id-bar">
-              <span className="portal-client-id-label">Client Profile:</span>
-              <code className="portal-client-id-code">{user?.licenseeId || 'ALL (ADMIN)'}</code>
-              {user?.email && <span className="portal-client-email">· {user.email}</span>}
-              {user?.licenseeId && (
-                <button
-                  type="button"
-                  onClick={copyClientId}
-                  style={{
-                    background: 'none', border: 'none', color: 'var(--color-sky)',
-                    cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '2px 6px',
-                  }}
-                  title="Copy Client ID"
-                >
-                  {copiedClientId ? '✓ Copied' : '📋 Copy ID'}
-                </button>
-              )}
-            </div>
           </div>
 
           {/* Google Material 3 Dual-Scope Segmented Switcher */}
           <div className="google-m3-scope-container">
-            <div className="google-m3-scope-label">
-              <span className="google-m3-scope-tag">AUDIT-READY SCOPE</span>
-            </div>
 
             <div className="google-m3-segmented-control" role="tablist" aria-label="Audit-Ready Scope Selector">
               <button
@@ -2506,7 +2478,7 @@ export const PortalPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>
-                  Multi-Tenant Evidence Locker
+                  Client Evidence Locker
                 </h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
                   Store, manage, and verify SHA-256 watermarked audit evidence documents, utility bills, and covenant filings.

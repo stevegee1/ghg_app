@@ -8,14 +8,35 @@ export const Layout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<'SOLUTIONS' | null>(null);
   const [mobileSolutionsOpen, setMobileSolutionsOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   
   const location = useLocation();
   const navContainerRef = useRef<HTMLElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // In Google SaaS standard, when inside the console/dashboard, the top bar is focused (no marketing links)
+  const isConsoleView = Boolean(
+    isAuthenticated &&
+    (location.pathname.startsWith('/portal') || location.pathname.startsWith('/admin')) &&
+    !location.pathname.includes('/login')
+  );
+
+  const userInitial = (user?.email?.[0] || 'U').toUpperCase();
+
+  const copyAccountId = () => {
+    if (user?.licenseeId) {
+      navigator.clipboard.writeText(user.licenseeId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  };
 
   // Close menus on route changes
   useEffect(() => {
     setMobileMenuOpen(false);
     setActiveDropdown(null);
+    setAccountMenuOpen(false);
   }, [location.pathname]);
 
   // Click-outside and Escape key handlers
@@ -24,12 +45,16 @@ export const Layout: React.FC = () => {
       if (navContainerRef.current && !navContainerRef.current.contains(event.target as Node)) {
         setActiveDropdown(null);
       }
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setActiveDropdown(null);
         setMobileMenuOpen(false);
+        setAccountMenuOpen(false);
       }
     };
 
@@ -49,11 +74,12 @@ export const Layout: React.FC = () => {
   const closeDropdowns = () => {
     setActiveDropdown(null);
     setMobileMenuOpen(false);
+    setAccountMenuOpen(false);
   };
 
   return (
     <div className="app-container">
-      <header className="navbar" ref={navContainerRef}>
+      <header className={`navbar ${isConsoleView ? 'navbar-console-mode' : ''}`} ref={navContainerRef}>
         <div className="navbar-inner">
           
           {/* 1. Left Brand Identity */}
@@ -71,24 +97,30 @@ export const Layout: React.FC = () => {
               />
               <span>GHGEmissionLogs</span>
             </Link>
+            {isConsoleView && (
+              <span className="console-mode-badge">Console</span>
+            )}
           </div>
 
-          {/* Mobile Menu Toggle Button */}
-          <button
-            className="mobile-menu-toggle"
-            aria-label="Toggle navigation menu"
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? 'CLOSE' : 'MENU'}
-          </button>
+          {/* Mobile Menu Toggle Button (Public site only) */}
+          {!isConsoleView && (
+            <button
+              className="mobile-menu-toggle"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? 'CLOSE' : 'MENU'}
+            </button>
+          )}
 
-          {/* 2. Center Nav Menu (Desktop Interactive Mega-Menu Flow) */}
-          <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-            <ul className="nav-links">
-              
-              {/* Solutions Dropdown / Mobile Accordion */}
-              <li className="nav-item-dropdown">
+          {/* 2. Center Nav Menu (Desktop Interactive Mega-Menu Flow - Public site only) */}
+          {!isConsoleView && (
+            <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+              <ul className="nav-links">
+                
+                {/* Solutions Dropdown / Mobile Accordion */}
+                <li className="nav-item-dropdown">
                 {/* Desktop Trigger */}
                 <button
                   className={`mega-menu-trigger-btn desktop-only-solutions ${activeDropdown === 'SOLUTIONS' ? 'active' : ''}`}
@@ -445,22 +477,40 @@ export const Layout: React.FC = () => {
               {/* Mobile Only: Auth Links */}
               <li className="mobile-only-auth">
                 {isAuthenticated ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-                    <NavLink to="/portal" className="nav-link" onClick={closeDropdowns}>
-                      My Dashboard ({user?.email})
-                    </NavLink>
-                    {isAdmin && (
-                      <NavLink to="/admin" className="nav-link" onClick={closeDropdowns}>
-                        Admin Config
+                  <div className="mobile-account-card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="google-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '0.9rem' }}>
+                        {userInitial}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {user?.email}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                          {user?.licenseeId}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                      <NavLink to="/portal" className="nav-link" onClick={closeDropdowns}>
+                        My Dashboard
                       </NavLink>
-                    )}
-                    <button
-                      onClick={logout}
-                      className="btn btn-secondary"
-                      style={{ padding: '0.45rem 1rem', width: 'fit-content' }}
-                    >
-                      Logout
-                    </button>
+                      <a href="/portal/evidence" className="nav-link" onClick={closeDropdowns}>
+                        Evidence Locker ↗
+                      </a>
+                      {isAdmin && (
+                        <NavLink to="/admin" className="nav-link" onClick={closeDropdowns}>
+                          Admin Config
+                        </NavLink>
+                      )}
+                      <button
+                        onClick={() => { closeDropdowns(); logout(); }}
+                        className="google-signout-btn"
+                        style={{ width: '100%', justifyContent: 'center', marginTop: '0.25rem' }}
+                      >
+                        Sign out
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
@@ -482,51 +532,204 @@ export const Layout: React.FC = () => {
 
             </ul>
           </nav>
+        )}
 
-          {/* 3. Right Action Area (Desktop) */}
+          {/* 3. Right Action Area */}
           <div className="navbar-actions-desktop">
-            {isAuthenticated ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {isConsoleView ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <Link
+                  to="/"
+                  className="btn-audit-cta"
+                  style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem' }}
+                  title="View Public Website"
+                >
+                  <span>Website</span>
+                  <span>↗</span>
+                </Link>
+
+                {/* Google Account Profile Button */}
+                <div className="google-account-container" ref={accountMenuRef}>
+                  <button
+                    type="button"
+                    className={`google-avatar-btn ${accountMenuOpen ? 'active' : ''}`}
+                    onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                    aria-label={`Google Account: ${user?.email}`}
+                    aria-expanded={accountMenuOpen}
+                    title={user?.email || 'Account Profile'}
+                  >
+                    <div className="google-avatar-circle">{userInitial}</div>
+                  </button>
+
+                  {accountMenuOpen && (
+                    <div className="google-account-popover" role="dialog" aria-label="Account details">
+                      <div className="google-popover-header">
+                        <div className="google-popover-avatar">{userInitial}</div>
+                        <div className="google-popover-identity">
+                          <div className="google-popover-email">{user?.email}</div>
+                          {user?.licenseeId && (
+                            <div className="google-popover-client-id">
+                              <span>Client ID: </span>
+                              <code>{user.licenseeId}</code>
+                              <button
+                                type="button"
+                                onClick={copyAccountId}
+                                className="google-copy-btn"
+                                title="Copy Client ID"
+                              >
+                                {copiedId ? '✓' : '📋'}
+                              </button>
+                            </div>
+                          )}
+                          <div className="google-popover-badge">
+                            {isAdmin ? '🛡️ Administrator' : '● Active Licensee'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="google-popover-menu">
+                        <NavLink
+                          to="/portal"
+                          className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
+                          onClick={() => setAccountMenuOpen(false)}
+                        >
+                          <span>📊 My Dashboard</span>
+                        </NavLink>
+                        <a
+                          href="/portal/evidence"
+                          className="google-popover-link"
+                          onClick={() => setAccountMenuOpen(false)}
+                        >
+                          <span>📁 Evidence Locker</span>
+                          <span>↗</span>
+                        </a>
+                        {isAdmin && (
+                          <NavLink
+                            to="/admin"
+                            className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
+                            onClick={() => setAccountMenuOpen(false)}
+                          >
+                            <span>⚙️ Admin Config</span>
+                          </NavLink>
+                        )}
+                      </div>
+
+                      <div className="google-popover-footer">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAccountMenuOpen(false);
+                            logout();
+                          }}
+                          className="google-signout-btn"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                          </svg>
+                          <span>Sign out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : isAuthenticated ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                 <NavLink
                   to="/portal"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  className="btn btn-primary"
+                  style={{ padding: '0.42rem 1rem', fontSize: '0.82rem', fontWeight: 700 }}
                 >
-                  My Dashboard
+                  My Dashboard →
                 </NavLink>
-                {isAdmin && (
-                  <NavLink
-                    to="/admin"
-                    className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                  >
-                    Admin
-                  </NavLink>
-                )}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    backgroundColor: 'var(--bg-subtle)',
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: 'var(--radius-pill)',
-                    border: '1px solid var(--border-light)',
-                    fontSize: '0.8rem',
-                  }}
-                >
-                  <span style={{ color: 'var(--text-muted)' }}>{user?.email}</span>
+
+                {/* Google Account Profile Button */}
+                <div className="google-account-container" ref={accountMenuRef}>
                   <button
-                    onClick={logout}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--google-red)',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                    }}
+                    type="button"
+                    className={`google-avatar-btn ${accountMenuOpen ? 'active' : ''}`}
+                    onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                    aria-label={`Google Account: ${user?.email}`}
+                    aria-expanded={accountMenuOpen}
+                    title={user?.email || 'Account Profile'}
                   >
-                    Exit
+                    <div className="google-avatar-circle">{userInitial}</div>
                   </button>
+
+                  {accountMenuOpen && (
+                    <div className="google-account-popover" role="dialog" aria-label="Account details">
+                      <div className="google-popover-header">
+                        <div className="google-popover-avatar">{userInitial}</div>
+                        <div className="google-popover-identity">
+                          <div className="google-popover-email">{user?.email}</div>
+                          {user?.licenseeId && (
+                            <div className="google-popover-client-id">
+                              <span>Client ID: </span>
+                              <code>{user.licenseeId}</code>
+                              <button
+                                type="button"
+                                onClick={copyAccountId}
+                                className="google-copy-btn"
+                                title="Copy Client ID"
+                              >
+                                {copiedId ? '✓' : '📋'}
+                              </button>
+                            </div>
+                          )}
+                          <div className="google-popover-badge">
+                            {isAdmin ? '🛡️ Administrator' : '● Active Licensee'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="google-popover-menu">
+                        <NavLink
+                          to="/portal"
+                          className="google-popover-link"
+                          onClick={() => setAccountMenuOpen(false)}
+                        >
+                          <span>📊 My Dashboard</span>
+                        </NavLink>
+                        <a
+                          href="/portal/evidence"
+                          className="google-popover-link"
+                          onClick={() => setAccountMenuOpen(false)}
+                        >
+                          <span>📁 Evidence Locker</span>
+                          <span>↗</span>
+                        </a>
+                        {isAdmin && (
+                          <NavLink
+                            to="/admin"
+                            className="google-popover-link"
+                            onClick={() => setAccountMenuOpen(false)}
+                          >
+                            <span>⚙️ Admin Config</span>
+                          </NavLink>
+                        )}
+                      </div>
+
+                      <div className="google-popover-footer">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAccountMenuOpen(false);
+                            logout();
+                          }}
+                          className="google-signout-btn"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                          </svg>
+                          <span>Sign out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

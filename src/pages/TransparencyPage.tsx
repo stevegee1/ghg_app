@@ -120,7 +120,7 @@ export const TransparencyPage: React.FC = () => {
           letterSpacing: '0.04em', marginBottom: '0.75rem',
         }}>
           <span className="radar-pulse" />
-          <span>MULTI-TENANT AUDIT-READY TRANSPARENCY REGISTRY</span>
+          <span>STATUTORY AUDIT-READY TRANSPARENCY REGISTRY</span>
         </div>
 
         <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>

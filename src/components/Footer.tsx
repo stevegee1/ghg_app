@@ -187,8 +187,8 @@ export const Footer: React.FC = () => {
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.84rem', lineHeight: 2.2 }}>
                 <li><Link to="/transparency" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Transparency Ledger</Link></li>
-                <li><Link to="/portal/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Partner Console Login</Link></li>
-                <li><Link to="/create-account" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Create Free Tenant</Link></li>
+                <li><Link to="/portal/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Client Portal Login</Link></li>
+                <li><Link to="/create-account" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Create Client Account</Link></li>
                 <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Section 106 Auditor</Link></li>
                 <li><Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Security & Architecture</Link></li>
               </ul>

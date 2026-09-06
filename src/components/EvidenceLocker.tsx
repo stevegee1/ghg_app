@@ -69,7 +69,7 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ documents, onUpl
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
         <div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#ffffff' }}>
-            Multi-Tenant Evidence Locker
+            Audit Evidence Locker
           </h2>
           <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
             ISO 14065 Objective Evidence Repository & Cryptographic SHA-256 Chain of Custody

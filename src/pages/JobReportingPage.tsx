@@ -94,7 +94,7 @@ export const JobReportingPage: React.FC = () => {
               <li><strong>Statutory Living Wage</strong>: Real-time validation against the UK Real Living Wage and EU Fair Wage mandates.</li>
             </ul>
             <Link to="/create-account" style={{ color: 'var(--color-sky)', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none' }}>
-              Set up workforce compliance tenant →
+              Set up workforce compliance profile →
             </Link>
           </div>
 
@@ -145,7 +145,7 @@ export const JobReportingPage: React.FC = () => {
               </p>
             </div>
             <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)', fontSize: '0.8rem', color: 'var(--color-sky)', fontWeight: 700 }}>
-              GDPR & Multi-Tenant Isolated
+              GDPR & Cryptographically Isolated
             </div>
           </div>
 
@@ -350,7 +350,7 @@ export const JobReportingPage: React.FC = () => {
           Prepare your infrastructure project for planning authority audit.
         </h2>
         <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2rem auto', lineHeight: 1.6 }}>
-          Provision an isolated workforce compliance tenant in under 60 seconds. Full access to Section 106 gatekeepers and council dossier generators.
+          Provision an isolated workforce compliance profile in under 60 seconds. Full access to Section 106 gatekeepers and council dossier generators.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <Link to="/create-account" className="btn btn-primary" style={{ padding: '0.85rem 2rem' }}>
