@@ -593,15 +593,15 @@ export const Layout: React.FC = () => {
                           className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
                           onClick={() => setAccountMenuOpen(false)}
                         >
-                          <span>📊 My Dashboard</span>
+                          <span>My Dashboard</span>
                         </NavLink>
                         <a
                           href="/portal/evidence"
                           className="google-popover-link"
                           onClick={() => setAccountMenuOpen(false)}
                         >
-                          <span>📁 Evidence Locker</span>
-                          <span>↗</span>
+                          <span>Evidence Locker</span>
+                          <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
                         </a>
                         {isAdmin && (
                           <NavLink
@@ -609,7 +609,7 @@ export const Layout: React.FC = () => {
                             className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
                             onClick={() => setAccountMenuOpen(false)}
                           >
-                            <span>⚙️ Admin Config</span>
+                            <span>Admin Config</span>
                           </NavLink>
                         )}
                       </div>
@@ -674,12 +674,12 @@ export const Layout: React.FC = () => {
                                 className="google-copy-btn"
                                 title="Copy Client ID"
                               >
-                                {copiedId ? '✓' : '📋'}
+                                {copiedId ? '✓' : 'Copy'}
                               </button>
                             </div>
                           )}
                           <div className="google-popover-badge">
-                            {isAdmin ? '🛡️ Administrator' : '● Active Licensee'}
+                            {isAdmin ? 'Administrator' : 'Active Licensee'}
                           </div>
                         </div>
                       </div>
@@ -690,15 +690,15 @@ export const Layout: React.FC = () => {
                           className="google-popover-link"
                           onClick={() => setAccountMenuOpen(false)}
                         >
-                          <span>📊 My Dashboard</span>
+                          <span>My Dashboard</span>
                         </NavLink>
                         <a
                           href="/portal/evidence"
                           className="google-popover-link"
                           onClick={() => setAccountMenuOpen(false)}
                         >
-                          <span>📁 Evidence Locker</span>
-                          <span>↗</span>
+                          <span>Evidence Locker</span>
+                          <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
                         </a>
                         {isAdmin && (
                           <NavLink
@@ -706,7 +706,7 @@ export const Layout: React.FC = () => {
                             className="google-popover-link"
                             onClick={() => setAccountMenuOpen(false)}
                           >
-                            <span>⚙️ Admin Config</span>
+                            <span>Admin Config</span>
                           </NavLink>
                         )}
                       </div>

@@ -25,6 +25,92 @@ const STEP_LABELS: Record<AuditScope, Record<WorkflowStep, string>> = {
   },
 };
 
+// ── Google Material Vector SVGs (Google SaaS Standard) ──────────────────────
+const GoogleIcons = {
+  Workflow: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
+    </svg>
+  ),
+  Overview: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  ),
+  Credentials: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="6" />
+      <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+    </svg>
+  ),
+  Jobs: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  Ledger: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
+  ),
+  Profile: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  Folder: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  Building: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <line x1="9" y1="6" x2="9.01" y2="6" />
+      <line x1="15" y1="6" x2="15.01" y2="6" />
+      <line x1="9" y1="10" x2="9.01" y2="10" />
+      <line x1="15" y1="10" x2="15.01" y2="10" />
+      <line x1="9" y1="14" x2="9.01" y2="14" />
+      <line x1="15" y1="14" x2="15.01" y2="14" />
+      <path d="M10 22v-4h4v4" />
+    </svg>
+  ),
+  Leaf: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+    </svg>
+  ),
+  AutoFix: () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m12 3-1.9 4.2L5.9 8.1 9.5 11l-1 4.5 3.5-2.5 3.5 2.5-1-4.5 3.6-2.9-4.2-.9z" />
+    </svg>
+  ),
+  ChevronLeft: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  ),
+  ChevronRight: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  ),
+  Check: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+};
+
 // ── Tier definitions ──────────────────────────────────────────────────────────
 const TIERS = [
   {
@@ -548,7 +634,7 @@ export const PortalPage: React.FC = () => {
         {/* Client Profile Card */}
         <div className="portal-sidebar-profile">
           <div className="portal-profile-avatar">
-            <span>🏢</span>
+            <GoogleIcons.Building />
           </div>
           <div className="portal-profile-info">
             <div className="portal-profile-role">Client Account</div>
@@ -569,7 +655,7 @@ export const PortalPage: React.FC = () => {
             className={`portal-nav-btn ${activeView === 'workflow' ? 'active' : ''}`}
             onClick={() => setActiveView('workflow')}
           >
-            <span className="portal-nav-icon">🛡️</span>
+            <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
             <span className="portal-nav-label">Assurance Workflow</span>
             <span className="portal-nav-badge">Step {activeStep}/5</span>
           </button>
@@ -579,7 +665,7 @@ export const PortalPage: React.FC = () => {
             className={`portal-nav-btn ${activeView === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveView('overview')}
           >
-            <span className="portal-nav-icon">📊</span>
+            <span className="portal-nav-icon"><GoogleIcons.Overview /></span>
             <span className="portal-nav-label">KPI Overview</span>
           </button>
 
@@ -588,7 +674,7 @@ export const PortalPage: React.FC = () => {
             className={`portal-nav-btn ${activeView === 'credentials' ? 'active' : ''}`}
             onClick={() => setActiveView('credentials')}
           >
-            <span className="portal-nav-icon">📜</span>
+            <span className="portal-nav-icon"><GoogleIcons.Credentials /></span>
             <span className="portal-nav-label">Issued Credentials</span>
             {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
           </button>
@@ -601,7 +687,7 @@ export const PortalPage: React.FC = () => {
               if (auditScope !== 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
             }}
           >
-            <span className="portal-nav-icon">👥</span>
+            <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
             <span className="portal-nav-label">Workforce &amp; Jobs</span>
             {jobReports.length > 0 && <span className="portal-nav-badge count">{jobReports.length}</span>}
           </button>
@@ -611,7 +697,7 @@ export const PortalPage: React.FC = () => {
             className={`portal-nav-btn ${activeView === 'transactions' ? 'active' : ''}`}
             onClick={() => setActiveView('transactions')}
           >
-            <span className="portal-nav-icon">💳</span>
+            <span className="portal-nav-icon"><GoogleIcons.Ledger /></span>
             <span className="portal-nav-label">Settlement Ledger</span>
             {transactions.length > 0 && <span className="portal-nav-badge count">{transactions.length}</span>}
           </button>
@@ -621,7 +707,7 @@ export const PortalPage: React.FC = () => {
             className={`portal-nav-btn ${activeView === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveView('profile')}
           >
-            <span className="portal-nav-icon">👤</span>
+            <span className="portal-nav-icon"><GoogleIcons.Profile /></span>
             <span className="portal-nav-label">Profile &amp; API Keys</span>
           </button>
         </nav>
@@ -629,12 +715,13 @@ export const PortalPage: React.FC = () => {
         {/* Quick Utilities in Sidebar Footer */}
         <div className="portal-sidebar-footer">
           <a href="/portal/evidence" className="portal-sidebar-link">
-            <span>📁 Evidence Locker</span>
-            <span>↗</span>
+            <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
+            <span>Evidence Locker</span>
+            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
           </a>
           <div className="portal-sidebar-security">
-            <span>🔒 ISO 19011:2026 Engine</span>
-            <span className="portal-security-badge">ONLINE</span>
+            <span className="portal-status-dot" />
+            <span>ISO 19011:2026 Engine Online</span>
           </div>
         </div>
       </aside>
@@ -644,12 +731,12 @@ export const PortalPage: React.FC = () => {
         {/* Mobile Horizontal Tabs (<= 960px) */}
         <div className="portal-mobile-tabs" role="tablist" aria-label="Mobile Dashboard Navigation">
           {[
-            { id: 'workflow', label: `🛡️ Workflow (${activeStep}/5)` },
-            { id: 'overview', label: '📊 KPIs' },
-            { id: 'credentials', label: `📜 Credentials (${credentials.length})` },
-            { id: 'jobs', label: `👥 Jobs (${jobReports.length})` },
-            { id: 'transactions', label: `💳 Ledger (${transactions.length})` },
-            { id: 'profile', label: '👤 Profile' },
+            { id: 'workflow', label: `Workflow (${activeStep}/5)` },
+            { id: 'overview', label: 'KPIs' },
+            { id: 'credentials', label: `Credentials (${credentials.length})` },
+            { id: 'jobs', label: `Jobs (${jobReports.length})` },
+            { id: 'transactions', label: `Ledger (${transactions.length})` },
+            { id: 'profile', label: 'Profile' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -688,7 +775,7 @@ export const PortalPage: React.FC = () => {
                 }}
                 className={`google-m3-segment-btn ${auditScope === 'CARBON_EMISSION' ? 'active-carbon' : ''}`}
               >
-                <span className="m3-segment-icon">🌱</span>
+                <span className="m3-segment-icon"><GoogleIcons.Leaf /></span>
                 <div className="m3-segment-text">
                   <span className="m3-segment-title">Carbon Emission</span>
                   <span className="m3-segment-subtitle">ISO 14001 / 50001</span>
@@ -707,7 +794,7 @@ export const PortalPage: React.FC = () => {
                 }}
                 className={`google-m3-segment-btn ${auditScope === 'JOB_REPORTING' ? 'active-jobs' : ''}`}
               >
-                <span className="m3-segment-icon">👥</span>
+                <span className="m3-segment-icon"><GoogleIcons.Jobs /></span>
                 <div className="m3-segment-text">
                   <span className="m3-segment-title">Job Creation</span>
                   <span className="m3-segment-subtitle">Section 106 Social</span>
@@ -825,29 +912,30 @@ export const PortalPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Real-time compliance score badge & 1-Click Quick Fill */}
+                  {/* Real-time compliance score badge & Quick Fill */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={handleQuickFillCompliant}
                       className="btn btn-secondary"
                       style={{
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        padding: '0.4rem 0.85rem',
-                        borderRadius: 'var(--radius-pill)',
-                        border: '1px solid var(--color-sky)',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        padding: '0.45rem 0.95rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-medium)',
                         color: 'var(--color-sky)',
-                        backgroundColor: 'var(--accent-light)',
+                        backgroundColor: 'var(--bg-card)',
                         cursor: 'pointer',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.35rem',
+                        gap: '0.45rem',
+                        transition: 'all 0.15s ease',
                       }}
                       title="Auto-fill 15 ISO clauses with verified compliant answers for demonstration"
                     >
-                      <span>⚡</span>
-                      <span>Auto-Fill Audit Baseline (1-Click)</span>
+                      <GoogleIcons.AutoFix />
+                      <span>Auto-Fill Diagnostic Baseline</span>
                     </button>
 
                     <div style={{
@@ -901,12 +989,9 @@ export const PortalPage: React.FC = () => {
                 <div>
                   {/* Interactive Google Material 3 Clause Carousel */}
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        <span>ISO Clauses:</span>
-                        <span style={{ fontWeight: 600, color: 'var(--color-sky)', fontSize: '0.72rem' }}>
-                          (Use arrows or swipe to slide)
-                        </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+                        ISO 14001:2015 Clauses
                       </div>
 
                       {/* Dropdown Fast Jump Selector */}
@@ -945,7 +1030,7 @@ export const PortalPage: React.FC = () => {
                         aria-label="Scroll clauses left"
                         title="Scroll clauses left"
                       >
-                        ‹
+                        <GoogleIcons.ChevronLeft />
                       </button>
 
                       <div
@@ -1002,7 +1087,7 @@ export const PortalPage: React.FC = () => {
                         aria-label="Scroll clauses right"
                         title="Scroll clauses right"
                       >
-                        ›
+                        <GoogleIcons.ChevronRight />
                       </button>
                     </div>
                   </div>
@@ -1205,9 +1290,10 @@ export const PortalPage: React.FC = () => {
                         type="button"
                         onClick={handleQuickFillCompliant}
                         className="btn btn-secondary"
-                        style={{ fontSize: '0.85rem' }}
+                        style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
                       >
-                        ⚡ Quick Fill All Clauses
+                        <GoogleIcons.AutoFix />
+                        <span>Quick Fill All Clauses</span>
                       </button>
 
                       <button
@@ -2103,7 +2189,7 @@ export const PortalPage: React.FC = () => {
                 Step {activeStep} of 5: {STEP_LABELS[auditScope][activeStep]}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                Scope: {auditScope === 'CARBON_EMISSION' ? '🌱 Carbon Emission (ISO 14001 / 50001)' : '👥 Job Creation (Section 106 Social)'} · Diagnostic: {progressPct}% complete
+                Scope: {auditScope === 'CARBON_EMISSION' ? 'Carbon Emission (ISO 14001 / 50001)' : 'Job Creation (Section 106 Social)'} · Diagnostic: {progressPct}% complete
               </div>
             </div>
             <button
