@@ -4,15 +4,25 @@ import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { OpenSeaBadge } from '../components/OpenSeaBadge';
 
-// ── Step definitions ──────────────────────────────────────────────────────────
+// ── Scope & Step definitions ────────────────────────────────────────────────
+type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
 type WorkflowStep = 1 | 2 | 3 | 4 | 5;
 
-const STEP_LABELS: Record<WorkflowStep, string> = {
-  1: 'ISO Diagnostic',
-  2: 'Checkout',
-  3: 'API Access',
-  4: 'Credential Studio',
-  5: 'Digital Asset',
+const STEP_LABELS: Record<AuditScope, Record<WorkflowStep, string>> = {
+  CARBON_EMISSION: {
+    1: 'ISO Diagnostic',
+    2: 'Checkout',
+    3: 'API Access',
+    4: 'Credential Studio',
+    5: 'Digital Asset',
+  },
+  JOB_REPORTING: {
+    1: 'Job Filing Audit',
+    2: 'Checkout',
+    3: 'Workforce API',
+    4: 'Credential Studio',
+    5: 'Digital Asset',
+  },
 };
 
 // ── Tier definitions ──────────────────────────────────────────────────────────
@@ -54,6 +64,44 @@ const TIERS = [
   },
 ];
 
+const JOB_TIERS = [
+  {
+    id: 'TIER_1_READINESS',
+    name: 'Section 106 Project Audit Readiness',
+    price: '£1,250',
+    grossCents: 125000,
+    softwareCents: 106250,
+    charityCents: 18750,
+    turnaround: '72-Hour Expedited',
+    standards: 'UK Section 106 / Social Value Act / ISO 19011:2026',
+    description: 'Single-project verified job creation docket and local authority covenant preparation.',
+    features: [
+      'Section 106 local authority workforce hours & apprentice validation',
+      'Remote statutory verification docket under ISO 19011:2026 Annex A.16',
+      'Direct 15% statutory endowment to local disaster relief / charity',
+      'Social Value digital provenance warranty NFT on Polygon PoS',
+    ],
+  },
+  {
+    id: 'TIER_2_CONTINUOUS',
+    name: 'Continuous Workforce Assurance Protocol',
+    price: '£3,500',
+    grossCents: 350000,
+    softwareCents: 297500,
+    charityCents: 52500,
+    turnaround: 'Continuous Quarterly',
+    standards: 'UK Section 106 · Social Value Act · EU CSRD ESRS S1',
+    description: 'Ongoing quarterly workforce impact auditing with automated API telemetry and municipal covenants.',
+    recommended: true,
+    features: [
+      'Automated workforce telemetry ingestion & quarterly threshold alerts',
+      'Continuous Section 106 council covenant compliance verification',
+      'Draft statutory CSRD ESRS S1 social impact dossiers',
+      'Priority lead social auditor consultation & warranty badge',
+    ],
+  },
+];
+
 export const PortalPage: React.FC = () => {
   const { token, user } = useAuth();
 
@@ -66,7 +114,9 @@ export const PortalPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // ── ISO Workflow State ────────────────────────────────────────────────────
+  const [auditScope, setAuditScope] = useState<AuditScope>('CARBON_EMISSION');
   const [activeStep, setActiveStep] = useState<WorkflowStep>(1);
+  const activeTiers = auditScope === 'CARBON_EMISSION' ? TIERS : JOB_TIERS;
   const [framework, setFramework] = useState<any | null>(null);
   const [frameworkLoading, setFrameworkLoading] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -298,12 +348,54 @@ export const PortalPage: React.FC = () => {
       });
       setJobReports([createdReport, ...jobReports]);
       setShowJobModal(false);
+
+      // Automatically sync audit readiness submission for Job Scope
+      try {
+        const subRes = await api.submitIsoAnswers(token, {
+          answers: [
+            { questionId: 'S106-PERIOD-TYPE', answer: periodType },
+            { questionId: 'S106-PERIOD-START', answer: periodStart },
+            { questionId: 'S106-PERIOD-END', answer: periodEnd },
+            { questionId: 'S106-JOBS-CREATED', answer: String(isNaN(jobsCount) ? 0 : jobsCount) },
+            { questionId: 'S106-ATTESTATION-NOTE', answer: customNoteInput.trim() || 'Verified Section 106 covenant' },
+          ],
+          tierSelected,
+        });
+        if (subRes?.submissionId) setSubmissionId(subRes.submissionId);
+      } catch (subErr) {
+        console.warn('[Job Readiness Submission Sync]', subErr);
+      }
+
       setCustomNoteInput('');
     } catch (err: any) {
       setJobFormError(err.message || 'Failed to submit job creation report');
     } finally {
       setSubmittingJob(false);
     }
+  };
+
+  const handleProceedFromJobAudit = async () => {
+    if (!token) return;
+    if (!submissionId) {
+      try {
+        const latest = jobReports[0];
+        const jobsCount = parseInt(jobsCreatedInput, 10);
+        const subRes = await api.submitIsoAnswers(token, {
+          answers: [
+            { questionId: 'S106-PERIOD-TYPE', answer: latest?.periodType || periodType },
+            { questionId: 'S106-PERIOD-START', answer: latest?.periodStart ? new Date(latest.periodStart).toISOString() : periodStart },
+            { questionId: 'S106-PERIOD-END', answer: latest?.periodEnd ? new Date(latest.periodEnd).toISOString() : periodEnd },
+            { questionId: 'S106-JOBS-CREATED', answer: String(latest?.jobsCreated || (!isNaN(jobsCount) ? jobsCount : 50)) },
+            { questionId: 'S106-ATTESTATION-NOTE', answer: latest?.attestationNote || customNoteInput.trim() || 'Verified Section 106 covenant' },
+          ],
+          tierSelected,
+        });
+        if (subRes?.submissionId) setSubmissionId(subRes.submissionId);
+      } catch (err) {
+        console.warn('[Job Readiness Submission Sync]', err);
+      }
+    }
+    setActiveStep(2);
   };
 
   // ── Read URL params on mount (post-checkout redirect) ─────────────────────
@@ -347,11 +439,27 @@ export const PortalPage: React.FC = () => {
   const estimatedComplianceScore =
     scoreMetrics.count > 0 ? Math.round(scoreMetrics.score / scoreMetrics.count) : 0;
 
+  const totalVerifiedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
+
+  const kpis = auditScope === 'CARBON_EMISSION'
+    ? [
+        { label: 'Settled Transactions', value: loading ? '…' : (summary?.totalSettledTransactions ?? 0).toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
+        { label: 'Settled Gross Volume', value: loading ? '…' : `£${((summary?.totalGrossVolumeCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
+        { label: '15% ESG Charity Split', value: loading ? '…' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: '#a855f7' },
+        { label: 'Active Credentials', value: credentials.length.toString(), sub: 'Polygon ERC-1155 Minted', accent: '#f59e0b' },
+      ]
+    : [
+        { label: 'Total Verified Jobs', value: loading ? '…' : totalVerifiedJobs.toLocaleString(), sub: 'Section 106 Local Impact', accent: 'var(--color-sky)' },
+        { label: 'Active Filing Periods', value: loading ? '…' : jobReports.length.toString(), sub: 'Quarterly & Annual Covenants', accent: 'var(--color-green)' },
+        { label: '15% Social Endowment', value: loading ? '…' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Disaster Relief Endowment', accent: '#a855f7' },
+        { label: 'Audited Covenants', value: jobReports.length > 0 ? '100% Verified' : 'Filing Required', sub: 'ISO 19011:2026 Assured', accent: '#f59e0b' },
+      ];
+
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
 
-      {/* ── Page Header ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* ── Page Header & Scope Selector ──────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.25rem' }}>
         <div>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
@@ -370,9 +478,61 @@ export const PortalPage: React.FC = () => {
             Scoped Tenant: <code style={{ fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>{user?.licenseeId || 'ALL (ADMIN)'}</code>
           </p>
         </div>
-        <button onClick={() => setShowJobModal(true)} className="btn btn-primary">
-          + Submit Job Filing
-        </button>
+
+        {/* Google Cloud Scope Selector Dropdown & Primary Action */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)',
+            padding: '0.4rem 0.85rem', borderRadius: '10px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Audit-Ready Scope:
+            </span>
+            <select
+              id="audit-ready-scope-selector"
+              value={auditScope}
+              onChange={(e) => {
+                setAuditScope(e.target.value as AuditScope);
+                setActiveStep(1);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-main)',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="CARBON_EMISSION">🌱 Carbon Emission Reporting (ISO 14001 / 50001)</option>
+              <option value="JOB_REPORTING">👥 Job Creation Reporting (Section 106 Social)</option>
+            </select>
+          </div>
+
+          {auditScope === 'JOB_REPORTING' && (
+            <button
+              type="button"
+              onClick={() => setShowJobModal(true)}
+              className="btn btn-primary"
+              style={{
+                backgroundColor: '#0284c7',
+                color: '#ffffff',
+                padding: '0.55rem 1.35rem',
+                borderRadius: 'var(--radius-pill)',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                boxShadow: '0 2px 6px rgba(2,132,199,0.25)',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              + Submit Job Filing
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -381,14 +541,9 @@ export const PortalPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── KPI Summary Cards ────────────────────────────────────────────── */}
+      {/* ── Adaptive KPI Summary Cards ────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
-        {[
-          { label: 'Settled Transactions', value: loading ? '…' : (summary?.totalSettledTransactions ?? 0).toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
-          { label: 'Settled Gross Volume', value: loading ? '…' : `£${((summary?.totalGrossVolumeCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
-          { label: '15% ESG Charity Split', value: loading ? '…' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: '#a855f7' },
-          { label: 'Active Credentials', value: credentials.length.toString(), sub: 'Polygon ERC-1155 Minted', accent: '#f59e0b' },
-        ].map((kpi) => (
+        {kpis.map((kpi) => (
           <div key={kpi.label} className="persefoni-card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: kpi.accent }} />
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>{kpi.label}</div>
@@ -398,7 +553,7 @@ export const PortalPage: React.FC = () => {
         ))}
       </div>
 
-      {/* ── ISO Audit Workflow ── 5-Step tabbed stepper ───────────────────── */}
+      {/* ── Assurance Workflow ── 5-Step Connected Stepper ─────────────────── */}
       <div className="persefoni-card" style={{ padding: '0', marginBottom: '2.5rem', overflow: 'hidden' }}>
 
         {/* ── Google Cloud Connected Stepper Bar ──────────────────────────────── */}
@@ -409,7 +564,7 @@ export const PortalPage: React.FC = () => {
         }}>
           {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step, idx) => {
             const isActive = activeStep === step;
-            const isCompleted = step < activeStep || (step === 1 && progressPct === 100);
+            const isCompleted = step < activeStep || (step === 1 && (auditScope === 'CARBON_EMISSION' ? progressPct === 100 : jobReports.length > 0));
             const canClick = isCompleted || step <= activeStep;
 
             return (
@@ -447,7 +602,7 @@ export const PortalPage: React.FC = () => {
                       color: isActive ? 'var(--color-sky)' : isCompleted ? 'var(--text-main)' : 'var(--text-muted)',
                       whiteSpace: 'nowrap',
                     }}>
-                      {STEP_LABELS[step]}
+                      {STEP_LABELS[auditScope][step]}
                     </div>
                   </div>
                 </button>
@@ -467,9 +622,10 @@ export const PortalPage: React.FC = () => {
         {/* Step content */}
         <div style={{ padding: '2rem' }}>
 
-          {/* ── STEP 1: ISO Diagnostic (Google Cloud Architecture Assessment Pattern) ── */}
+          {/* ── STEP 1: Audit Preparation (Scope Adaptive) ── */}
           {activeStep === 1 && (
-            <div>
+            auditScope === 'CARBON_EMISSION' ? (
+              <div>
               {/* Assessment Header & Live Gauge Card */}
               <div style={{
                 backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)',
@@ -802,7 +958,273 @@ export const PortalPage: React.FC = () => {
                 </div>
               )}
             </div>
-          )}
+          ) : (
+            <div>
+              {/* ── Section 106 Job Creation Audit Preparation Studio ── */}
+              <div style={{
+                backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)',
+                borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
+                      Section 106 Job Creation &amp; Workforce Audit Preparation
+                    </h2>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px', lineHeight: 1.5 }}>
+                      Statutory workforce verification under UK Section 106 planning covenants, Social Value Act guidelines, and ISO 19011:2026 remote auditing protocols.
+                    </p>
+                  </div>
+
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem',
+                    padding: '0.5rem 1rem', borderRadius: '8px',
+                    backgroundColor: totalVerifiedJobs > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(2,132,199,0.1)',
+                    border: `1px solid ${totalVerifiedJobs > 0 ? 'rgba(16,185,129,0.3)' : 'rgba(2,132,199,0.3)'}`,
+                  }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      Verified Jobs:
+                    </span>
+                    <span style={{
+                      fontSize: '1.1rem', fontWeight: 800, fontFamily: 'var(--font-mono)',
+                      color: totalVerifiedJobs > 0 ? 'var(--color-green)' : 'var(--color-sky)',
+                    }}>
+                      {totalVerifiedJobs.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Summary metric pills */}
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.78rem' }}>
+                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '0.4rem 0.85rem', borderRadius: '6px' }}>
+                    Filings Docket: <strong style={{ color: 'var(--text-main)' }}>{jobReports.length} Period{jobReports.length === 1 ? '' : 's'} Recorded</strong>
+                  </div>
+                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '0.4rem 0.85rem', borderRadius: '6px' }}>
+                    Covenant Compliance: <strong style={{ color: 'var(--color-green)' }}>{jobReports.length > 0 ? 'Compliant ✓' : 'Filing Required'}</strong>
+                  </div>
+                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '0.4rem 0.85rem', borderRadius: '6px' }}>
+                    Assurance Standard: <strong style={{ color: 'var(--color-sky)' }}>Section 106 &amp; CSRD ESRS S1</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Inline Section 106 Filing Studio Card */}
+              <div style={{
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '12px',
+                padding: '1.75rem',
+                marginBottom: '2rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.2rem 0' }}>
+                      Record Section 106 Period Filing
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                      Submit statutory workforce hours and job creation metrics for this accounting period
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', fontWeight: 700 }}>
+                    Active Tenant: {user?.licenseeId}
+                  </span>
+                </div>
+
+                {jobFormError && (
+                  <div style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                    {jobFormError}
+                  </div>
+                )}
+
+                <form onSubmit={handleJobSubmit}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                        Period Type
+                      </label>
+                      <select
+                        value={periodType}
+                        onChange={(e) => setPeriodType(e.target.value)}
+                        className="form-input"
+                        style={{ width: '100%', fontSize: '0.85rem' }}
+                      >
+                        <option value="QUARTERLY">Quarterly (Section 106 Standard)</option>
+                        <option value="ANNUAL">Annual Corporate Filing</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                        Period Start Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={periodStart}
+                        onChange={(e) => setPeriodStart(e.target.value)}
+                        className="form-input"
+                        style={{ width: '100%', fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                        Period End Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={periodEnd}
+                        onChange={(e) => setPeriodEnd(e.target.value)}
+                        className="form-input"
+                        style={{ width: '100%', fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                        Verified Jobs Created
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={jobsCreatedInput}
+                        onChange={(e) => setJobsCreatedInput(e.target.value)}
+                        className="form-input"
+                        style={{ width: '100%', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                      Local Authority Covenant &amp; Attestation Note
+                    </label>
+                    <input
+                      type="text"
+                      value={customNoteInput}
+                      onChange={(e) => setCustomNoteInput(e.target.value)}
+                      placeholder="e.g. Local authority Section 106 planning covenant for artisan embroidery workforce"
+                      className="form-input"
+                      style={{ width: '100%', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                    <button
+                      type="submit"
+                      disabled={submittingJob}
+                      className="btn btn-primary"
+                      style={{
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        padding: '0.6rem 1.4rem',
+                        borderRadius: 'var(--radius-pill)',
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {submittingJob ? 'Submitting…' : '+ Submit Job Filing'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Verified Filings Ledger Table */}
+              <div style={{
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                marginBottom: '2rem',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    Verified Period Filings Docket
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {jobReports.length} recorded filing{jobReports.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                {jobReports.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', color: 'var(--text-muted)' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, color: 'var(--text-main)' }}>No Section 106 job filings recorded yet</p>
+                    <p style={{ margin: 0, fontSize: '0.8rem' }}>Use the form above to record your first quarterly or annual workforce hours to establish audit readiness.</p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                          <th style={{ padding: '0.65rem 0.75rem' }}>Period</th>
+                          <th style={{ padding: '0.65rem 0.75rem' }}>Dates</th>
+                          <th style={{ padding: '0.65rem 0.75rem' }}>Jobs Created</th>
+                          <th style={{ padding: '0.65rem 0.75rem' }}>Source</th>
+                          <th style={{ padding: '0.65rem 0.75rem' }}>Attestation Note</th>
+                          <th style={{ padding: '0.65rem 0.75rem' }}>Audit Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jobReports.map((report) => (
+                          <tr key={report.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                            <td style={{ padding: '0.75rem' }}>
+                              <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                {report.periodType}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                              {new Date(report.periodStart).toLocaleDateString('en-GB')} – {new Date(report.periodEnd).toLocaleDateString('en-GB')}
+                            </td>
+                            <td style={{ padding: '0.75rem', fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
+                              {report.jobsCreated}
+                            </td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
+                                {report.reportSource === 'THIRD_PARTY_API' ? 'API Ingest' : 'Portal Self-Report'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '240px' }}>
+                              {report.attestationNote || 'Verified Section 106 covenant'}
+                            </td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(16,185,129,0.1)', color: 'var(--color-green)', fontWeight: 700 }}>
+                                Audit Ready ✓
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 1 Footer Action */}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                paddingTop: '1.25rem', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '1rem',
+              }}>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  {jobReports.length > 0
+                    ? `✓ ${jobReports.length} filing(s) recorded. Ready for statutory assurance settlement.`
+                    : 'Submit at least one period filing above, or proceed with existing corporate records.'}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleProceedFromJobAudit}
+                  className="btn btn-primary"
+                  style={{ minWidth: '260px', padding: '0.75rem 1.5rem', fontWeight: 700 }}
+                >
+                  Proceed to Assurance Checkout (Step 2) →
+                </button>
+              </div>
+            </div>
+          )
+        )}
 
           {/* ── STEP 2: Stripe Checkout (Google Cloud Billing Two-Column Pattern) ── */}
           {activeStep === 2 && (
@@ -812,7 +1234,9 @@ export const PortalPage: React.FC = () => {
                   Select Statutory Assurance Tier &amp; Checkout
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px' }}>
-                  Preparation service fees are administered under UKIPO Class 35 data administration utility. All checkouts strictly enforce the 85% software licensing and 15% disaster relief endowment routing.
+                  {auditScope === 'CARBON_EMISSION'
+                    ? 'Preparation service fees are administered under UKIPO Class 35 data administration utility. All checkouts strictly enforce the 85% software licensing and 15% disaster relief endowment routing.'
+                    : 'Section 106 workforce assurance fees strictly enforce the statutory 85% software preparation base and 15% disaster relief endowment routing.'}
                 </p>
               </div>
 
@@ -826,10 +1250,10 @@ export const PortalPage: React.FC = () => {
                 {/* Left column — Tier Selection Cards */}
                 <div>
                   <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem' }}>
-                    Available Preparation Tiers
+                    Available {auditScope === 'CARBON_EMISSION' ? 'Carbon' : 'Workforce'} Assurance Tiers
                   </div>
 
-                  {TIERS.map((tier) => {
+                  {activeTiers.map((tier) => {
                     const isSelected = selectedTier === tier.id;
                     return (
                       <div
@@ -903,11 +1327,11 @@ export const PortalPage: React.FC = () => {
                   top: '2rem',
                 }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1.25rem' }}>
-                    Assurance Order Summary
+                    {auditScope === 'CARBON_EMISSION' ? 'Carbon Assurance Order Summary' : 'Workforce Assurance Order Summary'}
                   </div>
 
                   {(() => {
-                    const activeTierData = TIERS.find((t) => t.id === selectedTier) || TIERS[0];
+                    const activeTierData = activeTiers.find((t) => t.id === selectedTier) || activeTiers[0];
                     return (
                       <div>
                         <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
@@ -922,7 +1346,7 @@ export const PortalPage: React.FC = () => {
                         {/* Statutory Split Breakdown */}
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span>Software &amp; Assurance Base (85%)</span>
+                            <span>Software &amp; {auditScope === 'CARBON_EMISSION' ? 'Assurance' : 'Workforce'} Base (85%)</span>
                             <span style={{ fontWeight: 600, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
                               £{(activeTierData.softwareCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
                             </span>
@@ -949,7 +1373,14 @@ export const PortalPage: React.FC = () => {
                         {/* Metadata chips */}
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
                           <div>Scoped Tenant: <strong style={{ color: 'var(--text-main)' }}>{user?.licenseeId}</strong></div>
-                          <div>Diagnostic State: <span style={{ color: 'var(--color-green)', fontWeight: 600 }}>{answeredQuestions} of {totalQuestions} answered ✓</span></div>
+                          <div>
+                            Diagnostic State:{' '}
+                            <span style={{ color: 'var(--color-green)', fontWeight: 600 }}>
+                              {auditScope === 'CARBON_EMISSION'
+                                ? `${answeredQuestions} of ${totalQuestions} answered ✓`
+                                : `${jobReports.length} Period Filing(s) Recorded ✓`}
+                            </span>
+                          </div>
                         </div>
 
                         {checkoutError && (
@@ -962,7 +1393,7 @@ export const PortalPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleCheckout}
-                          disabled={checkoutLoading || !submissionId}
+                          disabled={checkoutLoading || (!submissionId && auditScope === 'CARBON_EMISSION')}
                           className="btn btn-primary"
                           style={{ width: '100%', padding: '0.85rem', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}
                         >
@@ -975,7 +1406,7 @@ export const PortalPage: React.FC = () => {
                           className="btn btn-secondary"
                           style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
                         >
-                          ← Review Diagnostic Answers
+                          {auditScope === 'CARBON_EMISSION' ? '← Review Diagnostic Answers' : '← Review Job Filings'}
                         </button>
 
                         {/* Security notice */}
@@ -990,20 +1421,22 @@ export const PortalPage: React.FC = () => {
             </div>
           )}
 
-          {/* ── STEP 3: Telemetry API Access ──────────────────────────────── */}
+          {/* ── STEP 3: Ingestion API Access ──────────────────────────────── */}
           {activeStep === 3 && (
             <div>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-                Telemetry Ingestion API Access
+                {auditScope === 'CARBON_EMISSION' ? 'Telemetry Ingestion API Access' : 'Workforce & Job Telemetry API Access'}
               </h2>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Your API key has been provisioned. Use it to submit automated emissions data or upload evidence documents manually.
+                {auditScope === 'CARBON_EMISSION'
+                  ? 'Your API key has been provisioned. Use it to submit automated emissions data or upload evidence documents manually.'
+                  : 'Your API key has been provisioned. Ingest quarterly workforce telemetry and Section 106 compliance data directly via REST.'}
               </p>
 
               {/* API Key */}
               <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  Telemetry Ingestion API Key
+                  {auditScope === 'CARBON_EMISSION' ? 'Telemetry Ingestion API Key' : 'Workforce Ingestion API Key'}
                 </div>
                 <div style={{
                   fontFamily: 'var(--font-mono)', fontSize: '0.9rem', color: 'var(--color-sky)',
@@ -1031,7 +1464,8 @@ export const PortalPage: React.FC = () => {
                   backgroundColor: '#0c1929', color: '#a5f3fc', padding: '1rem', borderRadius: '8px',
                   fontSize: '0.78rem', overflowX: 'auto', margin: 0, lineHeight: 1.6,
                 }}>
-{`curl -X POST https://ghgapp-production.up.railway.app/api/iso/telemetry/ingest \\
+{auditScope === 'CARBON_EMISSION'
+  ? `curl -X POST https://ghgapp-production.up.railway.app/api/iso/telemetry/ingest \\
   -H "Authorization: Bearer ${telemetryApiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -1040,6 +1474,16 @@ export const PortalPage: React.FC = () => {
     "numericValue": 42.3,
     "rawUnit": "kWh",
     "assetCalibrationId": "<YOUR_CALIBRATION_ID>"
+  }'`
+  : `curl -X POST https://ghgapp-production.up.railway.app/api/portal/job-reports \\
+  -H "Authorization: Bearer ${telemetryApiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "periodType": "QUARTERLY",
+    "periodStart": "2026-04-01",
+    "periodEnd": "2026-06-30",
+    "jobsCreated": 65,
+    "attestationNote": "Section 106 Artisan Workforce Covenant"
   }'`}
                 </pre>
               </div>
@@ -1047,10 +1491,12 @@ export const PortalPage: React.FC = () => {
               {/* Evidence document upload instruction */}
               <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  Manual Evidence Document Upload
+                  {auditScope === 'CARBON_EMISSION' ? 'Manual Evidence Document Upload' : 'Manual Social & Workforce Evidence Upload'}
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0' }}>
-                  Upload utility bills, calibration certificates, GHG inventory reports, and ISO audit evidence directly to the Evidence Locker.
+                  {auditScope === 'CARBON_EMISSION'
+                    ? 'Upload utility bills, calibration certificates, GHG inventory reports, and ISO audit evidence directly to the Evidence Locker.'
+                    : 'Upload Section 106 council covenant agreements, artisan workforce payroll verifications, and guild certifications directly to the Evidence Locker.'}
                 </p>
                 <a href="/portal/evidence" className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
                   Open Evidence Locker
@@ -1069,10 +1515,10 @@ export const PortalPage: React.FC = () => {
           {activeStep === 4 && (
             <div>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-                Dual-Logo Credential Studio
+                Dual-Logo {auditScope === 'CARBON_EMISSION' ? 'Carbon' : 'Social Impact'} Credential Studio
               </h2>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Upload your corporate logo and enter your attestation message. We composite it with the GHG Emissions Registered Trade Mark and mint an ERC-1155 token on Polygon PoS.
+                Upload your corporate logo and enter your attestation message. We composite it with the GHG Emissions Registered Trade Mark and mint a {auditScope === 'CARBON_EMISSION' ? 'Carbon Audit Warranty' : 'Section 106 Social Value'} ERC-1155 token on Polygon PoS.
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
@@ -1129,7 +1575,7 @@ export const PortalPage: React.FC = () => {
                       maxLength={120}
                       value={clientMessage}
                       onChange={(e) => { setClientMessage(e.target.value); setCompositePreview(null); }}
-                      placeholder="e.g. ISO 14001 aligned — Net Zero pathway committed 2030"
+                      placeholder={auditScope === 'CARBON_EMISSION' ? 'e.g. ISO 14001 aligned — Net Zero pathway committed 2030' : 'e.g. Verified Section 106 Artisan Workforce & Local Employment Covenant'}
                       className="form-input"
                       style={{ resize: 'none' }}
                     />
@@ -1369,66 +1815,68 @@ export const PortalPage: React.FC = () => {
       )}
 
       {/* ── Job Creation Reporting ────────────────────────────────────────────── */}
-      <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
-              Job Creation &amp; Social Impact Filings
-            </h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-              Section 106 local authority covenants and artisan manufacturing workforce hours
-            </p>
+      {auditScope === 'JOB_REPORTING' && (
+        <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
+                Job Creation &amp; Social Impact Filings
+              </h2>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                Section 106 local authority covenants and artisan manufacturing workforce hours
+              </p>
+            </div>
+            <button onClick={() => setShowJobModal(true)} className="btn btn-secondary" style={{ fontSize: '0.8rem', minHeight: '38px' }}>
+              + New Filing
+            </button>
           </div>
-          <button onClick={() => setShowJobModal(true)} className="btn btn-secondary" style={{ fontSize: '0.8rem', minHeight: '38px' }}>
-            + New Filing
-          </button>
-        </div>
-        {loading ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading filings…</div>
-        ) : jobReports.length === 0 ? (
-          <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px' }}>
-            <p style={{ margin: '0 0 1rem 0', fontWeight: 700, color: 'var(--text-main)' }}>No job filings recorded yet</p>
-            <button onClick={() => setShowJobModal(true)} className="btn btn-primary">Submit Your First Filing</button>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.75rem 1rem' }}>Period</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Date Range</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Jobs Created</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Source</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobReports.map((report) => (
-                  <tr key={report.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>{report.periodType}</span>
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                      {new Date(report.periodStart).toLocaleDateString('en-GB')} – {new Date(report.periodEnd).toLocaleDateString('en-GB')}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', fontWeight: 800, fontSize: '1rem', color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
-                      {report.jobsCreated}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
-                        {report.reportSource === 'THIRD_PARTY_API' ? 'API Ingest' : 'Portal Self-Report'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '280px' }}>
-                      {report.attestationNote || 'Verified Section 106 covenant'}
-                    </td>
+          {loading ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading filings…</div>
+          ) : jobReports.length === 0 ? (
+            <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px' }}>
+              <p style={{ margin: '0 0 1rem 0', fontWeight: 700, color: 'var(--text-main)' }}>No job filings recorded yet</p>
+              <button onClick={() => setShowJobModal(true)} className="btn btn-primary">Submit Your First Filing</button>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '0.75rem 1rem' }}>Period</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Date Range</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Jobs Created</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Source</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Note</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {jobReports.map((report) => (
+                    <tr key={report.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>{report.periodType}</span>
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                        {new Date(report.periodStart).toLocaleDateString('en-GB')} – {new Date(report.periodEnd).toLocaleDateString('en-GB')}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontWeight: 800, fontSize: '1rem', color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
+                        {report.jobsCreated}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
+                          {report.reportSource === 'THIRD_PARTY_API' ? 'API Ingest' : 'Portal Self-Report'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '280px' }}>
+                        {report.attestationNote || 'Verified Section 106 covenant'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Transaction History ───────────────────────────────────────────────── */}
       <div className="persefoni-card" style={{ padding: '2rem' }}>
