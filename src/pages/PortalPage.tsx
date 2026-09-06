@@ -221,6 +221,7 @@ export const PortalPage: React.FC = () => {
   const [isoStatus, setIsoStatus] = useState<any | null>(null);
   const [isoStatusLoading, setIsoStatusLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<any[]>([]);
   const [activeSectionFilter, setActiveSectionFilter] = useState<string>('ALL');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -389,13 +390,26 @@ export const PortalPage: React.FC = () => {
 
   // ── Create Stripe checkout ────────────────────────────────────────────────
   const handleCheckout = async () => {
-    if (!token || !submissionId) return;
+    if (!token) return;
     setCheckoutLoading(true);
     setCheckoutError(null);
     try {
+      let activeSubId = submissionId;
+      if (!activeSubId) {
+        const answerPayload = Object.entries(answers).map(([qId, ans]) => ({
+          questionId: qId,
+          answer: ans,
+        }));
+        const subRes = await api.submitIsoAnswers(token, {
+          answers: answerPayload.length > 0 ? answerPayload : [{ questionId: 'S1-Q1', answer: 'Yes, fully in place' }],
+          tierSelected: selectedTier,
+        });
+        activeSubId = subRes.submissionId;
+        setSubmissionId(activeSubId);
+      }
       const origin = window.location.origin;
       const res = await api.createIsoCheckout(token, {
-        submissionId,
+        submissionId: activeSubId,
         tierSelected: selectedTier,
         successUrl: `${origin}/portal?step=3`,
         cancelUrl: `${origin}/portal?step=2`,
@@ -496,7 +510,7 @@ export const PortalPage: React.FC = () => {
             { questionId: 'S106-JOBS-CREATED', answer: String(isNaN(jobsCount) ? 0 : jobsCount) },
             { questionId: 'S106-ATTESTATION-NOTE', answer: customNoteInput.trim() || 'Verified Section 106 covenant' },
           ],
-          tierSelected,
+          tierSelected: selectedTier,
         });
         if (subRes?.submissionId) setSubmissionId(subRes.submissionId);
       } catch (subErr) {
@@ -525,7 +539,7 @@ export const PortalPage: React.FC = () => {
             { questionId: 'S106-JOBS-CREATED', answer: String(latest?.jobsCreated || (!isNaN(jobsCount) ? jobsCount : 50)) },
             { questionId: 'S106-ATTESTATION-NOTE', answer: latest?.attestationNote || customNoteInput.trim() || 'Verified Section 106 covenant' },
           ],
-          tierSelected,
+          tierSelected: selectedTier,
         });
         if (subRes?.submissionId) setSubmissionId(subRes.submissionId);
       } catch (err) {
@@ -1728,7 +1742,7 @@ export const PortalPage: React.FC = () => {
                   </div>
 
                   {(() => {
-                    const activeTierData = activeTiers.find((t) => t.id === selectedTier) || activeTiers[0];
+                    const activeTierData = activeTiers.find((t) => t.id === selectedTier) || activeTiers[0] || TIERS[0];
                     return (
                       <div>
                         <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
@@ -1790,7 +1804,7 @@ export const PortalPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleCheckout}
-                          disabled={checkoutLoading || (!submissionId && auditScope === 'CARBON_EMISSION')}
+                          disabled={checkoutLoading}
                           className="btn btn-primary"
                           style={{ width: '100%', padding: '0.85rem', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}
                         >

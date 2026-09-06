@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface OpenSeaBadgeProps {
-  transactionId: string;
+  transactionId?: string;
   licenseeId?: string;
   className?: string;
 }
