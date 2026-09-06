@@ -285,6 +285,17 @@ export const PortalPage: React.FC = () => {
     setAnswers(compliantAnswers);
   };
 
+  // ── Listen for global/top app bar drawer toggle ────────────────────────────
+  useEffect(() => {
+    const handleToggle = () => {
+      setMobileSidebarOpen((prev) => !prev);
+    };
+    window.addEventListener('toggle-portal-sidebar', handleToggle);
+    return () => {
+      window.removeEventListener('toggle-portal-sidebar', handleToggle);
+    };
+  }, []);
+
   // ── Fetch portal data ─────────────────────────────────────────────────────
   useEffect(() => {
     let isMounted = true;
@@ -854,135 +865,111 @@ export const PortalPage: React.FC = () => {
           <div className="persefoni-card no-padding" style={{ padding: '0', marginBottom: '2.5rem', overflow: 'hidden' }}>
 
         {/* ── Google Cloud Connected Stepper Bar ──────────────────────────────── */}
-        <div className="portal-stepper-bar" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '1.25rem 2rem', borderBottom: '1px solid var(--border-light)',
-          backgroundColor: 'var(--bg-card)', position: 'relative', overflowX: 'auto',
-        }}>
-          {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step, idx) => {
-            const isActive = activeStep === step;
-            const isCompleted = step < activeStep || (step === 1 && (auditScope === 'CARBON_EMISSION' ? progressPct === 100 : jobReports.length > 0));
-            // All 5 steps freely clickable to explore (Google Cloud Console standard)
-            const canClick = true;
+        <div className="portal-stepper-container">
+          {/* Mobile Stepper Header (visible <= 768px) */}
+          <div className="portal-stepper-mobile-bar">
+            <div className="portal-mobile-step-status">
+              <span className="portal-mobile-step-pill">Step {activeStep} of 5</span>
+              <span className="portal-mobile-step-title">{STEP_LABELS[auditScope][activeStep]}</span>
+            </div>
+            <div className="portal-mobile-step-nav">
+              <button
+                type="button"
+                className="portal-mobile-step-btn"
+                disabled={activeStep <= 1}
+                onClick={() => setActiveStep((prev) => Math.max(1, prev - 1) as WorkflowStep)}
+                aria-label="Previous step"
+              >
+                ← Prev
+              </button>
+              <button
+                type="button"
+                className="portal-mobile-step-btn primary"
+                disabled={activeStep >= 5}
+                onClick={() => setActiveStep((prev) => Math.min(5, prev + 1) as WorkflowStep)}
+                aria-label="Next step"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
 
-            return (
-              <React.Fragment key={step}>
-                <button
-                  type="button"
-                  onClick={() => setActiveStep(step)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.65rem',
-                    background: 'none', border: 'none', padding: '0.5rem 0.65rem',
-                    cursor: 'pointer',
-                    opacity: 1,
-                    borderRadius: '8px',
-                    backgroundColor: isActive ? 'var(--bg-subtle)' : 'transparent',
-                    transition: 'all 0.2s', flexShrink: 0,
-                  }}
-                >
-                  <div style={{
-                    width: '28px', height: '28px', borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.78rem', fontWeight: 700,
-                    backgroundColor: isCompleted
-                      ? 'var(--color-green)'
-                      : isActive
-                      ? 'var(--color-sky)'
-                      : 'var(--bg-subtle)',
-                    color: isCompleted || isActive ? '#fff' : 'var(--text-muted)',
-                    boxShadow: isActive ? '0 0 0 4px rgba(2,132,199,0.2)' : 'none',
-                    transition: 'all 0.2s',
-                  }}>
-                    {isCompleted ? '✓' : step}
-                  </div>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{
-                      fontSize: '0.8rem', fontWeight: isActive ? 700 : 500,
-                      color: isActive ? 'var(--color-sky)' : isCompleted ? 'var(--text-main)' : 'var(--text-muted)',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {STEP_LABELS[auditScope][step]}
+          {/* Stepper Steps Track (Desktop + Mobile Horizontal Scroll Snap) */}
+          <div className="portal-stepper-bar">
+            {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step, idx) => {
+              const isActive = activeStep === step;
+              const isCompleted = step < activeStep || (step === 1 && (auditScope === 'CARBON_EMISSION' ? progressPct === 100 : jobReports.length > 0));
+
+              return (
+                <React.Fragment key={step}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveStep(step)}
+                    className={`portal-stepper-step-btn ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                  >
+                    <div className="portal-step-badge">
+                      {isCompleted ? '✓' : step}
                     </div>
-                  </div>
-                </button>
+                    <div className="portal-step-label-box">
+                      <div className="portal-step-label">
+                        {STEP_LABELS[auditScope][step]}
+                      </div>
+                    </div>
+                  </button>
 
-                {idx < 4 && (
-                  <div style={{
-                    flex: 1, height: '2px', margin: '0 0.75rem',
-                    backgroundColor: step < activeStep ? 'var(--color-green)' : 'var(--border-light)',
-                    minWidth: '24px', transition: 'background-color 0.3s',
-                  }} />
-                )}
-              </React.Fragment>
-            );
-          })}
+                  {idx < 4 && (
+                    <div className={`portal-stepper-connector ${step < activeStep ? 'active' : ''}`} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
 
         {/* Step content */}
-        <div className="portal-step-content" style={{ padding: '2rem' }}>
+        <div className="portal-step-content portal-step-content-box">
 
           {/* ── STEP 1: Audit Preparation (Scope Adaptive) ── */}
           {activeStep === 1 && (
             auditScope === 'CARBON_EMISSION' ? (
               <div>
               {/* Assessment Header & Live Gauge Card */}
-              <div className="assessment-summary-card" style={{
-                backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)',
-                borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="assessment-summary-card">
+                <div className="assessment-header-grid">
                   <div>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
+                    <h2 className="assessment-card-title">
                       ISO Audit-Readiness Diagnostic Assessment
                     </h2>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px', lineHeight: 1.5 }}>
+                    <p className="assessment-card-desc">
                       Structured statutory screening aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
                     </p>
                   </div>
 
                   {/* Real-time compliance score badge & Quick Fill */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <div className="assessment-header-actions">
                     <button
                       type="button"
                       onClick={handleQuickFillCompliant}
-                      className="btn btn-secondary"
-                      style={{
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        padding: '0.45rem 0.95rem',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-medium)',
-                        color: 'var(--color-sky)',
-                        backgroundColor: 'var(--bg-card)',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.45rem',
-                        transition: 'all 0.15s ease',
-                      }}
+                      className="btn btn-secondary assessment-autofill-btn"
                       title="Auto-fill 15 ISO clauses with verified compliant answers for demonstration"
                     >
                       <GoogleIcons.AutoFix />
                       <span>Auto-Fill Diagnostic Baseline</span>
                     </button>
 
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '0.6rem',
-                      padding: '0.5rem 1rem', borderRadius: '8px',
+                    <div className="assessment-readiness-badge" style={{
                       backgroundColor: estimatedComplianceScore >= 80 ? 'rgba(16,185,129,0.1)' : 'rgba(2,132,199,0.1)',
                       border: `1px solid ${estimatedComplianceScore >= 80 ? 'rgba(16,185,129,0.3)' : 'rgba(2,132,199,0.3)'}`,
                     }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      <span className="assessment-readiness-label">
                         Readiness Index:
                       </span>
-                      <span style={{
-                        fontSize: '1.1rem', fontWeight: 800, fontFamily: 'var(--font-mono)',
+                      <span className="assessment-readiness-val" style={{
                         color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
                       }}>
                         {estimatedComplianceScore}%
                       </span>
-                      <span style={{
-                        fontSize: '0.72rem', fontWeight: 600,
+                      <span className="assessment-readiness-tag" style={{
                         color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
                       }}>
                         ({estimatedComplianceScore >= 80 ? 'Audit-Ready' : estimatedComplianceScore >= 50 ? 'In Progress' : 'Initial'})
@@ -1182,7 +1169,7 @@ export const PortalPage: React.FC = () => {
 
                           {/* Section Questions */}
                           {isExpanded && (
-                            <div style={{ padding: '1.25rem 1.5rem' }}>
+                            <div className="portal-section-questions-container">
                               {secQuestions.map((q: any, qIdx: number) => {
                                 const selectedAnswer = answers[q.questionId];
                                 const hasNote = Boolean(answers[`${q.questionId}_notes`]);
@@ -1235,7 +1222,7 @@ export const PortalPage: React.FC = () => {
                                     )}
 
                                     {/* Segmented Button Group */}
-                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+                                    <div className="portal-answer-btn-group">
                                       {['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'].map((opt) => {
                                         const isSelected = selectedAnswer === opt;
                                         return (
@@ -1243,20 +1230,10 @@ export const PortalPage: React.FC = () => {
                                             key={opt}
                                             type="button"
                                             onClick={() => handleAnswerChange(q.questionId, opt)}
-                                            style={{
-                                              padding: '0.45rem 0.9rem',
-                                              borderRadius: '6px',
-                                              fontSize: '0.8rem',
-                                              fontWeight: isSelected ? 700 : 500,
-                                              cursor: 'pointer',
-                                              border: isSelected ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
-                                              backgroundColor: isSelected ? 'var(--color-sky)' : 'var(--bg-card)',
-                                              color: isSelected ? '#fff' : 'var(--text-main)',
-                                              boxShadow: isSelected ? '0 1px 2px rgba(2,132,199,0.2)' : 'none',
-                                              transition: 'all 0.15s ease',
-                                            }}
+                                            className={`portal-answer-option-btn ${isSelected ? 'selected' : ''}`}
                                           >
-                                            {isSelected ? `✓ ${opt}` : opt}
+                                            <span className="portal-answer-indicator">{isSelected ? '✓' : '○'}</span>
+                                            <span className="portal-answer-text">{opt}</span>
                                           </button>
                                         );
                                       })}
@@ -2291,7 +2268,7 @@ export const PortalPage: React.FC = () => {
 
       {/* ── VIEW 3: Issued Credentials ───────────────────────────────────── */}
       {activeView === 'credentials' && (
-        <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
+        <div className="persefoni-card portal-card-pad" style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
@@ -2379,7 +2356,7 @@ export const PortalPage: React.FC = () => {
 
       {/* ── VIEW 4: Workforce & Job Filings ──────────────────────────────── */}
       {activeView === 'jobs' && (
-        <div className="persefoni-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
+        <div className="persefoni-card portal-card-pad" style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
@@ -2443,7 +2420,7 @@ export const PortalPage: React.FC = () => {
 
       {/* ── VIEW 5: Settlement History & 15% ESG Splits ──────────────────── */}
       {activeView === 'transactions' && (
-        <div className="persefoni-card" style={{ padding: '2rem' }}>
+        <div className="persefoni-card portal-card-pad">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
@@ -2612,7 +2589,7 @@ export const PortalPage: React.FC = () => {
           style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
           onClick={() => setShowJobModal(false)}
         >
-          <div className="persefoni-card" style={{ maxWidth: '520px', width: '100%', padding: '2rem' }} onClick={(e) => e.stopPropagation()}>
+          <div className="persefoni-card portal-card-pad" style={{ maxWidth: '520px', width: '100%' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Submit Section 106 Job Filing</h3>
               <button type="button" onClick={() => setShowJobModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-muted)', cursor: 'pointer' }}>x</button>

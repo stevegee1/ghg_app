@@ -1103,19 +1103,28 @@ h1, h2, h3, h4, .font-heading {
     padding: 1rem 0.75rem 3rem 0.75rem !important;
   }
 
+  /* Step content: tighter mobile padding */
   .portal-step-content {
     padding: 1rem !important;
   }
 
+  /* Stepper bar scrolls horizontally; step labels hidden to save space */
   .portal-stepper-bar {
-    padding: 0.75rem 1rem !important;
+    padding: 0.75rem 0.75rem !important;
+    gap: 0 !important;
     -webkit-overflow-scrolling: touch;
   }
 
-  .assessment-summary-card {
-    padding: 1rem !important;
+  .portal-stepper-bar .step-label-text {
+    display: none;
   }
 
+  /* Assessment header card compact */
+  .assessment-summary-card {
+    padding: 0.85rem !important;
+  }
+
+  /* Buttons full-width on very small screens */
   .btn {
     width: 100%;
     justify-content: center;
@@ -1123,6 +1132,40 @@ h1, h2, h3, h4, .font-heading {
 
   .navbar-inner {
     padding: 0.75rem 1rem;
+  }
+
+  /* Question answer option buttons: wrap into 2-col grid */
+  .portal-answer-options {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    flex-wrap: unset !important;
+  }
+
+  /* KPI grid: 1 column on small screens */
+  .portal-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Credential grid: 1 column */
+  .portal-credential-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tier card grid: stack */
+  .portal-tier-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Workspace header: stack scope switcher below title */
+  .portal-workspace-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .google-m3-scope-container {
+    width: 100%;
   }
 }
 
@@ -1292,6 +1335,43 @@ h1, h2, h3, h4, .font-heading {
   .partner-logo-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Portal step content: minimal padding on very narrow phones */
+  .portal-step-content {
+    padding: 0.75rem !important;
+  }
+
+  /* Assessment header text smaller on tiny screens */
+  .assessment-summary-card h2 {
+    font-size: 1.05rem !important;
+  }
+
+  /* Hide carousel arrows on very small screens — rely on swipe */
+  .m3-carousel-arrow {
+    display: none !important;
+  }
+
+  /* KPI grid: 1 column on very small screens */
+  .portal-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Answer options: stack vertically on 480px */
+  .portal-answer-options {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Portal workspace heading: smaller on tiny phones */
+  .portal-page-heading {
+    font-size: 1.1rem !important;
+  }
+
+  /* Ledger / jobs tables: allow scroll */
+  .portal-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+  }
 }
 
 /* ── Google Material 3 Chip Carousel ─────────────────────────────────────── */
@@ -1371,10 +1451,13 @@ h1, h2, h3, h4, .font-heading {
   display: flex;
   gap: 1.75rem;
   max-width: 1440px;
+  width: 100%;
   margin: 0 auto;
   padding: 1.5rem 1.25rem 4rem 1.25rem;
   align-items: flex-start;
   min-height: calc(100vh - 80px);
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
 .portal-sidebar {
@@ -1644,13 +1727,356 @@ h1, h2, h3, h4, .font-heading {
   display: none;
 }
 
+/* ── Top App Bar Console Mobile Toggle ────────────────────────────────────── */
+.console-mobile-drawer-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.65rem;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.console-mobile-drawer-toggle:hover {
+  background-color: var(--bg-subtle);
+  color: var(--color-sky);
+  border-color: var(--color-sky);
+}
+
+/* ── Google Cloud Connected Stepper Bar ──────────────────────────────────── */
+.portal-stepper-container {
+  width: 100%;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  box-sizing: border-box;
+}
+
+/* Mobile compact stepper header (<= 768px) */
+.portal-stepper-mobile-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-light);
+  gap: 0.5rem;
+  box-sizing: border-box;
+}
+
+.portal-mobile-step-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.portal-mobile-step-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-sky);
+  background: var(--accent-light);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.portal-mobile-step-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portal-mobile-step-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.portal-mobile-step-btn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-mobile-step-btn.primary {
+  background: var(--color-sky);
+  color: #fff;
+  border-color: var(--color-sky);
+}
+
+.portal-mobile-step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Stepper Track */
+.portal-stepper-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  position: relative;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+.portal-stepper-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+  opacity: 1;
+  border-radius: 8px;
+  background-color: transparent;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.portal-stepper-step-btn:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.portal-stepper-step-btn.active {
+  background-color: var(--bg-subtle);
+}
+
+.portal-step-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.portal-stepper-step-btn.completed .portal-step-badge {
+  background-color: var(--color-green);
+  color: #fff;
+}
+
+.portal-stepper-step-btn.active .portal-step-badge {
+  background-color: var(--color-sky);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.2);
+}
+
+.portal-step-label-box {
+  text-align: left;
+}
+
+.portal-step-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.portal-stepper-step-btn.active .portal-step-label {
+  font-weight: 700;
+  color: var(--color-sky);
+}
+
+.portal-stepper-step-btn.completed .portal-step-label {
+  color: var(--text-main);
+}
+
+.portal-stepper-connector {
+  flex: 1;
+  height: 2px;
+  margin: 0 0.75rem;
+  background-color: var(--border-light);
+  min-width: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.portal-stepper-connector.active {
+  background-color: var(--color-green);
+}
+
+/* ── Responsive Step Content & Cards ────────────────────────────────────── */
+.portal-step-content-box {
+  padding: 2rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.portal-card-pad {
+  padding: 2rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Assessment summary card */
+.assessment-summary-card {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.assessment-header-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.assessment-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.01em;
+}
+
+.assessment-card-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 750px;
+  line-height: 1.5;
+}
+
+.assessment-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.assessment-autofill-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-medium);
+  color: var(--color-sky);
+  background-color: var(--bg-card);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.15s ease;
+}
+
+.assessment-readiness-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.assessment-readiness-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.assessment-readiness-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+.assessment-readiness-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* Question Section Container */
+.portal-section-questions-container {
+  padding: 1.25rem 1.5rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Answer button group */
+.portal-answer-btn-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.portal-answer-option-btn {
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-sizing: border-box;
+}
+
+.portal-answer-option-btn:hover {
+  border-color: var(--color-sky);
+  background-color: var(--bg-subtle);
+}
+
+.portal-answer-option-btn.selected {
+  font-weight: 700;
+  border-color: var(--color-sky);
+  background-color: var(--color-sky);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+}
+
+.portal-answer-indicator {
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
 /* ── Off-Canvas Sidebar Drawer (mobile) ───────────────────────────────────── */
 .portal-sidebar-backdrop {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
-  z-index: 1000;
+  z-index: 1200;
   backdrop-filter: blur(2px);
   animation: fadeInBackdrop 0.2s ease;
 }
@@ -1669,15 +2095,15 @@ h1, h2, h3, h4, .font-heading {
   width: 290px;
   background: var(--bg-card);
   border-right: 1px solid var(--border-light);
-  z-index: 1001;
+  z-index: 1250;
   transform: translateX(-100%);
   transition: transform 0.28s cubic-bezier(0.2, 0, 0, 1);
   padding: 1.25rem;
-  display: flex;
   flex-direction: column;
   gap: 1.25rem;
   overflow-y: auto;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
 }
 
 .portal-sidebar-drawer.open {
@@ -1719,7 +2145,7 @@ h1, h2, h3, h4, .font-heading {
   color: var(--text-main);
 }
 
-/* ── Hamburger button (mobile only, hidden on desktop) ────────────────────── */
+/* ── Hamburger button ─────────────────────────────────────────────────────── */
 .portal-hamburger-btn {
   display: none;
   width: 40px;
@@ -1748,6 +2174,10 @@ h1, h2, h3, h4, .font-heading {
 
 /* ── Responsive: tablet + mobile (≤ 960px) ────────────────────────────────── */
 @media (max-width: 960px) {
+  .console-mobile-drawer-toggle {
+    display: inline-flex;
+  }
+
   .portal-dashboard-layout {
     flex-direction: column;
     padding: 1rem 0.75rem 3rem 0.75rem;
@@ -1756,7 +2186,7 @@ h1, h2, h3, h4, .font-heading {
 
   /* Desktop sidebar — hidden on mobile (drawer replaces it) */
   .portal-sidebar {
-    display: none;
+    display: none !important;
   }
 
   /* Show backdrop when drawer is open */
@@ -1764,7 +2194,7 @@ h1, h2, h3, h4, .font-heading {
     display: block;
   }
 
-  /* Drawer is always mounted; open class slides it in */
+  /* Drawer is mounted; open class slides it in */
   .portal-sidebar-drawer {
     display: flex;
   }
@@ -1774,8 +2204,35 @@ h1, h2, h3, h4, .font-heading {
     display: flex;
   }
 
+  .portal-step-content-box,
+  .portal-card-pad {
+    padding: 1.25rem;
+  }
+
+  .portal-section-questions-container {
+    padding: 1rem;
+  }
+
+  .portal-stepper-mobile-bar {
+    display: flex;
+  }
+
+  .portal-stepper-bar {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .portal-stepper-step-btn {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .portal-stepper-connector {
+    min-width: 14px;
+    margin: 0 0.35rem;
+  }
+
   .portal-workspace-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
 
   .portal-page-heading {
@@ -1783,17 +2240,79 @@ h1, h2, h3, h4, .font-heading {
   }
 }
 
-/* ── Narrow mobile adjustments (≤ 480px) ─────────────────────────────────── */
-@media (max-width: 480px) {
+/* ── Narrow mobile adjustments (≤ 640px) ─────────────────────────────────── */
+@media (max-width: 640px) {
+  .portal-dashboard-layout {
+    padding: 0.75rem 0.5rem 3rem 0.5rem;
+  }
+
   .portal-sidebar-drawer {
-    width: 80vw;
-    max-width: 310px;
+    width: 82vw;
+    max-width: 320px;
+  }
+
+  .portal-step-content-box,
+  .portal-card-pad {
+    padding: 0.875rem 0.5rem;
+  }
+
+  .assessment-summary-card {
+    padding: 0.875rem 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .assessment-header-grid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+
+  .assessment-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .assessment-autofill-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .assessment-readiness-badge {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .portal-section-questions-container {
+    padding: 0.85rem 0.65rem;
+  }
+
+  /* Full-width touch cards for diagnostic questions on mobile */
+  .portal-answer-btn-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .portal-answer-option-btn {
+    width: 100%;
+    min-height: 46px;
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    justify-content: flex-start;
+    font-size: 0.84rem;
   }
 
   .portal-workspace-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0.85rem;
+    margin-bottom: 1.25rem;
   }
 
   .google-m3-scope-container {
@@ -1802,9 +2321,21 @@ h1, h2, h3, h4, .font-heading {
 
   .google-m3-segmented-control {
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .google-m3-segment-btn {
     flex: 1;
+    padding: 0.5rem 0.4rem;
+    min-height: 48px;
+  }
+
+  .m3-segment-title {
+    font-size: 0.78rem;
+  }
+
+  .m3-segment-subtitle {
+    font-size: 0.65rem;
   }
 }
