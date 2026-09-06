@@ -861,6 +861,27 @@ h1, h2, h3, h4, .font-heading {
     padding: 1.25rem !important;
   }
 
+  .persefoni-card.no-padding {
+    padding: 0 !important;
+  }
+
+  .portal-container {
+    padding: 1rem 0.75rem 3rem 0.75rem !important;
+  }
+
+  .portal-step-content {
+    padding: 1rem !important;
+  }
+
+  .portal-stepper-bar {
+    padding: 0.75rem 1rem !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .assessment-summary-card {
+    padding: 1rem !important;
+  }
+
   .btn {
     width: 100%;
     justify-content: center;
@@ -871,8 +892,242 @@ h1, h2, h3, h4, .font-heading {
   }
 }
 
+/* ── Google Material 3 Dual-Scope Segmented Control ───────────────────────── */
+.google-m3-scope-container {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.google-m3-scope-label {
+  display: flex;
+  align-items: center;
+}
+
+.google-m3-scope-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.google-m3-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.google-m3-segment-btn {
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 1.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  user-select: none;
+  text-align: left;
+}
+
+.google-m3-segment-btn:hover:not(.active-carbon):not(.active-jobs) {
+  background-color: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+.google-m3-segment-btn.active-carbon {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.google-m3-segment-btn.active-carbon .m3-segment-subtitle {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.google-m3-segment-btn.active-jobs {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.google-m3-segment-btn.active-jobs .m3-segment-subtitle {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.m3-segment-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.m3-segment-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.m3-segment-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.m3-segment-subtitle {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.m3-check-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 0.65rem;
+  font-weight: 800;
+  margin-left: 0.15rem;
+}
+
+.m3-job-submit-btn {
+  background-color: #0284c7;
+  color: #ffffff;
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .google-m3-scope-container {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .google-m3-scope-label {
+    justify-content: flex-start;
+  }
+
+  .google-m3-segmented-control {
+    width: 100%;
+    border-radius: 14px;
+    padding: 4px;
+  }
+
+  .google-m3-segment-btn {
+    flex: 1 1 50%;
+    border-radius: 10px;
+    padding: 0.55rem 0.5rem;
+    gap: 0.4rem;
+    justify-content: center;
+  }
+
+  .m3-segment-title {
+    font-size: 0.78rem;
+  }
+
+  .m3-segment-subtitle {
+    font-size: 0.64rem;
+  }
+
+  .m3-job-submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 480px) {
   .partner-logo-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Google Material 3 Chip Carousel ─────────────────────────────────────── */
+.m3-chip-carousel-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.m3-chip-scroll-track {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0.5rem 0.25rem 0.65rem 0.25rem;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(2, 132, 199, 0.35) transparent;
+}
+
+.m3-chip-scroll-track::-webkit-scrollbar {
+  height: 4px;
+}
+
+.m3-chip-scroll-track::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+
+.m3-chip-scroll-track::-webkit-scrollbar-thumb {
+  background: rgba(2, 132, 199, 0.35);
+  border-radius: 4px;
+}
+
+.m3-carousel-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  z-index: 5;
+  flex-shrink: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  user-select: none;
+}
+
+.m3-carousel-arrow:hover {
+  background: var(--color-sky);
+  color: #ffffff;
+  border-color: var(--color-sky);
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+}
+
+.m3-carousel-arrow.left {
+  margin-right: 0.5rem;
+}
+
+.m3-carousel-arrow.right {
+  margin-left: 0.5rem;
 }

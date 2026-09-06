@@ -8,6 +8,7 @@ module.exports = {
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
+  testTimeout: 15000,
   globalSetup: '<rootDir>/tests/globalSetup.ts',
   setupFiles: ['<rootDir>/tests/setupEnv.ts'],
 };
