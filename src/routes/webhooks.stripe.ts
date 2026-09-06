@@ -141,6 +141,33 @@ export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe):
           break;
         }
 
+        case 'checkout.session.completed': {
+          // Handles ISO Preparation flat-rate payment confirmation.
+          // Matches session to IsoReadinessSubmission and unlocks Credential Studio.
+          const session = event.data.object as Stripe.Checkout.Session;
+          const sessionId = session.id;
+
+          const submission = await prisma.isoReadinessSubmission.findFirst({
+            where: { stripeSessionId: sessionId },
+          });
+
+          if (submission) {
+            await prisma.isoReadinessSubmission.update({
+              where: { id: submission.id },
+              data: {
+                paidAt: new Date(),
+                status: 'UNDER_REVIEW',
+              },
+            });
+            console.info(`[WEBHOOK] ISO submission ${submission.id} marked paid and advanced to UNDER_REVIEW`);
+          } else {
+            console.warn(
+              `[WEBHOOK] checkout.session.completed event ${event.id}: no matching IsoReadinessSubmission for session ${sessionId}`
+            );
+          }
+          break;
+        }
+
         case 'transfer.reversed': {
           const transfer = event.data.object as Stripe.Transfer;
           const transactionId = transfer.metadata?.transactionId;

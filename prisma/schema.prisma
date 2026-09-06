@@ -28,6 +28,8 @@ model Licensee {
   nonConformanceEvents     NonConformanceEvent[]
   auditReports             AuditInspectionReport[]
   evidenceDocuments        AuditEvidenceDocument[]
+  isoReadinessSubmissions  IsoReadinessSubmission[]
+  auditWarrantyCredentials AuditWarrantyCredential[]
 }
 
 enum Vertical {
@@ -496,4 +498,74 @@ model CharityApplication {
 
   @@index([applicationStatus])
   @@index([primaryContactEmail])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ISO AUDIT-READINESS WORKFLOW: Questionnaire persistence and payment state
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum IsoReadinessStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REVISION_REQUIRED
+}
+
+model IsoReadinessSubmission {
+  id                String               @id @default(cuid())
+  licenseeId        String
+  licensee          Licensee             @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  standardFramework String               @default("ISO_14001_50001_19011_2026")
+  /// Structured JSON array of { questionId, questionText, answer, isoClause }
+  answers           Json
+  /// 0–100 calculated conformance score; set by admin reviewer or AI on review
+  complianceScore   Int?
+  status            IsoReadinessStatus   @default(SUBMITTED)
+  reviewerNotes     String?
+  paidAt            DateTime?
+  stripeSessionId   String?
+  tierSelected      String?              // "TIER_1_READINESS" | "TIER_2_CONTINUOUS"
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  credential        AuditWarrantyCredential?
+
+  @@index([licenseeId, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT WARRANTY CREDENTIAL: ERC-1155 token lifecycle on Polygon PoS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum CredentialStatus {
+  PENDING
+  COMPOSITED
+  MINTED
+  REVOKED
+}
+
+model AuditWarrantyCredential {
+  id                  String             @id @default(cuid())
+  licenseeId          String
+  licensee            Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  submissionId        String             @unique
+  submission          IsoReadinessSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  /// Client's attestation message, max 120 characters, embedded in the badge
+  clientMessage       String
+  clientLogoUrl       String
+  compositeBadgeUrl   String?
+  /// Polygon PoS ERC-1155 token ID (numeric string)
+  tokenId             String?
+  contractAddress     String?
+  transactionHash     String?
+  openSeaUrl          String?
+  /// 1 year from issuance
+  warrantyExpiresAt   DateTime?
+  /// SHA-256 of (licenseeId + clientMessage + compositeBadgeUrl + issuedAt)
+  verificationSeal    String?
+  status              CredentialStatus   @default(PENDING)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([licenseeId, status])
 }

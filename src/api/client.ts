@@ -554,4 +554,98 @@ export const api = {
       return mockApi.assessJobCompliance(params);
     }
   },
+
+  // ── ISO Audit-Readiness ────────────────────────────────────────────────────
+
+  async getIsoFramework(): Promise<any> {
+    const res = await fetch('/api/iso-readiness/framework');
+    if (!res.ok) throw new Error('Failed to load ISO framework');
+    return res.json();
+  },
+
+  async submitIsoAnswers(
+    token: string,
+    params: { answers: any[]; tierSelected: string }
+  ): Promise<any> {
+    const res = await fetch('/api/iso-readiness/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async createIsoCheckout(
+    token: string,
+    params: { submissionId: string; tierSelected: string; successUrl: string; cancelUrl: string }
+  ): Promise<any> {
+    const res = await fetch('/api/iso-readiness/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getIsoStatus(token: string, licenseeId: string): Promise<any> {
+    const res = await fetch(`/api/iso-readiness/status/${licenseeId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  // ── Credential Studio ──────────────────────────────────────────────────────
+
+  async composeBadge(
+    token: string,
+    params: { clientLogoFile: File; clientMessage: string; submissionId?: string }
+  ): Promise<any> {
+    const form = new FormData();
+    form.append('clientLogo', params.clientLogoFile);
+    form.append('clientMessage', params.clientMessage);
+    if (params.submissionId) form.append('submissionId', params.submissionId);
+    const res = await fetch('/api/credentials/compose', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async mintCredential(
+    token: string,
+    params: { clientLogoFile: File; clientMessage: string; submissionId: string; recipientAddress?: string }
+  ): Promise<any> {
+    const form = new FormData();
+    form.append('clientLogo', params.clientLogoFile);
+    form.append('clientMessage', params.clientMessage);
+    form.append('submissionId', params.submissionId);
+    if (params.recipientAddress) form.append('recipientAddress', params.recipientAddress);
+    const res = await fetch('/api/credentials/mint', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getMyCredentials(token: string): Promise<any> {
+    const res = await fetch('/api/credentials/my', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
 };
+

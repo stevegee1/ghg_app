@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "frontend": "vite",
-    "build:server": "node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --external:@prisma/client --external:bcrypt --external:pdfkit --external:node-cron",
+    "build:server": "node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --external:@prisma/client --external:bcrypt --external:pdfkit --external:node-cron --external:canvas --external:multer",
     "build:client": "vite build",
     "build": "prisma generate && npm run build:client && npm run build:server",
     "start": "npx prisma migrate deploy && node dist/index.js",
@@ -22,10 +22,13 @@
     "@prisma/client": "^5.14.0",
     "@stripe/react-stripe-js": "^2.7.0",
     "@stripe/stripe-js": "^3.4.1",
+    "@types/multer": "^2.2.0",
     "bcrypt": "^5.1.1",
+    "canvas": "^3.2.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.3.0",
     "node-cron": "^3.0.3",
     "pdfkit": "^0.19.1",
     "react": "^18.3.1",
@@ -33,7 +36,8 @@
     "react-router-dom": "^6.23.1",
     "stripe": "^15.10.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "viem": "^2.56.3"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

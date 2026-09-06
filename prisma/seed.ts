@@ -63,6 +63,11 @@ export async function seed() {
     });
   }
 
+  // Remove any transient non-seed charities left by isolated tests
+  await prisma.charity.deleteMany({
+    where: { id: { notIn: charitiesData.map((c) => c.id) } },
+  }).catch(() => {});
+
   // 1. Seed Licensees
   const b2bApiKeyHashItm = await bcrypt.hash('b2b_key_itm_secret', 10);
   const b2bApiKeyHashJcb = await bcrypt.hash('b2b_key_jcb_secret', 10);

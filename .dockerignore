@@ -5,3 +5,8 @@ coverage
 *.log
 .DS_Store
 .git
+uploads
+tests
+contracts
+*.zip
+*.md

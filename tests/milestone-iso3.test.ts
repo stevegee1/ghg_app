@@ -297,4 +297,18 @@ describe('Milestone ISO-3: Industrial, Event & Custom Keepsake Scoring Engine', 
       expect(res.body.totalReports).toBeGreaterThanOrEqual(2);
     });
   });
+
+  afterAll(async () => {
+    await prisma.charityAllocation.deleteMany({ where: { charityId: 'charity_iso3_green' } }).catch(() => {});
+    await prisma.splitConfigHistory.deleteMany({
+      where: {
+        charityAllocationBps: {
+          equals: [{ charityId: 'charity_iso3_green', bps: 10000 }],
+        },
+      },
+    }).catch(() => {});
+    await prisma.charity.deleteMany({ where: { id: 'charity_iso3_green' } }).catch(() => {});
+    await prisma.$disconnect();
+  });
 });
+

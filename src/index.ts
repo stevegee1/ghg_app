@@ -9,7 +9,7 @@ async function main() {
   console.log('GHG Logo Drop Backend - Milestone 3 Initialized');
 
   const app = createApp();
-  const port = Number(process.env.PORT) || 8080;
+  const port = Number(process.env.PORT) || 3000;
 
   // Start listening FIRST — Railway health checks need 0.0.0.0:PORT to respond
   app.listen(port, '0.0.0.0', () => {

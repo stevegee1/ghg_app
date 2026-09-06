@@ -17,6 +17,8 @@ import { createIsoLegalRouter } from './routes/iso-legal.route';
 import { createJobReportingRouter } from './routes/job-reporting.route';
 import { createOrdersRouter } from './routes/orders.route';
 import { createCharitiesRouter } from './routes/charities.route';
+import { createIsoReadinessRouter } from './routes/iso-readiness.route';
+import { createCredentialsRouter } from './routes/credentials.route';
 import { CheckoutService } from './services/checkout.service';
 
 export function createApp(stripeInstance?: Stripe): Express {
@@ -35,9 +37,10 @@ export function createApp(stripeInstance?: Stripe): Express {
   // (compiled to dist/server/index.js, still launched from project root by Railway)
   const distDir = path.join(process.cwd(), 'dist');
 
-  // Serve static files from Vite's 'dist' output and 'public'
+  // Serve static files from Vite's 'dist' output, 'public', and 'uploads'
   app.use(express.static(distDir));
   app.use(express.static(path.join(process.cwd(), 'public')));
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // Use raw body parsing strictly for the webhook route
   app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
@@ -65,6 +68,8 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createJobReportingRouter(prisma));
   app.use(createOrdersRouter(prisma));
   app.use(createCharitiesRouter(prisma));
+  app.use(createIsoReadinessRouter(prisma, checkoutService));
+  app.use(createCredentialsRouter(prisma));
 
   // SPA Wildcard fallback — serve index.html for all non-API routes
   app.get('*', (req, res) => {
