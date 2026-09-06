@@ -146,7 +146,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#64748b')
-        .text('Nice Classes 25 & 35  |  ISO 14067 Certified  |  85/15 Statutory Charitable Routing', { align: 'center' });
+        .text('UKIPO Registered Trade Mark  |  ISO 14067 Certified  |  85/15 Statutory Charitable Routing', { align: 'center' });
       doc.moveDown(1.5);
 
       // Order Reference
@@ -212,7 +212,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       doc
         .fontSize(8)
         .fillColor('#94a3b8')
-        .text('Official statutory ESG invoice issued under GHG Emissions Registered Trade Mark (Nice Classes 25 & 35).', { align: 'center' });
+        .text('Official statutory ESG invoice issued under GHG Emissions Registered Trade Mark.', { align: 'center' });
       doc.text('GHG App | ghgapp-production.up.railway.app', { align: 'center' });
 
       doc.end();

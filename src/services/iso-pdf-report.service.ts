@@ -104,7 +104,7 @@ export class IsoPdfReportService {
 
         // Header Section
         doc.fontSize(18).text('ISO 14001 / 50001 INTEGRATED AUDIT REPORT', { align: 'center', bold: true } as any);
-        doc.fontSize(10).text('Class 35 Continuous Assurance & Dual-Impact Governance Matrix', { align: 'center' });
+        doc.fontSize(10).text('Statutory Continuous Assurance & Dual-Impact Governance Matrix', { align: 'center' });
         doc.moveDown(0.75);
 
         // Metadata Box
@@ -164,7 +164,7 @@ export class IsoPdfReportService {
 
         // Section X Legal Boundary Block
         doc.fontSize(8).fillColor('#64748b').text(
-          'SECTION X LEGAL DISCLAIMER & CLASS 35 BOUNDARY: This document constitutes an administrative data assurance and readiness record under Nice Classification Class 35. GHG Logo Drop does not operate as an accredited ISO registrar or carbon credit broker (Class 36). Final statutory certification requires third-party inspection by an accredited body under ISO 14065.',
+          'SECTION X LEGAL DISCLAIMER & STATUTORY ASSURANCE BOUNDARY: This document constitutes an administrative data assurance and readiness record under statutory data processing frameworks. GHG Logo Drop does not operate as an accredited ISO registrar or carbon credit broker. Final statutory certification requires third-party inspection by an accredited body under ISO 14065.',
           { align: 'justify' }
         );
         doc.moveDown(0.5);

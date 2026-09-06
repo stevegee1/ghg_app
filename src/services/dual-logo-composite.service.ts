@@ -6,7 +6,7 @@
  *  1. Client corporate logo (PNG/JPG/SVG, max 400×200 px region)
  *  2. Official GHG Emissions Registered Trade Mark (right panel)
  *  3. Client short message (max 120 chars)
- *  4. Nice Classes 25 & 35 designation + ISO 19011:2026 stamp
+ *  4. Statutory Trade Mark designation + ISO 19011:2026 stamp
  *  5. 1-Year Warranty validity date
  *
  * Fallback: If node-canvas is unavailable (e.g. CI without libcairo),
@@ -180,7 +180,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('UKIPO Nice Classes 25 & 35 | ISO 14001 · ISO 50001 · ISO 19011:2026', 40, HEIGHT - 40);
+    ctx.fillText('UKIPO Statutory Trade Mark | ISO 14001 · ISO 50001 · ISO 19011:2026', 40, HEIGHT - 40);
     ctx.textAlign = 'right';
     ctx.fillText(`Valid to: ${formatDate(expiresAt)}`, WIDTH - 40, HEIGHT - 40);
 
@@ -243,7 +243,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
     <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:sans-serif;font-size:17px;font-style:italic;color:rgba(255,255,255,0.85);text-align:center;word-break:break-word;">${escapedMsg}</div>
   </foreignObject>
   <!-- Footer -->
-  <text x="40" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)">UKIPO Nice Classes 25 &amp; 35 | ISO 14001 · ISO 50001 · ISO 19011:2026</text>
+  <text x="40" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)">UKIPO Statutory Trade Mark | ISO 14001 · ISO 50001 · ISO 19011:2026</text>
   <text x="984" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)" text-anchor="end">Valid to: ${formatDate(expiresAt)}</text>
   <!-- Seal -->
   <text x="512" y="494" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.20)" text-anchor="middle">SHA-256: ${seal.substring(0, 40)}…</text>

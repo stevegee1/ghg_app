@@ -10,7 +10,7 @@ import { CmaValidatorService } from '../src/services/cma-validator.service';
 const prisma = new PrismaClient();
 const app = createApp();
 
-describe('Milestone ISO-5: Class 35 Legal Firewall, CMA Validator & Onboarding Suite', () => {
+describe('Milestone ISO-5: Statutory Legal Firewall, CMA Validator & Onboarding Suite', () => {
   let licenseeA: any;
   let partnerUserA: any;
   let partnerUserB: any;
@@ -118,8 +118,8 @@ describe('Milestone ISO-5: Class 35 Legal Firewall, CMA Validator & Onboarding S
     });
   });
 
-  describe('2. Class 35 vs Class 36 Financial Separation Firewall', () => {
-    it('should approve valid Class 35 fixed software and drop transaction fee models', () => {
+  describe('2. Financial Separation Firewall', () => {
+    it('should approve valid statutory fixed software and drop transaction fee models', () => {
       const legalService = new LegalContractsService(prisma);
 
       const result1 = legalService.validateClass35FeeStructure({
@@ -128,7 +128,7 @@ describe('Milestone ISO-5: Class 35 Legal Firewall, CMA Validator & Onboarding S
         description: 'Monthly SaaS software assurance platform access',
       });
       expect(result1.isApproved).toBe(true);
-      expect(result1.classification).toContain('CLASS_35');
+      expect(result1.classification).toContain('STATUTORY_BUSINESS_MANAGEMENT');
 
       const result2 = legalService.validateClass35FeeStructure({
         billingModel: 'PER_TRANSACTION_DROP_FEE',
@@ -138,7 +138,7 @@ describe('Milestone ISO-5: Class 35 Legal Firewall, CMA Validator & Onboarding S
       expect(result2.isApproved).toBe(true);
     });
 
-    it('should reject carbon credit brokerage commission attempts with Class 36 Firewall Exception', () => {
+    it('should reject carbon credit brokerage commission attempts with Financial Firewall Exception', () => {
       const legalService = new LegalContractsService(prisma);
 
       expect(() =>
@@ -147,7 +147,7 @@ describe('Milestone ISO-5: Class 35 Legal Firewall, CMA Validator & Onboarding S
           feeCents: 15000,
           description: '5% Brokerage commission on carbon credit spot market trades',
         })
-      ).toThrow(/CLASS 36 FIREWALL VIOLATION/);
+      ).toThrow(/FINANCIAL FIREWALL VIOLATION/);
 
       expect(() =>
         legalService.validateClass35FeeStructure({
@@ -155,7 +155,7 @@ describe('Milestone ISO-5: Class 35 Legal Firewall, CMA Validator & Onboarding S
           feeCents: 10000,
           description: 'Carbon offset trading fee margin',
         })
-      ).toThrow(/CLASS 36 FIREWALL VIOLATION/);
+      ).toThrow(/FINANCIAL FIREWALL VIOLATION/);
     });
   });
 
@@ -170,7 +170,7 @@ describe('Milestone ISO-5: Class 35 Legal Firewall, CMA Validator & Onboarding S
       expect(addendum.clientLegalName).toBe('Apex CleanTech Solutions Ltd');
       expect(addendum.authorizedSignatoryName).toBe('Director_Jane_Smith');
       expect(addendum.contractMarkdown).toContain('ADDENDUM B: TECHNICAL CLARIFICATION');
-      expect(addendum.contractMarkdown).toContain('Nice Classification Class 35');
+      expect(addendum.contractMarkdown).toContain('Statutory Data Assurance Boundary');
       expect(addendum.contractMarkdown).toContain('ISO 14065');
       expect(addendum.contractMarkdown).toContain('fifteen percent (15%)');
     });

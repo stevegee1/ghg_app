@@ -139,7 +139,7 @@ export const Footer: React.FC = () => {
                     rel="noopener noreferrer"
                     style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
                   >
-                    WIPO Nice Classes 25 & 35 ↗
+                    WIPO Statutory Trade Mark ↗
                   </a>
                 </li>
                 <li>
@@ -201,10 +201,10 @@ export const Footer: React.FC = () => {
         {/* Bottom Horizontal Legal & Copyright Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '2rem', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            © 2026 GHG Emission Logs. GHG Emissions Registered Trade Mark (Nice Classes 25 & 35). All rights reserved.
+            © 2026 GHG Emission Logs. GHG Emissions Registered Trade Mark. All rights reserved.
           </div>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Legal & Class 35</Link>
+            <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Legal & Compliance</Link>
             <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Security</Link>
             <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacy Policy</Link>
             <Link to="/transparency" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>System Status</Link>

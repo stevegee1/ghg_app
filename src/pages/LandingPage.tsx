@@ -65,49 +65,56 @@ export const LandingPage: React.FC = () => {
   return (
     <div style={{ backgroundColor: 'var(--bg-page)', minHeight: '100vh', color: 'var(--text-main)', transition: 'all 0.25s ease', width: '100%', overflowX: 'hidden' }}>
       
-      {/* 1. Persefoni Hero Section */}
+      {/* 1. Persefoni-Style Hero Section (Continuous Assurance + Digital Data Flow) */}
       <section
         style={{
           position: 'relative',
-          padding: 'clamp(3rem, 5vw, 4.5rem) 1.5rem',
+          padding: 'clamp(3.5rem, 6vw, 5.5rem) 1.5rem',
           borderBottom: '1px solid var(--border-light)',
-          background: 'var(--bg-page)',
+          backgroundImage: 'url(/images/industrial-emissions-hero.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 40%',
+          backgroundRepeat: 'no-repeat',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        {/* Dark Cinematic Gradient Overlay for Maximum Readability & Contrast */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(135deg, rgba(8, 15, 57, 0.94) 0%, rgba(15, 23, 42, 0.88) 50%, rgba(15, 23, 42, 0.78) 100%)',
+            backdropFilter: 'blur(2px)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div className="hero-layout-grid" style={{ alignItems: 'center' }}>
             
             {/* Left Hero Column */}
             <div>
-              {/* Statutory Trademark Tag */}
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-pill)', padding: '0.25rem 0.75rem', marginBottom: '1rem' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-sky)' }} />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  GHG Emissions Registered Trade Mark (Nice Classes 25 & 35)
-                </span>
-              </div>
-
-              {/* Persefoni Headline */}
+              {/* Headline */}
               <h1
                 style={{
-                  fontSize: '2rem',
-                  fontWeight: 600,
-                  lineHeight: 1.2,
-                  marginBottom: '1rem',
-                  color: 'var(--text-main)',
+                  fontSize: 'clamp(2.1rem, 3.5vw, 2.75rem)',
+                  fontWeight: 800,
+                  lineHeight: 1.18,
+                  marginBottom: '1.25rem',
+                  color: '#ffffff',
                   letterSpacing: '-0.025em',
                 }}
               >
-                Carbon Footprint & Sustainability Assurance
+                Carbon Footprint &amp; Sustainability Assurance
               </h1>
 
               {/* Subtitle */}
               <p
                 style={{
-                  fontSize: '0.9375rem',
-                  color: 'var(--text-muted)',
-                  lineHeight: 1.55,
-                  marginBottom: '1rem',
+                  fontSize: '1rem',
+                  color: '#cbd5e1',
+                  lineHeight: 1.6,
+                  marginBottom: '1.5rem',
                   maxWidth: '560px',
                 }}
               >
@@ -115,11 +122,11 @@ export const LandingPage: React.FC = () => {
               </p>
 
               {/* Assurance Protocol Badges */}
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-                <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '3px 8px', borderRadius: '4px', color: 'var(--text-main)', fontWeight: 600 }}>
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+                <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.18)', padding: '4px 10px', borderRadius: '6px', color: '#e2e8f0', fontWeight: 600 }}>
                   80% Remote Digital Data Protocol
                 </span>
-                <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '3px 8px', borderRadius: '4px', color: 'var(--text-main)', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.18)', padding: '4px 10px', borderRadius: '6px', color: '#e2e8f0', fontWeight: 600 }}>
                   ISO 19011:2026 Annex A Audit Verification
                 </span>
               </div>
@@ -129,16 +136,18 @@ export const LandingPage: React.FC = () => {
                 <Link
                   to="/create-account"
                   style={{
-                    backgroundColor: '#0f172a',
-                    color: '#ffffff',
+                    backgroundColor: '#ffffff',
+                    color: '#080f39',
                     padding: '0.85rem 1.85rem',
-                    borderRadius: '6px',
+                    borderRadius: 'var(--radius-pill)',
                     fontSize: '0.9375rem',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     textDecoration: 'none',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.5rem',
+                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   <span>Sign up free</span>
@@ -148,9 +157,9 @@ export const LandingPage: React.FC = () => {
                 <Link
                   to="/portal/login"
                   style={{
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--border-medium)',
-                    color: 'var(--text-main)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    color: '#ffffff',
                     padding: '0.85rem 1.75rem',
                     borderRadius: 'var(--radius-pill)',
                     fontWeight: 700,
@@ -159,6 +168,8 @@ export const LandingPage: React.FC = () => {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.5rem',
+                    backdropFilter: 'blur(8px)',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   <span>Sign In to Console</span>
@@ -167,15 +178,16 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Hero: Persefoni-Style Multi-Card Dashboard Visual Mockup */}
+            {/* Right Hero: Persefoni-Style Multi-Card Dashboard Visual Mockup (RETAINED DEMO) */}
             <div
               style={{
                 position: 'relative',
-                backgroundColor: '#f8fafc',
-                border: '1px solid var(--border-light)',
+                backgroundColor: 'rgba(248, 250, 252, 0.96)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
                 borderRadius: '16px',
                 padding: '1.75rem',
-                boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.08)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
               }}
             >
               {/* Central Floating Company Profile Box */}
@@ -431,10 +443,10 @@ export const LandingPage: React.FC = () => {
               Statutory Remote Verification Protocol
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
-              80% Remote Auditing via Trademarked Class 35 Digital Data Protocol
+              80% Remote Auditing via Trademarked Digital Data Protocol
             </h2>
             <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', marginTop: '0.75rem', lineHeight: 1.6 }}>
-              Under the newly published ISO 19011:2026 guidelines, corporate operators can conduct 80% of management audits remotely through our accredited Class 35 digital data protocol, significantly reducing client on-site disruption, operational footprint, and corporate travel emissions.
+              Under the newly published ISO 19011:2026 guidelines, corporate operators can conduct 80% of management audits remotely through our accredited digital data protocol, significantly reducing client on-site disruption, operational footprint, and corporate travel emissions.
             </p>
           </div>
 
@@ -455,7 +467,7 @@ export const LandingPage: React.FC = () => {
                 Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A.
               </div>
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.75rem', lineHeight: 1.5 }}>
-                This immutable ledger stamp isolates our Class 35 data protocol from risks of regulatory greenwashing and compliance pushback during external assurance reviews.
+                This immutable ledger stamp isolates our continuous data protocol from risks of regulatory greenwashing and compliance pushback during external assurance reviews.
               </p>
             </div>
 
@@ -775,7 +787,7 @@ export const LandingPage: React.FC = () => {
                   </div>
                 ) : (
                   <div style={{ color: 'var(--color-green)' }}>
-                    ✅ <strong>HTTP 201 CREATED:</strong> Telemetry verified against active calibration certificate (SHA-256: 8f9b...a10c). Ingestion approved under Nice Class 35 rules.
+                    ✅ <strong>HTTP 201 CREATED:</strong> Telemetry verified against active calibration certificate (SHA-256: 8f9b...a10c). Ingestion approved under statutory assurance rules.
                   </div>
                 )}
               </div>

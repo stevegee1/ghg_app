@@ -15,7 +15,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
   router.get('/api/preparation/pricing', (_req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
-      trademark: 'GHG Emissions Registered Trade Mark (Nice Class 35)',
+      trademark: 'GHG Emissions Registered Trade Mark',
       remoteProtocol: '80% Remote Digital Data Protocol (ISO 19011:2026)',
       verificationStamp: 'Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A',
       tiers: [
@@ -48,7 +48,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
   /**
    * GET /api/custom-merch/products
-   * Returns available products under Nice Class 25 with base supplier production cost
+   * Returns available products with base supplier production cost
    * and automated 15% charity split computation.
    */
   router.get('/api/custom-merch/products', (_req: Request, res: Response) => {
@@ -123,7 +123,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
     return res.status(200).json({
       success: true,
-      trademark: 'GHG Emissions Registered Trade Mark (Nice Class 25)',
+      trademark: 'GHG Emissions Registered Trade Mark',
       studioName: 'Survivors Donation Keepsake',
       splitRule: '85% Supplier Production & Fulfillment / 15% Statutory Charity Endowment',
       products,

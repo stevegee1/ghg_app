@@ -170,7 +170,7 @@ export class IsoCalibrationService {
 
     if (!activeCalibration) {
       throw new Error(
-        `Telemetry ingestion rejected: No active, unexpired calibration certificate found for asset '${assetTag}' under ISO 50001/14001 Class 35 rules.`
+        `Telemetry ingestion rejected: No active, unexpired calibration certificate found for asset '${assetTag}' under ISO 50001/14001 statutory rules.`
       );
     }
 

@@ -5,7 +5,7 @@ import { api } from '../api/client';
 export const JobReportingPage: React.FC = () => {
   // Assessment Calculator State
   const [totalWorkers, setTotalWorkers] = useState<number>(120);
-  const [localWorkers, setLocalWorkers] = useState<number>(36);
+  const [localWorkers, setLocalWorkers] = useState<number>(30);
   const [apprenticeCount, setApprenticeCount] = useState<number>(8);
   const [livingWageCompliant, setLivingWageCompliant] = useState<boolean>(true);
   const [trainingHours, setTrainingHours] = useState<number>(1450);

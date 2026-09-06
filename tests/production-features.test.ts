@@ -215,7 +215,7 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
         .expect(200);
 
       expect(res.body).toHaveProperty('success', true);
-      expect(res.body.trademark).toContain('GHG Emissions Registered Trade Mark (Nice Class 35)');
+      expect(res.body.trademark).toContain('GHG Emissions Registered Trade Mark');
       expect(res.body.remoteProtocol).toContain('80% Remote Digital Data Protocol');
       expect(res.body.verificationStamp).toBe(
         'Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A'
@@ -237,7 +237,7 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
 
       expect(res.body).toHaveProperty('success', true);
       expect(res.body.studioName).toBe('Survivors Donation Keepsake');
-      expect(res.body.trademark).toContain('GHG Emissions Registered Trade Mark (Nice Class 25)');
+      expect(res.body.trademark).toContain('GHG Emissions Registered Trade Mark');
       expect(Array.isArray(res.body.products)).toBe(true);
       expect(res.body.products.length).toBe(6);
 

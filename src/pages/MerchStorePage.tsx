@@ -386,7 +386,7 @@ export const MerchStorePage: React.FC = () => {
           }}
         >
           <span className="radar-pulse" />
-          <span>GHG EMISSIONS REGISTERED TRADE MARK (NICE CLASS 25)</span>
+          <span>GHG EMISSIONS REGISTERED TRADE MARK</span>
         </div>
 
         <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>

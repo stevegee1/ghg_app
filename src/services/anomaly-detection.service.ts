@@ -47,7 +47,7 @@ export class AnomalyDetectionService {
     const percentageVariance = Math.abs((observedValue - baselineValue) / baselineValue) * 100;
     const roundedVariance = Math.round(percentageVariance * 100) / 100;
 
-    // 15% Anomaly Threshold Rule under ISO 50001 / 14001 Class 35 Framework
+    // 15% Anomaly Threshold Rule under ISO 50001 / 14001 Statutory Framework
     if (roundedVariance > 15.0) {
       // Determine Conformance Grade
       const conformanceGrade: ConformanceGrade =

@@ -89,7 +89,7 @@ export const PartnerLicensingPage: React.FC = () => {
                 Multi-Tenant Evidence Locker
               </h3>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-                Maintains immutable, time-stamped proof of raw telemetry payloads, meter calibration records, and non-conformance remediation logs protected by strict row-level security (RLS) and Nice Class 35 non-brokerage rules.
+                Maintains immutable, time-stamped proof of raw telemetry payloads, meter calibration records, and non-conformance remediation logs protected by strict row-level security (RLS) and statutory non-brokerage rules.
               </p>
             </div>
             <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)', fontSize: '0.8rem', color: 'var(--color-sky)', fontWeight: 700 }}>

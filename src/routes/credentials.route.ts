@@ -76,7 +76,7 @@ function buildBadgeSvg(credential: any, licenseeName: string): string {
   <!-- Warranty line -->
   <text x="20" y="100" font-family="system-ui,sans-serif" font-size="10" fill="rgba(255,255,255,0.5)">ISO 14001 · ISO 50001 · ISO 19011:2026 | Warranty Valid To: ${expiresAt}</text>
   <!-- Token ID -->
-  <text x="20" y="118" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.35)">Polygon ERC-1155 Token #${safe(tokenId)} | UKIPO Classes 25 &amp; 35</text>
+  <text x="20" y="118" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.35)">Polygon ERC-1155 Token #${safe(tokenId)} | UKIPO Statutory Trade Mark</text>
   <!-- OpenSea link -->
   ${opensea ? `<a href="${safe(opensea)}" target="_blank"><text x="20" y="134" font-family="system-ui,sans-serif" font-size="9" fill="#2081E2" text-decoration="underline">View on OpenSea</text></a>` : ''}
 </svg>`;
@@ -89,12 +89,12 @@ function buildOpenSeaMetadata(credential: any, licenseeName: string, baseUrl: st
     description:
       `ISO 14001 / ISO 50001 / ISO 19011:2026 Audit-Readiness Warranty issued by GHG Emissions Registered Trade Mark. ` +
       `Attestation: "${(credential.clientMessage || '').substring(0, 120)}". ` +
-      `UKIPO Nice Classes 25 & 35. Valid to: ${credential.warrantyExpiresAt ? new Date(credential.warrantyExpiresAt).toISOString().split('T')[0] : 'TBD'}.`,
+      `UKIPO Statutory Trade Mark. Valid to: ${credential.warrantyExpiresAt ? new Date(credential.warrantyExpiresAt).toISOString().split('T')[0] : 'TBD'}.`,
     image: credential.compositeBadgeUrl || `${baseUrl}/api/credentials/${credential.id}/badge.svg`,
     external_url: credential.openSeaUrl || `${baseUrl}/api/credentials/${credential.id}/metadata.json`,
     attributes: [
       { trait_type: 'Standard Framework', value: 'ISO 14001 / ISO 50001 / ISO 19011:2026' },
-      { trait_type: 'UKIPO Classes', value: 'Nice Class 25 & 35' },
+      { trait_type: 'Statutory Mark', value: 'UKIPO Registered Mark' },
       { trait_type: 'Issuer', value: 'GHG Emissions Registered Trade Mark' },
       { trait_type: 'Licensee', value: licenseeName },
       { trait_type: 'Warranty Status', value: credential.status },

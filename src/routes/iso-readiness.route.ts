@@ -29,7 +29,7 @@ const ISO_FRAMEWORK = {
     'GHG Protocol Corporate Standard',
   ],
   remoteAuditNote:
-    'Under ISO 19011:2026 Annex A, 80% of this assessment is conducted remotely via our trademarked Class 35 digital data protocol, minimising on-site disruption and travel costs.',
+    'Under ISO 19011:2026 Annex A, 80% of this assessment is conducted remotely via our trademarked digital data protocol, minimising on-site disruption and travel costs.',
   sections: [
     {
       sectionId: 'S1',

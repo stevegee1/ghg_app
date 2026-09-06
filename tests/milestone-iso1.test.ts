@@ -9,7 +9,7 @@ import crypto from 'crypto';
 const prisma = new PrismaClient();
 const app = createApp();
 
-describe('Milestone ISO-1: Class 35 Telemetry Ingestion & Mandatory Calibration Gatekeeper', () => {
+describe('Milestone ISO-1: Statutory Telemetry Ingestion & Mandatory Calibration Gatekeeper', () => {
   let licenseeA: any;
   let licenseeB: any;
   let partnerUserA: any;
@@ -200,7 +200,7 @@ describe('Milestone ISO-1: Class 35 Telemetry Ingestion & Mandatory Calibration 
 
       expect(res.status).toBe(422);
       expect(res.body.error).toContain('No active, unexpired calibration certificate found');
-      expect(res.body.error).toContain('ISO 50001/14001 Class 35 rules');
+      expect(res.body.error).toContain('ISO 50001/14001 statutory rules');
 
       // Verify no record was inserted
       const count = await prisma.telemetryLog.count({

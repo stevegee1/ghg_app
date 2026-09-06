@@ -1,10 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 
-export interface Class35FeeValidationInput {
+export interface StatutoryFeeValidationInput {
   billingModel: 'FIXED_SOFTWARE_LICENSE' | 'PER_TRANSACTION_DROP_FEE' | 'PER_AUDIT_ASSURANCE_FEE' | 'CARBON_CREDIT_BROKERAGE_COMMISSION' | 'OFFSET_TRADING_MARGIN';
   feeCents: number;
   description: string;
 }
+export type Class35FeeValidationInput = StatutoryFeeValidationInput;
 
 export interface AddendumBGeneratorInput {
   licenseeId: string;
@@ -17,10 +18,10 @@ export class LegalContractsService {
   constructor(private prisma: PrismaClient) {}
 
   /**
-   * Enforces the Class 35 vs Class 36 Financial Separation Firewall.
+   * Enforces the Financial Separation Firewall.
    * Rejects any transaction or billing model attempted as carbon credit brokerage or offset trading margins.
    */
-  validateClass35FeeStructure(input: Class35FeeValidationInput): { isApproved: boolean; classification: string } {
+  validateClass35FeeStructure(input: StatutoryFeeValidationInput): { isApproved: boolean; classification: string } {
     const { billingModel, description } = input;
 
     if (
@@ -30,18 +31,18 @@ export class LegalContractsService {
       description.toLowerCase().includes('carbon offset trading fee')
     ) {
       throw new Error(
-        'CLASS 36 FIREWALL VIOLATION: The GHG Logo Drop platform operates strictly under Nice Classification Class 35 (Data Management & Software Assurance). Percentage-based carbon credit brokerage or offset trading margins are strictly prohibited.'
+        'FINANCIAL FIREWALL VIOLATION: The GHG Logo Drop platform operates strictly under Software Assurance & Administrative Data Management. Percentage-based carbon credit brokerage or offset trading margins are strictly prohibited.'
       );
     }
 
     return {
       isApproved: true,
-      classification: 'NICE_CLASS_35_BUSINESS_MANAGEMENT_AND_DATA_PROCESSING',
+      classification: 'STATUTORY_BUSINESS_MANAGEMENT_AND_DATA_PROCESSING',
     };
   }
 
   /**
-   * Generates customized Addendum B (Technical Clarification of Class 35 Compliance Data Processes)
+   * Generates customized Addendum B (Technical Clarification of Statutory Compliance Data Processes)
    * for Master Services Agreements (MSAs).
    */
   generateAddendumB(input: AddendumBGeneratorInput) {
@@ -49,7 +50,7 @@ export class LegalContractsService {
     const dateStr = effectiveDate.toISOString().split('T')[0];
 
     const contractMarkdown = `
-# ADDENDUM B: TECHNICAL CLARIFICATION OF CLASS 35 COMPLIANCE DATA PROCESSES
+# ADDENDUM B: TECHNICAL CLARIFICATION OF STATUTORY COMPLIANCE DATA PROCESSES
 **Attachment to Master Services Agreement (MSA)**
 **Client Legal Entity:** ${clientLegalName} (Licensee ID: \`${licenseeId}\`)  
 **Effective Date:** ${dateStr}  
@@ -58,8 +59,8 @@ export class LegalContractsService {
 ---
 
 ### SECTION 1: STATUTORY TRADEMARK & SERVICE SCOPE
-1.1 **Nice Classification Class 35 Boundary**: The Client explicitly acknowledges and covenants that GHG Logo Drop (NFTY LOGS®) operates strictly as an administrative data aggregator, telemetry validation software provider, and continuous assurance engine under **Nice Classification Class 35** (Business Management, Administration, and Data Processing Services).
-1.2 **Class 36 Financial Firewall**: The Service Provider does not act as a financial broker, dealer, carbon credit exchange, or custodian of financial securities under Class 36. All fees payable hereunder are fixed software subscription fees and transaction assurance fees.
+1.1 **Statutory Data Assurance Boundary**: The Client explicitly acknowledges and covenants that GHG Logo Drop (NFTY LOGS®) operates strictly as an administrative data aggregator, telemetry validation software provider, and continuous assurance engine under statutory Business Management, Administration, and Data Processing Services.
+1.2 **Financial Separation Firewall**: The Service Provider does not act as a financial broker, dealer, carbon credit exchange, or custodian of financial securities. All fees payable hereunder are fixed software subscription fees and transaction assurance fees.
 
 ---
 
@@ -147,7 +148,7 @@ Date: ${dateStr}
           phaseName: 'Phase 3 (Days 61–90): Executive Boardroom Assurance & External Registrar Handover',
           focus: 'Continuous Assurance Certification & External Audit Handover',
           deliverables: [
-            'Execution of Master Services Agreement (MSA) Addendum B Class 35 Legal Clarification',
+            'Execution of Master Services Agreement (MSA) Addendum B Statutory Legal Clarification',
             'Enforcement of UK CMA Green Claims Code Copy Validator on all public product copy (Milestone ISO-5)',
             'Generation of Boardroom-Grade ISO 14001 / 50001 Integrated Audit Reports with SHA-256 watermarks',
             'Formal data package handover to third-party accredited registrar (ISO 14065) and Section 106 planning authorities',

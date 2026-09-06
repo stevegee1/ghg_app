@@ -1235,7 +1235,7 @@ export const PortalPage: React.FC = () => {
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px' }}>
                   {auditScope === 'CARBON_EMISSION'
-                    ? 'Preparation service fees are administered under UKIPO Class 35 data administration utility. All checkouts strictly enforce the 85% software licensing and 15% disaster relief endowment routing.'
+                    ? 'Preparation service fees are administered under statutory data administration utility. All checkouts strictly enforce the 85% software licensing and 15% disaster relief endowment routing.'
                     : 'Section 106 workforce assurance fees strictly enforce the statutory 85% software preparation base and 15% disaster relief endowment routing.'}
                 </p>
               </div>

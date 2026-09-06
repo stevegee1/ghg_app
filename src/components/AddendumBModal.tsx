@@ -80,7 +80,7 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
-              Class 35 Legal Assurance & Onboarding Suite
+              Statutory Legal Assurance & Onboarding Suite
             </h2>
             <p style={{ fontSize: '0.8125rem', color: '#38bdf8', margin: '0.25rem 0 0 0' }}>
               Master Services Agreement Addendum B & 30-60-90 Day Consultant Roadmap

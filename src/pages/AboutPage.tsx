@@ -24,7 +24,7 @@ export const AboutPage: React.FC = () => {
           }}
         >
           <span className="radar-pulse" />
-          <span>NICE CLASS 35 CONTINUOUS ASSURANCE & TRADEMARK AUTHENTICATION</span>
+          <span>CONTINUOUS STATUTORY ASSURANCE & TRADEMARK AUTHENTICATION</span>
         </div>
 
         <h1 style={{ fontSize: '1.75rem', fontWeight: 600, lineHeight: 1.25, marginBottom: '0.75rem', color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
@@ -66,7 +66,7 @@ export const AboutPage: React.FC = () => {
             The issue of climate change is intensified by the unpredictable nature of greenhouse gas (GHG) emissions, which are evident in climate disasters worldwide.
           </p>
           <p>
-            Achieving decarbonisation requires multifaceted empirical approaches. Under Nice Class 35 and ISO 14065 standards, we provide continuous telemetry verification, mandatory calibration gatekeepers, and immutable audit logs that protect organisations against greenwashing claims.
+            Achieving decarbonisation requires multifaceted empirical approaches. Under statutory ISO 14065 standards, we provide continuous telemetry verification, mandatory calibration gatekeepers, and immutable audit logs that protect organisations against greenwashing claims.
           </p>
           <p>
             We combine physical sensor telemetry with digital transparency to ensure corporate disclosure confidence and direct 15% funding to verified environmental initiatives.
@@ -206,7 +206,7 @@ export const AboutPage: React.FC = () => {
           Ready for Continuous Climate Assurance?
         </h2>
         <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2rem auto', lineHeight: 1.6 }}>
-          Ingest calibrated OT telemetry, lock baseline anomalies, and generate boardroom-ready PDF audit reports under Nice Class 35 standards.
+          Ingest calibrated OT telemetry, lock baseline anomalies, and generate boardroom-ready PDF audit reports under continuous assurance standards.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <Link to="/licensing" className="btn btn-primary">
