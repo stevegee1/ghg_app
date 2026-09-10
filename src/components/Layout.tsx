@@ -79,6 +79,11 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="app-container">
+      {!isConsoleView && (
+        <div className="greenly-announcement">
+          <span>Continuous Climate Telemetry & Statutory Audit Verification to ISO 14001 / 50001 Standards</span>
+        </div>
+      )}
       <header className={`navbar ${isConsoleView ? 'navbar-console-mode' : ''}`} ref={navContainerRef}>
         <div className="navbar-inner">
           
@@ -314,8 +319,8 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/licensing" className="mega-item-link" onClick={closeDropdowns} style={{ color: '#00f0ff', fontWeight: 700 }}>
-                              <div className="mega-item-name" style={{ color: '#00f0ff' }}>
+                            <Link to="/licensing" className="mega-item-link" onClick={closeDropdowns} style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
+                              <div className="mega-item-name" style={{ color: 'var(--accent-primary)' }}>
                                 <span>See all assurance →</span>
                               </div>
                             </Link>
@@ -757,8 +762,8 @@ export const Layout: React.FC = () => {
                   Portal Login
                 </NavLink>
                 <Link
-                  to="/portal"
-                  className="btn-audit-cta"
+                  to="/create-account"
+                  className="btn btn-primary"
                   title="Get Audit Ready"
                 >
                   <span>Get Audit Ready</span>

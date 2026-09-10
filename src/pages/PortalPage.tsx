@@ -2776,12 +2776,12 @@ export const PortalPage: React.FC = () => {
           </div>
 
           {/* Workflow Quick Action Card */}
-          <div className="persefoni-card" style={{ padding: '1.75rem', marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, rgba(2,132,199,0.06), rgba(16,185,129,0.06))', border: '1px solid rgba(2,132,199,0.2)' }}>
+          <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.04em' }}>
-                ACTIVE ASSURANCE WORKFLOW
+                Active Assurance Workflow
               </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 Step {activeStep} of 5: {STEP_LABELS[auditScope][activeStep]}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -2792,7 +2792,6 @@ export const PortalPage: React.FC = () => {
               type="button"
               onClick={() => setActiveView('workflow')}
               className="btn btn-primary"
-              style={{ fontSize: '0.875rem', padding: '0.65rem 1.5rem', fontWeight: 700 }}
             >
               Resume Workflow Studio →
             </button>
@@ -3092,14 +3091,19 @@ export const PortalPage: React.FC = () => {
                 Client Profile &amp; Organization
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-                  🏢
+                <div style={{ width: '44px', height: '44px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-subtle)', color: 'var(--color-sky)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
+                  <GoogleIcons.Building />
                 </div>
                 <div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
-                    {user?.licenseeId || 'Enterprise Client'}
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {displayName}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-green)', fontWeight: 600 }}>
+                  {user?.licenseeId && (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                      ID: {user.licenseeId}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.78rem', color: 'var(--color-green)', fontWeight: 600, marginTop: '2px' }}>
                     ● Verified Statutory Licensee
                   </div>
                 </div>
