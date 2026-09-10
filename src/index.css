@@ -87,10 +87,31 @@
   --font-heading: 'Outfit', 'Plus Jakarta Sans', 'Inter', sans-serif;
   --font-mono: 'Roboto Mono', 'SF Mono', monospace;
 
+  /* Unified border-radius scale */
+  --radius-xs: 6px;
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-pill: 9999px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px; /* Reserved: status chips and avatar circles only */
+
+  /* 8px spatial scale */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
+
+  /* Portal surface tokens (theme-aware, replaces hardcoded #0c1929) */
+  --portal-preview-bg: #f0f9ff;
+  --portal-preview-border: #e2e8f0;
+  --portal-preview-placeholder-color: #94a3b8;
+}
+
+[data-theme="dark"] {
+  --portal-preview-bg: #1e293b;
+  --portal-preview-border: #334155;
+  --portal-preview-placeholder-color: #64748b;
 }
 
 *, *::before, *::after {
@@ -962,15 +983,15 @@ h1, h2, h3, h4, .font-heading {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border: none;
-  min-height: 46px;
-  padding: 0.75rem 1.65rem;
-  font-size: 0.9375rem;
+  min-height: 36px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.875rem;
   touch-action: manipulation;
 }
 
@@ -1896,6 +1917,31 @@ h1, h2, h3, h4, .font-heading {
   box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.2);
 }
 
+/* Gate-truthful stepper states */
+.portal-stepper-step-btn.action-required .portal-step-badge {
+  background-color: var(--google-amber);
+  color: #fff;
+}
+
+.portal-stepper-step-btn.locked .portal-step-badge {
+  background-color: var(--border-medium);
+  color: var(--text-muted);
+}
+
+.portal-stepper-step-btn.locked {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.portal-stepper-step-btn.action-required .portal-step-label {
+  color: var(--google-amber);
+  font-weight: 700;
+}
+
+.portal-stepper-step-btn.locked .portal-step-label {
+  color: var(--text-muted);
+}
+
 .portal-step-label-box {
   text-align: left;
 }
@@ -1927,6 +1973,10 @@ h1, h2, h3, h4, .font-heading {
 
 .portal-stepper-connector.active {
   background-color: var(--color-green);
+}
+
+.portal-stepper-connector.warning {
+  background-color: var(--google-amber);
 }
 
 /* ── Responsive Step Content & Cards ────────────────────────────────────── */
@@ -2209,6 +2259,129 @@ h1, h2, h3, h4, .font-heading {
   width: 100%;
 }
 
+/* ── Portal Semantic Layout Classes ─────────────────────────────────────── */
+
+/* Greeting banner: replaces top-of-workspace inline style object */
+.portal-greeting-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  margin-bottom: var(--space-2);
+}
+
+/* Gate alert: amber gate warning boxes in steps 2, 3, 4 */
+.portal-gate-alert {
+  background: #fffbeb;
+  border: 1.5px solid var(--google-amber);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.portal-gate-alert.danger {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: var(--google-red);
+}
+
+[data-theme="dark"] .portal-gate-alert {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+[data-theme="dark"] .portal-gate-alert.danger {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* Action row: flex row with space-between for navigation buttons */
+.portal-action-row {
+  display: flex;
+  gap: var(--space-1);
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+}
+
+/* Preview canvas: replaces hardcoded dark navy badge preview box */
+.portal-preview-canvas {
+  background: var(--portal-preview-bg);
+  border: 1px solid var(--portal-preview-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.portal-preview-canvas img {
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.portal-preview-placeholder {
+  text-align: center;
+  opacity: 0.6;
+}
+
+.portal-preview-placeholder-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--portal-preview-placeholder-color);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.portal-preview-placeholder-sub {
+  font-size: 0.72rem;
+  color: var(--portal-preview-placeholder-color);
+}
+
+/* Credential Studio two-column grid: upload panel + preview canvas */
+.portal-credential-studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+/* Token detail grid in Step 5 digital asset view */
+.portal-token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2);
+}
+
+/* Shared metadata label/value pair used in token grid and settings */
+.portal-metadata-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.portal-metadata-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  word-break: break-all;
+}
+
+.portal-metadata-value.mono {
+  font-family: var(--font-mono);
+}
+
 .portal-drawer-full-close-btn {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -2470,5 +2643,71 @@ h1, h2, h3, h4, .font-heading {
 
   .m3-segment-subtitle {
     font-size: 0.65rem;
+  }
+}
+
+/* ── Semantic class mobile overrides (max-width: 640px) ─────────────────── */
+@media (max-width: 640px) {
+  /* Greeting banner: stack vertically, CTA spans full width */
+  .portal-greeting-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-2);
+  }
+
+  .portal-greeting-banner .btn-primary,
+  .portal-greeting-banner .btn-secondary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Credential studio grid: single column on mobile */
+  .portal-credential-studio-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Gate alert: full-width action button on mobile */
+  .portal-gate-alert .btn-primary,
+  .portal-gate-alert .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Action row: stack vertically on mobile */
+  .portal-action-row {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .portal-action-row .btn-primary,
+  .portal-action-row .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Preview canvas: reduce padding on mobile */
+  .portal-preview-canvas {
+    padding: var(--space-2);
+    min-height: 220px;
+  }
+
+  /* Token grid: two columns on mobile */
+  .portal-token-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* 44px minimum touch target compliance */
+  .portal-nav-btn,
+  .portal-stepper-step-btn,
+  .portal-answer-option-btn,
+  .portal-hamburger-btn {
+    min-height: 44px;
+  }
+
+  /* All buttons at 44px on mobile */
+  .btn {
+    min-height: 44px;
+    padding: 0.65rem 1.25rem;
   }
 }

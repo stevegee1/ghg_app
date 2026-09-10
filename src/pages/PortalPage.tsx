@@ -794,6 +794,20 @@ export const PortalPage: React.FC = () => {
     setTimeout(() => setCopiedApiKey(false), 2000);
   };
 
+  // Corporate display name resolver (never shows raw licensee ID as greeting)
+  const getDisplayName = (): string => {
+    if (user?.email) {
+      const domain = user.email.split('@')[1];
+      if (domain) {
+        const base = domain.split('.')[0];
+        return base.charAt(0).toUpperCase() + base.slice(1);
+      }
+    }
+    return 'Enterprise Partner';
+  };
+
+  const displayName = getDisplayName();
+
   const getViewTitle = () => {
     switch (activeView) {
       case 'workflow':
@@ -883,16 +897,16 @@ export const PortalPage: React.FC = () => {
 
   const kpis = auditScope === 'CARBON_EMISSION'
     ? [
-        { label: 'Settled Transactions', value: loading ? '…' : (summary?.totalSettledTransactions ?? 0).toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
-        { label: 'Settled Gross Volume', value: loading ? '…' : `£${((summary?.totalGrossVolumeCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
-        { label: '15% ESG Charity Split', value: loading ? '…' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: '#a855f7' },
-        { label: 'Active Credentials', value: credentials.length.toString(), sub: 'Polygon ERC-1155 Minted', accent: '#f59e0b' },
+        { label: 'Settled Transactions', value: loading ? '...' : (summary?.totalSettledTransactions ?? 0).toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
+        { label: 'Settled Gross Volume', value: loading ? '...' : `\u00a3${((summary?.totalGrossVolumeCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
+        { label: '15% ESG Charity Split', value: loading ? '...' : `\u00a3${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: 'var(--color-sky)' },
+        { label: 'Active Credentials', value: credentials.length.toString(), sub: 'Polygon ERC-1155 Minted', accent: 'var(--google-amber)' },
       ]
     : [
-        { label: 'Total Verified Jobs', value: loading ? '…' : totalVerifiedJobs.toLocaleString(), sub: 'Section 106 Local Impact', accent: 'var(--color-sky)' },
-        { label: 'Active Filing Periods', value: loading ? '…' : jobReports.length.toString(), sub: 'Quarterly & Annual Covenants', accent: 'var(--color-green)' },
-        { label: '15% Social Endowment', value: loading ? '…' : `£${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Disaster Relief Endowment', accent: '#a855f7' },
-        { label: 'Audited Covenants', value: jobReports.length > 0 ? '100% Verified' : 'Filing Required', sub: 'ISO 19011:2026 Assured', accent: '#f59e0b' },
+        { label: 'Total Verified Jobs', value: loading ? '...' : totalVerifiedJobs.toLocaleString(), sub: 'Section 106 Local Impact', accent: 'var(--color-sky)' },
+        { label: 'Active Filing Periods', value: loading ? '...' : jobReports.length.toString(), sub: 'Quarterly & Annual Covenants', accent: 'var(--color-green)' },
+        { label: '15% Social Endowment', value: loading ? '...' : `\u00a3${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Disaster Relief Endowment', accent: 'var(--color-sky)' },
+        { label: 'Audited Covenants', value: jobReports.length > 0 ? '100% Verified' : 'Filing Required', sub: 'ISO 19011:2026 Assured', accent: 'var(--google-amber)' },
       ];
 
   // ── Sidebar nav items helper (shared desktop + mobile drawer) ───────────
@@ -905,9 +919,14 @@ export const PortalPage: React.FC = () => {
         </div>
         <div className="portal-profile-info">
           <div className="portal-profile-role">Client Account</div>
-          <div className="portal-profile-name" title={user?.licenseeId || 'Enterprise Client'}>
-            {user?.licenseeId || 'Enterprise Client'}
+          <div className="portal-profile-name" title={displayName}>
+            {displayName}
           </div>
+          {user?.licenseeId && (
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              {user.licenseeId.substring(0, 16)}...
+            </div>
+          )}
           <div className="portal-profile-status">
             <span className="portal-status-dot" />
             <span>Active Licensee</span>
@@ -1110,24 +1129,13 @@ export const PortalPage: React.FC = () => {
       <main className="portal-main-workspace">
 
         {/* Top Greeting Banner */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          padding: '1.25rem 1.5rem',
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: '12px',
-          border: '1px solid var(--border-light)',
-          marginBottom: '1.25rem',
-        }}>
+        <div className="portal-greeting-banner">
           <div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 500 }}>
               {getFormattedDate()}
             </div>
             <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
-              {getGreeting()}, {user?.licenseeId || 'Enterprise Partner'}
+              {getGreeting()}, {displayName}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>
@@ -1136,6 +1144,25 @@ export const PortalPage: React.FC = () => {
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 Contractual 85/15 Statutory Split Guaranteed: ISO 19011:2026 Remote Auditing
               </span>
+              {user?.licenseeId && (
+                <button
+                  type="button"
+                  onClick={copyClientId}
+                  style={{
+                    fontSize: '0.7rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--color-sky)',
+                    background: 'var(--accent-light)',
+                    border: '1px solid var(--color-sky)',
+                    borderRadius: 'var(--radius-xs)',
+                    padding: '2px 6px',
+                    cursor: 'pointer',
+                  }}
+                  title="Click to copy License ID"
+                >
+                  {copiedClientId ? 'Copied!' : `ID: ${user.licenseeId.substring(0, 14)}...`}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1145,12 +1172,13 @@ export const PortalPage: React.FC = () => {
               onClick={() => {
                 setActiveView('workflow');
                 setAuditScope('CARBON_EMISSION');
-                setActiveStep(1);
+                if (activeView !== 'workflow') setActiveStep(1);
               }}
               className="btn btn-primary"
-              style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.55rem 1.1rem' }}
             >
-              + Start Carbon Audit
+              {activeView === 'workflow' && activeStep > 1
+                ? `Resume Audit (Step ${activeStep} of 5)`
+                : '+ Start Carbon Audit'}
             </button>
           </div>
         </div>
@@ -1276,27 +1304,75 @@ export const PortalPage: React.FC = () => {
           <div className="portal-stepper-bar">
             {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step, idx) => {
               const isActive = activeStep === step;
-              const isCompleted = step < activeStep || (step === 1 && (auditScope === 'CARBON_EMISSION' ? progressPct === 100 : jobReports.length > 0));
+
+              // Gate-truthful status resolver
+              const getStepStatus = (): 'completed' | 'action-required' | 'locked' | 'active' | 'pending' => {
+                if (isActive) return 'active';
+                if (auditScope === 'CARBON_EMISSION') {
+                  if (step === 1) return isAuditReady ? 'completed' : (activeStep > 1 ? 'action-required' : 'pending');
+                  if (step === 2) return isPaid ? 'completed' : (activeStep > 2 ? 'action-required' : 'pending');
+                  if (step === 3) return isPaid ? 'completed' : 'locked';
+                  if (step === 4) return credentials.length > 0 ? 'completed' : (!isPaid || !isAuditReady) ? 'locked' : 'pending';
+                  if (step === 5) return mintResult ? 'completed' : 'locked';
+                }
+                // JOB_REPORTING scope: positional only (no payment gate)
+                return step < activeStep ? 'completed' : 'pending';
+              };
+
+              const stepStatus = getStepStatus();
+              const isCompleted = stepStatus === 'completed';
+              const isLocked = stepStatus === 'locked';
+              const isActionRequired = stepStatus === 'action-required';
+
+              const getBadgeContent = () => {
+                if (isCompleted) return '\u2713';
+                if (isActionRequired) return '!';
+                if (isLocked) return '\uD83D\uDD12';
+                return step;
+              };
+
+              const getConnectorClass = () => {
+                if (step >= activeStep) return '';
+                const nextStatus = (() => {
+                  const nextStep = (step + 1) as WorkflowStep;
+                  if (nextStep === activeStep) return 'active-step';
+                  if (auditScope === 'CARBON_EMISSION') {
+                    if (nextStep === 3 && !isPaid) return 'warning';
+                    if (nextStep === 4 && (!isPaid || !isAuditReady)) return 'warning';
+                    if (nextStep === 5 && !mintResult) return 'warning';
+                  }
+                  return 'active';
+                })();
+                return nextStatus === 'warning' ? 'warning' : 'active';
+              };
 
               return (
                 <React.Fragment key={step}>
                   <button
                     type="button"
-                    onClick={() => setActiveStep(step)}
-                    className={`portal-stepper-step-btn ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                    onClick={() => !isLocked && setActiveStep(step)}
+                    disabled={isLocked}
+                    className={`portal-stepper-step-btn ${stepStatus}`}
+                    aria-label={`${STEP_LABELS[auditScope][step]}${isLocked ? ' (locked)' : isActionRequired ? ' (action required)' : ''}`}
                   >
                     <div className="portal-step-badge">
-                      {isCompleted ? '✓' : step}
+                      {getBadgeContent()}
                     </div>
                     <div className="portal-step-label-box">
                       <div className="portal-step-label">
                         {STEP_LABELS[auditScope][step]}
                       </div>
+                      {isActionRequired && (
+                        <div style={{ fontSize: '0.68rem', color: 'var(--google-amber)', fontWeight: 700 }}>Action Required</div>
+                      )}
+                      {isLocked && (
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Locked</div>
+                      )}
                     </div>
                   </button>
 
                   {idx < 4 && (
-                    <div className={`portal-stepper-connector ${step < activeStep ? 'active' : ''}`} />
+                    <div className={`portal-stepper-connector ${getConnectorClass()}`} />
                   )}
                 </React.Fragment>
               );
@@ -2186,13 +2262,7 @@ export const PortalPage: React.FC = () => {
                         )}
 
                         {!isAuditReady && auditScope === 'CARBON_EMISSION' && (
-                          <div style={{
-                            backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                            border: '1px solid var(--google-red)',
-                            borderRadius: '8px',
-                            padding: '1rem',
-                            marginBottom: '1rem',
-                          }}>
+                          <div className="portal-gate-alert danger">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--google-red)', fontWeight: 700, fontSize: '0.82rem' }}>
                               <GoogleIcons.Lock /> Gate 1: Lead Auditor Sign-Off Required
                             </div>
@@ -2203,9 +2273,9 @@ export const PortalPage: React.FC = () => {
                               type="button"
                               onClick={() => setActiveStep(1)}
                               className="btn btn-secondary"
-                              style={{ marginTop: '0.75rem', fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                              style={{ marginTop: '0.75rem', fontSize: '0.75rem' }}
                             >
-                              ← Return to Step 1 for Sign-Off
+                              Return to Step 1 for Sign-Off
                             </button>
                           </div>
                         )}
@@ -2276,14 +2346,8 @@ export const PortalPage: React.FC = () => {
               </p>
 
               {!isPaid && (
-                <div style={{
-                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
-                  border: '1px solid #f59e0b',
-                  borderRadius: '10px',
-                  padding: '1.25rem',
-                  marginBottom: '1.5rem',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontWeight: 700, fontSize: '0.88rem' }}>
+                <div className="portal-gate-alert">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--google-amber)', fontWeight: 700, fontSize: '0.88rem' }}>
                     <GoogleIcons.Lock /> Gate 2 Notice: Commercial Fee Settlement Required
                   </div>
                   <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.5rem 0 0.85rem 0', lineHeight: 1.5 }}>
@@ -2293,7 +2357,6 @@ export const PortalPage: React.FC = () => {
                     type="button"
                     onClick={() => setActiveStep(2)}
                     className="btn btn-primary"
-                    style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }}
                   >
                     Proceed to Step 2 Commercial Settlement →
                   </button>
@@ -2382,12 +2445,12 @@ export const PortalPage: React.FC = () => {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+              <div className="portal-action-row">
                 <button type="button" onClick={() => setActiveStep(2)} className="btn btn-secondary">
-                  ← Back to Commercial Scope (Step 2)
+                  Back to Commercial Scope (Step 2)
                 </button>
                 <button type="button" onClick={() => setActiveStep(4)} className="btn btn-primary">
-                  Proceed to Credential Studio (Step 4) →
+                  Proceed to Credential Studio (Step 4)
                 </button>
               </div>
             </div>
@@ -2404,14 +2467,8 @@ export const PortalPage: React.FC = () => {
               </p>
 
               {(!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) && (
-                <div style={{
-                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
-                  border: '1px solid #f59e0b',
-                  borderRadius: '10px',
-                  padding: '1.25rem',
-                  marginBottom: '1.5rem',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontWeight: 700, fontSize: '0.88rem' }}>
+                <div className="portal-gate-alert">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--google-amber)', fontWeight: 700, fontSize: '0.88rem' }}>
                     <GoogleIcons.Lock /> Gate 2 &amp; 3 Verification Requirements
                   </div>
                   <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.5rem 0 0.85rem 0', lineHeight: 1.5 }}>
@@ -2423,14 +2480,13 @@ export const PortalPage: React.FC = () => {
                     type="button"
                     onClick={() => setActiveStep(!isPaid ? 2 : 1)}
                     className="btn btn-primary"
-                    style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }}
                   >
                     {!isPaid ? 'Go to Step 2 Settlement →' : 'Go to Step 1 Auditor Review →'}
                   </button>
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem' }}>
+              <div className="portal-credential-studio-grid">
                 {/* Left — inputs */}
                 <div>
                   {/* Logo dropzone */}
@@ -2533,25 +2589,20 @@ export const PortalPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Right — badge preview */}
+                {/* Right -- badge preview */}
                 <div>
-                  <div style={{
-                    background: 'linear-gradient(135deg, #0c1929, #0a2540)',
-                    borderRadius: '12px', padding: '2rem', minHeight: '280px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  }}>
+                  <div className="portal-preview-canvas">
                     {compositePreview ? (
                       <img
                         src={compositePreview}
                         alt="Dual-logo composite badge preview"
-                        style={{ maxWidth: '100%', borderRadius: '8px' }}
                       />
                     ) : (
-                      <div style={{ textAlign: 'center', opacity: 0.5 }}>
-                        <div style={{ fontSize: '0.85rem', color: '#a5f3fc', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          BADGE PREVIEW
+                      <div className="portal-preview-placeholder">
+                        <div className="portal-preview-placeholder-title">
+                          Badge Preview
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
+                        <div className="portal-preview-placeholder-sub">
                           Upload logo and enter message, then click Preview Badge
                         </div>
                       </div>
@@ -2565,12 +2616,12 @@ export const PortalPage: React.FC = () => {
               </div>
 
               {/* Step 4 Navigation */}
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.75rem' }}>
+              <div className="portal-action-row">
                 <button type="button" onClick={() => setActiveStep(3)} className="btn btn-secondary">
-                  ← Back to Ingestion API (Step 3)
+                  Back to Ingestion API (Step 3)
                 </button>
                 <button type="button" onClick={() => setActiveStep(5)} className="btn btn-secondary">
-                  Preview Asset Delivery (Step 5) →
+                  Preview Asset Delivery (Step 5)
                 </button>
               </div>
             </div>
@@ -2592,16 +2643,16 @@ export const PortalPage: React.FC = () => {
                   <div>
                     {/* Token details */}
                     <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      <div className="portal-token-grid">
                         {[
                           { label: 'Token ID', value: cred.tokenId || 'pending', mono: true },
-                          { label: 'Contract', value: cred.contractAddress ? `${cred.contractAddress.substring(0, 10)}…` : 'Polygon PoS', mono: true },
+                          { label: 'Contract', value: cred.contractAddress ? `${cred.contractAddress.substring(0, 10)}...` : 'Polygon PoS', mono: true },
                           { label: 'Network', value: 'Polygon PoS', mono: false },
                           { label: 'Standard', value: 'ERC-1155', mono: false },
                         ].map((item) => (
                           <div key={item.label}>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>{item.label}</div>
-                            <div style={{ fontFamily: item.mono ? 'var(--font-mono)' : 'inherit', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', wordBreak: 'break-all' }}>{item.value}</div>
+                            <div className="portal-metadata-label">{item.label}</div>
+                            <div className={`portal-metadata-value${item.mono ? ' mono' : ''}`}>{item.value}</div>
                           </div>
                         ))}
                       </div>
@@ -2675,12 +2726,12 @@ export const PortalPage: React.FC = () => {
                       <SoftwareEmbedBuilder licenseeId={user?.licenseeId || 'client-licensee'} allowedOrigins={cred.allowedOrigins || ['*']} />
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="portal-action-row">
                       <button type="button" onClick={() => setActiveStep(4)} className="btn btn-secondary">
-                        ← Back to Credential Studio (Step 4)
+                        Back to Credential Studio (Step 4)
                       </button>
                       <button type="button" onClick={() => setActiveStep(1)} className="btn btn-primary">
-                        Review Assessment (Step 1) ↺
+                        Review Assessment (Step 1)
                       </button>
                     </div>
                   </div>
@@ -2693,12 +2744,12 @@ export const PortalPage: React.FC = () => {
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                     Complete Step 4 (Credential Studio) to generate your tokenized audit warranty badge.
                   </p>
-                  <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div className="portal-action-row" style={{ justifyContent: 'center' }}>
                     <button type="button" onClick={() => setActiveStep(4)} className="btn btn-primary">
-                      Go to Credential Studio (Step 4) →
+                      Go to Credential Studio (Step 4)
                     </button>
                     <button type="button" onClick={() => setActiveStep(1)} className="btn btn-secondary">
-                      ← Back to Assessment (Step 1)
+                      Back to Assessment (Step 1)
                     </button>
                   </div>
                 </div>
