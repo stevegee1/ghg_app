@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { BrandLogoUploader } from '../components/BrandLogoUploader';
@@ -8,7 +9,8 @@ import { StatusBadge } from '../components/StatusBadge';
 
 export const PartnerLogoDropPage: React.FC = () => {
   const { user } = useAuth();
-  const licenseeId = user?.licenseeId || 'lic_itm_power';
+  const [searchParams] = useSearchParams();
+  const licenseeId = searchParams.get('licenseeId') || user?.licenseeId || 'lic_itm_power';
 
   // Form State
   const [logoUrl, setLogoUrl] = useState<string>('');

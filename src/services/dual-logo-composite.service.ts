@@ -21,10 +21,12 @@ import crypto from 'crypto';
 export interface CompositeInput {
   /** Absolute path to the client's uploaded logo file */
   clientLogoPath: string;
-  /** Attestation message, up to 120 characters */
+  /** Attestation message, up to 200 characters */
   clientMessage: string;
   /** Licensee name for labelling */
   licenseeName: string;
+  /** Optional array of audited framework IDs or titles */
+  selectedFrameworks?: string[];
 }
 
 export interface CompositeResult {
@@ -63,9 +65,9 @@ function formatDate(iso: string): string {
   });
 }
 
-/** Truncate message to 120 chars hard limit */
+/** Truncate message to 200 chars hard limit */
 function truncate(msg: string): string {
-  return msg.length > 120 ? msg.substring(0, 117) + '...' : msg;
+  return msg.length > 200 ? msg.substring(0, 197) + '...' : msg;
 }
 
 /**
@@ -73,13 +75,16 @@ function truncate(msg: string): string {
  * Falls back to SVG if native binaries are absent.
  */
 export async function compositeAuditBadge(input: CompositeInput): Promise<CompositeResult> {
-  const { clientLogoPath, clientMessage, licenseeName } = input;
+  const { clientLogoPath, clientMessage, licenseeName, selectedFrameworks } = input;
   const safeMessage = truncate(clientMessage);
   const expiresAt = warrantyExpiry();
   const seal = buildVerificationSeal(licenseeName, safeMessage, expiresAt);
+  const frameworkText = (selectedFrameworks && selectedFrameworks.length > 0)
+    ? selectedFrameworks.join(' / ')
+    : 'ISO 14064-1 / ISO 50001 / ISO 19011:2026';
 
   try {
-    // Dynamic import — node-canvas is optional; if absent, falls to SVG path
+    // Dynamic import: node-canvas is optional; if absent, falls to SVG path
     const { createCanvas, loadImage } = await import('canvas');
 
     const WIDTH = 1024;
@@ -176,19 +181,19 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
     const msgY = 310;
     lines.forEach((l, i) => ctx.fillText(l, WIDTH / 2, msgY + i * 26));
 
-    // ── Footer row ─────────────────────────────────────────────────────────────
+    // Footer row
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('UKIPO Statutory Trade Mark | ISO 14001 · ISO 50001 · ISO 19011:2026', 40, HEIGHT - 40);
+    ctx.fillText(`UKIPO Statutory Mark | ${frameworkText}`, 40, HEIGHT - 40);
     ctx.textAlign = 'right';
     ctx.fillText(`Valid to: ${formatDate(expiresAt)}`, WIDTH - 40, HEIGHT - 40);
 
-    // ── Seal line ──────────────────────────────────────────────────────────────
+    // Seal line
     ctx.fillStyle = 'rgba(255,255,255,0.20)';
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`SHA-256: ${seal.substring(0, 40)}…`, WIDTH / 2, HEIGHT - 18);
+    ctx.fillText(`SHA-256: ${seal.substring(0, 40)}...`, WIDTH / 2, HEIGHT - 18);
 
     const buffer = canvas.toBuffer('image/png');
     const sha256Hash = crypto.createHash('sha256').update(buffer).digest('hex');
@@ -196,7 +201,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
 
     return { dataUri, format: 'png', sha256Hash, warrantyExpiresAt: expiresAt, verificationSeal: seal };
   } catch (canvasErr) {
-    // ── SVG fallback (no libcairo) ─────────────────────────────────────────────
+    // SVG fallback (no libcairo)
     console.warn('[COMPOSITE] node-canvas unavailable, using SVG fallback:', (canvasErr as Error).message);
 
     // Encode logos as base64 data URIs inside SVG
@@ -216,6 +221,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
 
     const escapedMsg = safeMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const escapedName = licenseeName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const escapedFramework = frameworkText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="512" viewBox="0 0 1024 512">
   <defs>
@@ -232,21 +238,21 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
   <rect width="1024" height="4" fill="#10b981"/>
   <!-- Centre divider -->
   <line x1="512" y1="40" x2="512" y2="472" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-  <!-- Left panel — Client Logo -->
+  <!-- Left panel: Client Logo -->
   ${clientLogoDataUri ? `<image clip-path="url(#leftClip)" href="${clientLogoDataUri}" x="100" y="90" width="322" height="180" preserveAspectRatio="xMidYMid meet"/>` : `<rect x="152" y="90" width="200" height="100" rx="12" fill="rgba(255,255,255,0.06)"/><text x="252" y="145" font-family="sans-serif" font-size="14" fill="rgba(255,255,255,0.4)" text-anchor="middle">CLIENT LOGO</text>`}
   <!-- Client name -->
   <text x="252" y="296" font-family="sans-serif" font-size="13" font-weight="700" fill="rgba(255,255,255,0.6)" text-anchor="middle">${escapedName}</text>
-  <!-- Right panel — GHG Mark -->
+  <!-- Right panel: GHG Mark -->
   ${ghgLogoDataUri ? `<image clip-path="url(#rightClip)" href="${ghgLogoDataUri}" x="592" y="90" width="280" height="180" preserveAspectRatio="xMidYMid meet"/>` : `<rect x="660" y="90" width="200" height="100" rx="12" fill="rgba(16,185,129,0.1)"/><text x="760" y="135" font-family="sans-serif" font-size="14" font-weight="700" fill="#10b981" text-anchor="middle">GHG EMISSIONS</text><text x="760" y="155" font-family="sans-serif" font-size="11" fill="#10b981" text-anchor="middle">REGISTERED TRADE MARK</text>`}
   <!-- Client message -->
   <foreignObject x="60" y="300" width="904" height="100">
     <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:sans-serif;font-size:17px;font-style:italic;color:rgba(255,255,255,0.85);text-align:center;word-break:break-word;">${escapedMsg}</div>
   </foreignObject>
   <!-- Footer -->
-  <text x="40" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)">UKIPO Statutory Trade Mark | ISO 14001 · ISO 50001 · ISO 19011:2026</text>
+  <text x="40" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)">UKIPO Statutory Mark | ${escapedFramework}</text>
   <text x="984" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)" text-anchor="end">Valid to: ${formatDate(expiresAt)}</text>
   <!-- Seal -->
-  <text x="512" y="494" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.20)" text-anchor="middle">SHA-256: ${seal.substring(0, 40)}…</text>
+  <text x="512" y="494" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.20)" text-anchor="middle">SHA-256: ${seal.substring(0, 40)}...</text>
 </svg>`;
 
     const sha256Hash = crypto.createHash('sha256').update(svg).digest('hex');

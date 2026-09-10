@@ -511,9 +511,9 @@ export const Layout: React.FC = () => {
                       <NavLink to="/portal" className="nav-link" onClick={closeDropdowns}>
                         My Dashboard
                       </NavLink>
-                      <a href="/portal/evidence" className="nav-link" onClick={closeDropdowns}>
+                      <Link to="/portal?tab=evidence" className="nav-link" onClick={closeDropdowns}>
                         Evidence Locker ↗
-                      </a>
+                      </Link>
                       {isAdmin && (
                         <NavLink to="/admin" className="nav-link" onClick={closeDropdowns}>
                           Admin Config
@@ -611,14 +611,14 @@ export const Layout: React.FC = () => {
                         >
                           <span>My Dashboard</span>
                         </NavLink>
-                        <a
-                          href="/portal/evidence"
+                        <Link
+                          to="/portal?tab=evidence"
                           className="google-popover-link"
                           onClick={() => setAccountMenuOpen(false)}
                         >
                           <span>Evidence Locker</span>
                           <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-                        </a>
+                        </Link>
                         {isAdmin && (
                           <NavLink
                             to="/admin"
@@ -708,14 +708,14 @@ export const Layout: React.FC = () => {
                         >
                           <span>My Dashboard</span>
                         </NavLink>
-                        <a
-                          href="/portal/evidence"
+                        <Link
+                          to="/portal?tab=evidence"
                           className="google-popover-link"
                           onClick={() => setAccountMenuOpen(false)}
                         >
                           <span>Evidence Locker</span>
                           <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-                        </a>
+                        </Link>
                         {isAdmin && (
                           <NavLink
                             to="/admin"

@@ -507,28 +507,31 @@ model CharityApplication {
 enum IsoReadinessStatus {
   SUBMITTED
   UNDER_REVIEW
+  AUDIT_READY
   APPROVED
   REVISION_REQUIRED
 }
 
 model IsoReadinessSubmission {
-  id                String               @id @default(cuid())
-  licenseeId        String
-  licensee          Licensee             @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  standardFramework String               @default("ISO_14001_50001_19011_2026")
+  id                 String               @id @default(cuid())
+  licenseeId         String
+  licensee           Licensee             @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  standardFramework  String               @default("ISO_14001_50001_19011_2026")
+  selectedFrameworks String[]             @default([])
   /// Structured JSON array of { questionId, questionText, answer, isoClause }
-  answers           Json
+  answers            Json
   /// 0–100 calculated conformance score; set by admin reviewer or AI on review
-  complianceScore   Int?
-  status            IsoReadinessStatus   @default(SUBMITTED)
-  reviewerNotes     String?
-  paidAt            DateTime?
-  stripeSessionId   String?
-  tierSelected      String?              // "TIER_1_READINESS" | "TIER_2_CONTINUOUS"
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  complianceScore    Int?
+  status             IsoReadinessStatus   @default(SUBMITTED)
+  reviewerNotes      String?
+  paidAt             DateTime?
+  auditReadyAt       DateTime?
+  stripeSessionId    String?
+  tierSelected       String?              // "TIER_1_READINESS" | "TIER_2_CONTINUOUS"
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-  credential        AuditWarrantyCredential?
+  credential         AuditWarrantyCredential?
 
   @@index([licenseeId, status])
 }
@@ -550,10 +553,13 @@ model AuditWarrantyCredential {
   licensee            Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
   submissionId        String             @unique
   submission          IsoReadinessSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  /// Client's attestation message, max 120 characters, embedded in the badge
+  /// Client's attestation message, up to 200 characters, embedded in the badge
   clientMessage       String
   clientLogoUrl       String
   compositeBadgeUrl   String?
+  selectedFrameworks  String[]           @default([])
+  operationalHealth   String             @default("ACTIVE")
+  allowedOrigins      String[]           @default([])
   /// Polygon PoS ERC-1155 token ID (numeric string)
   tokenId             String?
   contractAddress     String?

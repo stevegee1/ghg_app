@@ -555,7 +555,23 @@ export const api = {
     }
   },
 
-  // ── ISO Audit-Readiness ────────────────────────────────────────────────────
+  // ── ISO Audit-Readiness & Carbon Compliance ─────────────────────────────
+
+  async getComplianceFrameworks(): Promise<any> {
+    const res = await fetch('/api/iso-readiness/frameworks');
+    if (!res.ok) throw new Error('Failed to load compliance frameworks');
+    return res.json();
+  },
+
+  async getDiagnosticBundle(frameworkIds: string[]): Promise<any> {
+    const res = await fetch('/api/iso-readiness/diagnostic-bundle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frameworkIds }),
+    });
+    if (!res.ok) throw new Error('Failed to load diagnostic bundle');
+    return res.json();
+  },
 
   async getIsoFramework(): Promise<any> {
     const res = await fetch('/api/iso-readiness/framework');
@@ -565,9 +581,23 @@ export const api = {
 
   async submitIsoAnswers(
     token: string,
-    params: { answers: any[]; tierSelected: string }
+    params: { answers: any[]; tierSelected?: string; selectedFrameworks?: string[] }
   ): Promise<any> {
     const res = await fetch('/api/iso-readiness/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async reviewIsoSubmission(
+    token: string,
+    params: { submissionId: string; auditorNotes?: string; targetStatus?: string }
+  ): Promise<any> {
+    const res = await fetch('/api/iso-readiness/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(params),
@@ -600,7 +630,7 @@ export const api = {
     return data;
   },
 
-  // ── Credential Studio ──────────────────────────────────────────────────────
+  // ── Credential Studio & Trust Seal ──────────────────────────────────────────
 
   async composeBadge(
     token: string,
@@ -647,5 +677,14 @@ export const api = {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
   },
+
+  async getBadgeStatus(licenseeId: string, origin?: string): Promise<any> {
+    const query = origin ? `?licenseeId=${encodeURIComponent(licenseeId)}&origin=${encodeURIComponent(origin)}` : `?licenseeId=${encodeURIComponent(licenseeId)}`;
+    const res = await fetch(`/api/v1/badges/status${query}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
 };
+
 

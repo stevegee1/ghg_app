@@ -114,7 +114,7 @@ export const ResetPasswordPage: React.FC = () => {
             <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
               Missing or invalid password reset token. Please request a fresh reset link.
             </p>
-            <Link to="/portal/forgot-password" className="btn btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
+            <Link to="/forgot-password" className="btn btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
               Request New Reset Link →
             </Link>
           </div>

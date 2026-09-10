@@ -132,18 +132,27 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
       if (!clientMessage || clientMessage.trim().length === 0) {
         return res.status(400).json({ error: 'clientMessage is required.' });
       }
-      if (clientMessage.length > 120) {
-        return res.status(400).json({ error: 'clientMessage must not exceed 120 characters.' });
+      if (clientMessage.length > 200) {
+        return res.status(400).json({ error: 'clientMessage must not exceed 200 characters.' });
       }
 
-      // Verify this licensee has a paid submission (or is ADMIN)
-      if (submissionId && user.role !== 'ADMIN') {
-        const submission = await prisma.isoReadinessSubmission.findUnique({
-          where: { id: submissionId },
+      let selectedFrameworks: string[] | undefined;
+      // Gate 2 Enforcement: Verify this licensee has a settled, paid submission (or is ADMIN)
+      if (user.role !== 'ADMIN') {
+        const paidSubmission = await prisma.isoReadinessSubmission.findFirst({
+          where: {
+            licenseeId: user.licenseeId,
+            paidAt: { not: null },
+            ...(submissionId ? { id: submissionId } : {}),
+          },
         });
-        if (!submission || submission.licenseeId !== user.licenseeId || !submission.paidAt) {
-          return res.status(403).json({ error: 'A paid ISO readiness submission is required to compose a credential.' });
+        if (!paidSubmission) {
+          return res.status(403).json({
+            error: 'Gate 2 Blocked: A paid statutory license submission is required before compositing credentials.',
+            code: 'PAYMENT_REQUIRED',
+          });
         }
+        selectedFrameworks = paidSubmission.selectedFrameworks;
       }
 
       // Look up licensee name
@@ -155,6 +164,7 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
           clientLogoPath: file.path,
           clientMessage: clientMessage.trim(),
           licenseeName,
+          selectedFrameworks,
         });
 
         return res.status(200).json({
@@ -197,20 +207,27 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
       if (!clientMessage || clientMessage.trim().length === 0) {
         return res.status(400).json({ error: 'clientMessage is required.' });
       }
-      if (clientMessage.length > 120) {
-        return res.status(400).json({ error: 'clientMessage must not exceed 120 characters.' });
+      if (clientMessage.length > 200) {
+        return res.status(400).json({ error: 'clientMessage must not exceed 200 characters.' });
       }
       if (!submissionId) {
         return res.status(400).json({ error: 'submissionId is required.' });
       }
 
-      // Verify paid submission
+      // Verify paid and approved submission (Gates 2 and 3)
       const submission = await prisma.isoReadinessSubmission.findUnique({ where: { id: submissionId } });
       if (!submission || (submission.licenseeId !== user.licenseeId && user.role !== 'ADMIN')) {
         return res.status(403).json({ error: 'Submission not found or access denied.' });
       }
+      if (
+        submission.status !== 'AUDIT_READY' &&
+        submission.status !== 'APPROVED' &&
+        user.role !== 'ADMIN'
+      ) {
+        return res.status(403).json({ error: 'Audit diagnostic must be formally approved before credential minting.' });
+      }
       if (!submission.paidAt && user.role !== 'ADMIN') {
-        return res.status(403).json({ error: 'Payment required before minting a credential.' });
+        return res.status(403).json({ error: 'Licensing payment required before credential minting.' });
       }
 
       // Prevent duplicate credentials for the same submission
@@ -230,11 +247,12 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
       const baseUrl = process.env.APP_BASE_URL || 'https://ghgapp-production.up.railway.app';
 
       try {
-        // 1. Generate composite badge
+        // 1. Generate composite badge with framework chips
         const composite = await compositeAuditBadge({
           clientLogoPath: file.path,
           clientMessage: clientMessage.trim(),
           licenseeName,
+          selectedFrameworks: submission.selectedFrameworks,
         });
 
         // 2. Create or update credential record (COMPOSITED status)
@@ -245,6 +263,7 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
                 clientMessage: clientMessage.trim(),
                 clientLogoUrl: file.path,
                 compositeBadgeUrl: composite.dataUri.substring(0, 2000), // truncate for DB storage
+                selectedFrameworks: submission.selectedFrameworks,
                 verificationSeal: composite.verificationSeal,
                 warrantyExpiresAt: new Date(composite.warrantyExpiresAt),
                 status: CredentialStatus.COMPOSITED,
@@ -257,6 +276,7 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
                 clientMessage: clientMessage.trim(),
                 clientLogoUrl: file.path,
                 compositeBadgeUrl: composite.dataUri.substring(0, 2000),
+                selectedFrameworks: submission.selectedFrameworks,
                 verificationSeal: composite.verificationSeal,
                 warrantyExpiresAt: new Date(composite.warrantyExpiresAt),
                 status: CredentialStatus.COMPOSITED,
@@ -301,6 +321,7 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
           contractAddress: mintResult.contractAddress,
           transactionHash: mintResult.transactionHash,
           openSeaUrl: mintResult.openSeaUrl,
+          network: 'Polygon PoS',
           isOnChain: mintResult.isOnChain,
           metadataUrl: metadataUri,
           badgeUrl: `${baseUrl}/api/credentials/${credential.id}/badge.svg`,

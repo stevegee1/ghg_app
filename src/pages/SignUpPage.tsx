@@ -202,7 +202,7 @@ export const SignUpPage: React.FC = () => {
               style={{ marginTop: '0.15rem', accentColor: 'var(--color-sky)' }}
             />
             <span>
-              I understand and agree to the <Link to="/about" style={{ color: 'var(--color-sky)', textDecoration: 'underline' }}>Terms of Service</Link> and the <Link to="/about" style={{ color: 'var(--color-sky)', textDecoration: 'underline' }}>Privacy Policy</Link> <span style={{ color: 'var(--google-red)' }}>*</span>
+              I understand and agree to the <Link to="/about#contract" style={{ color: 'var(--color-sky)', textDecoration: 'underline' }}>Terms of Service</Link> and the <Link to="/about#privacy" style={{ color: 'var(--color-sky)', textDecoration: 'underline' }}>Privacy Policy</Link> <span style={{ color: 'var(--google-red)' }}>*</span>
             </span>
           </label>
         </div>

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { OpenSeaBadge } from '../components/OpenSeaBadge';
+import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
 
 // ── Scope & Step definitions ────────────────────────────────────────────────
 type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
@@ -109,6 +110,36 @@ const GoogleIcons = {
       <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
+  Code: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+    </svg>
+  ),
+  Shield: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  Logout: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  ),
+  Lock: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  ),
+  Unlock: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+    </svg>
+  ),
 };
 
 // ── Tier definitions ──────────────────────────────────────────────────────────
@@ -188,10 +219,26 @@ const JOB_TIERS = [
   },
 ];
 
-export type DashboardView = 'workflow' | 'overview' | 'credentials' | 'jobs' | 'transactions' | 'profile';
+export type DashboardView = 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile';
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+};
+
+const getFormattedDate = () => {
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+};
 
 export const PortalPage: React.FC = () => {
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
 
   // ── Dashboard Navigation View ─────────────────────────────────────────────
   const [activeView, setActiveView] = useState<DashboardView>('workflow');
@@ -207,12 +254,18 @@ export const PortalPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ── ISO Workflow State ────────────────────────────────────────────────────
+  // ── ISO Workflow & Framework State ─────────────────────────────────────────
   const [auditScope, setAuditScope] = useState<AuditScope>('CARBON_EMISSION');
   const [activeStep, setActiveStep] = useState<WorkflowStep>(1);
   const activeTiers = auditScope === 'CARBON_EMISSION' ? TIERS : JOB_TIERS;
   const [framework, setFramework] = useState<any | null>(null);
   const [frameworkLoading, setFrameworkLoading] = useState(false);
+  const [availableFrameworks, setAvailableFrameworks] = useState<any[]>([]);
+  const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(['ISO_14064_1', 'UK_SECR']);
+  const [diagnosticBundle, setDiagnosticBundle] = useState<any | null>(null);
+  const [bundleLoading, setBundleLoading] = useState(false);
+  const [auditorReviewLoading, setAuditorReviewLoading] = useState(false);
+  const [auditorReviewSuccess, setAuditorReviewSuccess] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [selectedTier, setSelectedTier] = useState<string>('TIER_1_READINESS');
   const [submissionId, setSubmissionId] = useState<string | null>(null);
@@ -225,6 +278,7 @@ export const PortalPage: React.FC = () => {
   const [credentials, setCredentials] = useState<any[]>([]);
   const [activeSectionFilter, setActiveSectionFilter] = useState<string>('ALL');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    P1_BOUNDARY: true, P2_TELEMETRY: true, P3_QUANTIFICATION: true, P4_DISCLOSURE: true, P5_VERIFICATION: true,
     S1: true, S2: true, S3: true, S4: true, S5: true, S6: true,
   });
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
@@ -274,15 +328,34 @@ export const PortalPage: React.FC = () => {
     }
   };
 
-  const handleQuickFillCompliant = () => {
-    if (!framework) return;
-    const compliantAnswers: Record<string, string> = {};
-    framework.sections.forEach((sec: any) => {
-      (sec.questions || []).forEach((q: any) => {
-        compliantAnswers[q.questionId] = 'Yes, fully in place';
-        compliantAnswers[`${q.questionId}_notes`] = 'Verified against operational telemetry logs and calibration records.';
-      });
+  const toggleFramework = (frameworkId: string) => {
+    setSelectedFrameworks((prev) => {
+      if (prev.includes(frameworkId)) {
+        if (prev.length <= 1) return prev; // Keep at least one
+        return prev.filter((id) => id !== frameworkId);
+      } else {
+        return [...prev, frameworkId];
+      }
     });
+  };
+
+  const handleQuickFillCompliant = () => {
+    const compliantAnswers: Record<string, string> = {};
+    if (diagnosticBundle?.pillars) {
+      diagnosticBundle.pillars.forEach((p: any) => {
+        (p.questions || []).forEach((q: any) => {
+          compliantAnswers[q.id] = 'Fully compliant & documented';
+          compliantAnswers[`${q.id}_notes`] = 'Verified against operational telemetry logs, sensor calibration records, and statutory disclosures.';
+        });
+      });
+    } else if (framework?.sections) {
+      framework.sections.forEach((sec: any) => {
+        (sec.questions || []).forEach((q: any) => {
+          compliantAnswers[q.questionId] = 'Yes, fully in place';
+          compliantAnswers[`${q.questionId}_notes`] = 'Verified against operational telemetry logs and calibration records.';
+        });
+      });
+    }
     setAnswers(compliantAnswers);
   };
 
@@ -297,7 +370,42 @@ export const PortalPage: React.FC = () => {
     };
   }, []);
 
-  // ── Fetch portal data ─────────────────────────────────────────────────────
+  // ── Load available compliance frameworks on mount ──────────────────────────
+  useEffect(() => {
+    let isMounted = true;
+    api.getComplianceFrameworks()
+      .then((data) => {
+        if (isMounted && Array.isArray(data?.frameworks)) {
+          setAvailableFrameworks(data.frameworks);
+        }
+      })
+      .catch((err) => {
+        console.warn('[Compliance Frameworks Load Error]', err);
+      });
+    return () => { isMounted = false; };
+  }, []);
+
+  // ── Load diagnostic bundle when selectedFrameworks change ──────────────────
+  useEffect(() => {
+    let isMounted = true;
+    if (selectedFrameworks.length === 0) return;
+    setBundleLoading(true);
+    api.getDiagnosticBundle(selectedFrameworks)
+      .then((data) => {
+        if (isMounted && data?.bundle) {
+          setDiagnosticBundle(data.bundle);
+        }
+      })
+      .catch((err) => {
+        console.warn('[Diagnostic Bundle Load Error]', err);
+      })
+      .finally(() => {
+        if (isMounted) setBundleLoading(false);
+      });
+    return () => { isMounted = false; };
+  }, [selectedFrameworks]);
+
+  // ── Fetch portal summary, transactions, jobs ───────────────────────────────
   useEffect(() => {
     let isMounted = true;
     async function fetchData() {
@@ -325,7 +433,7 @@ export const PortalPage: React.FC = () => {
     return () => { isMounted = false; };
   }, [token]);
 
-  // ── Load ISO framework on step 1 ─────────────────────────────────────────
+  // ── Load ISO framework fallback ───────────────────────────────────────────
   useEffect(() => {
     if (activeStep !== 1 || framework) return;
     setFrameworkLoading(true);
@@ -335,18 +443,29 @@ export const PortalPage: React.FC = () => {
       .finally(() => setFrameworkLoading(false));
   }, [activeStep, framework]);
 
-  // ── Load ISO status on portal load ───────────────────────────────────────
-  useEffect(() => {
+  // ── Load ISO status with callback ─────────────────────────────────────────
+  const fetchIsoStatus = useCallback(async () => {
     if (!token || !user?.licenseeId) return;
     setIsoStatusLoading(true);
-    api.getIsoStatus(token, user.licenseeId)
-      .then((res) => {
-        setIsoStatus(res.latestSubmission);
-        if (res.latestSubmission?.id) setSubmissionId(res.latestSubmission.id);
-      })
-      .catch(() => setIsoStatus(null))
-      .finally(() => setIsoStatusLoading(false));
+    try {
+      const res = await api.getIsoStatus(token, user.licenseeId);
+      setIsoStatus(res.latestSubmission);
+      if (res.latestSubmission?.id) {
+        setSubmissionId(res.latestSubmission.id);
+        if (res.latestSubmission.selectedFrameworks && res.latestSubmission.selectedFrameworks.length > 0) {
+          setSelectedFrameworks(res.latestSubmission.selectedFrameworks);
+        }
+      }
+    } catch {
+      setIsoStatus(null);
+    } finally {
+      setIsoStatusLoading(false);
+    }
   }, [token, user?.licenseeId]);
+
+  useEffect(() => {
+    fetchIsoStatus();
+  }, [fetchIsoStatus]);
 
   // ── Load credentials ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -363,34 +482,97 @@ export const PortalPage: React.FC = () => {
 
   // ── Submit ISO answers ────────────────────────────────────────────────────
   const handleIsoSubmit = async () => {
-    if (!token || !framework) {
+    if (!token) {
       setActiveStep(2);
       return;
     }
-    const allQuestions = framework.sections.flatMap((s: any) => s.questions);
-    const answerArray = allQuestions.map((q: any) => ({
-      questionId: q.questionId,
-      questionText: q.questionText,
-      answer: answers[q.questionId] || 'Partially implemented',
-      isoClause: q.isoClause,
-    }));
+    const questionsToSubmit = diagnosticBundle?.pillars
+      ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => ({
+          questionId: q.id,
+          questionText: q.text,
+          answer: answers[q.id] || 'Partially implemented',
+          isoClause: q.applicableStandards?.[0] || 'ISO 14064-1',
+        })))
+      : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => ({
+          questionId: q.questionId,
+          questionText: q.questionText,
+          answer: answers[q.questionId] || 'Partially implemented',
+          isoClause: q.isoClause || 'ISO 14001',
+        })));
+
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await api.submitIsoAnswers(token, { answers: answerArray, tierSelected: selectedTier });
+      const res = await api.submitIsoAnswers(token, {
+        answers: questionsToSubmit,
+        tierSelected: selectedTier,
+        selectedFrameworks,
+      });
       setSubmissionId(res.submissionId);
+      await fetchIsoStatus();
       setActiveStep(2);
     } catch (err: any) {
-      // Even if offline/network error, allow user to proceed to inspect pricing
+      // Allow proceeding to review pricing
       setActiveStep(2);
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ── Lead Auditor Verification Sign-Off (Transition to AUDIT_READY) ────────
+  const handleAuditorSignOff = async () => {
+    if (!token) return;
+    setAuditorReviewLoading(true);
+    setSubmitError(null);
+    setAuditorReviewSuccess(null);
+    try {
+      let activeSubId = submissionId;
+      const questionsToSubmit = diagnosticBundle?.pillars
+        ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => ({
+            questionId: q.id,
+            questionText: q.text,
+            answer: answers[q.id] || 'Fully compliant & documented',
+            isoClause: q.applicableStandards?.[0] || 'ISO 14064-1',
+          })))
+        : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => ({
+            questionId: q.questionId,
+            questionText: q.questionText,
+            answer: answers[q.questionId] || 'Yes, fully in place',
+            isoClause: q.isoClause || 'ISO 14001',
+          })));
+
+      // Save latest answers first
+      const subRes = await api.submitIsoAnswers(token, {
+        answers: questionsToSubmit,
+        tierSelected: selectedTier,
+        selectedFrameworks,
+      });
+      activeSubId = subRes.submissionId;
+      setSubmissionId(activeSubId);
+
+      // Sign off as AUDIT_READY
+      const reviewRes = await api.reviewIsoSubmission(token, {
+        submissionId: activeSubId || '',
+        targetStatus: 'AUDIT_READY',
+        auditorNotes: 'ISO 19011:2026 Annex A remote verification completed. 80%+ conformance threshold verified across selected frameworks.',
+      });
+
+      setAuditorReviewSuccess(reviewRes.message || 'Audit readiness confirmed. Gate 1 cleared.');
+      await fetchIsoStatus();
+    } catch (err: any) {
+      setSubmitError(err.message || 'Auditor verification request failed.');
+    } finally {
+      setAuditorReviewLoading(false);
+    }
+  };
+
   // ── Create Stripe checkout ────────────────────────────────────────────────
   const handleCheckout = async () => {
     if (!token) return;
+    if (auditScope === 'CARBON_EMISSION' && !isAuditReady) {
+      setCheckoutError('Gate 1 Enforcement: Lead Auditor sign-off is required before commercial checkout. Return to Step 1 and request auditor review.');
+      return;
+    }
     setCheckoutLoading(true);
     setCheckoutError(null);
     try {
@@ -409,7 +591,7 @@ export const PortalPage: React.FC = () => {
       }
       const origin = window.location.origin;
       const res = await api.createIsoCheckout(token, {
-        submissionId: activeSubId,
+        submissionId: activeSubId || '',
         tierSelected: selectedTier,
         successUrl: `${origin}/portal?step=3`,
         cancelUrl: `${origin}/portal?step=2`,
@@ -446,6 +628,10 @@ export const PortalPage: React.FC = () => {
   // ── Generate composite preview ────────────────────────────────────────────
   const handleCompose = async () => {
     if (!token || !clientLogoFile || !clientMessage.trim()) return;
+    if (!isPaid) {
+      setCompositeError('Gate 2 Enforcement: Payment settlement is required to access Credential Studio and generate composite badges.');
+      return;
+    }
     setCompositeLoading(true);
     setCompositeError(null);
     try {
@@ -465,6 +651,14 @@ export const PortalPage: React.FC = () => {
   // ── Mint credential ───────────────────────────────────────────────────────
   const handleMint = async () => {
     if (!token || !clientLogoFile || !clientMessage.trim() || !submissionId) return;
+    if (!isPaid) {
+      setMintError('Gate 2 Enforcement: Payment settlement is required before issuing and minting on-chain credentials.');
+      return;
+    }
+    if (auditScope === 'CARBON_EMISSION' && !isAuditReady) {
+      setMintError('Gate 3 Enforcement: Lead Auditor AUDIT_READY clearance is required before issuing and minting on-chain credentials.');
+      return;
+    }
     setMintLoading(true);
     setMintError(null);
     try {
@@ -553,21 +747,37 @@ export const PortalPage: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const step = params.get('step');
+    if (step === '2') setActiveStep(2);
     if (step === '3') setActiveStep(3);
     if (step === '4') setActiveStep(4);
+    if (step === '5') setActiveStep(5);
+
     const scopeParam = params.get('scope');
     if (scopeParam === 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
     else if (scopeParam === 'CARBON_EMISSION') setAuditScope('CARBON_EMISSION');
+
     const viewParam = params.get('view') || params.get('tab');
-    if (viewParam === 'overview' || viewParam === 'kpis') setActiveView('overview');
-    else if (viewParam === 'credentials') setActiveView('credentials');
-    else if (viewParam === 'jobs' || viewParam === 'job-reporting') {
+    if (viewParam === 'overview' || viewParam === 'kpis') {
+      setActiveView('overview');
+    } else if (viewParam === 'credentials' || viewParam === 'nft') {
+      setActiveView('credentials');
+    } else if (viewParam === 'jobs' || viewParam === 'job-reporting') {
       setActiveView('jobs');
       setAuditScope('JOB_REPORTING');
+    } else if (viewParam === 'transactions' || viewParam === 'settlement') {
+      setActiveView('transactions');
+    } else if (viewParam === 'profile' || viewParam === 'evidence') {
+      setActiveView('profile');
+    } else if (viewParam === 'telemetry') {
+      setActiveView('workflow');
+      setActiveStep(3);
+    } else if (viewParam === 'studio') {
+      setActiveView('workflow');
+      setActiveStep(4);
+    } else if (viewParam === 'workflow' || viewParam === 'diagnostic') {
+      setActiveView('workflow');
+      setActiveStep(1);
     }
-    else if (viewParam === 'transactions' || viewParam === 'settlement') setActiveView('transactions');
-    else if (viewParam === 'profile') setActiveView('profile');
-    else if (viewParam === 'workflow' || viewParam === 'telemetry' || viewParam === 'diagnostic') setActiveView('workflow');
   }, []);
 
   const copyClientId = () => {
@@ -594,8 +804,12 @@ export const PortalPage: React.FC = () => {
         return 'Issued Audit Warranty Credentials';
       case 'jobs':
         return 'Workforce & Social Impact Filings';
+      case 'embed':
+        return 'Website Trust Seal & HTML Embed Generator';
       case 'transactions':
         return 'Settlement History & 15% ESG Splits';
+      case 'legal':
+        return 'ISO 19011:2026 Annex A Remote Auditing Guarantee';
       case 'profile':
         return 'Client Profile & API Ingestion';
       default:
@@ -616,25 +830,54 @@ export const PortalPage: React.FC = () => {
     : 'ghg_api_pending_payment';
 
   // ── Progress & Conformity Index Calculation ───────────────────────────────
-  const allQuestions = (framework?.sections || []).flatMap((s: any) => s.questions || []);
+  const allQuestions = diagnosticBundle?.pillars
+    ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => ({
+        questionId: q.id,
+        id: q.id,
+        questionText: q.text,
+        text: q.text,
+        applicableStandards: q.applicableStandards,
+        isoClause: q.applicableStandards?.[0] || 'ISO 14064-1',
+        statutoryMandate: q.statutoryMandate,
+        evidenceRequired: q.evidenceRequired,
+        options: q.options,
+      })))
+    : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => ({
+        questionId: q.questionId,
+        id: q.questionId,
+        questionText: q.questionText,
+        text: q.questionText,
+        applicableStandards: [q.isoClause],
+        isoClause: q.isoClause || 'ISO 14001',
+        statutoryMandate: q.legalMandate,
+        evidenceRequired: q.evidenceRequired,
+        options: ['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'],
+      })));
+
   const totalQuestions = allQuestions.length;
-  const answeredQuestions = allQuestions.filter((q: any) => Boolean(answers[q.questionId])).length;
+  const answeredQuestions = allQuestions.filter((q: any) => Boolean(answers[q.id || q.questionId])).length;
   const progressPct = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
 
   // Real-time compliance score estimator (0 to 100%)
   const scoreMetrics = allQuestions.reduce(
     (acc: { score: number; count: number }, q: any) => {
-      const ans = answers[q.questionId];
+      const qId = q.id || q.questionId;
+      const ans = answers[qId];
       if (!ans) return acc;
-      if (ans === 'Yes, fully in place') return { score: acc.score + 100, count: acc.count + 1 };
+      if (ans === 'Yes, fully in place' || ans === 'Fully compliant & documented') return { score: acc.score + 100, count: acc.count + 1 };
       if (ans === 'Partially implemented') return { score: acc.score + 50, count: acc.count + 1 };
-      if (ans === 'Not yet implemented') return { score: acc.score + 0, count: acc.count + 1 };
+      if (ans === 'Not yet implemented' || ans === 'Planned within 90 days') return { score: acc.score + 0, count: acc.count + 1 };
       return acc; // N/A is neutral
     },
     { score: 0, count: 0 }
   );
   const estimatedComplianceScore =
     scoreMetrics.count > 0 ? Math.round(scoreMetrics.score / scoreMetrics.count) : 0;
+
+  // ── Status and Gate Enforcement flags ────────────────────────────────────
+  const currentSubmissionStatus = isoStatus?.status || (submissionId ? 'SUBMITTED' : 'NOT_STARTED');
+  const isAuditReady = currentSubmissionStatus === 'AUDIT_READY' || currentSubmissionStatus === 'APPROVED';
+  const isPaid = Boolean(isoStatus?.paidAt || currentSubmissionStatus === 'APPROVED');
 
   const totalVerifiedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
 
@@ -683,18 +926,10 @@ export const PortalPage: React.FC = () => {
         )}
       </div>
 
-      {/* Sidebar Nav Items */}
+      {/* Modern Grouped Sidebar Nav Items */}
       <nav className="portal-sidebar-nav" aria-label="Dashboard Navigation">
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'workflow' ? 'active' : ''}`}
-          onClick={() => { setActiveView('workflow'); onNav?.(); }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
-          <span className="portal-nav-label">Assurance Workflow</span>
-          <span className="portal-nav-badge">Step {activeStep}/5</span>
-        </button>
-
+        {/* MAIN */}
+        <div className="portal-nav-section-title">MAIN</div>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'overview' ? 'active' : ''}`}
@@ -704,14 +939,20 @@ export const PortalPage: React.FC = () => {
           <span className="portal-nav-label">KPI Overview</span>
         </button>
 
+        {/* COMPLIANCE */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>COMPLIANCE</div>
         <button
           type="button"
-          className={`portal-nav-btn ${activeView === 'credentials' ? 'active' : ''}`}
-          onClick={() => { setActiveView('credentials'); onNav?.(); }}
+          className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveView('workflow');
+            setAuditScope('CARBON_EMISSION');
+            onNav?.();
+          }}
         >
-          <span className="portal-nav-icon"><GoogleIcons.Credentials /></span>
-          <span className="portal-nav-label">Issued Credentials</span>
-          {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
+          <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
+          <span className="portal-nav-label">ISO Carbon Audit</span>
+          <span className="portal-nav-badge">Step {activeStep}/5</span>
         </button>
 
         <button
@@ -724,10 +965,47 @@ export const PortalPage: React.FC = () => {
           }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
-          <span className="portal-nav-label">Workforce &amp; Jobs</span>
+          <span className="portal-nav-label">Workforce &amp; S106</span>
           {jobReports.length > 0 && <span className="portal-nav-badge count">{jobReports.length}</span>}
         </button>
 
+        {/* LICENSING & WEB */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>LICENSING &amp; WEB</div>
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'workflow' && activeStep === 4 ? 'active' : ''}`}
+          onClick={() => {
+            setActiveView('workflow');
+            setActiveStep(4);
+            onNav?.();
+          }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Credentials /></span>
+          <span className="portal-nav-label">Credential Studio</span>
+        </button>
+
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'embed' ? 'active' : ''}`}
+          onClick={() => { setActiveView('embed'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Code /></span>
+          <span className="portal-nav-label">Web Trust Seal</span>
+          <span className="portal-nav-badge" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>CDN</span>
+        </button>
+
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'credentials' ? 'active' : ''}`}
+          onClick={() => { setActiveView('credentials'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Shield /></span>
+          <span className="portal-nav-label">Issued Credentials</span>
+          {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
+        </button>
+
+        {/* FINANCE & LEGAL */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>FINANCE &amp; LEGAL</div>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'transactions' ? 'active' : ''}`}
@@ -740,21 +1018,36 @@ export const PortalPage: React.FC = () => {
 
         <button
           type="button"
-          className={`portal-nav-btn ${activeView === 'profile' ? 'active' : ''}`}
-          onClick={() => { setActiveView('profile'); onNav?.(); }}
+          className={`portal-nav-btn ${activeView === 'legal' ? 'active' : ''}`}
+          onClick={() => { setActiveView('legal'); onNav?.(); }}
         >
-          <span className="portal-nav-icon"><GoogleIcons.Profile /></span>
-          <span className="portal-nav-label">Profile &amp; API Keys</span>
+          <span className="portal-nav-icon"><GoogleIcons.Shield /></span>
+          <span className="portal-nav-label">ISO 19011 Guarantee</span>
         </button>
       </nav>
 
       {/* Quick Utilities in Sidebar Footer */}
       <div className="portal-sidebar-footer">
-        <a href="/portal/evidence" className="portal-sidebar-link">
-          <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
-          <span>Evidence Locker</span>
-          <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-        </a>
+        <button
+          type="button"
+          onClick={() => { setActiveView('profile'); onNav?.(); }}
+          className={`portal-nav-btn ${activeView === 'profile' ? 'active' : ''}`}
+          style={{ padding: '0.5rem 0.75rem' }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Profile /></span>
+          <span className="portal-nav-label">Settings &amp; API Keys</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { logout(); onNav?.(); }}
+          className="portal-nav-btn"
+          style={{ padding: '0.5rem 0.75rem', color: 'var(--google-red)' }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Logout /></span>
+          <span className="portal-nav-label">Sign out</span>
+        </button>
+
         <div className="portal-sidebar-security">
           <span className="portal-status-dot" />
           <span>ISO 19011:2026 Engine Online</span>
@@ -815,6 +1108,52 @@ export const PortalPage: React.FC = () => {
 
       {/* ── Main Workspace ─────────────────────────────────────────────────── */}
       <main className="portal-main-workspace">
+
+        {/* Top Greeting Banner */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          padding: '1.25rem 1.5rem',
+          backgroundColor: 'var(--bg-card)',
+          borderRadius: '12px',
+          border: '1px solid var(--border-light)',
+          marginBottom: '1.25rem',
+        }}>
+          <div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 500 }}>
+              {getFormattedDate()}
+            </div>
+            <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
+              {getGreeting()}, {user?.licenseeId || 'Enterprise Partner'}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>
+                ACTIVE LICENSEE
+              </span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Contractual 85/15 Statutory Split Guaranteed: ISO 19011:2026 Remote Auditing
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView('workflow');
+                setAuditScope('CARBON_EMISSION');
+                setActiveStep(1);
+              }}
+              className="btn btn-primary"
+              style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.55rem 1.1rem' }}
+            >
+              + Start Carbon Audit
+            </button>
+          </div>
+        </div>
 
         {/* Workspace Header Bar - Clean Google Standard */}
         <div className="portal-workspace-header">
@@ -1037,282 +1376,337 @@ export const PortalPage: React.FC = () => {
                 )}
               </div>
 
-              {frameworkLoading && (
-                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading framework questions…</div>
-              )}
-
-              {!frameworkLoading && framework && (
-                <div>
-                  {/* Interactive Google Material 3 Clause Carousel */}
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
-                        ISO 14001:2015 Clauses
-                      </div>
-
-                      {/* Dropdown Fast Jump Selector */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <label htmlFor="clause-quick-jump" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Filter:</label>
-                        <select
-                          id="clause-quick-jump"
-                          value={activeSectionFilter}
-                          onChange={(e) => setActiveSectionFilter(e.target.value)}
-                          style={{
-                            fontSize: '0.8rem',
-                            padding: '0.3rem 0.65rem',
-                            borderRadius: '8px',
-                            border: '1px solid var(--border-light)',
-                            backgroundColor: 'var(--bg-card)',
-                            color: 'var(--text-main)',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <option value="ALL">All Clauses ({answeredQuestions}/{totalQuestions})</option>
-                          {framework.sections.map((sec: any) => (
-                            <option key={sec.sectionId} value={sec.sectionId}>
-                              {sec.sectionId}: {sec.sectionTitle.split('(')[0].trim()}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+              {/* Multi-Framework Harmonisation Selector Bar */}
+              <div style={{
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '12px',
+                padding: '1.25rem 1.5rem',
+                marginTop: '1.25rem',
+                marginBottom: '1.5rem',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      Target Statutory &amp; Voluntary Frameworks (Multi-Standard Harmonisation)
                     </div>
-
-                    <div className="m3-chip-carousel-container">
-                      <button
-                        type="button"
-                        className="m3-carousel-arrow left"
-                        onClick={() => scrollChips('left')}
-                        aria-label="Scroll clauses left"
-                        title="Scroll clauses left"
-                      >
-                        <GoogleIcons.ChevronLeft />
-                      </button>
-
-                      <div
-                        ref={chipScrollRef}
-                        onScroll={updateScrollButtons}
-                        className="m3-chip-scroll-track"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setActiveSectionFilter('ALL')}
-                          style={{
-                            padding: '0.45rem 1rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 600,
-                            border: activeSectionFilter === 'ALL' ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
-                            backgroundColor: activeSectionFilter === 'ALL' ? 'var(--color-sky)' : 'var(--bg-card)',
-                            color: activeSectionFilter === 'ALL' ? '#fff' : 'var(--text-muted)',
-                            cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0,
-                          }}
-                        >
-                          All Clauses ({answeredQuestions}/{totalQuestions})
-                        </button>
-
-                        {framework.sections.map((sec: any) => {
-                          const secQuestions = sec.questions || [];
-                          const secAnswered = secQuestions.filter((q: any) => Boolean(answers[q.questionId])).length;
-                          const isComplete = secAnswered === secQuestions.length && secQuestions.length > 0;
-                          const isSelected = activeSectionFilter === sec.sectionId;
-
-                          return (
-                            <button
-                              key={sec.sectionId}
-                              type="button"
-                              onClick={() => setActiveSectionFilter(sec.sectionId)}
-                              style={{
-                                padding: '0.45rem 1rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 600,
-                                border: isSelected ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
-                                backgroundColor: isSelected ? 'var(--color-sky)' : 'var(--bg-card)',
-                                color: isSelected ? '#fff' : isComplete ? 'var(--color-green)' : 'var(--text-muted)',
-                                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-                                display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0,
-                              }}
-                            >
-                              {isComplete && <span style={{ fontSize: '0.7rem' }}>✓</span>}
-                              <span>{sec.sectionTitle.split('(')[0].trim()}</span>
-                              <span style={{ opacity: 0.75, fontSize: '0.7rem' }}>({secAnswered}/{secQuestions.length})</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="m3-carousel-arrow right"
-                        onClick={() => scrollChips('right')}
-                        aria-label="Scroll clauses right"
-                        title="Scroll clauses right"
-                      >
-                        <GoogleIcons.ChevronRight />
-                      </button>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      Select the international carbon reporting standards applicable to your operations. Questions dynamically deduplicate across all 5 core pillars.
                     </div>
                   </div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '4px' }}>
+                    {selectedFrameworks.length} Frameworks Selected
+                  </span>
+                </div>
 
-                  {/* Clause Accordion Sections */}
-                  {framework.sections
-                    .filter((sec: any) => activeSectionFilter === 'ALL' || activeSectionFilter === sec.sectionId)
-                    .map((section: any) => {
-                      const secQuestions = section.questions || [];
-                      const secAnswered = secQuestions.filter((q: any) => Boolean(answers[q.questionId])).length;
-                      const isSecComplete = secAnswered === secQuestions.length && secQuestions.length > 0;
-                      const isExpanded = expandedSections[section.sectionId] ?? true;
+                {/* Framework Chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {(availableFrameworks.length > 0 ? availableFrameworks : [
+                    { id: 'ISO_14064_1', shortTitle: 'ISO 14064-1', title: 'ISO 14064-1:2018 (GHG Inventories)', jurisdiction: 'Global' },
+                    { id: 'ISO_50001', shortTitle: 'ISO 50001', title: 'ISO 50001:2018 (Energy Management)', jurisdiction: 'Global' },
+                    { id: 'GHG_PROTOCOL', shortTitle: 'GHG Protocol', title: 'GHG Protocol Corporate Standard', jurisdiction: 'Global' },
+                    { id: 'UK_SECR', shortTitle: 'UK SECR', title: 'UK SECR (Streamlined Energy & Carbon)', jurisdiction: 'UK' },
+                    { id: 'EU_CSRD', shortTitle: 'EU CSRD', title: 'EU CSRD (ESRS E1 Climate Standard)', jurisdiction: 'EU' },
+                    { id: 'US_CASB253', shortTitle: 'US CA-SB253', title: 'US California SB 253 Climate Disclosure', jurisdiction: 'US' },
+                    { id: 'UK_CMA', shortTitle: 'UK CMA', title: 'UK CMA Green Claims Code', jurisdiction: 'UK' },
+                    { id: 'ISO_14067', shortTitle: 'ISO 14067', title: 'ISO 14067 (Product Carbon Footprint)', jurisdiction: 'Global' },
+                  ]).map((fw: any) => {
+                    const isSelected = selectedFrameworks.includes(fw.id);
+                    return (
+                      <button
+                        key={fw.id}
+                        type="button"
+                        onClick={() => toggleFramework(fw.id)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '20px',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          border: isSelected ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
+                          backgroundColor: isSelected ? 'rgba(2, 132, 199, 0.1)' : 'var(--bg-subtle)',
+                          color: isSelected ? 'var(--color-sky)' : 'var(--text-muted)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span>{isSelected ? '✓' : '+'}</span>
+                        <span>{fw.shortTitle || fw.title}</span>
+                        <span style={{ fontSize: '0.68rem', opacity: 0.75, padding: '1px 5px', borderRadius: '4px', backgroundColor: isSelected ? 'rgba(2,132,199,0.2)' : 'var(--bg-card)' }}>
+                          {fw.jurisdiction}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                      return (
+              {bundleLoading && (
+                <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Harmonising multi-framework requirements across pillars...
+                </div>
+              )}
+
+              {/* 5-Pillars Master Assessment Questionnaire */}
+              {!bundleLoading && (
+                <div>
+                  {(diagnosticBundle?.pillars || (framework?.sections || []).map((s: any) => ({
+                    pillarId: s.sectionId,
+                    pillarTitle: s.sectionTitle,
+                    description: 'Statutory screening and management systems audit clause',
+                    questions: (s.questions || []).map((q: any) => ({
+                      id: q.questionId,
+                      text: q.questionText,
+                      applicableStandards: [q.isoClause],
+                      statutoryMandate: q.legalMandate,
+                      evidenceRequired: q.evidenceRequired,
+                      options: ['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'],
+                    })),
+                  }))).map((pillar: any, pIdx: number) => {
+                    const isExpanded = expandedSections[pillar.pillarId] ?? true;
+                    const pillarQuestions = pillar.questions || [];
+                    const answeredCount = pillarQuestions.filter((q: any) => Boolean(answers[q.id || q.questionId])).length;
+                    const isPillarComplete = pillarQuestions.length > 0 && answeredCount === pillarQuestions.length;
+
+                    return (
+                      <div
+                        key={pillar.pillarId}
+                        style={{
+                          border: '1px solid var(--border-light)',
+                          borderRadius: '12px',
+                          marginBottom: '1.25rem',
+                          overflow: 'hidden',
+                          backgroundColor: 'var(--bg-card)',
+                        }}
+                      >
+                        {/* Pillar Header */}
                         <div
-                          key={section.sectionId}
+                          onClick={() => setExpandedSections((prev) => ({ ...prev, [pillar.pillarId]: !isExpanded }))}
                           style={{
-                            border: '1px solid var(--border-light)', borderRadius: '12px',
-                            marginBottom: '1.25rem', overflow: 'hidden', backgroundColor: 'var(--bg-card)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '1rem 1.25rem',
+                            cursor: 'pointer',
+                            backgroundColor: 'var(--bg-subtle)',
+                            borderBottom: isExpanded ? '1px solid var(--border-light)' : 'none',
+                            userSelect: 'none',
                           }}
                         >
-                          {/* Accordion Section Header */}
-                          <div
-                            onClick={() => setExpandedSections((prev) => ({ ...prev, [section.sectionId]: !isExpanded }))}
-                            style={{
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              padding: '1rem 1.25rem', cursor: 'pointer',
-                              backgroundColor: 'var(--bg-subtle)',
-                              borderBottom: isExpanded ? '1px solid var(--border-light)' : 'none',
-                              userSelect: 'none',
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <span style={{
-                                width: '20px', height: '20px', borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                backgroundColor: isSecComplete ? 'var(--color-green)' : 'rgba(2,132,199,0.15)',
-                                color: isSecComplete ? '#fff' : 'var(--color-sky)',
-                                fontSize: '0.7rem', fontWeight: 700,
-                              }}>
-                                {isSecComplete ? '✓' : section.sectionId}
-                              </span>
-                              <div>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                                  {section.sectionTitle}
-                                </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{
+                              width: '24px', height: '24px', borderRadius: '50%',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              backgroundColor: isPillarComplete ? 'var(--color-green)' : 'rgba(2,132,199,0.15)',
+                              color: isPillarComplete ? '#fff' : 'var(--color-sky)',
+                              fontSize: '0.72rem', fontWeight: 700,
+                            }}>
+                              {isPillarComplete ? '✓' : pIdx + 1}
+                            </span>
+                            <div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                                {pillar.pillarTitle}
                               </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <span style={{
-                                fontSize: '0.72rem', fontWeight: 600,
-                                color: isSecComplete ? 'var(--color-green)' : 'var(--text-muted)',
-                                backgroundColor: isSecComplete ? 'rgba(16,185,129,0.1)' : 'var(--bg-card)',
-                                padding: '2px 8px', borderRadius: '6px',
-                              }}>
-                                {secAnswered} of {secQuestions.length} completed
-                              </span>
-                              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                {isExpanded ? '▲' : '▼'}
-                              </span>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                {pillar.description}
+                              </div>
                             </div>
                           </div>
 
-                          {/* Section Questions */}
-                          {isExpanded && (
-                            <div className="portal-section-questions-container">
-                              {secQuestions.map((q: any, qIdx: number) => {
-                                const selectedAnswer = answers[q.questionId];
-                                const hasNote = Boolean(answers[`${q.questionId}_notes`]);
-                                const isNoteExpanded = expandedNotes[q.questionId] || hasNote;
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{
+                              fontSize: '0.72rem', fontWeight: 600,
+                              color: isPillarComplete ? 'var(--color-green)' : 'var(--text-muted)',
+                              backgroundColor: isPillarComplete ? 'rgba(16,185,129,0.1)' : 'var(--bg-card)',
+                              padding: '2px 8px', borderRadius: '6px',
+                            }}>
+                              {answeredCount} of {pillarQuestions.length} answered
+                            </span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                              {isExpanded ? '▲' : '▼'}
+                            </span>
+                          </div>
+                        </div>
 
-                                return (
-                                  <div
-                                    key={q.questionId}
-                                    style={{
-                                      paddingBottom: qIdx < secQuestions.length - 1 ? '1.5rem' : '0.5rem',
-                                      marginBottom: qIdx < secQuestions.length - 1 ? '1.5rem' : 0,
-                                      borderBottom: qIdx < secQuestions.length - 1 ? '1px solid var(--border-light)' : 'none',
-                                    }}
-                                  >
-                                    {/* Clause & Mandate Badges */}
-                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                                      <span style={{
-                                        fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-sky)',
-                                        backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '4px',
-                                        fontFamily: 'var(--font-mono)',
-                                      }}>
-                                        {q.questionId}
-                                      </span>
-                                      <span style={{
+                        {/* Pillar Questions */}
+                        {isExpanded && (
+                          <div className="portal-section-questions-container" style={{ padding: '1.25rem' }}>
+                            {pillarQuestions.map((q: any, qIdx: number) => {
+                              const qId = q.id || q.questionId;
+                              const selectedAnswer = answers[qId];
+                              const isLast = qIdx === pillarQuestions.length - 1;
+                              const hasNote = Boolean(answers[`${qId}_notes`]);
+                              const isNoteExpanded = expandedNotes[qId] || hasNote;
+
+                              return (
+                                <div
+                                  key={qId}
+                                  style={{
+                                    paddingBottom: isLast ? '0.5rem' : '1.25rem',
+                                    marginBottom: isLast ? 0 : '1.25rem',
+                                    borderBottom: isLast ? 'none' : '1px solid var(--border-light)',
+                                  }}
+                                >
+                                  {/* Badges */}
+                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                                    <span style={{
+                                      fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-sky)',
+                                      backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '4px',
+                                      fontFamily: 'var(--font-mono)',
+                                    }}>
+                                      {qId}
+                                    </span>
+                                    {(q.applicableStandards || []).map((std: string, sIdx: number) => (
+                                      <span key={sIdx} style={{
                                         fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-sky)',
                                         backgroundColor: 'rgba(2,132,199,0.08)', padding: '2px 8px', borderRadius: '4px',
                                       }}>
-                                        {q.isoClause.split('/')[0].trim()}
+                                        {std}
                                       </span>
-                                      {q.legalMandate && (
-                                        <span style={{
-                                          fontSize: '0.7rem', fontWeight: 600, color: '#a855f7',
-                                          backgroundColor: 'rgba(168,85,247,0.08)', padding: '2px 8px', borderRadius: '4px',
-                                        }}>
-                                          {q.legalMandate.split('—')[0].trim()}
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* Question Text */}
-                                    <label style={{ display: 'block', fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem', lineHeight: 1.45 }}>
-                                      {q.questionText}
-                                    </label>
-
-                                    {/* Evidence Requirement Hint */}
-                                    {q.evidenceRequired && (
-                                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
-                                        <span style={{ fontWeight: 600 }}>Evidence required:</span> {q.evidenceRequired}
-                                      </div>
-                                    )}
-
-                                    {/* Segmented Button Group */}
-                                    <div className="portal-answer-btn-group">
-                                      {['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'].map((opt) => {
-                                        const isSelected = selectedAnswer === opt;
-                                        return (
-                                          <button
-                                            key={opt}
-                                            type="button"
-                                            onClick={() => handleAnswerChange(q.questionId, opt)}
-                                            className={`portal-answer-option-btn ${isSelected ? 'selected' : ''}`}
-                                          >
-                                            <span className="portal-answer-indicator">{isSelected ? '✓' : '○'}</span>
-                                            <span className="portal-answer-text">{opt}</span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-
-                                    {/* Collapsible Evidence Notes */}
-                                    {!isNoteExpanded ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => setExpandedNotes((prev) => ({ ...prev, [q.questionId]: true }))}
-                                        style={{
-                                          background: 'none', border: 'none', padding: 0,
-                                          fontSize: '0.75rem', color: 'var(--color-sky)',
-                                          cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                                        }}
-                                      >
-                                        + Add evidence description or document reference (optional)
-                                      </button>
-                                    ) : (
-                                      <div style={{ marginTop: '0.5rem' }}>
-                                        <textarea
-                                          rows={2}
-                                          placeholder="Enter supporting evidence reference, document title, or internal control docket..."
-                                          value={typeof answers[`${q.questionId}_notes`] === 'string' ? answers[`${q.questionId}_notes`] : ''}
-                                          onChange={(e) => handleAnswerChange(`${q.questionId}_notes`, e.target.value)}
-                                          className="form-input"
-                                          style={{ fontSize: '0.8rem', resize: 'vertical', width: '100%' }}
-                                        />
-                                      </div>
+                                    ))}
+                                    {q.statutoryMandate && (
+                                      <span style={{
+                                        fontSize: '0.7rem', fontWeight: 600, color: '#a855f7',
+                                        backgroundColor: 'rgba(168,85,247,0.08)', padding: '2px 8px', borderRadius: '4px',
+                                      }}>
+                                        {q.statutoryMandate}
+                                      </span>
                                     )}
                                   </div>
-                                );
-                              })}
-                            </div>
-                          )}
+
+                                  {/* Question Text */}
+                                  <label style={{ display: 'block', fontSize: '0.91rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem', lineHeight: 1.45 }}>
+                                    {q.text || q.questionText}
+                                  </label>
+
+                                  {/* Evidence Required */}
+                                  {q.evidenceRequired && (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+                                      <span style={{ fontWeight: 600 }}>Evidence required:</span> {q.evidenceRequired}
+                                    </div>
+                                  )}
+
+                                  {/* Answer Options */}
+                                  <div className="portal-answer-btn-group">
+                                    {(q.options || ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable']).map((opt: string) => {
+                                      const isSelected = selectedAnswer === opt;
+                                      return (
+                                        <button
+                                          key={opt}
+                                          type="button"
+                                          onClick={() => handleAnswerChange(qId, opt)}
+                                          className={`portal-answer-option-btn ${isSelected ? 'selected' : ''}`}
+                                        >
+                                          <span className="portal-answer-indicator">{isSelected ? '✓' : '○'}</span>
+                                          <span className="portal-answer-text">{opt}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Evidence Notes */}
+                                  {!isNoteExpanded ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedNotes((prev) => ({ ...prev, [qId]: true }))}
+                                      style={{
+                                        background: 'none', border: 'none', padding: 0,
+                                        fontSize: '0.75rem', color: 'var(--color-sky)',
+                                        cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                                        marginTop: '0.4rem',
+                                      }}
+                                    >
+                                      + Add evidence description or document reference (optional)
+                                    </button>
+                                  ) : (
+                                    <div style={{ marginTop: '0.5rem' }}>
+                                      <textarea
+                                        rows={2}
+                                        placeholder="Enter supporting evidence reference, document title, or internal control docket..."
+                                        value={typeof answers[`${qId}_notes`] === 'string' ? answers[`${qId}_notes`] : ''}
+                                        onChange={(e) => handleAnswerChange(`${qId}_notes`, e.target.value)}
+                                        className="form-input"
+                                        style={{ fontSize: '0.8rem', resize: 'vertical', width: '100%' }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Conformance Verification & Auditor Sign-Off Card */}
+                  <div style={{
+                    backgroundColor: isAuditReady ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-subtle)',
+                    border: `1px solid ${isAuditReady ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-light)'}`,
+                    borderRadius: '12px',
+                    padding: '1.25rem 1.5rem',
+                    marginTop: '1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                          ISO 19011:2026 Conformance Verification (Gate 1)
+                        </span>
+                        <span className={isAuditReady ? 'badge badge-settled' : 'badge badge-pending'}>
+                          {isAuditReady ? 'AUDIT_READY APPROVED' : 'SIGN-OFF PENDING'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: '620px' }}>
+                        {isAuditReady
+                          ? 'Lead Auditor has signed off on the diagnostic. Gate 1 is cleared: Proceed to Step 2 to initiate statutory checkout.'
+                          : 'Under ISO 19011:2026 Annex A, audit readiness requires at least 80% conformance before licensing payment can be initiated.'}
+                      </div>
+                      {auditorReviewSuccess && (
+                        <div style={{ color: 'var(--color-green)', fontSize: '0.78rem', fontWeight: 700, marginTop: '0.35rem' }}>
+                          ✓ {auditorReviewSuccess}
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      {!isAuditReady && (
+                        <button
+                          type="button"
+                          onClick={handleAuditorSignOff}
+                          disabled={auditorReviewLoading || estimatedComplianceScore < 80}
+                          className="btn btn-primary"
+                          style={{
+                            fontSize: '0.82rem', fontWeight: 700,
+                            opacity: estimatedComplianceScore < 80 ? 0.5 : 1,
+                            cursor: estimatedComplianceScore < 80 ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {auditorReviewLoading
+                            ? 'Verifying Conformance...'
+                            : estimatedComplianceScore >= 80
+                            ? 'Request Auditor Sign-off (AUDIT_READY)'
+                            : 'Reach 80% Readiness for Sign-off'}
+                        </button>
+                      )}
+                      {isAuditReady && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveStep(2)}
+                          className="btn btn-primary"
+                          style={{ fontSize: '0.82rem', fontWeight: 700 }}
+                        >
+                          Proceed to Checkout (Step 2) →
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
                   {submitError && (
                     <div style={{ color: 'var(--google-red)', fontSize: '0.85rem', margin: '1rem 0', fontWeight: 600 }}>
@@ -1320,7 +1714,7 @@ export const PortalPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Material 3 Bottom Action Bar (No checkout pricing here) */}
+                  {/* Bottom Action Bar */}
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     padding: '1.25rem 0 0.5rem 0', borderTop: '1px solid var(--border-light)',
@@ -1328,7 +1722,7 @@ export const PortalPage: React.FC = () => {
                   }}>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ color: 'var(--color-green)', fontWeight: 700 }}>✓</span>
-                      <span>Real-time diagnostic autosave active</span>
+                      <span>Real-time multi-framework diagnostic autosave active</span>
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1339,16 +1733,7 @@ export const PortalPage: React.FC = () => {
                         style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
                       >
                         <GoogleIcons.AutoFix />
-                        <span>Quick Fill All Clauses</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveStep(2)}
-                        className="btn btn-secondary"
-                        style={{ fontSize: '0.85rem' }}
-                      >
-                        Skip to Pricing (Step 2) →
+                        <span>Quick Fill All Pillars</span>
                       </button>
 
                       <button
@@ -1359,10 +1744,10 @@ export const PortalPage: React.FC = () => {
                         style={{ minWidth: '220px', maxWidth: '100%', fontWeight: 700 }}
                       >
                         {submitting
-                          ? 'Saving Diagnostic…'
-                          : progressPct < 100
-                          ? 'Save Progress & Proceed to Step 2 →'
-                          : 'Save & Proceed to Checkout →'}
+                          ? 'Saving Diagnostic...'
+                          : isAuditReady
+                          ? 'Save & Proceed to Checkout (Step 2) →'
+                          : 'Save Diagnostic Progress →'}
                       </button>
                     </div>
                   </div>
@@ -1800,15 +2185,52 @@ export const PortalPage: React.FC = () => {
                           </div>
                         )}
 
+                        {!isAuditReady && auditScope === 'CARBON_EMISSION' && (
+                          <div style={{
+                            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                            border: '1px solid var(--google-red)',
+                            borderRadius: '8px',
+                            padding: '1rem',
+                            marginBottom: '1rem',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--google-red)', fontWeight: 700, fontSize: '0.82rem' }}>
+                              <GoogleIcons.Lock /> Gate 1: Lead Auditor Sign-Off Required
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', lineHeight: 1.5 }}>
+                              Commercial fee checkout is restricted until your diagnostic assessment achieves AUDIT_READY status. Return to Step 1 to review answers and request auditor review.
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveStep(1)}
+                              className="btn btn-secondary"
+                              style={{ marginTop: '0.75rem', fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                            >
+                              ← Return to Step 1 for Sign-Off
+                            </button>
+                          </div>
+                        )}
+
                         {/* Action buttons */}
                         <button
                           type="button"
                           onClick={handleCheckout}
-                          disabled={checkoutLoading}
+                          disabled={checkoutLoading || (!isAuditReady && auditScope === 'CARBON_EMISSION')}
                           className="btn btn-primary"
-                          style={{ width: '100%', padding: '0.85rem', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}
+                          style={{
+                            width: '100%',
+                            padding: '0.85rem',
+                            fontSize: '0.95rem',
+                            fontWeight: 700,
+                            marginBottom: '0.75rem',
+                            opacity: (!isAuditReady && auditScope === 'CARBON_EMISSION') ? 0.6 : 1,
+                            cursor: (!isAuditReady && auditScope === 'CARBON_EMISSION') ? 'not-allowed' : 'pointer',
+                          }}
                         >
-                          {checkoutLoading ? 'Connecting to Stripe…' : `Pay ${activeTierData.price} via Stripe Checkout →`}
+                          {checkoutLoading
+                            ? 'Connecting to Stripe…'
+                            : (!isAuditReady && auditScope === 'CARBON_EMISSION')
+                              ? 'Sign-Off Required for Checkout (Gate 1)'
+                              : `Pay ${activeTierData.price} via Stripe Checkout →`}
                         </button>
 
                         <button
@@ -1849,9 +2271,34 @@ export const PortalPage: React.FC = () => {
               </h2>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                 {auditScope === 'CARBON_EMISSION'
-                  ? 'Your API key has been provisioned. Use it to submit automated emissions data or upload evidence documents manually.'
-                  : 'Your API key has been provisioned. Ingest quarterly workforce telemetry and Section 106 compliance data directly via REST.'}
+                  ? 'Your API key is provisioned upon license settlement. Use it to submit automated emissions data or upload evidence documents manually.'
+                  : 'Your API key is provisioned upon license settlement. Ingest quarterly workforce telemetry and Section 106 compliance data directly via REST.'}
               </p>
+
+              {!isPaid && (
+                <div style={{
+                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid #f59e0b',
+                  borderRadius: '10px',
+                  padding: '1.25rem',
+                  marginBottom: '1.5rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontWeight: 700, fontSize: '0.88rem' }}>
+                    <GoogleIcons.Lock /> Gate 2 Notice: Commercial Fee Settlement Required
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.5rem 0 0.85rem 0', lineHeight: 1.5 }}>
+                    Real-time B2B telemetry ingestion and live API feeds are activated once your commercial license is settled. In preview mode, API keys remain masked.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveStep(2)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }}
+                  >
+                    Proceed to Step 2 Commercial Settlement →
+                  </button>
+                </div>
+              )}
 
               {/* API Key */}
               <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
@@ -1859,19 +2306,26 @@ export const PortalPage: React.FC = () => {
                   {auditScope === 'CARBON_EMISSION' ? 'Telemetry Ingestion API Key' : 'Workforce Ingestion API Key'}
                 </div>
                 <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: '0.9rem', color: 'var(--color-sky)',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.9rem', color: isPaid ? 'var(--color-sky)' : 'var(--text-muted)',
                   backgroundColor: 'var(--bg-subtle)', padding: '0.75rem 1rem', borderRadius: '8px',
                   wordBreak: 'break-all', letterSpacing: '0.04em',
                 }}>
-                  {telemetryApiKey}
+                  {isPaid ? telemetryApiKey : `${telemetryApiKey.substring(0, 8)}••••••••••••••••••••••••••••••••`}
                 </div>
                 <button
                   type="button"
+                  disabled={!isPaid}
                   className="btn btn-secondary"
-                  style={{ marginTop: '0.75rem', fontSize: '0.8rem', padding: '0.4rem 1rem' }}
-                  onClick={() => { navigator.clipboard.writeText(telemetryApiKey); }}
+                  style={{
+                    marginTop: '0.75rem',
+                    fontSize: '0.8rem',
+                    padding: '0.4rem 1rem',
+                    opacity: isPaid ? 1 : 0.6,
+                    cursor: isPaid ? 'pointer' : 'not-allowed',
+                  }}
+                  onClick={() => { if (isPaid) navigator.clipboard.writeText(telemetryApiKey); }}
                 >
-                  Copy Key
+                  {isPaid ? 'Copy Key' : 'Locked (Payment Required)'}
                 </button>
               </div>
 
@@ -1918,9 +2372,14 @@ export const PortalPage: React.FC = () => {
                     ? 'Upload utility bills, calibration certificates, GHG inventory reports, and ISO audit evidence directly to the Evidence Locker.'
                     : 'Upload Section 106 council covenant agreements, artisan workforce payroll verifications, and guild certifications directly to the Evidence Locker.'}
                 </p>
-                <a href="/portal/evidence" className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('profile')}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.85rem' }}
+                >
                   Open Evidence Locker
-                </a>
+                </button>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
@@ -1943,6 +2402,33 @@ export const PortalPage: React.FC = () => {
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                 Upload your corporate logo and enter your attestation message. We composite it with the GHG Emissions Registered Trade Mark and mint a {auditScope === 'CARBON_EMISSION' ? 'Carbon Audit Warranty' : 'Section 106 Social Value'} ERC-1155 token on Polygon PoS.
               </p>
+
+              {(!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) && (
+                <div style={{
+                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid #f59e0b',
+                  borderRadius: '10px',
+                  padding: '1.25rem',
+                  marginBottom: '1.5rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontWeight: 700, fontSize: '0.88rem' }}>
+                    <GoogleIcons.Lock /> Gate 2 &amp; 3 Verification Requirements
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.5rem 0 0.85rem 0', lineHeight: 1.5 }}>
+                    {!isPaid
+                      ? 'Payment settlement (Step 2) is required before compositing and minting on-chain credentials.'
+                      : 'Lead Auditor AUDIT_READY clearance (Step 1) is required before minting your tokenized warranty.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveStep(!isPaid ? 2 : 1)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }}
+                  >
+                    {!isPaid ? 'Go to Step 2 Settlement →' : 'Go to Step 1 Auditor Review →'}
+                  </button>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem' }}>
                 {/* Left — inputs */}
@@ -1991,19 +2477,19 @@ export const PortalPage: React.FC = () => {
                   {/* Attestation message */}
                   <div style={{ marginBottom: '1.25rem' }}>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>
-                      Attestation Message
+                      Attestation Message (Max 200 Characters)
                     </label>
                     <textarea
                       rows={3}
-                      maxLength={120}
+                      maxLength={200}
                       value={clientMessage}
                       onChange={(e) => { setClientMessage(e.target.value); setCompositePreview(null); }}
                       placeholder={auditScope === 'CARBON_EMISSION' ? 'e.g. ISO 14001 aligned — Net Zero pathway committed 2030' : 'e.g. Verified Section 106 Artisan Workforce & Local Employment Covenant'}
                       className="form-input"
                       style={{ resize: 'none' }}
                     />
-                    <div style={{ fontSize: '0.72rem', color: clientMessage.length >= 110 ? 'var(--google-red)' : 'var(--text-muted)', textAlign: 'right', marginTop: '0.25rem' }}>
-                      {clientMessage.length}/120 characters
+                    <div style={{ fontSize: '0.72rem', color: clientMessage.length >= 190 ? 'var(--google-red)' : 'var(--text-muted)', textAlign: 'right', marginTop: '0.25rem' }}>
+                      {clientMessage.length}/200 characters
                     </div>
                   </div>
 
@@ -2015,16 +2501,24 @@ export const PortalPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleCompose}
-                      disabled={compositeLoading || !clientLogoFile || !clientMessage.trim()}
+                      disabled={compositeLoading || !clientLogoFile || !clientMessage.trim() || !isPaid}
                       className="btn btn-secondary"
+                      style={{
+                        opacity: (!isPaid) ? 0.6 : 1,
+                        cursor: (!isPaid) ? 'not-allowed' : 'pointer',
+                      }}
                     >
                       {compositeLoading ? 'Generating…' : 'Preview Badge'}
                     </button>
                     <button
                       type="button"
                       onClick={handleMint}
-                      disabled={mintLoading || !clientLogoFile || !clientMessage.trim() || !submissionId}
+                      disabled={mintLoading || !clientLogoFile || !clientMessage.trim() || !submissionId || !isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')}
                       className="btn btn-primary"
+                      style={{
+                        opacity: (!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) ? 0.6 : 1,
+                        cursor: (!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) ? 'not-allowed' : 'pointer',
+                      }}
                     >
                       {mintLoading ? 'Minting on Polygon…' : 'Issue and Mint Credential →'}
                     </button>
@@ -2032,9 +2526,9 @@ export const PortalPage: React.FC = () => {
                   {mintError && (
                     <div style={{ color: 'var(--google-red)', fontSize: '0.82rem', marginTop: '0.75rem', fontWeight: 600 }}>{mintError}</div>
                   )}
-                  {!submissionId && (
+                  {(!submissionId || !isPaid) && (
                     <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                      A paid ISO submission is required to mint. Complete Steps 1 and 2 first.
+                      A settled statutory license (Steps 1 &amp; 2) is required to mint tokenized credentials.
                     </p>
                   )}
                 </div>
@@ -2174,6 +2668,11 @@ export const PortalPage: React.FC = () => {
                           SHA-256: {cred.verificationSeal}
                         </div>
                       )}
+                    </div>
+
+                    {/* Software Embed Builder */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <SoftwareEmbedBuilder licenseeId={user?.licenseeId || 'client-licensee'} allowedOrigins={cred.allowedOrigins || ['*']} />
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -2616,9 +3115,120 @@ export const PortalPage: React.FC = () => {
                   Store, manage, and verify SHA-256 watermarked audit evidence documents, utility bills, and covenant filings.
                 </p>
               </div>
-              <a href="/portal/evidence" className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '0.6rem 1.25rem' }}>
+              <button
+                type="button"
+                onClick={() => setActiveView('profile')}
+                className="btn btn-primary"
+                style={{ fontSize: '0.85rem', padding: '0.6rem 1.25rem' }}
+              >
                 Open Evidence Locker →
-              </a>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── VIEW 7: Software Embed & Live Trust Seal ──────────────────────── */}
+      {activeView === 'embed' && (
+        <div>
+          <div style={{ marginBottom: '1.75rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
+              Live Trust Seal &amp; Web Embed Builder
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '720px' }}>
+              Generate lightweight CDN embed snippets pointing to <code style={{ color: 'var(--color-sky)' }}>/embed/seal.js</code> to display your verified audit warranty badge on corporate websites, investor relations portals, and public disclosure pages.
+            </p>
+          </div>
+          <SoftwareEmbedBuilder licenseeId={user?.licenseeId || 'client-licensee'} allowedOrigins={['*']} />
+        </div>
+      )}
+
+      {/* ── VIEW 8: Legal & Statutory Covenants ───────────────────────────── */}
+      {activeView === 'legal' && (
+        <div>
+          <div style={{ marginBottom: '1.75rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
+              Statutory Covenants &amp; Legal Framework
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '720px' }}>
+              Binding regulatory disclosures, ISO 19011:2026 remote auditing assurance terms, and statutory fee allocation agreements.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="persefoni-card" style={{ padding: '1.75rem', borderLeft: '4px solid var(--color-sky)' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Assurance Standard
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.75rem 0', color: 'var(--text-main)' }}>
+                ISO 19011:2026 Annex A Remote Verification
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                Audits are conducted in strict alignment with ISO 19011:2026 Annex A remote auditing guidelines. Cryptographic evidence watermarking guarantees chain-of-custody for all utility files, telemetry sensor logs, and statutory carbon accounting disclosures.
+              </p>
+            </div>
+
+            <div className="persefoni-card" style={{ padding: '1.75rem', borderLeft: '4px solid var(--color-green)' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-green)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Statutory Division
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.75rem 0', color: 'var(--text-main)' }}>
+                85% Core Operations / 15% ESG Endowment
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                Every transaction automatically splits 15% of gross fees directly to verified UK/EU environmental disaster relief charities and registered social foundation partners under transparent on-chain accounting.
+              </p>
+            </div>
+
+            <div className="persefoni-card" style={{ padding: '1.75rem', borderLeft: '4px solid #f59e0b' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Warranty Validity
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.75rem 0', color: 'var(--text-main)' }}>
+                Bi-Temporal Warranty &amp; Operational Health
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                Licenses carry a 365-day statutory epoch tied to continuous operational telemetry. Annual recalibration requires ISO/IEC 17025 certified lab testing. Telemetry drift exceeding 15% automatically suspends public trust seal verification.
+              </p>
+            </div>
+          </div>
+
+          <div className="persefoni-card" style={{ padding: '2rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 1rem 0', color: 'var(--text-main)' }}>
+              Full Regulatory Cross-Walk &amp; Disclosure Compliance
+            </h3>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '0.75rem 1rem' }}>Regulation / Standard</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Jurisdiction</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Statutory Threshold</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Audit Readiness Level</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { std: 'ISO 14064-1:2018', jur: 'Global / BSI', req: 'Scope 1, 2 & Category 3-6 Value Chain', status: 'Full System Readiness' },
+                    { std: 'ISO 50001:2018', jur: 'Global / EnMS', req: 'Energy Review & Measurement Plan', status: 'Full System Readiness' },
+                    { std: 'UK SECR (Companies Act 2006)', jur: 'United Kingdom', req: 'Quoted / Large Unquoted Companies', status: 'Statutory Direct Aligned' },
+                    { std: 'EU CSRD (ESRS E1)', jur: 'European Union', req: 'Double Materiality & 1.5C Transition', status: 'High Assurance Aligned' },
+                    { std: 'US CA-SB 253 (CCDRA)', jur: 'California / US', req: 'Revenue > $1B with Scope 1-3 Disclosures', status: 'SEC / CARB Standard Aligned' },
+                    { std: 'UK CMA Green Claims Code', jur: 'United Kingdom', req: 'Substantiated Marketing & Anti-Greenwash', status: 'Consumer Protection Assured' },
+                  ].map((row) => (
+                    <tr key={row.std} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '0.75rem 1rem', fontWeight: 700, color: 'var(--text-main)' }}>{row.std}</td>
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{row.jur}</td>
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{row.req}</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-green)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700 }}>
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

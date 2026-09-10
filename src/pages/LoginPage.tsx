@@ -24,11 +24,13 @@ export const LoginPage: React.FC = () => {
     try {
       const res = await api.login(email.trim(), password);
       login(res.token, res.user);
-      if (res.user.role === 'ADMIN') {
-        navigate('/admin');
-      } else {
-        navigate('/portal');
+      
+      const fromState = (location.state as any)?.from;
+      let targetPath = res.user.role === 'ADMIN' ? '/admin' : '/portal';
+      if (fromState?.pathname && fromState.pathname !== '/portal/login') {
+        targetPath = `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`;
       }
+      navigate(targetPath, { replace: true });
     } catch (err: any) {
       setError('Invalid email address or password.');
     } finally {

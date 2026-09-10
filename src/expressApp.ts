@@ -19,6 +19,7 @@ import { createOrdersRouter } from './routes/orders.route';
 import { createCharitiesRouter } from './routes/charities.route';
 import { createIsoReadinessRouter } from './routes/iso-readiness.route';
 import { createCredentialsRouter } from './routes/credentials.route';
+import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { CheckoutService } from './services/checkout.service';
 
 export function createApp(stripeInstance?: Stripe): Express {
@@ -70,10 +71,11 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createCharitiesRouter(prisma));
   app.use(createIsoReadinessRouter(prisma, checkoutService));
   app.use(createCredentialsRouter(prisma));
+  app.use(createBadgeEmbedRouter(prisma));
 
-  // SPA Wildcard fallback — serve index.html for all non-API routes
+  // SPA Wildcard fallback: serve index.html for all non-API routes
   app.get('*', (req, res) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/webhooks')) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/webhooks') || req.path.startsWith('/embed')) {
       return res.status(404).json({ error: 'API endpoint not found' });
     }
     res.sendFile(path.join(distDir, 'index.html'), (err) => {

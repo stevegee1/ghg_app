@@ -200,6 +200,110 @@ export const AboutPage: React.FC = () => {
         </div>
       </section>
 
+      {/* 5. Statutory Compliance & Legal Framework */}
+      <section id="compliance" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          REGULATORY COMPLIANCE & LEGAL FIREWALL
+        </div>
+        <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
+          Statutory Standards & UK CMA Governance
+        </h2>
+        <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+          GHG Emission Logs operates strictly under international standard protocols and UK Competition and Markets Authority (CMA) Green Claims Code rules. All verified attestations require empirical, non-brokerage evidence.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>ISO 19011:2026 Remote Audit</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              Annex A.16 digital data verification allows up to 80% remote audit completion, reducing travel emissions and operational friction.
+            </p>
+          </div>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>UK CMA Anti-Greenwashing</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              Automated linter checks prohibit unsubstantiated claims ("100% green", "carbon neutral") and mandates transparent lifecycle data.
+            </p>
+          </div>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>Statutory 85/15 Separation</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              Database triggers enforce that 85% is strictly allocated to software licensing and 15% directly to disaster relief endowments.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Security & Multi-Tenancy Architecture */}
+      <section id="security" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          ENTERPRISE SECURITY SPECIFICATION
+        </div>
+        <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
+          Security & Cryptographic Architecture
+        </h2>
+        <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+          Engineered to Google Cloud Console enterprise security standards. Telemetry streams and audit evidence are cryptographically sealed and isolated at the database layer.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>PostgreSQL Row-Level Security</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              Tenant isolation enforced at the SQL engine level using session variables (<code style={{ fontSize: '0.75rem' }}>app.current_licensee_id</code>).
+            </p>
+          </div>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>SHA-256 Watermark Seals</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              Audit reports, calibration certificates, and evidence dockets are indexed with irreversible SHA-256 cryptographic hashes.
+            </p>
+          </div>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>End-to-End Authentication</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              JWT session tokens with bcrypt-hashed passwords, SHA-256 reset digests, and API key authentication for SCADA telemetry.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Privacy Policy & Data Retention */}
+      <section id="privacy" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          DATA PROTECTION & PRIVACY STATEMENT
+        </div>
+        <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
+          Privacy Policy & GDPR/UK DPA 2018 Commitments
+        </h2>
+        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          <p>
+            NFTYLOGS LTD ("GHGEmissionLogs") adheres strictly to the UK Data Protection Act 2018 and the General Data Protection Regulation (GDPR). We collect and process corporate telemetry and authorized user account information solely to provide statutory climate assurance and workforce compliance services.
+          </p>
+          <p>
+            <strong>Data Minimisation:</strong> We only process technical operational data (meter identifiers, kWh, gas purity, PUE metrics) and authorized auditor credentials. No consumer tracking cookies or unsolicited marketing profiling are employed.
+          </p>
+          <p>
+            <strong>Data Retention & Rights:</strong> Raw telemetry records are maintained for statutory audit periods (7 years) in accordance with UK corporate governance standards. Organizations may request data exports or rectification via the authorized Client Console or by contacting our data protection officer at <span style={{ color: 'var(--color-sky)', fontWeight: 600 }}>compliance@nftylogslabs.com</span>.
+          </p>
+        </div>
+      </section>
+
+      {/* 8. Addendum B Master Licensing Contract */}
+      <section id="contract" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          CONTRACTUAL TERMS
+        </div>
+        <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
+          Addendum B — Statutory Assurance Master Licensing Terms
+        </h2>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '1.25rem' }}>
+          Enterprise licensee contracts incorporate standard Addendum B statutory provisions establishing non-brokerage separation, ISO calibration integrity requirements, and automated 15% disaster relief routing.
+        </p>
+        <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem 1.5rem', borderRadius: '10px', border: '1px solid var(--border-light)', fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          <strong style={{ color: 'var(--text-main)' }}>Key Covenant: Section X Non-Brokerage Clause:</strong><br />
+          "The Licensor operates solely as a statutory software and diagnostic assurance provider. The Licensor is not a carbon credit broker, trader, or financial intermediary. All assurance fees are strictly fixed under published statutory rates."
+        </div>
+      </section>
+
       {/* CTA Box */}
       <section className="persefoni-card" style={{ textAlign: 'center', padding: '3rem 2rem', backgroundColor: 'var(--bg-subtle)' }}>
         <h2 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem' }}>

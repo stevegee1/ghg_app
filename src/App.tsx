@@ -1,12 +1,14 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
+import { ScrollManager } from './components/ScrollManager';
 import { LandingPage } from './pages/LandingPage';
 import { MerchStorePage } from './pages/MerchStorePage';
 import { EventSouvenirPage } from './pages/EventSouvenirPage';
 import { PartnerLicensingPage } from './pages/PartnerLicensingPage';
+import { PartnerLogoDropPage } from './pages/PartnerLogoDropPage';
 import { PublicTrackerPage } from './pages/PublicTrackerPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { LoginPage } from './pages/LoginPage';
@@ -26,9 +28,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
   adminOnly = false,
 }) => {
   const { isAuthenticated, isAdmin } = useAuth();
+  const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/portal/login" replace />;
+    return <Navigate to="/portal/login" state={{ from: location }} replace />;
   }
 
   if (adminOnly && !isAdmin) {
@@ -48,29 +51,45 @@ export const AppRoutes: React.FC = () => {
         {/* Primary Enterprise & Souvenir Portals */}
         <Route path="licensing" element={<PartnerLicensingPage />} />
         <Route path="job-reporting" element={<JobReportingPage />} />
-        <Route path="workforce-assurance" element={<JobReportingPage />} />
-        <Route path="jobs" element={<JobReportingPage />} />
+        <Route path="workforce-assurance" element={<Navigate to="/job-reporting" replace />} />
+        <Route path="jobs" element={<Navigate to="/job-reporting" replace />} />
+        
         <Route path="souvenirs" element={<EventSouvenirPage />} />
         <Route path="merch" element={<MerchStorePage />} />
+        
         <Route path="track" element={<PublicTrackerPage />} />
         <Route path="track/:orderNumber" element={<PublicTrackerPage />} />
-        <Route path="public-tracker" element={<PublicTrackerPage />} />
+        <Route path="public-tracker" element={<Navigate to="/track" replace />} />
+        
         <Route path="transparency" element={<TransparencyPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="certificate" element={<CertificateViewPage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="privacy" element={<Navigate to="/about#privacy" replace />} />
+        <Route path="security" element={<Navigate to="/about#security" replace />} />
+        <Route path="compliance" element={<Navigate to="/about#compliance" replace />} />
+        <Route path="contract" element={<Navigate to="/about#contract" replace />} />
         <Route path="blog" element={<BlogPage />} />
-        <Route path="sign-up" element={<SignUpPage />} />
+        
+        {/* Canonical Authentication Routes */}
         <Route path="create-account" element={<SignUpPage />} />
-        <Route path="register" element={<SignUpPage />} />
+        <Route path="sign-up" element={<Navigate to="/create-account" replace />} />
+        <Route path="register" element={<Navigate to="/create-account" replace />} />
+        
         <Route path="portal/login" element={<LoginPage />} />
-        <Route path="admin/login" element={<LoginPage />} />
+        <Route path="admin/login" element={<Navigate to="/portal/login" replace />} />
+        <Route path="login" element={<Navigate to="/portal/login" replace />} />
+        
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="portal/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="portal/forgot-password" element={<Navigate to="/forgot-password" replace />} />
+        
         <Route path="reset-password" element={<ResetPasswordPage />} />
-        <Route path="portal/reset-password" element={<ResetPasswordPage />} />
+        <Route path="portal/reset-password" element={<Navigate to="/reset-password" replace />} />
+        
+        <Route path="partner-logo-drop" element={<PartnerLogoDropPage />} />
         
         {/* Protected Partner Assurance Portal & Admin Console */}
+        <Route path="portal/evidence" element={<Navigate to="/portal?tab=evidence" replace />} />
         <Route
           path="portal"
           element={
@@ -99,6 +118,7 @@ export const App: React.FC = () => {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ScrollManager />
           <AppRoutes />
         </BrowserRouter>
       </AuthProvider>

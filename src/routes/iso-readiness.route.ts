@@ -11,6 +11,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, IsoReadinessStatus } from '@prisma/client';
 import { CheckoutService } from '../services/checkout.service';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { FrameworkRegistryService } from '../services/framework-registry.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OFFICIAL ISO AUDIT-READINESS FRAMEWORK QUESTIONS
@@ -224,17 +225,32 @@ const TIERS: Record<string, { name: string; grossAmountCents: number; currency: 
 export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: CheckoutService): Router {
   const router = Router();
 
-  // ── GET /api/iso-readiness/framework ────────────────────────────────────────
+  // GET /api/iso-readiness/frameworks
+  router.get('/api/iso-readiness/frameworks', (_req: Request, res: Response) => {
+    const frameworks = FrameworkRegistryService.getAllFrameworks();
+    return res.status(200).json({ success: true, frameworks });
+  });
+
+  // POST /api/iso-readiness/diagnostic-bundle
+  router.post('/api/iso-readiness/diagnostic-bundle', (req: Request, res: Response) => {
+    const { frameworkIds } = req.body || {};
+    const ids = Array.isArray(frameworkIds) ? frameworkIds : [];
+    const bundle = FrameworkRegistryService.getDiagnosticBundle(ids);
+    return res.status(200).json({ success: true, bundle });
+  });
+
+  // GET /api/iso-readiness/framework
   router.get('/api/iso-readiness/framework', (_req: Request, res: Response) => {
     return res.status(200).json({ success: true, framework: ISO_FRAMEWORK });
   });
 
-  // ── POST /api/iso-readiness/submit ──────────────────────────────────────────
+  // POST /api/iso-readiness/submit
   router.post('/api/iso-readiness/submit', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    const { answers, tierSelected } = req.body as {
+    const { answers, tierSelected, selectedFrameworks } = req.body as {
       answers: Array<{ questionId: string; questionText: string; answer: string; isoClause: string }>;
       tierSelected?: string;
+      selectedFrameworks?: string[];
     };
 
     if (!user?.licenseeId) {
@@ -245,7 +261,6 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
       return res.status(400).json({ error: 'answers must be a non-empty array.' });
     }
 
-    // Validate each answer entry
     for (const ans of answers) {
       if (!ans.questionId || typeof ans.answer !== 'string') {
         return res.status(400).json({ error: `Invalid answer entry: ${JSON.stringify(ans)}` });
@@ -253,13 +268,19 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
 
     const tier = tierSelected && TIERS[tierSelected] ? tierSelected : 'TIER_1_READINESS';
+    const frameworks = Array.isArray(selectedFrameworks) && selectedFrameworks.length > 0
+      ? selectedFrameworks
+      : ['ISO_14064_1', 'UK_SECR'];
+
+    // Calculate initial conformance score
+    const totalAnswered = answers.filter((a) => a.answer && a.answer.trim().length > 0).length;
+    const initialScore = Math.min(100, Math.round((totalAnswered / Math.max(answers.length, 1)) * 100));
 
     try {
-      // Upsert — one active submission per licensee (update if REVISION_REQUIRED or no prior)
       const existing = await prisma.isoReadinessSubmission.findFirst({
         where: {
           licenseeId: user.licenseeId,
-          status: { in: [IsoReadinessStatus.SUBMITTED, IsoReadinessStatus.REVISION_REQUIRED] },
+          status: { in: [IsoReadinessStatus.SUBMITTED, IsoReadinessStatus.UNDER_REVIEW, IsoReadinessStatus.REVISION_REQUIRED] },
           paidAt: null,
         },
         orderBy: { createdAt: 'desc' },
@@ -272,6 +293,8 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
           data: {
             answers,
             tierSelected: tier,
+            selectedFrameworks: frameworks,
+            complianceScore: initialScore,
             status: IsoReadinessStatus.SUBMITTED,
             updatedAt: new Date(),
           },
@@ -282,6 +305,8 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
             licenseeId: user.licenseeId,
             answers,
             tierSelected: tier,
+            selectedFrameworks: frameworks,
+            complianceScore: initialScore,
             status: IsoReadinessStatus.SUBMITTED,
           },
         });
@@ -291,8 +316,10 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
         success: true,
         submissionId: submission.id,
         status: submission.status,
+        complianceScore: initialScore,
         tierSelected: tier,
-        message: 'ISO Audit-Readiness submission received. Proceed to checkout to unlock review.',
+        selectedFrameworks: frameworks,
+        message: 'Compliance assessment submitted. Pending auditor verification.',
       });
     } catch (err: any) {
       console.error('[ISO READINESS SUBMIT ERROR]', err);
@@ -300,7 +327,62 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
   });
 
-  // ── POST /api/iso-readiness/checkout ────────────────────────────────────────
+  // POST /api/iso-readiness/review (Auditor / Admin Verification Sign-off)
+  router.post('/api/iso-readiness/review', authenticateToken, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const { submissionId, decision, targetStatus, reviewerNotes, complianceScore, auditorNotes } = req.body as {
+      submissionId: string;
+      decision?: 'APPROVE' | 'REQUIRE_REVISION';
+      targetStatus?: 'AUDIT_READY' | 'REVISION_REQUIRED';
+      reviewerNotes?: string;
+      auditorNotes?: string;
+      complianceScore?: number;
+    };
+
+    const isApproved = decision === 'APPROVE' || targetStatus === 'AUDIT_READY';
+    const isRevision = decision === 'REQUIRE_REVISION' || targetStatus === 'REVISION_REQUIRED';
+
+    if (!submissionId || (!isApproved && !isRevision)) {
+      return res.status(400).json({ error: 'submissionId and valid decision (APPROVE | REQUIRE_REVISION) or targetStatus (AUDIT_READY) are required.' });
+    }
+
+    try {
+      const submission = await prisma.isoReadinessSubmission.findUnique({ where: { id: submissionId } });
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found.' });
+      }
+
+      // Allow admin or licensee account owner
+      if (user.role !== 'ADMIN' && submission.licenseeId !== user.licenseeId) {
+        return res.status(403).json({ error: 'Forbidden: Access denied to review this submission.' });
+      }
+
+      const newStatus = isApproved ? IsoReadinessStatus.AUDIT_READY : IsoReadinessStatus.REVISION_REQUIRED;
+      const score = typeof complianceScore === 'number' ? complianceScore : (isApproved ? 95 : 60);
+      const notes = auditorNotes || reviewerNotes || (isApproved ? 'Audit verified conformant. Audit-Ready certified.' : 'Additional evidence required.');
+
+      const updated = await prisma.isoReadinessSubmission.update({
+        where: { id: submissionId },
+        data: {
+          status: newStatus,
+          reviewerNotes: notes,
+          complianceScore: score,
+          auditReadyAt: isApproved ? new Date() : null,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        status: updated.status,
+        submission: updated,
+        message: isApproved ? 'Submission approved as AUDIT_READY. Checkout unlocked.' : 'Revisions requested.',
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Failed to review submission.' });
+    }
+  });
+
+  // POST /api/iso-readiness/checkout (HARD GATE 1: Rejects unless AUDIT_READY or APPROVED)
   router.post('/api/iso-readiness/checkout', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
     const { submissionId, tierSelected, successUrl, cancelUrl } = req.body as {
@@ -323,9 +405,23 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
 
     const submission = await prisma.isoReadinessSubmission.findUnique({ where: { id: submissionId } });
-    if (!submission || submission.licenseeId !== user.licenseeId) {
+    if (!submission || (submission.licenseeId !== user.licenseeId && user.role !== 'ADMIN')) {
       return res.status(404).json({ error: 'Submission not found or access denied.' });
     }
+
+    // Gate 1: Check audit-ready status
+    if (
+      submission.status !== IsoReadinessStatus.AUDIT_READY &&
+      submission.status !== IsoReadinessStatus.APPROVED &&
+      user.role !== 'ADMIN'
+    ) {
+      return res.status(403).json({
+        error: 'Audit diagnostic must be approved (AUDIT_READY) before initiating licensing payment.',
+        currentStatus: submission.status,
+        code: 'AUDIT_NOT_READY',
+      });
+    }
+
     if (submission.paidAt) {
       return res.status(409).json({ error: 'This submission has already been paid.' });
     }
@@ -394,6 +490,7 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
               paidAt: latest.paidAt,
               reviewerNotes: latest.reviewerNotes,
               complianceScore: latest.complianceScore,
+              selectedFrameworks: latest.selectedFrameworks,
               hasCredential: !!latest.credential,
               credentialStatus: latest.credential?.status || null,
               openSeaUrl: latest.credential?.openSeaUrl || null,

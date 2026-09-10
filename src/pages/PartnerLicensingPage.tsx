@@ -313,6 +313,59 @@ export const PartnerLicensingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* 4c. Key Industry Verticals (Anchor Targets) */}
+      <section id="verticals" style={{ marginBottom: '5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
+            SPECIALISED INDUSTRIAL PROTOCOLS
+          </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+            Industry Verticals & Sector Coverage
+          </h2>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', marginTop: '0.5rem', maxWidth: '640px', margin: '0.5rem auto 0 auto' }}>
+            Deep operational telemetry protocols built for mission-critical clean energy, computation, and manufacturing.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+          <div id="datacentres" className="persefoni-card" style={{ padding: '2rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>VERTICAL 01</div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Hyperscale Data Centres</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Real-time Power Usage Effectiveness (PUE) and Water Usage Effectiveness (WUE) tracking. Automated alert dispatch upon ±15% PUE variance from calibrated PDU baseline.
+            </p>
+            <ul style={{ paddingLeft: '1.2rem', margin: '0.75rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <li>ISO 50001 Energy Management compliance</li>
+              <li>EU Energy Efficiency Directive (EED) telemetry logging</li>
+            </ul>
+          </div>
+
+          <div id="hydrogen" className="persefoni-card" style={{ padding: '2rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>VERTICAL 02</div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Green Hydrogen & DRI</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Electrolyser stack telemetry with gas chromatograph calibration gatekeeper, ensuring 99.97% H2 purity validation under ISO 22734 standards.
+            </p>
+            <ul style={{ paddingLeft: '1.2rem', margin: '0.75rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <li>ISO 22734 / ISO 14064-1 emission baselines</li>
+              <li>Direct-Reduced Iron (DRI) steelmaking audit readiness</li>
+            </ul>
+          </div>
+
+          <div id="manufacturing" className="persefoni-card" style={{ padding: '2rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>VERTICAL 03</div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Industrial Manufacturing</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              High-voltage sub-meter and thermal flow meter streaming with automated UK SECR and EU CSRD Scope 1 & 2 draft filings.
+            </p>
+            <ul style={{ paddingLeft: '1.2rem', margin: '0.75rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <li>ISO 17025 calibration expiry enforcement</li>
+              <li>Scope 1-3 cradle-to-gate GHG inventory dossiers</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* 5. Case Study / Quote Block */}
       <section className="persefoni-card" style={{ padding: '3rem', marginBottom: '4rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none' }}>
         <blockquote style={{ fontSize: '1.15rem', lineHeight: 1.7, color: '#e2e8f0', margin: '0 0 1.5rem 0', fontStyle: 'normal' }}>

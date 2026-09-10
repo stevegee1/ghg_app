@@ -519,7 +519,7 @@ export const LandingPage: React.FC = () => {
               Scope 1, 2, and 3 carbon footprints for businesses of all sizes and complexities.
             </h3>
 
-            <Link to="/licensing" style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Link to="/licensing#plans" style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
               <span>Explore our plans</span>
               <span>→</span>
             </Link>
@@ -583,7 +583,7 @@ export const LandingPage: React.FC = () => {
             </p>
 
             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <Link to="/about" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', textDecoration: 'none' }}>
+              <Link to="/about#compliance" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', textDecoration: 'none' }}>
                 Regulatory Reporting →
               </Link>
               <Link to="/transparency" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', textDecoration: 'none' }}>

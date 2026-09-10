@@ -108,7 +108,7 @@ export const Footer: React.FC = () => {
                 <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Workforce & Section 106</Link></li>
                 <li><Link to="/souvenirs" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Event Keepsakes</Link></li>
                 <li><Link to="/merch" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Survivors Donation Keepsake</Link></li>
-                <li><Link to="/public-tracker" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Dropshipping Tracker</Link></li>
+                <li><Link to="/track" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Dropshipping Tracker</Link></li>
               </ul>
             </div>
 
@@ -118,9 +118,9 @@ export const Footer: React.FC = () => {
                 Solutions
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.84rem', lineHeight: 2.2 }}>
-                <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Hyperscale Data Centres</Link></li>
-                <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Green Hydrogen & DRI</Link></li>
-                <li><Link to="/licensing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Industrial Manufacturing</Link></li>
+                <li><Link to="/licensing#datacentres" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Hyperscale Data Centres</Link></li>
+                <li><Link to="/licensing#hydrogen" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Green Hydrogen & DRI</Link></li>
+                <li><Link to="/licensing#manufacturing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Industrial Manufacturing</Link></li>
                 <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Municipal Planning Defense</Link></li>
                 <li><Link to="/souvenirs" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Sports & Event Souvenirs</Link></li>
               </ul>
@@ -173,7 +173,7 @@ export const Footer: React.FC = () => {
                   </a>
                 </li>
                 <li>
-                  <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+                  <Link to="/about#contract" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
                     Addendum B Contract
                   </Link>
                 </li>
@@ -190,7 +190,7 @@ export const Footer: React.FC = () => {
                 <li><Link to="/portal/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Client Portal Login</Link></li>
                 <li><Link to="/create-account" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Create Client Account</Link></li>
                 <li><Link to="/job-reporting" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Section 106 Auditor</Link></li>
-                <li><Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Security & Architecture</Link></li>
+                <li><Link to="/about#security" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Security & Architecture</Link></li>
               </ul>
             </div>
 
@@ -204,9 +204,9 @@ export const Footer: React.FC = () => {
             © 2026 GHG Emission Logs. GHG Emissions Registered Trade Mark. All rights reserved.
           </div>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Legal & Compliance</Link>
-            <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Security</Link>
-            <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacy Policy</Link>
+            <Link to="/about#compliance" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Legal & Compliance</Link>
+            <Link to="/about#security" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Security</Link>
+            <Link to="/about#privacy" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacy Policy</Link>
             <Link to="/transparency" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>System Status</Link>
           </div>
         </div>

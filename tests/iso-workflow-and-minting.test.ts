@@ -239,7 +239,35 @@ describe('3. POST /api/iso-readiness/checkout', () => {
     expect(res.body.error).toMatch(/Unknown tier/i);
   });
 
-  it('creates a Stripe Checkout session with correct amount for TIER_1_READINESS (£1,250)', async () => {
+  it('enforces Gate 1: rejects checkout with 403 when submission is SUBMITTED and not AUDIT_READY', async () => {
+    const res = await request(testApp)
+      .post('/api/iso-readiness/checkout')
+      .set('Authorization', `Bearer ${testAuthToken}`)
+      .send({
+        submissionId: testSubmissionId,
+        tierSelected: 'TIER_1_READINESS',
+        successUrl: 'https://test.example/portal?step=3',
+        cancelUrl: 'https://test.example/portal?step=2',
+      });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('AUDIT_NOT_READY');
+  });
+
+  it('allows auditor review sign-off to transition submission to AUDIT_READY', async () => {
+    const res = await request(testApp)
+      .post('/api/iso-readiness/review')
+      .set('Authorization', `Bearer ${testAuthToken}`)
+      .send({
+        submissionId: testSubmissionId,
+        targetStatus: 'AUDIT_READY',
+        auditorNotes: 'ISO 19011:2026 Annex A remote verification completed. 80%+ conformance threshold verified.',
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.status).toBe('AUDIT_READY');
+  });
+
+  it('creates a Stripe Checkout session with correct amount for TIER_1_READINESS (£1,250) after AUDIT_READY', async () => {
     const { stripe, mockCheckoutSessionsCreate } = createMockStripe();
     const app = createApp(stripe);
 
@@ -271,17 +299,36 @@ describe('3. POST /api/iso-readiness/checkout', () => {
 describe('4. POST /api/credentials/compose', () => {
   const LOGO_PATH = path.join(process.cwd(), 'public', 'images', 'nfty-logs-logo.png');
 
-  it('rejects message longer than 120 characters', async () => {
-    if (!fs.existsSync(LOGO_PATH)) return; // skip if logo missing in CI
+  it('enforces Gate 2: rejects compositing with 403 when submission is not paid', async () => {
+    if (!fs.existsSync(LOGO_PATH)) return;
 
     const res = await request(testApp)
       .post('/api/credentials/compose')
       .set('Authorization', `Bearer ${testAuthToken}`)
       .attach('clientLogo', LOGO_PATH)
-      .field('clientMessage', 'A'.repeat(121));
+      .field('clientMessage', 'Test message under 200 chars');
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('PAYMENT_REQUIRED');
+  });
+
+  it('rejects message longer than 200 characters once fee is settled', async () => {
+    if (!fs.existsSync(LOGO_PATH)) return; // skip if logo missing in CI
+
+    // Settle fee
+    await prisma.isoReadinessSubmission.update({
+      where: { id: testSubmissionId },
+      data: { paidAt: new Date() },
+    });
+
+    const res = await request(testApp)
+      .post('/api/credentials/compose')
+      .set('Authorization', `Bearer ${testAuthToken}`)
+      .attach('clientLogo', LOGO_PATH)
+      .field('clientMessage', 'A'.repeat(201));
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/120/);
+    expect(res.body.error).toMatch(/200/);
   });
 
   it('returns a composite badge dataUri for valid inputs', async () => {
