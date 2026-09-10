@@ -52,18 +52,28 @@ const BLOG_POSTS: BlogPost[] = [
 
 export const BlogPage: React.FC = () => {
   return (
-    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
+    <div style={{ backgroundColor: 'var(--bg-card)', minHeight: '100vh', borderBottom: '1px solid var(--border-light)' }}>
+      {/* Greenly-Style Breadcrumb Bar */}
+      <div className="container-x frame-bordered" style={{ borderBottom: '1px solid var(--border-light)', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GHGEmissionLogs</Link>
+        <span>&gt;</span>
+        <span>Resources</span>
+        <span>&gt;</span>
+        <span style={{ color: 'var(--color-sky)', fontWeight: 600 }}>Blog & Technical Insights</span>
+      </div>
+
+      <div className="container-x frame-bordered" style={{ padding: '2.5rem 1.5rem 4rem 1.5rem' }}>
       
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1.75rem' }}>
         <div
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.5rem',
             backgroundColor: 'var(--accent-light)',
-            border: '1px solid rgba(2, 132, 199, 0.25)',
-            padding: '0.4rem 0.9rem',
+            border: '1px solid rgba(37, 99, 235, 0.25)',
+            padding: '0.35rem 0.85rem',
             borderRadius: 'var(--radius-pill)',
             fontSize: '0.75rem',
             fontWeight: 700,
@@ -76,10 +86,10 @@ export const BlogPage: React.FC = () => {
           <span>RESEARCH, STANDARDS & PLATFORM DISPATCHES</span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(2rem, 4.5vw, 2.75rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.75rem 0', letterSpacing: '-0.03em' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.75rem 0', letterSpacing: '-0.025em' }}>
           Continuous Assurance Insights
         </h1>
-        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '650px', margin: '0 auto', lineHeight: 1.6 }}>
+        <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '650px', margin: '0 auto', lineHeight: 1.6 }}>
           Articles, regulatory briefs, and field dispatches from the GHG continuous assurance and green job creation team.
         </p>
       </div>
@@ -143,6 +153,7 @@ export const BlogPage: React.FC = () => {
         </div>
       </div>
 
+      </div>
     </div>
   );
 };

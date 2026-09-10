@@ -108,34 +108,44 @@ export const TransparencyPage: React.FC = () => {
     : null;
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem var(--page-px, 1.25rem) 4rem' }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          backgroundColor: 'var(--accent-light)', border: '1px solid rgba(2, 132, 199, 0.25)',
-          padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-pill)',
-          fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)',
-          letterSpacing: '0.04em', marginBottom: '0.75rem',
-        }}>
-          <span className="radar-pulse" />
-          <span>STATUTORY AUDIT-READY TRANSPARENCY REGISTRY</span>
-        </div>
-
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
-          Public Audit Registry & Transparency Ledger
-        </h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: '750px', margin: 0 }}>
-          Publicly auditable registry of corporate partners, continuous carbon verification metrics, active 1-year warranty validation, and statutory 15% ESG charitable routing.
-        </p>
+    <div style={{ backgroundColor: 'var(--bg-card)', minHeight: '100vh', borderBottom: '1px solid var(--border-light)' }}>
+      {/* Greenly-Style Breadcrumb Bar */}
+      <div className="container-x frame-bordered" style={{ borderBottom: '1px solid var(--border-light)', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GHGEmissionLogs</Link>
+        <span>&gt;</span>
+        <span>Governance</span>
+        <span>&gt;</span>
+        <span style={{ color: 'var(--color-sky)', fontWeight: 600 }}>Public Audit Registry & Transparency Ledger</span>
       </div>
 
-      {ledgerError && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.875rem 1.25rem', borderRadius: '8px', marginBottom: '1.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
-          {ledgerError}
+      <div className="container-x frame-bordered" style={{ padding: '2.5rem 1.5rem 4rem 1.5rem' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: '2.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1.75rem' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            backgroundColor: 'var(--accent-light)', border: '1px solid rgba(37, 99, 235, 0.25)',
+            padding: '0.35rem 0.85rem', borderRadius: 'var(--radius-pill)',
+            fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)',
+            letterSpacing: '0.04em', marginBottom: '0.75rem',
+          }}>
+            <span className="radar-pulse" />
+            <span>STATUTORY AUDIT-READY TRANSPARENCY REGISTRY</span>
+          </div>
+
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+            Public Audit Registry & Transparency Ledger
+          </h1>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '750px', margin: 0 }}>
+            Publicly auditable registry of corporate partners, continuous carbon verification metrics, active 1-year warranty validation, and statutory 15% ESG charitable routing.
+          </p>
         </div>
-      )}
+
+        {ledgerError && (
+          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.875rem 1.25rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
+            {ledgerError}
+          </div>
+        )}
 
       {/* KPI Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
@@ -187,7 +197,7 @@ export const TransparencyPage: React.FC = () => {
               const warrantyActive = c.warrantyActive;
               return (
                 <div key={c.id} style={{
-                  padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)',
+                  padding: '1.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)',
                   backgroundColor: 'var(--bg-subtle)', position: 'relative', overflow: 'hidden',
                 }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '3px', backgroundColor: ['var(--color-green)', '#0891b2', '#7c3aed'][i % 3] }} />
@@ -221,12 +231,12 @@ export const TransparencyPage: React.FC = () => {
             {registrationOpen ? (
               <div>
                 {formSuccess ? (
-                  <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', borderRadius: '10px', padding: '1.25rem', color: 'var(--color-green-dark)', fontWeight: 600, fontSize: '0.9rem' }}>
+                  <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', color: 'var(--color-green-dark)', fontWeight: 600, fontSize: '0.9rem' }}>
                     {formSuccess}
                   </div>
                 ) : (
                   <div>
-                    <div style={{ backgroundColor: 'var(--accent-light)', border: '1px solid rgba(2, 132, 199, 0.25)', borderRadius: '10px', padding: '1rem 1.25rem', marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--color-sky)' }}>
+                    <div style={{ backgroundColor: 'var(--accent-light)', border: '1px solid rgba(37, 99, 235, 0.25)', borderRadius: 'var(--radius-sm)', padding: '1rem 1.25rem', marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--color-sky)' }}>
                       Registration is open ({charities?.activeCount ?? 0}/3 positions filled). Qualifying organisations may apply for the next statutory intake.
                     </div>
 
@@ -248,7 +258,7 @@ export const TransparencyPage: React.FC = () => {
                         </h3>
 
                         {formError && (
-                          <div style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.85rem 1rem', borderRadius: '8px', marginBottom: '1rem', fontWeight: 600, fontSize: '0.85rem' }}>
+                          <div style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontWeight: 600, fontSize: '0.85rem' }}>
                             {formError}
                           </div>
                         )}
@@ -334,7 +344,7 @@ export const TransparencyPage: React.FC = () => {
             ) : (
               <div style={{
                 backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)',
-                borderRadius: '10px', padding: '1.25rem 1.5rem',
+                borderRadius: 'var(--radius-sm)', padding: '1.25rem 1.5rem',
                 display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
               }}>
                 <div style={{
@@ -410,6 +420,7 @@ export const TransparencyPage: React.FC = () => {
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

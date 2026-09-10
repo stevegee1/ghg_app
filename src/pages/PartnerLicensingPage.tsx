@@ -5,15 +5,25 @@ export const PartnerLicensingPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 5rem 0' }}>
+    <div style={{ backgroundColor: 'var(--bg-card)', minHeight: '100vh', borderBottom: '1px solid var(--border-light)' }}>
+      {/* Greenly-Style Breadcrumb Bar */}
+      <div className="container-x frame-bordered" style={{ borderBottom: '1px solid var(--border-light)', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GHGEmissionLogs</Link>
+        <span>&gt;</span>
+        <span>Solutions</span>
+        <span>&gt;</span>
+        <span style={{ color: 'var(--color-sky)', fontWeight: 600 }}>Platform Licensing & Pricing Schedule</span>
+      </div>
+
+      <div className="container-x frame-bordered" style={{ padding: '2.5rem 1.5rem 4rem 1.5rem' }}>
       
-      {/* 1. Hero Section (Clean Google B2B Layout — Zero Badges) */}
-      <section style={{ textAlign: 'center', padding: '2.5rem 1rem 3rem 1rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 auto 0.75rem auto', letterSpacing: '-0.025em', maxWidth: '780px', lineHeight: 1.25 }}>
+      {/* 1. Hero Section (Clean Google B2B Layout) */}
+      <section style={{ textAlign: 'center', padding: '1rem 0 3rem 0', borderBottom: '1px solid var(--border-light)', marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 auto 0.75rem auto', letterSpacing: '-0.025em', maxWidth: '780px', lineHeight: 1.25 }}>
           The continuous climate assurance platform
         </h1>
         
-        <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '720px', margin: '0 auto 2rem auto', lineHeight: 1.55 }}>
+        <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '720px', margin: '0 auto 2rem auto', lineHeight: 1.6 }}>
           Natively embedded anomaly detection, mandatory ISO 17025 sensor calibration verification, and automated compliance reporting for ISO 14064, ISO 50001, UK SECR, and EU CSRD.
         </p>
 
@@ -401,6 +411,7 @@ export const PartnerLicensingPage: React.FC = () => {
         </div>
       </section>
 
+      </div>
     </div>
   );
 };

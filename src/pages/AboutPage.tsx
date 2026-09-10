@@ -3,61 +3,71 @@ import { Link } from 'react-router-dom';
 
 export const AboutPage: React.FC = () => {
   return (
-    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
-      
-      {/* Hero Section */}
-      <section style={{ textAlign: 'center', padding: '2rem 1rem 3rem 1rem' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            backgroundColor: 'var(--accent-light)',
-            border: '1px solid rgba(2, 132, 199, 0.25)',
-            padding: '0.4rem 0.9rem',
-            borderRadius: 'var(--radius-pill)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            color: 'var(--color-sky)',
-            letterSpacing: '0.04em',
-            marginBottom: '1rem',
-          }}
-        >
-          <span className="radar-pulse" />
-          <span>CONTINUOUS STATUTORY ASSURANCE & TRADEMARK AUTHENTICATION</span>
-        </div>
+    <div style={{ backgroundColor: 'var(--bg-card)', minHeight: '100vh', borderBottom: '1px solid var(--border-light)' }}>
+      {/* Greenly-Style Breadcrumb Bar */}
+      <div className="container-x frame-bordered" style={{ borderBottom: '1px solid var(--border-light)', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GHGEmissionLogs</Link>
+        <span>&gt;</span>
+        <span>Company</span>
+        <span>&gt;</span>
+        <span style={{ color: 'var(--color-sky)', fontWeight: 600 }}>About & Corporate Governance</span>
+      </div>
 
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 600, lineHeight: 1.25, marginBottom: '0.75rem', color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
-          About GHG Logo Drop (NFTY LOGS®)
-        </h1>
-        <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '760px', margin: '0 auto 2rem auto', lineHeight: 1.55 }}>
-          Leveraging digital technology, trademark optics, and continuous telemetry verification to ensure audit-readiness and trigger direct 15% ESG support for verified environmental funds.
-        </p>
-      </section>
+      <div className="container-x frame-bordered" style={{ padding: '2.5rem 1.5rem 4rem 1.5rem' }}>
+        
+        {/* Hero Section */}
+        <section style={{ textAlign: 'center', padding: '1rem 0 3rem 0', borderBottom: '1px solid var(--border-light)', marginBottom: '2.5rem' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              backgroundColor: 'var(--accent-light)',
+              border: '1px solid rgba(37, 99, 235, 0.25)',
+              padding: '0.35rem 0.85rem',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              color: 'var(--color-sky)',
+              letterSpacing: '0.04em',
+              marginBottom: '1rem',
+            }}
+          >
+            <span className="radar-pulse" />
+            <span>CONTINUOUS STATUTORY ASSURANCE & TRADEMARK AUTHENTICATION</span>
+          </div>
 
-      {/* Official Corporate Registration Card */}
-      <section className="persefoni-card" style={{ marginBottom: '2.5rem', padding: '1.75rem', borderLeft: '4px solid var(--color-sky)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
-              UNITED KINGDOM CORPORATE REGISTRATION
+          <h1 style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1.25, marginBottom: '0.75rem', color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
+            About GHG Logo Drop (NFTY LOGS®)
+          </h1>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '760px', margin: '0 auto', lineHeight: 1.6 }}>
+            Leveraging digital technology, trademark optics, and continuous telemetry verification to ensure audit-readiness and trigger direct 15% ESG support for verified environmental funds.
+          </p>
+        </section>
+
+        {/* Official Corporate Registration Card */}
+        <section className="persefoni-card" style={{ marginBottom: '2.5rem', padding: '1.75rem', borderLeft: '4px solid var(--color-sky)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
+                UNITED KINGDOM CORPORATE REGISTRATION
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
+                NFTYLOGS LTD
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: '0.35rem 0 0 0' }}>
+                Company Number: <strong>15230476</strong> • Incorporated on <strong>24 October 2023</strong>
+              </p>
             </div>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-              NFTYLOGS LTD
-            </h3>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: '0.35rem 0 0 0' }}>
-              Company Number: <strong>15230476</strong> • Incorporated on <strong>24 October 2023</strong>
-            </p>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <strong style={{ color: 'var(--text-main)' }}>Registered Office Address:</strong><br />
+              20 Wenlock Road, London, England, N1 7GU
+            </div>
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-            <strong style={{ color: 'var(--text-main)' }}>Registered Office Address:</strong><br />
-            20 Wenlock Road, London, England, N1 7GU
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* The Core Climate Challenge & Digital Perspective */}
-      <section className="persefoni-card" style={{ marginBottom: '2.5rem', padding: '2.25rem' }}>
+        {/* The Core Climate Challenge & Digital Perspective */}
+        <section className="persefoni-card" style={{ marginBottom: '2.5rem', padding: '2rem', borderRadius: 'var(--radius-md)' }}>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '1.25rem', color: 'var(--color-sky)' }}>
           Our Perspective on Continuous Climate Assurance
         </h2>
@@ -212,19 +222,19 @@ export const AboutPage: React.FC = () => {
           GHG Emission Logs operates strictly under international standard protocols and UK Competition and Markets Authority (CMA) Green Claims Code rules. All verified attestations require empirical, non-brokerage evidence.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>ISO 19011:2026 Remote Audit</h4>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               Annex A.16 digital data verification allows up to 80% remote audit completion, reducing travel emissions and operational friction.
             </p>
           </div>
-          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>UK CMA Anti-Greenwashing</h4>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               Automated linter checks prohibit unsubstantiated claims ("100% green", "carbon neutral") and mandates transparent lifecycle data.
             </p>
           </div>
-          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>Statutory 85/15 Separation</h4>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               Database triggers enforce that 85% is strictly allocated to software licensing and 15% directly to disaster relief endowments.
@@ -234,7 +244,7 @@ export const AboutPage: React.FC = () => {
       </section>
 
       {/* 6. Security & Multi-Tenancy Architecture */}
-      <section id="security" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem' }}>
+      <section id="security" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem', borderRadius: 'var(--radius-md)' }}>
         <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
           ENTERPRISE SECURITY SPECIFICATION
         </div>
@@ -245,19 +255,19 @@ export const AboutPage: React.FC = () => {
           Engineered to Google Cloud Console enterprise security standards. Telemetry streams and audit evidence are cryptographically sealed and isolated at the database layer.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>PostgreSQL Row-Level Security</h4>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               Tenant isolation enforced at the SQL engine level using session variables (<code style={{ fontSize: '0.75rem' }}>app.current_licensee_id</code>).
             </p>
           </div>
-          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>SHA-256 Watermark Seals</h4>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               Audit reports, calibration certificates, and evidence dockets are indexed with irreversible SHA-256 cryptographic hashes.
             </p>
           </div>
-          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+          <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-main)' }}>End-to-End Authentication</h4>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               JWT session tokens with bcrypt-hashed passwords, SHA-256 reset digests, and API key authentication for SCADA telemetry.
@@ -267,7 +277,7 @@ export const AboutPage: React.FC = () => {
       </section>
 
       {/* 7. Privacy Policy & Data Retention */}
-      <section id="privacy" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem' }}>
+      <section id="privacy" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem', borderRadius: 'var(--radius-md)' }}>
         <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
           DATA PROTECTION & PRIVACY STATEMENT
         </div>
@@ -288,7 +298,7 @@ export const AboutPage: React.FC = () => {
       </section>
 
       {/* 8. Addendum B Master Licensing Contract */}
-      <section id="contract" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem' }}>
+      <section id="contract" className="persefoni-card" style={{ marginBottom: '3rem', padding: '2.5rem', borderRadius: 'var(--radius-md)' }}>
         <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-sky)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
           CONTRACTUAL TERMS
         </div>
@@ -298,14 +308,14 @@ export const AboutPage: React.FC = () => {
         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '1.25rem' }}>
           Enterprise licensee contracts incorporate standard Addendum B statutory provisions establishing non-brokerage separation, ISO calibration integrity requirements, and automated 15% disaster relief routing.
         </p>
-        <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem 1.5rem', borderRadius: '10px', border: '1px solid var(--border-light)', fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+        <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem 1.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)', fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
           <strong style={{ color: 'var(--text-main)' }}>Key Covenant: Section X Non-Brokerage Clause:</strong><br />
           "The Licensor operates solely as a statutory software and diagnostic assurance provider. The Licensor is not a carbon credit broker, trader, or financial intermediary. All assurance fees are strictly fixed under published statutory rates."
         </div>
       </section>
 
       {/* CTA Box */}
-      <section className="persefoni-card" style={{ textAlign: 'center', padding: '3rem 2rem', backgroundColor: 'var(--bg-subtle)' }}>
+      <section className="persefoni-card" style={{ textAlign: 'center', padding: '3rem 2rem', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
         <h2 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
           Ready for Continuous Climate Assurance?
         </h2>
@@ -323,6 +333,7 @@ export const AboutPage: React.FC = () => {
         </div>
       </section>
 
+      </div>
     </div>
   );
 };
