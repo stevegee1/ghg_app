@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { OpenSeaBadge } from '../components/OpenSeaBadge';
 import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
+import { InteractiveAuditStepper } from '../components/InteractiveAuditStepper';
 
 // ── Scope & Step definitions ────────────────────────────────────────────────
 type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
@@ -277,9 +278,9 @@ export const PortalPage: React.FC = () => {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<any[]>([]);
   const [activeSectionFilter, setActiveSectionFilter] = useState<string>('ALL');
+  const [diagnosticViewMode, setDiagnosticViewMode] = useState<'GUIDED' | 'FULL_OVERVIEW'>('GUIDED');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    P1_BOUNDARY: true, P2_TELEMETRY: true, P3_QUANTIFICATION: true, P4_DISCLOSURE: true, P5_VERIFICATION: true,
-    S1: true, S2: true, S3: true, S4: true, S5: true, S6: true,
+    P1_BOUNDARY: true,
   });
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
@@ -868,6 +869,36 @@ export const PortalPage: React.FC = () => {
         options: ['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'],
       })));
 
+  const formattedPillars = (diagnosticBundle?.pillars || (framework?.sections || []).map((s: any) => ({
+    pillarId: s.sectionId,
+    pillarTitle: s.sectionTitle,
+    description: 'Statutory screening and management systems audit clause',
+    questions: (s.questions || []).map((q: any) => ({
+      id: q.questionId,
+      questionId: q.questionId,
+      text: q.questionText,
+      questionText: q.questionText,
+      applicableStandards: [q.isoClause],
+      statutoryMandate: q.legalMandate,
+      evidenceRequired: q.evidenceRequired,
+      options: ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
+    })),
+  }))).map((p: any) => ({
+    pillarId: p.pillarId,
+    pillarTitle: p.pillarTitle,
+    description: p.description,
+    questions: (p.questions || []).map((q: any) => ({
+      id: q.id || q.questionId,
+      questionId: q.id || q.questionId,
+      text: q.text || q.questionText,
+      questionText: q.text || q.questionText,
+      applicableStandards: q.applicableStandards || (q.isoClause ? [q.isoClause] : []),
+      statutoryMandate: q.statutoryMandate || q.legalMandate,
+      evidenceRequired: q.evidenceRequired,
+      options: q.options || ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
+    })),
+  }));
+
   const totalQuestions = allQuestions.length;
   const answeredQuestions = allQuestions.filter((q: any) => Boolean(answers[q.id || q.questionId])).length;
   const progressPct = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
@@ -1388,7 +1419,7 @@ export const PortalPage: React.FC = () => {
             auditScope === 'CARBON_EMISSION' ? (
               <div>
               {/* Assessment Header & Live Gauge Card */}
-              <div className="assessment-summary-card">
+              <div className="mouse-aware-card assessment-summary-card animate-entrance">
                 <div className="assessment-header-grid">
                   <div>
                     <h2 className="assessment-card-title">
@@ -1442,11 +1473,13 @@ export const PortalPage: React.FC = () => {
                       <span>{answeredQuestions} of {totalQuestions} answered ({progressPct}%)</span>
                     </div>
                     <div style={{ height: '8px', backgroundColor: 'var(--bg-card)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
-                      <div style={{
-                        width: `${progressPct}%`, height: '100%',
-                        backgroundColor: progressPct === 100 ? 'var(--color-green)' : 'var(--color-sky)',
-                        borderRadius: '4px', transition: 'width 0.3s ease',
-                      }} />
+                      <div
+                        className="shimmer-progress-fill"
+                        style={{
+                          width: `${progressPct}%`,
+                          backgroundColor: progressPct === 100 ? 'var(--color-green)' : 'var(--color-sky)',
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -1525,23 +1558,88 @@ export const PortalPage: React.FC = () => {
                 </div>
               )}
 
-              {/* 5-Pillars Master Assessment Questionnaire */}
-              {!bundleLoading && (
+              {/* View Mode Switcher: Guided Animated Wizard vs Full Inspection Grid */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.25rem',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                padding: '0.25rem 0',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    Assessment Experience:
+                  </span>
+                  <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>
+                    {diagnosticViewMode === 'GUIDED' ? '⚡ Guided Animated Wizard' : '📋 Full Inspection Grid'}
+                  </span>
+                </div>
+
+                <div style={{
+                  display: 'inline-flex',
+                  backgroundColor: 'var(--bg-subtle)',
+                  padding: '3px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setDiagnosticViewMode('GUIDED')}
+                    style={{
+                      border: 'none',
+                      backgroundColor: diagnosticViewMode === 'GUIDED' ? 'var(--bg-card)' : 'transparent',
+                      color: diagnosticViewMode === 'GUIDED' ? 'var(--color-sky)' : 'var(--text-muted)',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      padding: '5px 14px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      boxShadow: diagnosticViewMode === 'GUIDED' ? 'var(--shadow-xs)' : 'none',
+                      transition: 'all 0.18s ease',
+                    }}
+                  >
+                    ⚡ Guided Step-by-Step
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiagnosticViewMode('FULL_OVERVIEW')}
+                    style={{
+                      border: 'none',
+                      backgroundColor: diagnosticViewMode === 'FULL_OVERVIEW' ? 'var(--bg-card)' : 'transparent',
+                      color: diagnosticViewMode === 'FULL_OVERVIEW' ? 'var(--color-sky)' : 'var(--text-muted)',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      padding: '5px 14px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      boxShadow: diagnosticViewMode === 'FULL_OVERVIEW' ? 'var(--shadow-xs)' : 'none',
+                      transition: 'all 0.18s ease',
+                    }}
+                  >
+                    📋 Full Overview Grid
+                  </button>
+                </div>
+              </div>
+
+              {/* Guided Mode: Interactive Audit Stepper with animated slides & next button */}
+              {!bundleLoading && diagnosticViewMode === 'GUIDED' && (
+                <InteractiveAuditStepper
+                  pillars={formattedPillars}
+                  answers={answers}
+                  onAnswerChange={handleAnswerChange}
+                  isAuditReady={isAuditReady}
+                  onProceedToCheckout={() => setActiveStep(2)}
+                  estimatedScore={estimatedComplianceScore}
+                />
+              )}
+
+              {/* Full Overview Mode: 5-Pillars Inspection Accordion */}
+              {!bundleLoading && diagnosticViewMode === 'FULL_OVERVIEW' && (
                 <div>
-                  {(diagnosticBundle?.pillars || (framework?.sections || []).map((s: any) => ({
-                    pillarId: s.sectionId,
-                    pillarTitle: s.sectionTitle,
-                    description: 'Statutory screening and management systems audit clause',
-                    questions: (s.questions || []).map((q: any) => ({
-                      id: q.questionId,
-                      text: q.questionText,
-                      applicableStandards: [q.isoClause],
-                      statutoryMandate: q.legalMandate,
-                      evidenceRequired: q.evidenceRequired,
-                      options: ['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'],
-                    })),
-                  }))).map((pillar: any, pIdx: number) => {
-                    const isExpanded = expandedSections[pillar.pillarId] ?? true;
+                  {formattedPillars.map((pillar: any, pIdx: number) => {
+                    const isExpanded = expandedSections[pillar.pillarId] ?? (pIdx === 0);
                     const pillarQuestions = pillar.questions || [];
                     const answeredCount = pillarQuestions.filter((q: any) => Boolean(answers[q.id || q.questionId])).length;
                     const isPillarComplete = pillarQuestions.length > 0 && answeredCount === pillarQuestions.length;

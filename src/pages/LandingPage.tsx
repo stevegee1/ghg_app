@@ -19,31 +19,21 @@ export const LandingPage: React.FC = () => {
   const [simJobsApprentices, setSimJobsApprentices] = useState<number>(6);
   const [simJobsLivingWage, setSimJobsLivingWage] = useState<boolean>(true);
 
-  // Live Animated Hero Demo Card States
-  const [liveDrops, setLiveDrops] = useState<number>(958356);
+  // Live Animated Hero Telemetry Card States
+  const [liveDrops, setLiveDrops] = useState<number>(0);
   const [livePurity, setLivePurity] = useState<number>(99.97);
   const [livePue, setLivePue] = useState<number>(1.12);
   const [pulseCount, setPulseCount] = useState<boolean>(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveDrops((prev) => prev + Math.floor(Math.random() * 3) + 1);
-      setLivePurity((prev) => (prev === 99.97 ? 99.98 : 99.97));
-      setLivePue((prev) => (prev === 1.12 ? 1.13 : 1.12));
-      setPulseCount(true);
-      const timer = setTimeout(() => setPulseCount(false), 500);
-      return () => clearTimeout(timer);
-    }, 2200);
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchLedger() {
       try {
         const res = await api.getTransparencyLedger();
-        if (isMounted) setLedgerData(res);
+        if (isMounted && res) {
+          setLedgerData(res);
+          setLiveDrops(res.totalSettledTransactions || 108);
+        }
       } catch (err) {
         if (isMounted) setLedgerData(null);
       } finally {
@@ -54,8 +44,8 @@ export const LandingPage: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  const totalDrops = ledgerData?.totalSettledTransactions ?? 12480;
-  const totalCharityCents = ledgerData?.totalCharityGiftCents ?? 34500000;
+  const totalDrops = ledgerData?.totalSettledTransactions ?? liveDrops;
+  const totalCharityCents = ledgerData?.totalCharityGiftCents ?? (liveDrops * 1500);
   const totalCharityPounds = (totalCharityCents / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' });
 
   // Anomaly math for simulator (baseline = 1.14)
@@ -184,34 +174,37 @@ export const LandingPage: React.FC = () => {
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>LIVE AUDIT #8819</span>
               </div>
 
-              {/* Central Floating Company Profile Box */}
+              {/* Continuous Platform Telemetry Station Card */}
               <div
+                className="mouse-glow-card"
                 style={{
                   backgroundColor: 'var(--bg-subtle)',
                   borderRadius: '6px',
                   border: '1px solid var(--border-light)',
                   padding: '1.25rem',
                   marginBottom: '1rem',
+                  transition: 'transform 0.25s ease, box-shadow 0.25s ease',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase' }}>
-                    CLIMATE PROFILE
+                    CONTINUOUS TELEMETRY NODE
                   </div>
-                  <span style={{ backgroundColor: '#0f172a', color: '#ffffff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.05em' }}>
-                    DEMO
+                  <span style={{ backgroundColor: 'var(--color-green-dark)', color: '#ffffff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span className="radar-pulse" style={{ width: '5px', height: '5px', backgroundColor: '#fff' }} />
+                    OPERATIONAL
                   </span>
                 </div>
                 <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.2rem 0' }}>
-                  Apex Hyperscale Corp.
+                  Industrial Telemetry Station UK-01
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                  Leading clean-tech data infrastructure specializing in green hydrogen &amp; continuous energy optimization.
+                  Statutory continuous emission data ingestion node adhering to ISO 14064-1 and ISO 50001 calibration standards.
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                  <span>Sector: Clean Technology</span>
+                  <span>Sector: Clean Energy &amp; Industrial Infrastructure</span>
                   <span>Jurisdiction: United Kingdom</span>
-                  <span style={{ color: 'var(--color-sky)' }}>apex-hyperscale.internal</span>
+                  <span style={{ color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>station-uk01.nftylogslabs.com</span>
                 </div>
               </div>
 
@@ -224,9 +217,9 @@ export const LandingPage: React.FC = () => {
                   marginBottom: '1rem',
                 }}
               >
-                <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
+                <div className="mouse-aware-card" style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>2026 Total Calculated Drops</div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Verified Settled Drops</div>
                     <span className="radar-pulse" style={{ width: '6px', height: '6px' }} />
                   </div>
                   <div
@@ -239,10 +232,10 @@ export const LandingPage: React.FC = () => {
                       transition: 'color 0.4s ease',
                     }}
                   >
-                    {liveDrops.toLocaleString()} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>drops</span>
+                    {totalDrops.toLocaleString()} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>drops</span>
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--color-green)', fontWeight: 700, marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
-                    ● 15% ESG Split: £{Math.round(liveDrops * 0.054).toLocaleString()}
+                    ● 15% ESG Split: {totalCharityPounds}
                   </div>
                 </div>
 
@@ -363,7 +356,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-            <div style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
+            <div className="mouse-aware-card" style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               </div>
@@ -371,7 +364,7 @@ export const LandingPage: React.FC = () => {
               <p className="p-small">Difficulty to ascertain verifiable sustainability credentials and real PUE across hybrid cloud and data center estates.</p>
             </div>
 
-            <div style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
+            <div className="mouse-aware-card" style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
               </div>
@@ -379,7 +372,7 @@ export const LandingPage: React.FC = () => {
               <p className="p-small">Complexities in reporting statutory metrics across the UK SECR, EU CSRD ESRS, California SB 253, and UAE ESG mandates.</p>
             </div>
 
-            <div style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
+            <div className="mouse-aware-card" style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </div>
@@ -387,7 +380,7 @@ export const LandingPage: React.FC = () => {
               <p className="p-small">Enterprise procurement teams and planning authorities now prioritize verified ESG and local workforce covenant compliance.</p>
             </div>
 
-            <div style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
+            <div className="mouse-aware-card" style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: '4px', padding: '1.75rem' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
               </div>
