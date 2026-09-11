@@ -254,9 +254,9 @@ h4 {
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
   .logo-cell-grid {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(8, 1fr);
   }
 }
 
@@ -265,8 +265,10 @@ h4 {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 88px;
-  padding: 1rem 1.5rem;
+  min-height: 84px;
+  padding: 0.85rem 0.5rem;
+  border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
   transition: background-color 0.15s ease;
 }
 
@@ -274,31 +276,50 @@ h4 {
   background-color: var(--bg-subtle);
 }
 
-/* Greenly Architectural Ticker Ribbon */
+/* Greenly Architectural Ticker Ribbon - Balanced Full-Width 4-Column Grid */
 .greenly-ticker {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
   border-bottom: 1px solid var(--border-light);
   background: var(--bg-card);
-  overflow-x: auto;
-  scrollbar-width: none;
+  width: 100%;
 }
 
-.greenly-ticker::-webkit-scrollbar {
-  display: none;
+@media (min-width: 640px) {
+  .greenly-ticker {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .greenly-ticker {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .greenly-ticker-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.75rem;
-  white-space: nowrap;
+  padding: 0.85rem 1rem;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-greyscale-6);
-  flex-shrink: 0;
   border-right: 1px solid var(--border-light);
+  text-align: center;
+}
+
+@media (max-width: 1023px) {
+  .greenly-ticker-item {
+    border-bottom: 1px solid var(--border-light);
+  }
+}
+
+@media (min-width: 1024px) {
+  .greenly-ticker-item:last-child {
+    border-right: none;
+  }
 }
 
 /* Announcement Ribbon */

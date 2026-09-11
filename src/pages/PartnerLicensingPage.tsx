@@ -376,23 +376,7 @@ export const PartnerLicensingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. Case Study / Quote Block */}
-      <section className="persefoni-card" style={{ padding: '3rem', marginBottom: '4rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none' }}>
-        <blockquote style={{ fontSize: '1.15rem', lineHeight: 1.7, color: '#e2e8f0', margin: '0 0 1.5rem 0', fontStyle: 'normal' }}>
-          "Continuous telemetry assurance detected a 14.8% calibration drift in our data center sub-metering infrastructure three weeks before our statutory audit. Being able to isolate the sensor and log the ISO non-conformance before filing saved our executive team from severe greenwashing exposure."
-        </blockquote>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-sky)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem', color: '#ffffff' }}>
-            OT
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#ffffff' }}>Director of Infrastructure Operations</div>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Hyperscale CleanTech Infrastructure</div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. Bottom Sign Up & Sign In CTA */}
+      {/* 5. Bottom Sign Up & Sign In CTA */}
       <section className="persefoni-card" style={{ textAlign: 'center', padding: '3.5rem 2rem', backgroundColor: 'var(--bg-subtle)' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
           Ready to achieve continuous audit readiness?
