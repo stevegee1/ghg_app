@@ -20,6 +20,8 @@ import { AdminPage } from './pages/AdminPage';
 import { TransparencyPage } from './pages/TransparencyPage';
 import { AboutPage } from './pages/AboutPage';
 import { BlogPage } from './pages/BlogPage';
+import { BookDemoPage } from './pages/BookDemoPage';
+import { BookDemoModal } from './components/BookDemoModal';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({
   children,
@@ -56,6 +58,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="certificate/:id" element={<CertificateViewPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="transparency" element={<TransparencyPage />} />
+        <Route path="book-demo" element={<BookDemoPage />} />
+        <Route path="demo" element={<BookDemoPage />} />
         
         {/* Production Authentication & Self-Service Account Provisioning */}
         <Route path="create-account" element={<SignUpPage />} />
@@ -98,6 +102,7 @@ export const AppClient: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <AppRoutes />
+        <BookDemoModal />
       </BrowserRouter>
     </AuthProvider>
   );

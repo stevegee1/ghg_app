@@ -575,3 +575,24 @@ model AuditWarrantyCredential {
 
   @@index([licenseeId, status])
 }
+
+model DemoBooking {
+  id            String   @id @default(cuid())
+  fullName      String
+  workEmail     String
+  companyName   String
+  facilityCount String?
+  primaryScope  String   @default("CARBON_EMISSION") // CARBON_EMISSION | JOB_REPORTING | DUAL_SCOPE | WEATHER_RESILIENCE
+  requestedSlot DateTime
+  meetUrl       String?
+  ndaRequested  Boolean  @default(true)
+  bookingMethod String   @default("FORM") // FORM | GOOGLE_CALENDAR | MICROSOFT_365
+  status        String   @default("CONFIRMED") // CONFIRMED | COMPLETED | CANCELLED
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([workEmail])
+  @@index([requestedSlot])
+}

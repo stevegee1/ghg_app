@@ -685,6 +685,15 @@ export const api = {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
   },
+
+  async getDemoBookings(token: string): Promise<any> {
+    const res = await fetch('/api/admin/demo-bookings', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
 };
 
 

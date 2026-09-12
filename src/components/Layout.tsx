@@ -79,12 +79,7 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="app-container">
-      {!isConsoleView && (
-        <div className="greenly-announcement">
-          <span>Continuous Climate Telemetry & Statutory Audit Verification to ISO 14001 / 50001 Standards</span>
-        </div>
-      )}
-      <header className={`navbar ${isConsoleView ? 'navbar-console-mode' : ''}`} ref={navContainerRef}>
+      <header className={`navbar ${isConsoleView ? 'navbar-console-mode' : 'navbar-cerebrium'}`} ref={navContainerRef}>
         <div className="navbar-inner">
           
           {/* 1. Left Brand Identity */}
@@ -107,16 +102,16 @@ export const Layout: React.FC = () => {
             )}
             <Link
               to="/"
-              className="brand"
+              className={isConsoleView ? 'brand' : 'brand cerebrium-brand-link'}
               onClick={closeDropdowns}
               aria-label="GHGEmissionLogs Home"
             >
               <img
                 src="/images/nfty-logs-logo.png"
                 alt="GHGEmissionLogs Official Logo"
-                style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+                style={{ width: '28px', height: '28px', objectFit: 'contain' }}
               />
-              <span>GHGEmissionLogs</span>
+              <span className={!isConsoleView ? 'brand-text-white' : ''}>GHGEmissionLogs</span>
             </Link>
             {isConsoleView && (
               <span className="console-mode-badge">Console</span>
@@ -138,31 +133,19 @@ export const Layout: React.FC = () => {
           {/* 2. Center Nav Menu (Desktop Interactive Mega-Menu Flow - Public site only) */}
           {!isConsoleView && (
             <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-              <ul className="nav-links">
+              <ul className="nav-links cerebrium-capsule-inner">
                 
                 {/* Solutions Dropdown / Mobile Accordion */}
                 <li className="nav-item-dropdown">
                 {/* Desktop Trigger */}
                 <button
-                  className={`mega-menu-trigger-btn desktop-only-solutions ${activeDropdown === 'SOLUTIONS' ? 'active' : ''}`}
+                  className={`cerebrium-capsule-link mega-menu-trigger-btn desktop-only-solutions ${activeDropdown === 'SOLUTIONS' ? 'active' : ''}`}
                   onClick={() => toggleDropdown('SOLUTIONS')}
                   aria-expanded={activeDropdown === 'SOLUTIONS'}
                   aria-haspopup="true"
                 >
-                  <span>Solutions</span>
-                  <svg
-                    className={`mega-chevron ${activeDropdown === 'SOLUTIONS' ? 'open' : ''}`}
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
+                  <span>SOLUTIONS</span>
+                  <span className="capsule-dot">•</span>
                 </button>
 
                 {/* Mobile Accordion Trigger */}
@@ -457,41 +440,59 @@ export const Layout: React.FC = () => {
                 )}
               </li>
 
-              {/* Direct Nav Links */}
+              {/* Direct Nav Links Matching User Specification */}
               <li>
                 <NavLink
                   to="/job-reporting"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
                   onClick={closeDropdowns}
                 >
-                  Workforce & Jobs
+                  WORKFORCE &amp; JOBS
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/portal?scope=CARBON_EMISSION&tab=diagnostic"
+                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
+                  onClick={closeDropdowns}
+                >
+                  CARBON EMISSION
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/merch"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
                   onClick={closeDropdowns}
                 >
-                  Support Extreme Weather with Event/Celebration
+                  SUPPORT EXTREME WEATHER
                 </NavLink>
               </li>
               <li>
                 <NavLink
-                  to="/transparency"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  to="/licensing"
+                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
                   onClick={closeDropdowns}
                 >
-                  Transparency
+                  PRICING
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/blog"
+                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
+                  onClick={closeDropdowns}
+                >
+                  BLOGS
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/about"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
                   onClick={closeDropdowns}
                 >
-                  About
+                  ABOUT
                 </NavLink>
               </li>
 
@@ -535,17 +536,25 @@ export const Layout: React.FC = () => {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-                    <Link to="/portal/login" className="nav-link" style={{ alignSelf: 'center' }} onClick={closeDropdowns}>
-                      Portal Login
-                    </Link>
                     <Link
-                      to="/create-account"
-                      className="btn btn-primary"
-                      style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
+                      to="/portal/login"
+                      className="cerebrium-nav-btn-ice"
+                      style={{ flex: 1, textAlign: 'center', padding: '0.65rem 1rem' }}
                       onClick={closeDropdowns}
                     >
-                      <span>Get Audit Ready</span>
-                      <span>→</span>
+                      Sign in to console
+                    </Link>
+                    <Link
+                      to="/book-demo"
+                      className="cerebrium-nav-btn-magenta"
+                      style={{ flex: 1, textAlign: 'center', padding: '0.65rem 1rem' }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        closeDropdowns();
+                        window.dispatchEvent(new CustomEvent('open-book-demo-modal'));
+                      }}
+                    >
+                      <span>Book Demo</span>
                     </Link>
                   </div>
                 )}
@@ -757,17 +766,21 @@ export const Layout: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
                 <NavLink
                   to="/portal/login"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  className="cerebrium-nav-btn-ice"
+                  title="Sign in to console"
                 >
-                  Portal Login
+                  SIGN IN TO CONSOLE
                 </NavLink>
                 <Link
-                  to="/create-account"
-                  className="btn btn-primary"
-                  title="Get Audit Ready"
+                  to="/book-demo"
+                  className="cerebrium-nav-btn-magenta"
+                  title="Book Architecture Demo"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('open-book-demo-modal'));
+                  }}
                 >
-                  <span>Get Audit Ready</span>
-                  <span>→</span>
+                  <span>BOOK DEMO</span>
                 </Link>
               </div>
             )}

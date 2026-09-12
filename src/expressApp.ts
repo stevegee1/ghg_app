@@ -20,6 +20,7 @@ import { createCharitiesRouter } from './routes/charities.route';
 import { createIsoReadinessRouter } from './routes/iso-readiness.route';
 import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
+import { createDemoBookingRouter } from './routes/demo-booking.route';
 import { CheckoutService } from './services/checkout.service';
 
 export function createApp(stripeInstance?: Stripe): Express {
@@ -72,6 +73,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createIsoReadinessRouter(prisma, checkoutService));
   app.use(createCredentialsRouter(prisma));
   app.use(createBadgeEmbedRouter(prisma));
+  app.use(createDemoBookingRouter(prisma));
 
   // SPA Wildcard fallback: serve index.html for all non-API routes
   app.get('*', (req, res) => {

@@ -340,25 +340,6 @@ export const PortalPage: React.FC = () => {
     });
   };
 
-  const handleQuickFillCompliant = () => {
-    const compliantAnswers: Record<string, string> = {};
-    if (diagnosticBundle?.pillars) {
-      diagnosticBundle.pillars.forEach((p: any) => {
-        (p.questions || []).forEach((q: any) => {
-          compliantAnswers[q.id] = 'Fully compliant & documented';
-          compliantAnswers[`${q.id}_notes`] = 'Verified against operational telemetry logs, sensor calibration records, and statutory disclosures.';
-        });
-      });
-    } else if (framework?.sections) {
-      framework.sections.forEach((sec: any) => {
-        (sec.questions || []).forEach((q: any) => {
-          compliantAnswers[q.questionId] = 'Yes, fully in place';
-          compliantAnswers[`${q.questionId}_notes`] = 'Verified against operational telemetry logs and calibration records.';
-        });
-      });
-    }
-    setAnswers(compliantAnswers);
-  };
 
   // ── Listen for global/top app bar drawer toggle ────────────────────────────
   useEffect(() => {
@@ -370,6 +351,32 @@ export const PortalPage: React.FC = () => {
       window.removeEventListener('toggle-portal-sidebar', handleToggle);
     };
   }, []);
+
+  // ── Restore in-progress diagnostic answers from localStorage on mount ─────
+  useEffect(() => {
+    if (!user?.licenseeId) return;
+    try {
+      const saved = localStorage.getItem(`ghg_draft_answers_${user.licenseeId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+          setAnswers((prev) => ({ ...parsed, ...prev }));
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [user?.licenseeId]);
+
+  // ── Auto-save diagnostic draft answers to localStorage on change ──────────
+  useEffect(() => {
+    if (!user?.licenseeId || Object.keys(answers).length === 0) return;
+    try {
+      localStorage.setItem(`ghg_draft_answers_${user.licenseeId}`, JSON.stringify(answers));
+    } catch {
+      // Ignore quota errors
+    }
+  }, [answers, user?.licenseeId]);
 
   // ── Load available compliance frameworks on mount ──────────────────────────
   useEffect(() => {
@@ -1418,71 +1425,18 @@ export const PortalPage: React.FC = () => {
           {activeStep === 1 && (
             auditScope === 'CARBON_EMISSION' ? (
               <div>
-              {/* Assessment Header & Live Gauge Card */}
-              <div className="mouse-aware-card assessment-summary-card animate-entrance">
-                <div className="assessment-header-grid">
-                  <div>
-                    <h2 className="assessment-card-title">
-                      ISO Audit-Readiness Diagnostic Assessment
-                    </h2>
-                    <p className="assessment-card-desc">
-                      Structured statutory screening aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
-                    </p>
-                  </div>
-
-                  {/* Real-time compliance score badge & Quick Fill */}
-                  <div className="assessment-header-actions">
-                    <button
-                      type="button"
-                      onClick={handleQuickFillCompliant}
-                      className="assessment-autofill-btn"
-                      title="Auto-fill 15 ISO clauses with verified compliant answers for demonstration"
-                    >
-                      <GoogleIcons.AutoFix />
-                      <span>Auto-Fill Diagnostic Baseline</span>
-                    </button>
-
-                    <div className="assessment-readiness-badge" style={{
-                      backgroundColor: estimatedComplianceScore >= 80 ? 'rgba(16,185,129,0.1)' : 'rgba(2,132,199,0.1)',
-                      border: `1px solid ${estimatedComplianceScore >= 80 ? 'rgba(16,185,129,0.3)' : 'rgba(2,132,199,0.3)'}`,
-                    }}>
-                      <span className="assessment-readiness-label">
-                        Readiness Index:
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span className="assessment-readiness-val" style={{
-                          color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
-                        }}>
-                          {estimatedComplianceScore}%
-                        </span>
-                        <span className="assessment-readiness-tag" style={{
-                          color: estimatedComplianceScore >= 80 ? 'var(--color-green)' : 'var(--color-sky)',
-                        }}>
-                          ({estimatedComplianceScore >= 80 ? 'Audit-Ready' : estimatedComplianceScore >= 50 ? 'In Progress' : 'Initial'})
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+              {/* Cerebrium-style Streamlined Assessment Header */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--cerebrium-magenta)', fontSize: '0.72rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
+                  <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--cerebrium-magenta)', boxShadow: '0 0 8px var(--cerebrium-magenta)' }} />
+                  <span>ISO Audit-Readiness Diagnostic Studio</span>
                 </div>
-
-                {/* Material Progress bar */}
-                {totalQuestions > 0 && (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                      <span>Assessment Completion</span>
-                      <span>{answeredQuestions} of {totalQuestions} answered ({progressPct}%)</span>
-                    </div>
-                    <div style={{ height: '8px', backgroundColor: 'var(--bg-card)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
-                      <div
-                        className="shimmer-progress-fill"
-                        style={{
-                          width: `${progressPct}%`,
-                          backgroundColor: progressPct === 100 ? 'var(--color-green)' : 'var(--color-sky)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 800, color: 'var(--cerebrium-ink-navy)', margin: '0 0 0.4rem 0', letterSpacing: '-0.025em' }}>
+                  Statutory Conformance &amp; Screening <span style={{ color: 'var(--cerebrium-magenta)' }}>Engine</span>
+                </h1>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px', lineHeight: 1.5 }}>
+                  Interactive multi-pillar diagnostic aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
+                </p>
               </div>
 
               {/* Multi-Framework Harmonisation Selector Bar */}
@@ -1900,15 +1854,6 @@ export const PortalPage: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={handleQuickFillCompliant}
-                        className="btn btn-secondary"
-                        style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
-                      >
-                        <GoogleIcons.AutoFix />
-                        <span>Quick Fill All Pillars</span>
-                      </button>
 
                       <button
                         type="button"

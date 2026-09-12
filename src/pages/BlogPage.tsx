@@ -13,6 +13,33 @@ interface BlogPost {
 
 const BLOG_POSTS: BlogPost[] = [
   {
+    id: 'blog_low_latency',
+    title: 'A Low-Latency Architecture for Continuous OT Telemetry with Real-Time ISO Audit Verification',
+    category: 'Tutorial • ISO 14064 & 50001',
+    date: 'July 15, 2026',
+    author: 'Telemetry Engineering Group',
+    summary: 'How industrial operators stream calibrated OT meter data into cryptographically sealed audit logs, eliminating annual reporting scrambles and audit non-conformances.',
+    readTime: '5 min read',
+  },
+  {
+    id: 'blog_s106_guide',
+    title: '2026 Section 106 Statutory Workforce Covenant & Local Wage Compliance Guide',
+    category: 'Announcement • Statutory Workforce',
+    date: 'July 13, 2026',
+    author: 'Municipal Governance Desk',
+    summary: 'Structuring municipal planning employment dossiers under the Town and Country Planning Act 1990 with live payroll proof, apprenticeships, and Real Living Wage guarantees.',
+    readTime: '6 min read',
+  },
+  {
+    id: 'blog_anomaly_lock',
+    title: 'GHGEmissionLogs Deploys Real-Time Anomaly Lock: Enforcing 15% Baseline Drift Freeze',
+    category: 'Product Update • ISO Clause 10.2',
+    date: 'July 8, 2026',
+    author: 'Assurance Secretariat',
+    summary: 'Autonomous ledger safeguards that freeze statutory exports (HTTP 423) whenever facility consumption drifts more than 15% from calibrated ISO baselines.',
+    readTime: '4 min read',
+  },
+  {
     id: 'blog_1',
     title: 'Transforming Carbon-Footprint Culture Through Digital Provenance',
     category: 'Climate Action & Intervention',
