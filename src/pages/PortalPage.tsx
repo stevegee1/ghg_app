@@ -854,26 +854,26 @@ export const PortalPage: React.FC = () => {
   // ── Progress & Conformity Index Calculation ───────────────────────────────
   const allQuestions = diagnosticBundle?.pillars
     ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => ({
-        questionId: q.id,
-        id: q.id,
-        questionText: q.text,
-        text: q.text,
-        applicableStandards: q.applicableStandards,
-        isoClause: q.applicableStandards?.[0] || 'ISO 14064-1',
-        statutoryMandate: q.statutoryMandate,
+        questionId: q.questionId || q.id,
+        id: q.questionId || q.id,
+        questionText: q.questionText || q.text,
+        text: q.questionText || q.text,
+        applicableStandards: q.applicableStandards || (q.isoClause ? [q.isoClause] : []),
+        isoClause: q.isoClause || q.applicableStandards?.[0] || 'ISO 14064-1',
+        statutoryMandate: q.statutoryMandate || q.legalMandate,
         evidenceRequired: q.evidenceRequired,
-        options: q.options,
+        options: q.options || ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
       })))
     : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => ({
-        questionId: q.questionId,
-        id: q.questionId,
-        questionText: q.questionText,
-        text: q.questionText,
+        questionId: q.questionId || q.id,
+        id: q.questionId || q.id,
+        questionText: q.questionText || q.text,
+        text: q.questionText || q.text,
         applicableStandards: [q.isoClause],
         isoClause: q.isoClause || 'ISO 14001',
         statutoryMandate: q.legalMandate,
         evidenceRequired: q.evidenceRequired,
-        options: ['Yes, fully in place', 'Partially implemented', 'Not yet implemented', 'Not applicable'],
+        options: ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
       })));
 
   const formattedPillars = (diagnosticBundle?.pillars || (framework?.sections || []).map((s: any) => ({
@@ -881,10 +881,10 @@ export const PortalPage: React.FC = () => {
     pillarTitle: s.sectionTitle,
     description: 'Statutory screening and management systems audit clause',
     questions: (s.questions || []).map((q: any) => ({
-      id: q.questionId,
-      questionId: q.questionId,
-      text: q.questionText,
-      questionText: q.questionText,
+      id: q.questionId || q.id,
+      questionId: q.questionId || q.id,
+      text: q.questionText || q.text,
+      questionText: q.questionText || q.text,
       applicableStandards: [q.isoClause],
       statutoryMandate: q.legalMandate,
       evidenceRequired: q.evidenceRequired,
@@ -892,13 +892,13 @@ export const PortalPage: React.FC = () => {
     })),
   }))).map((p: any) => ({
     pillarId: p.pillarId,
-    pillarTitle: p.pillarTitle,
+    pillarTitle: p.pillarTitle || p.title || `Pillar ${p.pillarNumber || ''}`.trim(),
     description: p.description,
     questions: (p.questions || []).map((q: any) => ({
-      id: q.id || q.questionId,
-      questionId: q.id || q.questionId,
-      text: q.text || q.questionText,
-      questionText: q.text || q.questionText,
+      id: q.questionId || q.id,
+      questionId: q.questionId || q.id,
+      text: q.questionText || q.text,
+      questionText: q.questionText || q.text,
       applicableStandards: q.applicableStandards || (q.isoClause ? [q.isoClause] : []),
       statutoryMandate: q.statutoryMandate || q.legalMandate,
       evidenceRequired: q.evidenceRequired,
@@ -907,13 +907,16 @@ export const PortalPage: React.FC = () => {
   }));
 
   const totalQuestions = allQuestions.length;
-  const answeredQuestions = allQuestions.filter((q: any) => Boolean(answers[q.id || q.questionId])).length;
+  const answeredQuestions = allQuestions.filter((q: any) => {
+    const qId = q.questionId || q.id;
+    return Boolean(answers[qId]);
+  }).length;
   const progressPct = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
 
   // Real-time compliance score estimator (0 to 100%)
   const scoreMetrics = allQuestions.reduce(
     (acc: { score: number; count: number }, q: any) => {
-      const qId = q.id || q.questionId;
+      const qId = q.questionId || q.id;
       const ans = answers[qId];
       if (!ans) return acc;
       if (ans === 'Yes, fully in place' || ans === 'Fully compliant & documented') return { score: acc.score + 100, count: acc.count + 1 };
@@ -1425,16 +1428,18 @@ export const PortalPage: React.FC = () => {
           {activeStep === 1 && (
             auditScope === 'CARBON_EMISSION' ? (
               <div>
-              {/* Cerebrium-style Streamlined Assessment Header */}
+              {/* Clean Google SaaS Assessment Header */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--cerebrium-magenta)', fontSize: '0.72rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
-                  <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--cerebrium-magenta)', boxShadow: '0 0 8px var(--cerebrium-magenta)' }} />
-                  <span>ISO Audit-Readiness Diagnostic Studio</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.45rem' }}>
+                  <span className="radar-pulse" style={{ width: '8px', height: '8px' }} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    ISO Audit-Readiness Diagnostic Studio
+                  </span>
                 </div>
-                <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 800, color: 'var(--cerebrium-ink-navy)', margin: '0 0 0.4rem 0', letterSpacing: '-0.025em' }}>
-                  Statutory Conformance &amp; Screening <span style={{ color: 'var(--cerebrium-magenta)' }}>Engine</span>
+                <h1 style={{ fontSize: 'clamp(1.5rem, 2.75vw, 2.15rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.4rem 0', letterSpacing: '-0.025em' }}>
+                  Statutory Conformance &amp; Screening Engine
                 </h1>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '780px', lineHeight: 1.5 }}>
                   Interactive multi-pillar diagnostic aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
                 </p>
               </div>
@@ -1447,58 +1452,49 @@ export const PortalPage: React.FC = () => {
                 padding: '1.25rem 1.5rem',
                 marginTop: '1.25rem',
                 marginBottom: '1.5rem',
+                boxShadow: 'var(--shadow-xs)',
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.85rem' }}>
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       Target Statutory &amp; Voluntary Frameworks (Multi-Standard Harmonisation)
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                       Select the international carbon reporting standards applicable to your operations. Questions dynamically deduplicate across all 5 core pillars.
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '4px' }}>
-                    {selectedFrameworks.length} Frameworks Selected
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '3px 10px', borderRadius: '6px', border: '1px solid rgba(2, 132, 199, 0.2)' }}>
+                    {selectedFrameworks.length} Framework{selectedFrameworks.length === 1 ? '' : 's'} Selected
                   </span>
                 </div>
 
                 {/* Framework Chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem' }}>
                   {(availableFrameworks.length > 0 ? availableFrameworks : [
-                    { id: 'ISO_14064_1', shortTitle: 'ISO 14064-1', title: 'ISO 14064-1:2018 (GHG Inventories)', jurisdiction: 'Global' },
-                    { id: 'ISO_50001', shortTitle: 'ISO 50001', title: 'ISO 50001:2018 (Energy Management)', jurisdiction: 'Global' },
-                    { id: 'GHG_PROTOCOL', shortTitle: 'GHG Protocol', title: 'GHG Protocol Corporate Standard', jurisdiction: 'Global' },
-                    { id: 'UK_SECR', shortTitle: 'UK SECR', title: 'UK SECR (Streamlined Energy & Carbon)', jurisdiction: 'UK' },
-                    { id: 'EU_CSRD', shortTitle: 'EU CSRD', title: 'EU CSRD (ESRS E1 Climate Standard)', jurisdiction: 'EU' },
-                    { id: 'US_CASB253', shortTitle: 'US CA-SB253', title: 'US California SB 253 Climate Disclosure', jurisdiction: 'US' },
-                    { id: 'UK_CMA', shortTitle: 'UK CMA', title: 'UK CMA Green Claims Code', jurisdiction: 'UK' },
-                    { id: 'ISO_14067', shortTitle: 'ISO 14067', title: 'ISO 14067 (Product Carbon Footprint)', jurisdiction: 'Global' },
+                    { id: 'ISO_14064_1', code: 'ISO 14064-1', name: 'Corporate GHG Inventories', jurisdiction: 'Global' },
+                    { id: 'ISO_50001', code: 'ISO 50001', name: 'Energy Management Systems', jurisdiction: 'Global' },
+                    { id: 'GHG_PROTOCOL', code: 'GHG Protocol', name: 'Scope 1, 2, 3 Corporate Standard', jurisdiction: 'Global' },
+                    { id: 'UK_SECR', code: 'UK SECR', name: 'Streamlined Energy & Carbon Reporting', jurisdiction: 'United Kingdom' },
+                    { id: 'EU_CSRD', code: 'EU CSRD', name: 'ESRS E1 Climate Standard', jurisdiction: 'European Union' },
+                    { id: 'US_CASB253', code: 'US CA-SB253', name: 'California Climate Data Accountability', jurisdiction: 'United States' },
+                    { id: 'UK_CMA', code: 'UK CMA', name: 'Green Claims Code', jurisdiction: 'United Kingdom' },
+                    { id: 'ISO_14067', code: 'ISO 14067', name: 'Product Carbon Footprint (LCA)', jurisdiction: 'Global' },
                   ]).map((fw: any) => {
                     const isSelected = selectedFrameworks.includes(fw.id);
+                    const code = fw.code || fw.shortTitle || fw.id;
+                    const name = fw.name || fw.title || '';
                     return (
                       <button
                         key={fw.id}
                         type="button"
                         onClick={() => toggleFramework(fw.id)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.45rem',
-                          padding: '0.4rem 0.8rem',
-                          borderRadius: '20px',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          border: isSelected ? '1px solid var(--color-sky)' : '1px solid var(--border-light)',
-                          backgroundColor: isSelected ? 'rgba(2, 132, 199, 0.1)' : 'var(--bg-subtle)',
-                          color: isSelected ? 'var(--color-sky)' : 'var(--text-muted)',
-                          transition: 'all 0.15s ease',
-                        }}
+                        title={`${code}: ${name} (${fw.jurisdiction || 'Global'})`}
+                        className={`portal-framework-chip ${isSelected ? 'selected' : ''}`}
                       >
-                        <span>{isSelected ? '✓' : '+'}</span>
-                        <span>{fw.shortTitle || fw.title}</span>
-                        <span style={{ fontSize: '0.68rem', opacity: 0.75, padding: '1px 5px', borderRadius: '4px', backgroundColor: isSelected ? 'rgba(2,132,199,0.2)' : 'var(--bg-card)' }}>
-                          {fw.jurisdiction}
+                        <span className="chip-indicator">{isSelected ? '✓' : '+'}</span>
+                        <span className="chip-code">{code}</span>
+                        <span className="chip-jurisdiction">
+                          {fw.jurisdiction || 'Global'}
                         </span>
                       </button>
                     );

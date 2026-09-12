@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export interface AuditQuestion {
   id: string;
@@ -37,53 +37,33 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
 }) => {
   const [activePillarIdx, setActivePillarIdx] = useState<number>(0);
   const [activeQuestionIdx, setActiveQuestionIdx] = useState<number>(0);
-  const [slideDirection, setSlideDirection] = useState<'right' | 'left'>('right');
-  const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [autoAdvanceTimer, setAutoAdvanceTimer] = useState<NodeJS.Timeout | null>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
 
   const currentPillar = pillars[activePillarIdx] || pillars[0];
   const currentQuestions = currentPillar?.questions || [];
   const currentQuestion = currentQuestions[activeQuestionIdx] || currentQuestions[0];
-  const currentQId = currentQuestion ? (currentQuestion.id || currentQuestion.questionId || '') : '';
+  const currentQId = currentQuestion ? (currentQuestion.questionId || currentQuestion.id || '') : '';
   const currentSelectedAnswer = answers[currentQId];
 
-  // Navigation handlers with directional animations
+  // Navigation handlers with clean, instantaneous state updates
   const goToNext = useCallback(() => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setSlideDirection('right');
-
-    setTimeout(() => {
-      if (activeQuestionIdx < currentQuestions.length - 1) {
-        setActiveQuestionIdx((prev) => prev + 1);
-      } else if (activePillarIdx < pillars.length - 1) {
-        setActivePillarIdx((prev) => prev + 1);
-        setActiveQuestionIdx(0);
-      }
-      setIsAnimating(false);
-      if (stageRef.current) {
-        stageRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }, 180);
-  }, [activeQuestionIdx, activePillarIdx, currentQuestions.length, pillars.length, isAnimating]);
+    if (activeQuestionIdx < currentQuestions.length - 1) {
+      setActiveQuestionIdx((prev) => prev + 1);
+    } else if (activePillarIdx < pillars.length - 1) {
+      setActivePillarIdx((prev) => prev + 1);
+      setActiveQuestionIdx(0);
+    }
+  }, [activeQuestionIdx, activePillarIdx, currentQuestions.length, pillars.length]);
 
   const goToPrev = useCallback(() => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setSlideDirection('left');
-
-    setTimeout(() => {
-      if (activeQuestionIdx > 0) {
-        setActiveQuestionIdx((prev) => prev - 1);
-      } else if (activePillarIdx > 0) {
-        const prevPillarQuestions = pillars[activePillarIdx - 1]?.questions || [];
-        setActivePillarIdx((prev) => prev - 1);
-        setActiveQuestionIdx(Math.max(0, prevPillarQuestions.length - 1));
-      }
-      setIsAnimating(false);
-    }, 180);
-  }, [activeQuestionIdx, activePillarIdx, pillars, isAnimating]);
+    if (activeQuestionIdx > 0) {
+      setActiveQuestionIdx((prev) => prev - 1);
+    } else if (activePillarIdx > 0) {
+      const prevPillarQuestions = pillars[activePillarIdx - 1]?.questions || [];
+      setActivePillarIdx((prev) => prev - 1);
+      setActiveQuestionIdx(Math.max(0, prevPillarQuestions.length - 1));
+    }
+  }, [activeQuestionIdx, activePillarIdx, pillars]);
 
   const defaultOptions = [
     'Fully compliant & documented',
@@ -93,21 +73,19 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
   ];
   const questionOptions = currentQuestion?.options || defaultOptions;
 
-  // Handle Option Select with 320ms Auto-Advance
+  // Handle Option Select with 300ms smooth auto-advance
   const handleSelectOption = (opt: string) => {
     onAnswerChange(currentQId, opt);
 
-    // If there is an existing pending auto-advance, clear it
     if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
 
-    // Auto-advance if not the very last question of the entire assessment
     const isLastQuestionInAssessment =
       activePillarIdx === pillars.length - 1 && activeQuestionIdx === currentQuestions.length - 1;
 
     if (!isLastQuestionInAssessment) {
       const timer = setTimeout(() => {
         goToNext();
-      }, 340);
+      }, 300);
       setAutoAdvanceTimer(timer);
     }
   };
@@ -126,7 +104,6 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
 
       const key = e.key.toUpperCase();
 
-      // Hotkeys: A, B, C, D or 1, 2, 3, 4
       if (key === 'A' || key === '1') {
         e.preventDefault();
         if (questionOptions[0]) handleSelectOption(questionOptions[0]);
@@ -164,11 +141,15 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
     );
   }
 
-  // Overall assessment calculation
+  // Overall assessment metrics
   const totalQuestionsAllPillars = pillars.reduce((acc, p) => acc + (p.questions || []).length, 0);
   const totalAnsweredAllPillars = pillars.reduce((acc, p) => {
-    return acc + (p.questions || []).filter((q) => Boolean(answers[q.id || q.questionId || ''])).length;
+    return acc + (p.questions || []).filter((q) => Boolean(answers[q.questionId || q.id || ''])).length;
   }, 0);
+  const completionPct =
+    totalQuestionsAllPillars > 0
+      ? Math.round((totalAnsweredAllPillars / totalQuestionsAllPillars) * 100)
+      : 0;
   const isEntireAssessmentComplete =
     totalQuestionsAllPillars > 0 && totalAnsweredAllPillars === totalQuestionsAllPillars;
 
@@ -176,13 +157,13 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
   const isLastPillar = activePillarIdx === pillars.length - 1;
 
   return (
-    <div className="cerebrium-stepper-container" ref={stageRef}>
+    <div className="cerebrium-stepper-container">
       <div className="cerebrium-stepper-split">
-        {/* ── Left Column: Cerebrium Vertical Pillar Navigator ─────────────── */}
+        {/* ── Left Column: Pillar Navigator & Progress Card ─────────────── */}
         <div className="cerebrium-stepper-sidebar">
           <div>
             <div className="cerebrium-stepper-header-tag">
-              <span>•</span>
+              <span className="radar-pulse" style={{ width: '7px', height: '7px' }} />
               <span>Statutory Audit Pillars</span>
             </div>
 
@@ -190,7 +171,7 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
               {pillars.map((pillar, pIdx) => {
                 const questions = pillar.questions || [];
                 const answered = questions.filter((q) =>
-                  Boolean(answers[q.id || q.questionId || ''])
+                  Boolean(answers[q.questionId || q.id || ''])
                 ).length;
                 const isComplete = questions.length > 0 && answered === questions.length;
                 const isActive = pIdx === activePillarIdx;
@@ -210,9 +191,7 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                     }`}
                   >
                     <div className="pillar-headline">{pillar.pillarTitle}</div>
-                    <div
-                      className={`cerebrium-pillar-meta ${isComplete ? 'completed' : ''}`}
-                    >
+                    <div className={`cerebrium-pillar-meta ${isComplete ? 'completed' : ''}`}>
                       {isComplete ? (
                         <span>✓ {questions.length}/{questions.length} Verified</span>
                       ) : (
@@ -227,105 +206,111 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
             </div>
           </div>
 
-          {/* Bottom Live Conformance Gauge Card */}
+          {/* Bottom Live Conformance & Progress Gauge Card */}
           <div
             style={{
               marginTop: '2rem',
-              padding: '1.15rem',
-              backgroundColor: 'var(--cerebrium-ice-slate)',
+              padding: '1.25rem',
+              backgroundColor: '#ffffff',
               borderRadius: '8px',
               border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-xs)',
             }}
           >
             <div
               style={{
-                fontSize: '0.68rem',
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                marginBottom: '0.35rem',
-              }}
-            >
-              Overall Readiness Index
-            </div>
-            <div
-              style={{
                 display: 'flex',
-                alignItems: 'baseline',
-                gap: '0.4rem',
-                marginBottom: '0.4rem',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.45rem',
               }}
             >
               <span
                 style={{
-                  fontSize: '1.6rem',
-                  fontWeight: 800,
-                  fontFamily: 'var(--font-mono)',
-                  color:
-                    estimatedScore >= 80
-                      ? 'var(--color-green)'
-                      : 'var(--cerebrium-magenta)',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
                 }}
               >
-                {estimatedScore}%
+                Assessment Progress
               </span>
               <span
                 style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color:
-                    estimatedScore >= 80
-                      ? 'var(--color-green)'
-                      : 'var(--cerebrium-magenta)',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  color: completionPct === 100 ? 'var(--color-green-dark)' : 'var(--color-sky)',
                 }}
               >
-                {estimatedScore >= 80 ? '• Audit-Ready' : '• In Progress'}
+                {completionPct}%
               </span>
             </div>
-            {/* Shimmer Bar */}
+
+            {/* Progress Track */}
             <div
               style={{
                 height: '6px',
-                backgroundColor: 'rgba(12, 16, 39, 0.08)',
+                backgroundColor: 'rgba(2, 132, 199, 0.1)',
                 borderRadius: '3px',
                 overflow: 'hidden',
+                marginBottom: '0.75rem',
               }}
             >
               <div
                 style={{
-                  width: `${(totalAnsweredAllPillars / Math.max(totalQuestionsAllPillars, 1)) * 100}%`,
                   height: '100%',
+                  width: `${completionPct}%`,
                   backgroundColor:
-                    estimatedScore >= 80
-                      ? 'var(--color-green)'
-                      : 'var(--cerebrium-magenta)',
-                  transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    completionPct === 100 ? 'var(--color-green)' : 'var(--color-sky)',
+                  transition: 'width 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               />
             </div>
+
             <div
               style={{
-                fontSize: '0.7rem',
-                color: 'var(--text-muted)',
-                marginTop: '0.35rem',
                 display: 'flex',
                 justifyContent: 'space-between',
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)',
+                lineHeight: 1.4,
               }}
             >
-              <span>Completion:</span>
-              <span style={{ fontWeight: 700 }}>
-                {totalAnsweredAllPillars}/{totalQuestionsAllPillars} clauses
+              <span>Clauses Answered:</span>
+              <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                {totalAnsweredAllPillars} of {totalQuestionsAllPillars}
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)',
+                marginTop: '0.35rem',
+                lineHeight: 1.4,
+              }}
+            >
+              <span>Estimated Conformity:</span>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color:
+                    estimatedScore >= 80 ? 'var(--color-green-dark)' : 'var(--color-sky)',
+                }}
+              >
+                {estimatedScore}% {estimatedScore >= 80 ? '• Audit-Ready' : '• In Progress'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* ── Right Column: Cerebrium Interactive Question Stage ───────────── */}
+        {/* ── Right Column: Interactive Question Presentation Stage ───────────── */}
         <div className="cerebrium-question-stage">
           <div>
-            {/* Top Step Dots Row */}
+            {/* Top Step Dots & Clause Identifiers */}
             <div
               style={{
                 display: 'flex',
@@ -337,11 +322,11 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
             >
               <div className="cerebrium-step-dots-row">
                 {currentQuestions.map((q, idx) => {
-                  const qAns = answers[q.id || q.questionId || ''];
+                  const qAns = answers[q.questionId || q.id || ''];
                   const isDotActive = idx === activeQuestionIdx;
                   return (
                     <div
-                      key={q.id || idx}
+                      key={q.questionId || q.id || idx}
                       onClick={() => setActiveQuestionIdx(idx)}
                       className={`cerebrium-step-dot ${isDotActive ? 'active' : ''} ${
                         qAns ? 'completed' : ''
@@ -352,17 +337,17 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                 })}
               </div>
 
-              {/* Monospace clause identifier badge */}
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              {/* Clean Clause Badges */}
+              <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
                 <span
                   style={{
-                    fontSize: '0.7rem',
-                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.72rem',
                     fontWeight: 700,
-                    color: 'var(--cerebrium-magenta)',
-                    backgroundColor: 'var(--cerebrium-magenta-subtle)',
+                    color: 'var(--color-sky-dark)',
+                    backgroundColor: 'var(--accent-light)',
                     padding: '2px 8px',
                     borderRadius: '4px',
+                    border: '1px solid rgba(2, 132, 199, 0.2)',
                   }}
                 >
                   Clause {currentQId}
@@ -371,11 +356,10 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                   <span
                     key={sIdx}
                     style={{
-                      fontSize: '0.68rem',
-                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.7rem',
                       fontWeight: 600,
-                      color: 'var(--cerebrium-ink-navy)',
-                      backgroundColor: '#ffffff',
+                      color: 'var(--text-muted)',
+                      backgroundColor: 'var(--bg-subtle)',
                       border: '1px solid var(--border-light)',
                       padding: '2px 8px',
                       borderRadius: '4px',
@@ -387,14 +371,11 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
               </div>
             </div>
 
-            {/* Question Animated Presentation Box */}
+            {/* Question Animated Presentation Stage */}
             <div
-              key={`${currentPillar.pillarId}_${currentQId}`}
+              key={`${activePillarIdx}_${activeQuestionIdx}`}
               style={{
-                animation:
-                  slideDirection === 'right'
-                    ? 'stepSlideInFromRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) both'
-                    : 'stepSlideInFromLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) both',
+                animation: 'saasQuestionFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both',
               }}
             >
               {/* Question Headline */}
@@ -407,24 +388,24 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                 <div
                   style={{
                     fontSize: '0.82rem',
-                    color: 'var(--cerebrium-slate-text)',
-                    backgroundColor: '#ffffff',
+                    color: 'var(--text-muted)',
+                    backgroundColor: 'var(--bg-subtle)',
                     border: '1px solid var(--border-light)',
-                    borderLeft: '3px solid var(--cerebrium-magenta)',
+                    borderLeft: '3px solid var(--color-sky)',
                     borderRadius: '6px',
-                    padding: '0.65rem 0.95rem',
-                    marginBottom: '1rem',
+                    padding: '0.75rem 1rem',
+                    marginBottom: '1.25rem',
                     lineHeight: 1.5,
                   }}
                 >
-                  <strong style={{ color: 'var(--cerebrium-ink-navy)' }}>
+                  <strong style={{ color: 'var(--text-main)' }}>
                     Statutory Evidence Requirement:
                   </strong>{' '}
                   {currentQuestion.evidenceRequired}
                 </div>
               )}
 
-              {/* Cerebrium 4 Hotkey Option Cards */}
+              {/* 4 Interactive Option Cards */}
               <div
                 className="cerebrium-options-grid"
                 role="radiogroup"
@@ -455,33 +436,17 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                 })}
               </div>
 
-              {/* Cerebrium Terminal Card (Active Evidence Stream) */}
+              {/* Continuous Telemetry & Audit Evidence Stream Panel */}
               <div className="cerebrium-terminal-card">
                 <div className="cerebrium-terminal-header">
-                  <div className="cerebrium-terminal-dots">
-                    <div
-                      className="cerebrium-terminal-dot"
-                      style={{ backgroundColor: '#ef4444' }}
-                    />
-                    <div
-                      className="cerebrium-terminal-dot"
-                      style={{ backgroundColor: '#f59e0b' }}
-                    />
-                    <div
-                      className="cerebrium-terminal-dot"
-                      style={{ backgroundColor: '#10b981' }}
-                    />
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <span className="radar-pulse" style={{ width: '7px', height: '7px' }} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      Continuous Audit Trail &amp; Telemetry Sync
+                    </span>
                   </div>
-                  <span
-                    style={{
-                      fontSize: '0.68rem',
-                      fontFamily: 'var(--font-mono)',
-                      color: '#94a3b8',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                    }}
-                  >
-                    continuous-assurance-engine://telemetry/node-uk01
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    Node UK-01 · Active
                   </span>
                 </div>
                 <div className="cerebrium-terminal-code">
@@ -493,16 +458,13 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                     Clause Conformance Matrix Synced
                   </div>
                   <div>
-                    <span className="cerebrium-terminal-success">✓</span> Telemetry
-                    Feed:{' '}
-                    <span style={{ color: '#ffffff' }}>Active</span> (Node UK-01, 15-min
-                    statutory interval)
+                    <span className="cerebrium-terminal-success">✓</span> Telemetry Stream:{' '}
+                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Healthy</span> (15-min statutory verification epoch)
                   </div>
                   {currentSelectedAnswer && (
-                    <div style={{ marginTop: '0.2rem' }}>
-                      <span className="cerebrium-terminal-success">⚡</span> Attested
-                      Status:{' '}
-                      <span style={{ color: 'var(--cerebrium-magenta)' }}>
+                    <div style={{ marginTop: '0.25rem' }}>
+                      <span className="cerebrium-terminal-success">⚡</span> Attested Conformance:{' '}
+                      <span style={{ color: 'var(--color-sky-dark)', fontWeight: 700 }}>
                         "{currentSelectedAnswer}"
                       </span>
                     </div>
@@ -530,11 +492,10 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                 type="button"
                 disabled={activeQuestionIdx === 0 && activePillarIdx === 0}
                 onClick={goToPrev}
-                className="cerebrium-btn-ghost"
+                className="btn btn-secondary"
                 style={{
-                  backgroundColor: '#ffffff',
-                  color: 'var(--cerebrium-ink-navy)',
-                  borderColor: 'var(--border-medium)',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.82rem',
                 }}
               >
                 ← Previous
@@ -542,7 +503,6 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
               <span
                 style={{
                   fontSize: '0.72rem',
-                  fontFamily: 'var(--font-mono)',
                   color: 'var(--text-muted)',
                 }}
               >
@@ -555,7 +515,7 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                 <button
                   type="button"
                   onClick={onProceedToCheckout}
-                  className="cerebrium-btn-magenta"
+                  className="btn btn-primary"
                   style={{ padding: '0.65rem 1.65rem', fontSize: '0.85rem' }}
                 >
                   <span>
@@ -569,7 +529,7 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                   type="button"
                   disabled={!currentSelectedAnswer}
                   onClick={goToNext}
-                  className="cerebrium-btn-magenta"
+                  className="btn btn-primary"
                   style={{
                     padding: '0.65rem 1.65rem',
                     fontSize: '0.85rem',
