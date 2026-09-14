@@ -514,16 +514,30 @@ export const Layout: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
-                      <NavLink to="/portal" className="nav-link" onClick={closeDropdowns}>
-                        My Dashboard
-                      </NavLink>
-                      <Link to="/portal?tab=evidence" className="nav-link" onClick={closeDropdowns}>
-                        Evidence Locker ↗
-                      </Link>
-                      {isAdmin && (
-                        <NavLink to="/admin" className="nav-link" onClick={closeDropdowns}>
-                          Admin Config
-                        </NavLink>
+                      {isAdmin ? (
+                        <>
+                          <NavLink to="/admin" className="nav-link" onClick={closeDropdowns}>
+                            Admin Console
+                          </NavLink>
+                          <NavLink to="/admin?tab=SUBMISSIONS" className="nav-link" onClick={closeDropdowns}>
+                            Audit Review Queue
+                          </NavLink>
+                          <NavLink to="/admin?tab=SPLITS" className="nav-link" onClick={closeDropdowns}>
+                            Statutory ESG Splits
+                          </NavLink>
+                          <NavLink to="/admin?tab=DEMOS" className="nav-link" onClick={closeDropdowns}>
+                            Demo Inquiries
+                          </NavLink>
+                        </>
+                      ) : (
+                        <>
+                          <NavLink to="/portal" className="nav-link" onClick={closeDropdowns}>
+                            My Dashboard
+                          </NavLink>
+                          <Link to="/portal?tab=evidence" className="nav-link" onClick={closeDropdowns}>
+                            Evidence Locker ↗
+                          </Link>
+                        </>
                       )}
                       <button
                         onClick={() => { closeDropdowns(); logout(); }}
@@ -618,29 +632,55 @@ export const Layout: React.FC = () => {
                       </div>
 
                       <div className="google-popover-menu">
-                        <NavLink
-                          to="/portal"
-                          className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
-                          onClick={() => setAccountMenuOpen(false)}
-                        >
-                          <span>My Dashboard</span>
-                        </NavLink>
-                        <Link
-                          to="/portal?tab=evidence"
-                          className="google-popover-link"
-                          onClick={() => setAccountMenuOpen(false)}
-                        >
-                          <span>Evidence Locker</span>
-                          <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-                        </Link>
-                        {isAdmin && (
-                          <NavLink
-                            to="/admin"
-                            className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
-                            onClick={() => setAccountMenuOpen(false)}
-                          >
-                            <span>Admin Config</span>
-                          </NavLink>
+                        {isAdmin ? (
+                          <>
+                            <NavLink
+                              to="/admin"
+                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Admin Console</span>
+                            </NavLink>
+                            <NavLink
+                              to="/admin?tab=SUBMISSIONS"
+                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Audit Review Queue</span>
+                            </NavLink>
+                            <NavLink
+                              to="/admin?tab=SPLITS"
+                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Statutory ESG Splits</span>
+                            </NavLink>
+                            <NavLink
+                              to="/admin?tab=DEMOS"
+                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Demo Inquiries</span>
+                            </NavLink>
+                          </>
+                        ) : (
+                          <>
+                            <NavLink
+                              to="/portal"
+                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>My Dashboard</span>
+                            </NavLink>
+                            <Link
+                              to="/portal?tab=evidence"
+                              className="google-popover-link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Evidence Locker</span>
+                              <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
+                            </Link>
+                          </>
                         )}
                       </div>
 
@@ -668,11 +708,11 @@ export const Layout: React.FC = () => {
             ) : isAuthenticated ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                 <NavLink
-                  to="/portal"
+                  to={isAdmin ? '/admin' : '/portal'}
                   className="btn btn-primary"
                   style={{ padding: '0.42rem 1rem', fontSize: '0.82rem', fontWeight: 700 }}
                 >
-                  My Dashboard →
+                  {isAdmin ? 'Admin Console →' : 'My Dashboard →'}
                 </NavLink>
 
                 {/* Google Account Profile Button */}
@@ -715,29 +755,55 @@ export const Layout: React.FC = () => {
                       </div>
 
                       <div className="google-popover-menu">
-                        <NavLink
-                          to="/portal"
-                          className="google-popover-link"
-                          onClick={() => setAccountMenuOpen(false)}
-                        >
-                          <span>My Dashboard</span>
-                        </NavLink>
-                        <Link
-                          to="/portal?tab=evidence"
-                          className="google-popover-link"
-                          onClick={() => setAccountMenuOpen(false)}
-                        >
-                          <span>Evidence Locker</span>
-                          <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-                        </Link>
-                        {isAdmin && (
-                          <NavLink
-                            to="/admin"
-                            className="google-popover-link"
-                            onClick={() => setAccountMenuOpen(false)}
-                          >
-                            <span>Admin Config</span>
-                          </NavLink>
+                        {isAdmin ? (
+                          <>
+                            <NavLink
+                              to="/admin"
+                              className="google-popover-link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Admin Console</span>
+                            </NavLink>
+                            <NavLink
+                              to="/admin?tab=SUBMISSIONS"
+                              className="google-popover-link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Audit Review Queue</span>
+                            </NavLink>
+                            <NavLink
+                              to="/admin?tab=SPLITS"
+                              className="google-popover-link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Statutory ESG Splits</span>
+                            </NavLink>
+                            <NavLink
+                              to="/admin?tab=DEMOS"
+                              className="google-popover-link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Demo Inquiries</span>
+                            </NavLink>
+                          </>
+                        ) : (
+                          <>
+                            <NavLink
+                              to="/portal"
+                              className="google-popover-link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>My Dashboard</span>
+                            </NavLink>
+                            <Link
+                              to="/portal?tab=evidence"
+                              className="google-popover-link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <span>Evidence Locker</span>
+                              <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
+                            </Link>
+                          </>
                         )}
                       </div>
 
@@ -793,7 +859,29 @@ export const Layout: React.FC = () => {
         <Outlet />
       </main>
 
-      <Footer />
+      {isConsoleView ? (
+        <footer className="console-minimal-footer">
+          <div className="console-minimal-footer-inner">
+            <div className="console-footer-left">
+              <span className="console-status-dot" />
+              <span>GHGEmissionLogs Telemetry & Assurance Infrastructure</span>
+              <span className="console-footer-sep">•</span>
+              <span>Node UK-01 Operational</span>
+              <span className="console-footer-sep">•</span>
+              <span>UKIPO Trade Mark UK00003980004</span>
+            </div>
+            <div className="console-footer-right">
+              <span>ISO 14064-1:2018 Attested</span>
+              <span className="console-footer-sep">•</span>
+              <span>ISO 19011:2026 Audit Ready</span>
+              <span className="console-footer-sep">•</span>
+              <span>© 2026 NFTY LOGS LABS LTD</span>
+            </div>
+          </div>
+        </footer>
+      ) : (
+        <Footer />
+      )}
     </div>
   );
 };

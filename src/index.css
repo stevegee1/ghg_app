@@ -814,6 +814,49 @@ h4 {
   vertical-align: middle;
 }
 
+/* Minimal Console Footer for Enterprise SaaS Admin & Portal */
+.console-minimal-footer {
+  width: 100%;
+  background: var(--bg-surface, #ffffff);
+  border-top: 1px solid var(--border-light, #e2e8f0);
+  padding: 0.85rem 1.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+  margin-top: auto;
+}
+
+.console-minimal-footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.console-footer-left,
+.console-footer-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.console-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.6);
+}
+
+.console-footer-sep {
+  color: var(--border-light, #cbd5e1);
+  font-size: 0.7rem;
+}
+
 @media (max-width: 1100px) {
   .navbar-console-mode .navbar-actions-desktop {
     display: flex !important;
@@ -3972,56 +4015,64 @@ h4 {
 }
 
 .cerebrium-option-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.95rem 1.25rem;
-  background-color: #ffffff;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 10px;
   cursor: pointer;
   user-select: none;
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .cerebrium-option-card:hover {
-  border-color: var(--color-sky);
-  background-color: #f8fafc;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px -2px rgba(2, 132, 199, 0.12);
+  border-color: var(--cerebrium-magenta, #ff2d8d);
+  background-color: rgba(255, 45, 141, 0.03);
+  transform: translateY(-2px) scale(1.006);
+  box-shadow: 0 6px 18px -3px rgba(255, 45, 141, 0.18);
 }
 
 .cerebrium-option-card:active {
-  transform: scale(0.99);
+  transform: scale(0.985);
 }
 
 .cerebrium-option-card.selected-compliant {
-  border-color: var(--color-sky);
-  background-color: rgba(2, 132, 199, 0.04);
-  box-shadow: 0 0 0 1px var(--color-sky), 0 2px 8px -1px rgba(2, 132, 199, 0.18);
+  border-color: var(--cerebrium-magenta, #ff2d8d);
+  background: linear-gradient(135deg, rgba(255, 45, 141, 0.06) 0%, rgba(2, 132, 199, 0.04) 100%);
+  box-shadow: 0 0 0 1.5px var(--cerebrium-magenta, #ff2d8d), 0 4px 16px rgba(255, 45, 141, 0.22);
 }
 
 .cerebrium-keycap-pill {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-medium);
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background-color: var(--bg-subtle, #f1f5f9);
+  border: 1px solid var(--border-medium, #cbd5e1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  color: var(--text-main);
+  color: var(--text-main, #0f172a);
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cerebrium-option-card:hover .cerebrium-keycap-pill {
+  border-color: var(--cerebrium-magenta, #ff2d8d);
+  color: var(--cerebrium-magenta, #ff2d8d);
 }
 
 .cerebrium-option-card.selected-compliant .cerebrium-keycap-pill {
-  background-color: var(--color-sky);
-  border-color: var(--color-sky);
+  background-color: var(--cerebrium-magenta, #ff2d8d);
+  border-color: var(--cerebrium-magenta, #ff2d8d);
   color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 45, 141, 0.5);
+  transform: scale(1.08);
 }
 
 .cerebrium-option-label {
@@ -4032,9 +4083,24 @@ h4 {
 }
 
 .cerebrium-option-radio-indicator {
-  font-size: 0.85rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
   font-weight: 800;
-  color: var(--color-sky);
+  border: 1.5px solid var(--border-medium, #cbd5e1);
+  color: transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cerebrium-option-card.selected-compliant .cerebrium-option-radio-indicator {
+  border-color: var(--cerebrium-magenta, #ff2d8d);
+  background-color: var(--cerebrium-magenta, #ff2d8d);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 45, 141, 0.45);
 }
 
 /* Daylight Compliance Telemetry Stream Box */
@@ -4127,16 +4193,152 @@ h4 {
   color: var(--text-muted);
 }
 
-/* SaaS Standard Question Fade-In Animation */
-@keyframes saasQuestionFadeIn {
-  from {
+/* Proof Document Attachment Section */
+.cerebrium-evidence-uploader {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  background-color: var(--bg-card);
+  border: 1px dashed var(--border-light);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cerebrium-evidence-uploader:hover {
+  border-color: var(--color-sky);
+  background-color: var(--bg-subtle);
+}
+
+.cerebrium-evidence-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.85rem;
+  margin-top: 0.5rem;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cerebrium-evidence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-green-dark);
+  background-color: rgba(16, 185, 129, 0.12);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+/* Recent Audits Table & Hub */
+.recent-audits-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-xs);
+}
+
+.recent-audits-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.recent-audits-table th {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.recent-audits-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.recent-audits-table tr:last-child td {
+  border-bottom: none;
+}
+
+.recent-audits-table tr:hover td {
+  background-color: var(--bg-subtle);
+}
+
+/* ── Cerebrium AI Kinetic 3D Swing Transitions ── */
+.cerebrium-question-viewport {
+  perspective: 1200px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+@keyframes cerebriumSwingNext {
+  0% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: perspective(1200px) translate3d(55px, 0, -30px) rotateY(-8deg) scale(0.96);
+    filter: blur(1px);
   }
-  to {
+  60% {
+    opacity: 0.95;
+    transform: perspective(1200px) translate3d(-4px, 0, 4px) rotateY(1deg) scale(1.005);
+    filter: blur(0);
+  }
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: perspective(1200px) translate3d(0, 0, 0) rotateY(0deg) scale(1);
+    filter: none;
   }
+}
+
+@keyframes cerebriumSwingPrev {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) translate3d(-55px, 0, -30px) rotateY(8deg) scale(0.96);
+    filter: blur(1px);
+  }
+  60% {
+    opacity: 0.95;
+    transform: perspective(1200px) translate3d(4px, 0, 4px) rotateY(-1deg) scale(1.005);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) translate3d(0, 0, 0) rotateY(0deg) scale(1);
+    filter: none;
+  }
+}
+
+.cerebrium-swing-next {
+  animation: cerebriumSwingNext 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+}
+
+.cerebrium-swing-prev {
+  animation: cerebriumSwingPrev 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+}
+
+/* Cerebrium Laser Track Progress */
+.cerebrium-laser-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ff2d8d 0%, #0284c7 50%, #10b981 100%);
+  box-shadow: 0 0 10px rgba(255, 45, 141, 0.5);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 
@@ -6033,3 +6235,23 @@ h4 {
     border-radius: 12px;
   }
 }
+
+/* ── Web Trust Seal & Embed Builder (Google SaaS Standard) ────────────────── */
+.embed-builder-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.embed-builder-card code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85em;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  background-color: var(--bg-subtle, rgba(0, 0, 0, 0.05));
+}
+
+@media (max-width: 640px) {
+  .embed-builder-card {
+    padding: 1.25rem !important;
+  }
+}
+

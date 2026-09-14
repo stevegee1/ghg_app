@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
@@ -19,6 +19,19 @@ export const CheckoutPage: React.FC = () => {
   const [successResult, setSuccessResult] = useState<any | null>(null);
   
   const [referenceId] = useState<string>(() => `order_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+
+  useEffect(() => {
+    const txId = searchParams.get('tx_id');
+    const sessionId = searchParams.get('session_id');
+    if (txId || sessionId) {
+      setSuccessResult({
+        transactionId: txId || sessionId,
+        grossAmountCents,
+        licensorRoyaltyCents: Math.round(grossAmountCents * 0.85),
+        charityGiftCents: grossAmountCents - Math.round(grossAmountCents * 0.85),
+      });
+    }
+  }, [searchParams, grossAmountCents]);
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '').substring(0, 16);

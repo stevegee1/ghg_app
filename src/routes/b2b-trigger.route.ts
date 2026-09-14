@@ -3,6 +3,7 @@ import { PrismaClient, VerificationSource, DeliveryType, PeriodType, ReportSourc
 import * as bcrypt from 'bcrypt';
 import { CheckoutService } from '../services/checkout.service';
 import { validateAttestationNote } from '../services/transaction.service';
+import { runWithRls } from '../db/rls';
 
 export function createB2bTriggerRouter(checkoutService: CheckoutService, prisma: PrismaClient): Router {
   const router = Router();
@@ -195,17 +196,19 @@ export function createB2bTriggerRouter(checkoutService: CheckoutService, prisma:
     }
 
     try {
-      const report = await prisma.jobCreationReport.create({
-        data: {
-          licenseeId: licensee.id,
-          periodType,
-          periodStart: startDate,
-          periodEnd: endDate,
-          jobsCreated,
-          reportSource: ReportSource.THIRD_PARTY_API,
-          attestationNote: finalNote,
-          submittedByUserId: null,
-        },
+      const report = await runWithRls(prisma, { role: 'PARTNER', licenseeId: licensee.id }, async (tx) => {
+        return tx.jobCreationReport.create({
+          data: {
+            licenseeId: licensee.id,
+            periodType,
+            periodStart: startDate,
+            periodEnd: endDate,
+            jobsCreated,
+            reportSource: ReportSource.THIRD_PARTY_API,
+            attestationNote: finalNote,
+            submittedByUserId: null,
+          },
+        });
       });
 
       return res.status(201).json(report);

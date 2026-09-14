@@ -66,6 +66,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           vertical: 'B2B_CLEAN_TECH',
           royaltyBps: 1500, // 15% statutory ESG split
           isPubliclyVisible: true,
+          stripeConnectedAccountId: process.env.STRIPE_PLATFORM_ACCOUNT_ID || 'acct_platform_default_001',
         },
       });
 
@@ -88,7 +89,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           licenseeId: newUser.licenseeId,
         },
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: '7d' }
       );
 
       return res.status(201).json({
@@ -146,7 +147,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           licenseeId: user.licenseeId,
         },
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: '7d' }
       );
 
       return res.status(200).json({

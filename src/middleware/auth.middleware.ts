@@ -1,7 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_key_change_in_prod';
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable must be set in production.');
+}
+
+export const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? '' : 'dev_jwt_secret_key_change_in_prod');
 
 export interface AuthenticatedUser {
   userId: string;

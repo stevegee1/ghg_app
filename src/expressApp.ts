@@ -17,11 +17,15 @@ import { createIsoLegalRouter } from './routes/iso-legal.route';
 import { createJobReportingRouter } from './routes/job-reporting.route';
 import { createOrdersRouter } from './routes/orders.route';
 import { createCharitiesRouter } from './routes/charities.route';
+import { createAdminCharitiesRouter } from './routes/admin-charities.route';
 import { createIsoReadinessRouter } from './routes/iso-readiness.route';
 import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { createDemoBookingRouter } from './routes/demo-booking.route';
+import { createWorkflowRouter } from './routes/workflow.route';
 import { CheckoutService } from './services/checkout.service';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 export function createApp(stripeInstance?: Stripe): Express {
   const app = express();
@@ -44,8 +48,67 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(express.static(path.join(process.cwd(), 'public')));
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+  // Security headers via Helmet (configured to allow Vite scripts and cross-origin badge embeds)
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+  );
+
+  // Rate Limiting: Granular limiters per endpoint class
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests from this IP, please try again later.' },
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 50,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many authentication attempts, please try again later.' },
+  });
+
+  const webhookLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many webhook events from this source.' },
+  });
+
+  const telemetryLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 2000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Telemetry stream rate limit exceeded.' },
+  });
+
+  const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'File upload rate limit exceeded. Please wait before uploading more files.' },
+  });
+
+  app.use('/api/', apiLimiter);
+  app.use('/api/auth/', authLimiter);
+  app.use('/webhooks/stripe', webhookLimiter);
+  app.use('/api/iso/telemetry', telemetryLimiter);
+  app.use('/api/portal/iso/evidence/upload', uploadLimiter);
+  app.use('/api/portal/iso/evidence/upload-file', uploadLimiter);
+  app.use('/api/credentials/compose', uploadLimiter);
+  app.use('/api/credentials/mint', uploadLimiter);
+
   // Use raw body parsing strictly for the webhook route
-  app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
+  app.use('/webhooks/stripe', express.raw({ type: '*/*' }));
 
   // Use JSON body parsing for all standard API routes
   app.use(express.json());
@@ -70,10 +133,12 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createJobReportingRouter(prisma));
   app.use(createOrdersRouter(prisma));
   app.use(createCharitiesRouter(prisma));
+  app.use(createAdminCharitiesRouter(prisma, stripe));
   app.use(createIsoReadinessRouter(prisma, checkoutService));
   app.use(createCredentialsRouter(prisma));
   app.use(createBadgeEmbedRouter(prisma));
   app.use(createDemoBookingRouter(prisma));
+  app.use(createWorkflowRouter(prisma, checkoutService));
 
   // SPA Wildcard fallback: serve index.html for all non-API routes
   app.get('*', (req, res) => {

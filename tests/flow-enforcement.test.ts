@@ -60,6 +60,16 @@ afterAll(async () => {
   if (testLicenseeId) {
     await prisma.auditWarrantyCredential.deleteMany({ where: { licenseeId: testLicenseeId } });
     await prisma.isoReadinessSubmission.deleteMany({ where: { licenseeId: testLicenseeId } });
+    const txs = await prisma.transaction.findMany({ where: { licenseeId: testLicenseeId }, select: { id: true } });
+    const txIds = txs.map((t) => t.id);
+    if (txIds.length > 0) {
+      await prisma.charityAllocation.deleteMany({ where: { financialSplit: { transactionId: { in: txIds } } } });
+      await prisma.financialSplit.deleteMany({ where: { transactionId: { in: txIds } } });
+      await prisma.triggerEvent.deleteMany({ where: { transactionId: { in: txIds } } });
+      await prisma.customKeepsakeSpec.deleteMany({ where: { transactionId: { in: txIds } } });
+      await prisma.souvenirOrder.deleteMany({ where: { transactionId: { in: txIds } } });
+      await prisma.transaction.deleteMany({ where: { id: { in: txIds } } });
+    }
     await prisma.licensee.deleteMany({ where: { id: testLicenseeId } });
   }
   await prisma.$disconnect();

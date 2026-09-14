@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, PeriodType, ReportSource } from '@prisma/client';
 import crypto from 'crypto';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { runWithRls } from '../db/rls';
 
 export function createJobReportingRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -113,17 +114,19 @@ export function createJobReportingRouter(prisma: PrismaClient): Router {
       const parsedStart = periodStart ? new Date(periodStart) : new Date(new Date().getFullYear(), 0, 1);
       const parsedEnd = periodEnd ? new Date(periodEnd) : new Date(new Date().getFullYear(), 2, 31);
 
-      const report = await prisma.jobCreationReport.create({
-        data: {
-          licenseeId,
-          submittedByUserId: userId,
-          periodType: periodType === 'ANNUAL' ? PeriodType.ANNUAL : PeriodType.QUARTERLY,
-          periodStart: parsedStart,
-          periodEnd: parsedEnd,
-          jobsCreated: Number(jobsCreated) || 0,
-          reportSource: ReportSource.MANUAL_ATTESTATION,
-          attestationNote: attestationNote || 'Verified under UK Section 106 & Social Value Protocol',
-        },
+      const report = await runWithRls(prisma, req.user!, async (tx) => {
+        return tx.jobCreationReport.create({
+          data: {
+            licenseeId,
+            submittedByUserId: userId,
+            periodType: periodType === 'ANNUAL' ? PeriodType.ANNUAL : PeriodType.QUARTERLY,
+            periodStart: parsedStart,
+            periodEnd: parsedEnd,
+            jobsCreated: Number(jobsCreated) || 0,
+            reportSource: ReportSource.MANUAL_ATTESTATION,
+            attestationNote: attestationNote || 'Verified under UK Section 106 & Social Value Protocol',
+          },
+        });
       });
 
       return res.status(201).json({
@@ -133,6 +136,26 @@ export function createJobReportingRouter(prisma: PrismaClient): Router {
     } catch (err) {
       console.error('[JOB REPORT ERROR]', err);
       return res.status(500).json({ error: 'Failed to record job creation report' });
+    }
+  });
+
+  /**
+   * GET /api/jobs/reports
+   * Retrieves RLS-scoped job creation reports for caller's licensee.
+   */
+  router.get('/api/jobs/reports', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    try {
+      const reports = await runWithRls(prisma, user, async (tx) => {
+        return tx.jobCreationReport.findMany({
+          where: user.role === 'ADMIN' ? {} : { licenseeId: user.licenseeId || '' },
+          orderBy: { createdAt: 'desc' },
+        });
+      });
+      return res.status(200).json({ reports });
+    } catch (err) {
+      console.error('[GET JOB REPORTS ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve job creation reports' });
     }
   });
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { RiskSpeedometer } from '../components/RiskSpeedometer';
 import { CmaClaimsLinter } from '../components/CmaClaimsLinter';
 import { CerebriumAnimatedHeroBackground } from '../components/CerebriumAnimatedHeroBackground';
 
 export const LandingPage: React.FC = () => {
+  const { isAuthenticated, isAdmin } = useAuth();
   const [ledgerData, setLedgerData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeDemoTab, setActiveDemoTab] = useState<'CALIBRATION' | 'ANOMALY' | 'SCORECARD' | 'CMA' | 'JOBS'>('CALIBRATION');
@@ -112,30 +114,47 @@ export const LandingPage: React.FC = () => {
               {/* Action Buttons & Statutory Badges (Cerebrium Action Pair) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Link
-                    to="/create-account"
-                    className="cerebrium-btn-magenta"
-                    style={{
-                      padding: '0.85rem 2.2rem',
-                      fontSize: '0.9375rem',
-                      letterSpacing: '0.06em',
-                    }}
-                  >
-                    <span>CREATE ACCOUNT</span>
-                    <span style={{ marginLeft: '0.4rem' }}>→</span>
-                  </Link>
+                  {isAuthenticated ? (
+                    <Link
+                      to={isAdmin ? '/admin' : '/portal'}
+                      className="cerebrium-btn-magenta"
+                      style={{
+                        padding: '0.85rem 2.2rem',
+                        fontSize: '0.9375rem',
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      <span>{isAdmin ? 'OPEN ADMIN CONSOLE' : 'GO TO MY DASHBOARD'}</span>
+                      <span style={{ marginLeft: '0.4rem' }}>→</span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        to="/create-account"
+                        className="cerebrium-btn-magenta"
+                        style={{
+                          padding: '0.85rem 2.2rem',
+                          fontSize: '0.9375rem',
+                          letterSpacing: '0.06em',
+                        }}
+                      >
+                        <span>CREATE ACCOUNT</span>
+                        <span style={{ marginLeft: '0.4rem' }}>→</span>
+                      </Link>
 
-                  <Link
-                    to="/portal/login"
-                    className="cerebrium-btn-ghost"
-                    style={{
-                      padding: '0.85rem 1.85rem',
-                      fontSize: '0.9375rem',
-                      letterSpacing: '0.06em',
-                    }}
-                  >
-                    <span>SIGN IN TO CONSOLE</span>
-                  </Link>
+                      <Link
+                        to="/portal/login"
+                        className="cerebrium-btn-ghost"
+                        style={{
+                          padding: '0.85rem 1.85rem',
+                          fontSize: '0.9375rem',
+                          letterSpacing: '0.06em',
+                        }}
+                      >
+                        <span>SIGN IN TO CONSOLE</span>
+                      </Link>
+                    </>
+                  )}
                 </div>
 
                 {/* Statutory Credentials Bar */}

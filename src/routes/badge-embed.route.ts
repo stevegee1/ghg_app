@@ -11,6 +11,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { LicenseWarrantyService } from '../services/license-warranty.service';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { runWithRls } from '../db/rls';
 
 export function createBadgeEmbedRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -179,7 +180,9 @@ export function createBadgeEmbedRouter(prisma: PrismaClient): Router {
     }
 
     try {
-      const updated = await warrantyService.updateAllowedOrigins(user.licenseeId, allowedOrigins);
+      const updated = await runWithRls(prisma, user, async (tx) => {
+        return warrantyService.updateAllowedOrigins(user.licenseeId, allowedOrigins, tx);
+      });
       return res.status(200).json({ success: true, allowedOrigins: updated.allowedOrigins });
     } catch (err: any) {
       return res.status(500).json({ error: err.message || 'Failed to update allowed origins.' });

@@ -14,6 +14,7 @@ export interface RegisterEvidenceInput {
   fileBuffer?: Buffer;
   providedHash?: string;
   uploadedBy: string;
+  userScope?: UserAuthScope;
 }
 
 export class EvidenceLockerService {
@@ -38,9 +39,13 @@ export class EvidenceLockerService {
       uploadedBy,
     } = input;
 
-    if (!licenseeId || !fileName || !category) {
-      throw new Error('Invalid input: licenseeId, fileName, and category are required.');
+    if (!licenseeId || !fileName) {
+      throw new Error('Invalid input: licenseeId and fileName are required.');
     }
+
+    const validCategory = (category && Object.values(EvidenceCategory).includes(category))
+      ? category
+      : EvidenceCategory.OTHER_AUDIT_PROOF;
 
     let calculatedHash = providedHash;
     if (fileBuffer) {
@@ -49,20 +54,26 @@ export class EvidenceLockerService {
       calculatedHash = crypto.createHash('sha256').update(`${licenseeId}_${fileName}_${Date.now()}`).digest('hex');
     }
 
-    return this.prisma.auditEvidenceDocument.create({
-      data: {
-        licenseeId,
-        reportId: reportId || null,
-        matrixRowId: matrixRowId || null,
-        fileName: fileName.trim(),
-        category,
-        fileUrl: fileUrl || `/evidence/${licenseeId}/${fileName.trim()}`,
-        fileSizeBytes: fileSizeBytes || 1024,
-        mimeType: mimeType || 'application/pdf',
-        sha256Hash: calculatedHash,
-        uploadedBy: uploadedBy.trim(),
-      },
-    });
+    const createData = {
+      licenseeId,
+      reportId: reportId || null,
+      matrixRowId: matrixRowId || null,
+      fileName: fileName.trim(),
+      category: validCategory,
+      fileUrl: fileUrl || `/evidence/${licenseeId}/${fileName.trim()}`,
+      fileSizeBytes: fileSizeBytes || 1024,
+      mimeType: mimeType || 'application/pdf',
+      sha256Hash: calculatedHash,
+      uploadedBy: uploadedBy.trim(),
+    };
+
+    if (input.userScope) {
+      return runWithRls(this.prisma, input.userScope, async (tx) => {
+        return tx.auditEvidenceDocument.create({ data: createData });
+      });
+    }
+
+    return this.prisma.auditEvidenceDocument.create({ data: createData });
   }
 
   /**

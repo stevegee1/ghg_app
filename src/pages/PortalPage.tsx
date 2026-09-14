@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { useSearchParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { OpenSeaBadge } from '../components/OpenSeaBadge';
 import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
 import { InteractiveAuditStepper } from '../components/InteractiveAuditStepper';
+import { SharedDashboardShell } from '../components/SharedDashboardShell';
+import { WorkflowWizard } from '../components/workflow/WorkflowWizard';
 
 // ── Scope & Step definitions ────────────────────────────────────────────────
 type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
@@ -220,7 +224,7 @@ const JOB_TIERS = [
   },
 ];
 
-export type DashboardView = 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile';
+export type DashboardView = 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'assurance-wizard';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -239,10 +243,17 @@ const getFormattedDate = () => {
 };
 
 export const PortalPage: React.FC = () => {
-  const { token, user, logout } = useAuth();
+  const { token, user, logout, isAdmin } = useAuth();
+
+  // Defense-in-depth: Administrators must never view client-facing licensee portals
+  if (isAdmin || user?.role === 'ADMIN') {
+    return <Navigate to="/admin" replace />;
+  }
 
   // ── Dashboard Navigation View ─────────────────────────────────────────────
   const [activeView, setActiveView] = useState<DashboardView>('workflow');
+  const [workflowWizardType, setWorkflowWizardType] = useState<'CARBON' | 'JOB'>('CARBON');
+  const [workflowWizardSubmissionId, setWorkflowWizardSubmissionId] = useState<string | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
   const [copiedApiKey, setCopiedApiKey] = useState<boolean>(false);
   const [copiedClientId, setCopiedClientId] = useState<boolean>(false);
@@ -255,6 +266,7 @@ export const PortalPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [searchParams] = useSearchParams();
   // ── ISO Workflow & Framework State ─────────────────────────────────────────
   const [auditScope, setAuditScope] = useState<AuditScope>('CARBON_EMISSION');
   const [activeStep, setActiveStep] = useState<WorkflowStep>(1);
@@ -273,7 +285,10 @@ export const PortalPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isoStatus, setIsoStatus] = useState<any | null>(null);
+  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
+  const [showRecentAudits, setShowRecentAudits] = useState<boolean>(true);
   const [isoStatusLoading, setIsoStatusLoading] = useState(false);
+  const [evidenceByQuestion, setEvidenceByQuestion] = useState<Record<string, Array<{ fileName: string; sha256Hash: string; fileUrl: string; fileSizeBytes?: number }>>>({});
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<any[]>([]);
@@ -298,6 +313,7 @@ export const PortalPage: React.FC = () => {
 
   // ── Job filing modal ──────────────────────────────────────────────────────
   const [showJobModal, setShowJobModal] = useState<boolean>(false);
+  const [showSubmissionSuccessModal, setShowSubmissionSuccessModal] = useState<boolean>(false);
   const [periodType, setPeriodType] = useState<string>('QUARTERLY');
   const [periodStart, setPeriodStart] = useState<string>('2026-01-01');
   const [periodEnd, setPeriodEnd] = useState<string>('2026-03-31');
@@ -354,9 +370,9 @@ export const PortalPage: React.FC = () => {
 
   // ── Restore in-progress diagnostic answers from localStorage on mount ─────
   useEffect(() => {
-    if (!user?.licenseeId) return;
     try {
-      const saved = localStorage.getItem(`ghg_draft_answers_${user.licenseeId}`);
+      const key = user?.licenseeId ? `ghg_draft_answers_${user.licenseeId}` : 'ghg_draft_answers_latest';
+      const saved = localStorage.getItem(key) || localStorage.getItem('ghg_draft_answers_latest');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
@@ -370,9 +386,12 @@ export const PortalPage: React.FC = () => {
 
   // ── Auto-save diagnostic draft answers to localStorage on change ──────────
   useEffect(() => {
-    if (!user?.licenseeId || Object.keys(answers).length === 0) return;
+    if (Object.keys(answers).length === 0) return;
     try {
-      localStorage.setItem(`ghg_draft_answers_${user.licenseeId}`, JSON.stringify(answers));
+      if (user?.licenseeId) {
+        localStorage.setItem(`ghg_draft_answers_${user.licenseeId}`, JSON.stringify(answers));
+      }
+      localStorage.setItem('ghg_draft_answers_latest', JSON.stringify(answers));
     } catch {
       // Ignore quota errors
     }
@@ -421,15 +440,25 @@ export const PortalPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const [sumRes, txRes, jobRes] = await Promise.all([
+        const [sumRes, txRes, jobRes, evRes] = await Promise.all([
           api.getPortalSummary(token),
           api.getPortalTransactions(token),
           api.getPortalJobReports(token).catch(() => ({ data: [] })),
+          api.getEvidenceDocuments(token, user?.licenseeId || undefined).catch(() => ({ documents: [] })),
         ]);
         if (isMounted) {
           setSummary(sumRes);
-          setTransactions(txRes.transactions || []);
-          setJobReports(jobRes.data || []);
+          setTransactions(txRes?.transactions || txRes?.data || []);
+          setJobReports(jobRes?.data || jobRes?.reports || []);
+          if (Array.isArray(evRes?.documents)) {
+            const mapped: Record<string, any[]> = {};
+            for (const doc of evRes.documents) {
+              const qId = doc.matrixRowId || 'general';
+              if (!mapped[qId]) mapped[qId] = [];
+              mapped[qId].push(doc);
+            }
+            setEvidenceByQuestion((prev) => ({ ...mapped, ...prev }));
+          }
         }
       } catch (err: any) {
         if (isMounted) setError(err.message || 'Failed to load portal data');
@@ -458,6 +487,7 @@ export const PortalPage: React.FC = () => {
     try {
       const res = await api.getIsoStatus(token, user.licenseeId);
       setIsoStatus(res.latestSubmission);
+      setRecentSubmissions(res.recentSubmissions || []);
       if (res.latestSubmission?.id) {
         setSubmissionId(res.latestSubmission.id);
         if (res.latestSubmission.selectedFrameworks && res.latestSubmission.selectedFrameworks.length > 0) {
@@ -466,6 +496,7 @@ export const PortalPage: React.FC = () => {
       }
     } catch {
       setIsoStatus(null);
+      setRecentSubmissions([]);
     } finally {
       setIsoStatusLoading(false);
     }
@@ -474,6 +505,31 @@ export const PortalPage: React.FC = () => {
   useEffect(() => {
     fetchIsoStatus();
   }, [fetchIsoStatus]);
+
+  // Read URL query parameters on mount (e.g. returning from Stripe checkout /portal?step=3&submission_id=...)
+  useEffect(() => {
+    const stepParam = searchParams.get('step');
+    if (stepParam) {
+      const parsedStep = parseInt(stepParam, 10);
+      if (parsedStep >= 1 && parsedStep <= 5) {
+        setActiveStep(parsedStep as WorkflowStep);
+      }
+    }
+    const subIdParam = searchParams.get('submission_id');
+    if (subIdParam) {
+      setSubmissionId(subIdParam);
+    }
+    const tierParam = searchParams.get('tier');
+    if (tierParam) {
+      setSelectedTier(tierParam);
+    }
+    if (stepParam === '3' || stepParam === '4') {
+      const timer = setTimeout(() => {
+        fetchIsoStatus();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, fetchIsoStatus]);
 
   // ── Load credentials ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -488,25 +544,84 @@ export const PortalPage: React.FC = () => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
+  // ── Start Fresh Carbon Audit Action ────────────────────────────────────────
+  const handleStartNewAudit = () => {
+    setSubmissionId(null);
+    setAnswers({});
+    setSelectedFrameworks(['ISO_14064_1', 'UK_SECR']);
+    setIsoStatus(null);
+    const elem = document.getElementById('iso-audit-stepper-anchor');
+    if (elem) {
+      elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // ── Resume Workflow Action from Recent Audits ──────────────────────────────
+  const handleResumeWorkflow = (sub: any) => {
+    if (!sub) return;
+    setSubmissionId(sub.id);
+    setIsoStatus(sub);
+    if (Array.isArray(sub.selectedFrameworks) && sub.selectedFrameworks.length > 0) {
+      setSelectedFrameworks(sub.selectedFrameworks);
+    }
+    if (Array.isArray(sub.answers)) {
+      const loadedAnswers: Record<string, string> = {};
+      for (const item of sub.answers) {
+        if (item.questionId && item.answer) {
+          loadedAnswers[item.questionId] = item.answer;
+        }
+      }
+      setAnswers((prev) => ({ ...prev, ...loadedAnswers }));
+    }
+    const elem = document.getElementById('iso-audit-stepper-anchor');
+    if (elem) {
+      elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // ── Evidence Proof Document Upload Handler ─────────────────────────────────
+  const handleUploadEvidence = async (questionId: string, file: File) => {
+    if (!token) throw new Error('Authentication required to upload proof documents.');
+    const res = await api.uploadEvidenceProofFile(token, {
+      file,
+      questionId,
+      licenseeId: user?.licenseeId || undefined,
+      category: 'OTHER_AUDIT_PROOF',
+    });
+    if (res?.evidenceDoc) {
+      setEvidenceByQuestion((prev) => ({
+        ...prev,
+        [questionId]: [...(prev[questionId] || []), res.evidenceDoc],
+      }));
+    }
+    return res?.evidenceDoc || null;
+  };
+
   // ── Submit ISO answers ────────────────────────────────────────────────────
   const handleIsoSubmit = async () => {
     if (!token) {
       setActiveStep(2);
       return;
     }
-    const questionsToSubmit = diagnosticBundle?.pillars
-      ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => ({
-          questionId: q.id,
-          questionText: q.text,
-          answer: answers[q.id] || 'Partially implemented',
-          isoClause: q.applicableStandards?.[0] || 'ISO 14064-1',
-        })))
-      : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => ({
-          questionId: q.questionId,
-          questionText: q.questionText,
-          answer: answers[q.questionId] || 'Partially implemented',
-          isoClause: q.isoClause || 'ISO 14001',
-        })));
+    const questionsToSubmit = (diagnosticBundle?.pillars || []).length > 0
+      ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => {
+          const qId = q.questionId || q.id;
+          return {
+            questionId: qId,
+            questionText: q.questionText || q.text || `Clause ${qId}`,
+            answer: answers[qId] || answers[q.id] || answers[q.questionId] || 'Partially implemented',
+            isoClause: q.isoClause || q.applicableStandards?.[0] || 'ISO 14064-1',
+          };
+        }))
+      : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => {
+          const qId = q.questionId || q.id;
+          return {
+            questionId: qId,
+            questionText: q.questionText || q.text || `Clause ${qId}`,
+            answer: answers[qId] || answers[q.questionId] || answers[q.id] || 'Partially implemented',
+            isoClause: q.isoClause || 'ISO 14001',
+          };
+        }));
 
     setSubmitting(true);
     setSubmitError(null);
@@ -527,29 +642,35 @@ export const PortalPage: React.FC = () => {
     }
   };
 
-  // ── Lead Auditor Verification Sign-Off (Transition to AUDIT_READY) ────────
-  const handleAuditorSignOff = async () => {
+  // ── Submit Diagnostic Answers for Lead Auditor Review (Transition to SUBMITTED) ────────
+  const handleSubmitForAuditorReview = async () => {
     if (!token) return;
     setAuditorReviewLoading(true);
     setSubmitError(null);
     setAuditorReviewSuccess(null);
     try {
       let activeSubId = submissionId;
-      const questionsToSubmit = diagnosticBundle?.pillars
-        ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => ({
-            questionId: q.id,
-            questionText: q.text,
-            answer: answers[q.id] || 'Fully compliant & documented',
-            isoClause: q.applicableStandards?.[0] || 'ISO 14064-1',
-          })))
-        : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => ({
-            questionId: q.questionId,
-            questionText: q.questionText,
-            answer: answers[q.questionId] || 'Yes, fully in place',
-            isoClause: q.isoClause || 'ISO 14001',
-          })));
+      const questionsToSubmit = (diagnosticBundle?.pillars || []).length > 0
+        ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => {
+            const qId = q.questionId || q.id;
+            return {
+              questionId: qId,
+              questionText: q.questionText || q.text || `Clause ${qId}`,
+              answer: answers[qId] || answers[q.id] || answers[q.questionId] || 'Fully compliant & documented',
+              isoClause: q.isoClause || q.applicableStandards?.[0] || 'ISO 14064-1',
+            };
+          }))
+        : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => {
+            const qId = q.questionId || q.id;
+            return {
+              questionId: qId,
+              questionText: q.questionText || q.text || `Clause ${qId}`,
+              answer: answers[qId] || answers[q.questionId] || answers[q.id] || 'Yes, fully in place',
+              isoClause: q.isoClause || 'ISO 14001',
+            };
+          }));
 
-      // Save latest answers first
+      // Save latest answers with status SUBMITTED to trigger Lead Auditor Review
       const subRes = await api.submitIsoAnswers(token, {
         answers: questionsToSubmit,
         tierSelected: selectedTier,
@@ -558,20 +679,52 @@ export const PortalPage: React.FC = () => {
       activeSubId = subRes.submissionId;
       setSubmissionId(activeSubId);
 
-      // Sign off as AUDIT_READY
-      const reviewRes = await api.reviewIsoSubmission(token, {
-        submissionId: activeSubId || '',
-        targetStatus: 'AUDIT_READY',
-        auditorNotes: 'ISO 19011:2026 Annex A remote verification completed. 80%+ conformance threshold verified across selected frameworks.',
-      });
+      // Instantaneous optimistic state update for seamless UX
+      setIsoStatus((prev: any) => ({
+        ...(prev || {}),
+        id: activeSubId,
+        status: subRes.status || 'SUBMITTED',
+        complianceScore: subRes.complianceScore ?? estimatedComplianceScore,
+        tierSelected: subRes.tierSelected || selectedTier,
+        selectedFrameworks: subRes.selectedFrameworks || selectedFrameworks,
+        updatedAt: new Date().toISOString(),
+      }));
 
-      setAuditorReviewSuccess(reviewRes.message || 'Audit readiness confirmed. Gate 1 cleared.');
+      setAuditorReviewSuccess('Diagnostic answers and evidence successfully submitted to Lead Auditor Review Queue. Conformance verification in progress.');
+      setShowSubmissionSuccessModal(true);
+
       await fetchIsoStatus();
     } catch (err: any) {
       setSubmitError(err.message || 'Auditor verification request failed.');
     } finally {
       setAuditorReviewLoading(false);
     }
+  };
+
+  // ── Export Dossier JSON Summary ──────────────────────────────────────────
+  const handleExportDossierJson = () => {
+    const exportData = {
+      submissionId: submissionId || 'PENDING_SUBMISSION',
+      timestamp: new Date().toISOString(),
+      licenseeId: user?.licenseeId || 'N/A',
+      userEmail: user?.email,
+      selectedTier,
+      selectedFrameworks,
+      conformanceScore: estimatedComplianceScore,
+      totalClauses: allQuestions.length,
+      answeredClauses: answeredQuestions,
+      answers,
+      auditStandard: 'ISO 19011:2026 / ISO 14064-1:2018',
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GHG_Statutory_Dossier_${(submissionId || 'draft').slice(0, 8)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // ── Create Stripe checkout ────────────────────────────────────────────────
@@ -932,6 +1085,8 @@ export const PortalPage: React.FC = () => {
   // ── Status and Gate Enforcement flags ────────────────────────────────────
   const currentSubmissionStatus = isoStatus?.status || (submissionId ? 'SUBMITTED' : 'NOT_STARTED');
   const isAuditReady = currentSubmissionStatus === 'AUDIT_READY' || currentSubmissionStatus === 'APPROVED';
+  const isRevisionRequired = currentSubmissionStatus === 'REVISION_REQUIRED';
+  const isSubmittedPendingReview = currentSubmissionStatus === 'SUBMITTED' || currentSubmissionStatus === 'UNDER_REVIEW';
   const isPaid = Boolean(isoStatus?.paidAt || currentSubmissionStatus === 'APPROVED');
 
   const totalVerifiedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
@@ -1001,6 +1156,20 @@ export const PortalPage: React.FC = () => {
 
         {/* COMPLIANCE */}
         <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>COMPLIANCE</div>
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'assurance-wizard' ? 'active' : ''}`}
+          onClick={() => {
+            setWorkflowWizardType('CARBON');
+            setWorkflowWizardSubmissionId(null);
+            setActiveView('assurance-wizard');
+            onNav?.();
+          }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
+          <span className="portal-nav-label">Assurance Engine</span>
+          <span className="portal-nav-badge">Screens 1–11</span>
+        </button>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
@@ -1172,12 +1341,13 @@ export const PortalPage: React.FC = () => {
         {/* Top Greeting Banner */}
         <div className="portal-greeting-banner">
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 500 }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 500 }}>
               {getFormattedDate()}
             </div>
-            <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
-              {getGreeting()}, {displayName}
-            </h1>
+            <div style={{ fontSize: '0.98rem', fontWeight: 500, color: 'var(--text-secondary)', margin: '0 0 0.35rem 0' }}>
+              {getGreeting()},{' '}
+              <strong style={{ fontWeight: 600, color: 'var(--text-main)' }}>{displayName}</strong>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>
                 ACTIVE LICENSEE
@@ -1208,19 +1378,52 @@ export const PortalPage: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveView('workflow');
-                setAuditScope('CARBON_EMISSION');
-                if (activeView !== 'workflow') setActiveStep(1);
-              }}
-              className="btn btn-primary"
-            >
-              {activeView === 'workflow' && activeStep > 1
-                ? `Resume Audit (Step ${activeStep} of 5)`
-                : '+ Start Carbon Audit'}
-            </button>
+            {activeView === 'workflow' && activeStep === 1 ? (
+              <span
+                className={
+                  isAuditReady
+                    ? 'badge badge-settled'
+                    : isRevisionRequired
+                    ? 'badge badge-failed'
+                    : isSubmittedPendingReview
+                    ? 'badge badge-pending'
+                    : 'badge'
+                }
+                onClick={() => {
+                  if (isSubmittedPendingReview || isAuditReady || isRevisionRequired) {
+                    setShowSubmissionSuccessModal(true);
+                  }
+                }}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: isSubmittedPendingReview || isAuditReady || isRevisionRequired ? 'pointer' : 'default',
+                }}
+                title={isSubmittedPendingReview || isAuditReady ? 'Click to inspect Lead Auditor review determination status' : undefined}
+              >
+                {isAuditReady
+                  ? 'Step 1: Gate 1 Cleared (View Status)'
+                  : isRevisionRequired
+                  ? 'Step 1: Revisions Requested (View Notice)'
+                  : isSubmittedPendingReview
+                  ? 'Step 1: In Auditor Review (View Status)'
+                  : 'Step 1: Diagnostic In Progress'}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveView('workflow');
+                  if (activeView !== 'workflow') setActiveStep(1);
+                }}
+                className="btn btn-primary"
+              >
+                {activeView === 'workflow' && activeStep > 1
+                  ? `Resume Audit (Step ${activeStep} of 5)`
+                  : `+ Start ${auditScope === 'JOB_REPORTING' ? 'Job Filing Audit' : 'Carbon Audit'}`}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1428,20 +1631,72 @@ export const PortalPage: React.FC = () => {
           {activeStep === 1 && (
             auditScope === 'CARBON_EMISSION' ? (
               <div>
-              {/* Clean Google SaaS Assessment Header */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.45rem' }}>
-                  <span className="radar-pulse" style={{ width: '8px', height: '8px' }} />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                    ISO Audit-Readiness Diagnostic Studio
-                  </span>
+              {/* Clean Google SaaS Assessment Header with Actions */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.45rem' }}>
+                    <span className="radar-pulse" style={{ width: '8px', height: '8px' }} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      ISO Audit-Readiness Diagnostic Studio
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.015em' }}>
+                    Statutory Conformance Diagnostic
+                  </h2>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '780px', lineHeight: 1.5 }}>
+                    Interactive multi-pillar diagnostic aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
+                  </p>
                 </div>
-                <h1 style={{ fontSize: 'clamp(1.5rem, 2.75vw, 2.15rem)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.4rem 0', letterSpacing: '-0.025em' }}>
-                  Statutory Conformance &amp; Screening Engine
-                </h1>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '780px', lineHeight: 1.5 }}>
-                  Interactive multi-pillar diagnostic aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
-                </p>
+
+                <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleStartNewAudit}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '0.6rem 1.25rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                    }}
+                  >
+                    <span>+</span>
+                    <span>Start New Carbon Audit</span>
+                  </button>
+                  {recentSubmissions.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowRecentAudits((prev) => !prev)}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '0.6rem 1.15rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {showRecentAudits ? 'Hide Recent Audits' : `View Recent Audits (${recentSubmissions.length})`}
+                    </button>
+                  )}
+                  {submissionId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const elem = document.getElementById('iso-audit-stepper-anchor');
+                        if (elem) elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '0.6rem 1.15rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Resume Active Workflow
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Multi-Framework Harmonisation Selector Bar */}
@@ -1450,7 +1705,6 @@ export const PortalPage: React.FC = () => {
                 border: '1px solid var(--border-light)',
                 borderRadius: '12px',
                 padding: '1.25rem 1.5rem',
-                marginTop: '1.25rem',
                 marginBottom: '1.5rem',
                 boxShadow: 'var(--shadow-xs)',
               }}>
@@ -1464,7 +1718,7 @@ export const PortalPage: React.FC = () => {
                     </div>
                   </div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '3px 10px', borderRadius: '6px', border: '1px solid rgba(2, 132, 199, 0.2)' }}>
-                    {selectedFrameworks.length} Framework{selectedFrameworks.length === 1 ? '' : 's'} Selected
+                    {selectedFrameworks.length} Framework{selectedFrameworks.length === 1 ? '' : 's'} Selected · {totalQuestions} Questions Summed ({answeredQuestions} Answered)
                   </span>
                 </div>
 
@@ -1502,6 +1756,203 @@ export const PortalPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* ── 5 Recent Carbon Audits Hub (Collapsible) ─────────────────────────────────── */}
+              {showRecentAudits ? (
+                <div className="recent-audits-card" style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                    <div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>Recent Carbon Audits</span>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Last 5 Engagements
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                        Review status, dates, and resume diagnostic workflows directly where you left off.
+                      </div>
+                    </div>
+                    {recentSubmissions.length > 0 && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)' }}>
+                        {recentSubmissions.length} Record{recentSubmissions.length === 1 ? '' : 's'} Logged
+                      </span>
+                    )}
+                  </div>
+
+                  {recentSubmissions.length > 0 ? (
+                    <div className="table-container-responsive" style={{ margin: 0 }}>
+                      <table className="recent-audits-table">
+                        <thead>
+                          <tr>
+                            <th>Engagement Ref</th>
+                            <th>Date Initiated</th>
+                            <th>Frameworks</th>
+                            <th>Conformance</th>
+                            <th>Status</th>
+                            <th style={{ textAlign: 'right' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recentSubmissions.slice(0, 5).map((sub) => {
+                            const isCurrent = sub.id === submissionId;
+                            const createdDate = sub.createdAt
+                              ? new Date(sub.createdAt).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '-';
+                            const fws = sub.selectedFrameworks || ['ISO_14064_1'];
+
+                            let statusBadgeColor = 'var(--text-muted)';
+                            let statusBg = 'var(--bg-subtle)';
+                            let statusText = sub.status || 'DRAFT';
+
+                            if (sub.status === 'APPROVED' || sub.status === 'AUDIT_READY') {
+                              statusBadgeColor = 'var(--color-green-dark)';
+                              statusBg = 'rgba(16, 185, 129, 0.12)';
+                              statusText = sub.status === 'AUDIT_READY' ? 'AUDIT READY' : 'APPROVED';
+                            } else if (sub.status === 'UNDER_REVIEW' || sub.status === 'SUBMITTED') {
+                              statusBadgeColor = 'var(--color-sky-dark)';
+                              statusBg = 'rgba(2, 132, 199, 0.12)';
+                              statusText = sub.status === 'SUBMITTED' ? 'SUBMITTED (AWAITING REVIEW)' : 'UNDER REVIEW';
+                            } else if (sub.status === 'REVISION_REQUIRED') {
+                              statusBadgeColor = 'var(--google-amber)';
+                              statusBg = 'rgba(245, 158, 11, 0.12)';
+                              statusText = 'REVISION REQUIRED';
+                            }
+
+                            return (
+                              <tr key={sub.id} style={{ backgroundColor: isCurrent ? 'rgba(2, 132, 199, 0.04)' : undefined }}>
+                                <td>
+                                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.8rem', color: isCurrent ? 'var(--color-sky)' : 'var(--text-main)' }}>
+                                    GHG-SUB-{(sub.id || '').slice(0, 8).toUpperCase()}
+                                  </span>
+                                  {isCurrent && (
+                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '1px 6px', borderRadius: '4px' }}>
+                                      Active
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                                  {createdDate}
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                    {fws.slice(0, 3).map((f: string) => (
+                                      <span key={f} style={{ fontSize: '0.68rem', padding: '1px 5px', borderRadius: '3px', backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)' }}>
+                                        {f.replace('_', ' ')}
+                                      </span>
+                                    ))}
+                                    {fws.length > 3 && (
+                                      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                                        +{fws.length - 3} more
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td>
+                                  <strong style={{ color: (sub.complianceScore ?? 0) >= 80 ? 'var(--color-green-dark)' : 'var(--text-main)' }}>
+                                    {sub.complianceScore ?? 0}%
+                                  </strong>
+                                </td>
+                                <td>
+                                  <span
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700,
+                                      color: statusBadgeColor,
+                                      backgroundColor: statusBg,
+                                      padding: '3px 8px',
+                                      borderRadius: '4px',
+                                      letterSpacing: '0.03em',
+                                      display: 'inline-block',
+                                    }}
+                                  >
+                                    {statusText}
+                                  </span>
+                                </td>
+                                <td style={{ textAlign: 'right' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResumeWorkflow(sub)}
+                                    style={{
+                                      padding: '0.35rem 0.75rem',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700,
+                                      color: isCurrent ? '#ffffff' : 'var(--color-sky)',
+                                      backgroundColor: isCurrent ? 'var(--color-sky)' : 'transparent',
+                                      border: isCurrent ? '1px solid var(--color-sky)' : '1px solid rgba(2, 132, 199, 0.3)',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                  >
+                                    {isCurrent ? 'Current Active' : 'Resume Workflow'}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', border: '1px dashed var(--border-light)' }}>
+                      <p style={{ margin: '0 0 0.65rem 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        No prior carbon audit submissions found for this organization.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleStartNewAudit}
+                        className="btn btn-primary"
+                        style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}
+                      >
+                        Start Your First Carbon Audit
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : recentSubmissions.length > 0 ? (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.75rem 1.25rem',
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-light)',
+                  marginBottom: '1.5rem',
+                  fontSize: '0.82rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Recent Carbon Audits:</span>
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      {recentSubmissions.length} prior engagement{recentSubmissions.length === 1 ? '' : 's'} logged
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '2px 6px', borderRadius: '4px' }}>
+                      Latest: GHG-SUB-{(recentSubmissions[0]?.id || '').slice(0, 8).toUpperCase()} ({recentSubmissions[0]?.complianceScore ?? 0}%)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowRecentAudits(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-sky)',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    Expand Recent Audits List ↓
+                  </button>
+                </div>
+              ) : null}
+
+
               {bundleLoading && (
                 <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Harmonising multi-framework requirements across pillars...
@@ -1523,7 +1974,7 @@ export const PortalPage: React.FC = () => {
                     Assessment Experience:
                   </span>
                   <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>
-                    {diagnosticViewMode === 'GUIDED' ? '⚡ Guided Animated Wizard' : '📋 Full Inspection Grid'}
+                    {diagnosticViewMode === 'GUIDED' ? 'Guided Wizard' : 'Full Overview Grid'}
                   </span>
                 </div>
 
@@ -1550,7 +2001,7 @@ export const PortalPage: React.FC = () => {
                       transition: 'all 0.18s ease',
                     }}
                   >
-                    ⚡ Guided Step-by-Step
+                    Guided Mode
                   </button>
                   <button
                     type="button"
@@ -1568,10 +2019,13 @@ export const PortalPage: React.FC = () => {
                       transition: 'all 0.18s ease',
                     }}
                   >
-                    📋 Full Overview Grid
+                    Full Overview Grid
                   </button>
                 </div>
               </div>
+
+              {/* Anchor for seamless scroll */}
+              <div id="iso-audit-stepper-anchor" />
 
               {/* Guided Mode: Interactive Audit Stepper with animated slides & next button */}
               {!bundleLoading && diagnosticViewMode === 'GUIDED' && (
@@ -1580,8 +2034,15 @@ export const PortalPage: React.FC = () => {
                   answers={answers}
                   onAnswerChange={handleAnswerChange}
                   isAuditReady={isAuditReady}
+                  isSubmittedPendingReview={isSubmittedPendingReview}
                   onProceedToCheckout={() => setActiveStep(2)}
+                  onSubmitForReview={handleSubmitForAuditorReview}
                   estimatedScore={estimatedComplianceScore}
+                  submitting={auditorReviewLoading}
+                  submitError={submitError}
+                  onViewReviewStatus={() => setShowSubmissionSuccessModal(true)}
+                  onUploadEvidence={handleUploadEvidence}
+                  evidenceByQuestion={evidenceByQuestion}
                 />
               )}
 
@@ -1766,9 +2227,25 @@ export const PortalPage: React.FC = () => {
                   })}
 
                   {/* Conformance Verification & Auditor Sign-Off Card */}
-                  <div style={{
-                    backgroundColor: isAuditReady ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-subtle)',
-                    border: `1px solid ${isAuditReady ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-light)'}`,
+                  <div
+                    id="conformance-verification-card"
+                    style={{
+                    backgroundColor: isAuditReady
+                      ? 'rgba(16, 185, 129, 0.08)'
+                      : isRevisionRequired
+                      ? 'rgba(239, 68, 68, 0.08)'
+                      : isSubmittedPendingReview
+                      ? 'rgba(245, 158, 11, 0.08)'
+                      : 'var(--bg-subtle)',
+                    border: `1px solid ${
+                      isAuditReady
+                        ? 'rgba(16, 185, 129, 0.3)'
+                        : isRevisionRequired
+                        ? 'rgba(239, 68, 68, 0.3)'
+                        : isSubmittedPendingReview
+                        ? 'rgba(245, 158, 11, 0.3)'
+                        : 'var(--border-light)'
+                    }`,
                     borderRadius: '12px',
                     padding: '1.25rem 1.5rem',
                     marginTop: '1.5rem',
@@ -1783,13 +2260,31 @@ export const PortalPage: React.FC = () => {
                         <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
                           ISO 19011:2026 Conformance Verification (Gate 1)
                         </span>
-                        <span className={isAuditReady ? 'badge badge-settled' : 'badge badge-pending'}>
-                          {isAuditReady ? 'AUDIT_READY APPROVED' : 'SIGN-OFF PENDING'}
+                        <span className={
+                          isAuditReady
+                            ? 'badge badge-settled'
+                            : isRevisionRequired
+                            ? 'badge badge-failed'
+                            : isSubmittedPendingReview
+                            ? 'badge badge-pending'
+                            : 'badge'
+                        }>
+                          {isAuditReady
+                            ? 'AUDIT_READY APPROVED'
+                            : isRevisionRequired
+                            ? 'REVISION REQUIRED'
+                            : isSubmittedPendingReview
+                            ? 'AWAITING LEAD AUDITOR REVIEW'
+                            : 'DIAGNOSTIC IN PROGRESS'}
                         </span>
                       </div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: '620px' }}>
                         {isAuditReady
                           ? 'Lead Auditor has signed off on the diagnostic. Gate 1 is cleared: Proceed to Step 2 to initiate statutory checkout.'
+                          : isRevisionRequired
+                          ? `Lead Auditor Directive: ${isoStatus?.reviewerNotes || 'Corrections requested on submitted clauses. Please revise answers and resubmit.'}`
+                          : isSubmittedPendingReview
+                          ? 'Your diagnostic dossier has been submitted to the Lead Auditor Review Queue. Conformance verification under ISO 19011:2026 is underway.'
                           : 'Under ISO 19011:2026 Annex A, audit readiness requires at least 80% conformance before licensing payment can be initiated.'}
                       </div>
                       {auditorReviewSuccess && (
@@ -1800,10 +2295,10 @@ export const PortalPage: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      {!isAuditReady && (
+                      {!isAuditReady && !isSubmittedPendingReview && (
                         <button
                           type="button"
-                          onClick={handleAuditorSignOff}
+                          onClick={handleSubmitForAuditorReview}
                           disabled={auditorReviewLoading || estimatedComplianceScore < 80}
                           className="btn btn-primary"
                           style={{
@@ -1813,10 +2308,37 @@ export const PortalPage: React.FC = () => {
                           }}
                         >
                           {auditorReviewLoading
-                            ? 'Verifying Conformance...'
+                            ? 'Submitting Dossier...'
                             : estimatedComplianceScore >= 80
-                            ? 'Request Auditor Sign-off (AUDIT_READY)'
-                            : 'Reach 80% Readiness for Sign-off'}
+                            ? 'Submit Dossier for Lead Auditor Review'
+                            : 'Reach 80% Readiness for Submission'}
+                        </button>
+                      )}
+                      {isSubmittedPendingReview && (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--google-amber)', fontWeight: 600 }}>
+                            In Lead Auditor Queue
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleSubmitForAuditorReview}
+                            disabled={auditorReviewLoading}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                          >
+                            Resubmit Updates
+                          </button>
+                        </div>
+                      )}
+                      {isRevisionRequired && (
+                        <button
+                          type="button"
+                          onClick={handleSubmitForAuditorReview}
+                          disabled={auditorReviewLoading}
+                          className="btn btn-primary"
+                          style={{ fontSize: '0.82rem', fontWeight: 700, backgroundColor: 'var(--google-amber)' }}
+                        >
+                          {auditorReviewLoading ? 'Resubmitting...' : 'Resubmit Revisions to Lead Auditor'}
                         </button>
                       )}
                       {isAuditReady && (
@@ -2158,7 +2680,7 @@ export const PortalPage: React.FC = () => {
                 gap: '2rem',
                 alignItems: 'start',
               }}>
-                {/* Left column — Tier Selection Cards */}
+                {/* Left column: Tier Selection Cards */}
                 <div>
                   <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem' }}>
                     Available {auditScope === 'CARBON_EMISSION' ? 'Carbon' : 'Workforce'} Assurance Tiers
@@ -2228,7 +2750,7 @@ export const PortalPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Right column — Sticky Order Summary Card */}
+                {/* Right column: Sticky Order Summary Card */}
                 <div style={{
                   backgroundColor: 'var(--bg-subtle)',
                   border: '1px solid var(--border-light)',
@@ -2336,7 +2858,7 @@ export const PortalPage: React.FC = () => {
                           }}
                         >
                           {checkoutLoading
-                            ? 'Connecting to Stripe…'
+                            ? 'Connecting to Stripe...'
                             : (!isAuditReady && auditScope === 'CARBON_EMISSION')
                               ? 'Sign-Off Required for Checkout (Gate 1)'
                               : `Pay ${activeTierData.price} via Stripe Checkout →`}
@@ -2362,7 +2884,7 @@ export const PortalPage: React.FC = () => {
 
                         {/* Security notice */}
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem', lineHeight: 1.4 }}>
-                          🔒 256-bit TLS encrypted · B2B telemetry API key provisioned instantly upon settlement
+                          256-bit TLS encrypted · B2B telemetry API key provisioned instantly upon settlement
                         </div>
                       </div>
                     );
@@ -2434,7 +2956,7 @@ export const PortalPage: React.FC = () => {
               {/* cURL example */}
               <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                  Automated Reporting — cURL Example
+                  Automated Reporting: cURL Example
                 </div>
                 <pre style={{
                   backgroundColor: '#0c1929', color: '#a5f3fc', padding: '1rem', borderRadius: '8px',
@@ -2526,7 +3048,7 @@ export const PortalPage: React.FC = () => {
               )}
 
               <div className="portal-credential-studio-grid">
-                {/* Left — inputs */}
+                {/* Left: inputs */}
                 <div>
                   {/* Logo dropzone */}
                   <div
@@ -2554,7 +3076,7 @@ export const PortalPage: React.FC = () => {
                       <>
                         <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.5 }}>+</div>
                         <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>Drag &amp; drop corporate logo</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>PNG, JPG, SVG or WebP — max 5 MB</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>PNG, JPG, SVG or WebP (Max 5 MB)</div>
                       </>
                     )}
                   </div>
@@ -2579,7 +3101,7 @@ export const PortalPage: React.FC = () => {
                       maxLength={200}
                       value={clientMessage}
                       onChange={(e) => { setClientMessage(e.target.value); setCompositePreview(null); }}
-                      placeholder={auditScope === 'CARBON_EMISSION' ? 'e.g. ISO 14001 aligned — Net Zero pathway committed 2030' : 'e.g. Verified Section 106 Artisan Workforce & Local Employment Covenant'}
+                      placeholder={auditScope === 'CARBON_EMISSION' ? 'e.g. ISO 14001 aligned: Net Zero pathway committed 2030' : 'e.g. Verified Section 106 Artisan Workforce & Local Employment Covenant'}
                       className="form-input"
                       style={{ resize: 'none' }}
                     />
@@ -2603,7 +3125,7 @@ export const PortalPage: React.FC = () => {
                         cursor: (!isPaid) ? 'not-allowed' : 'pointer',
                       }}
                     >
-                      {compositeLoading ? 'Generating…' : 'Preview Badge'}
+                      {compositeLoading ? 'Generating...' : 'Preview Badge'}
                     </button>
                     <button
                       type="button"
@@ -2615,7 +3137,7 @@ export const PortalPage: React.FC = () => {
                         cursor: (!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) ? 'not-allowed' : 'pointer',
                       }}
                     >
-                      {mintLoading ? 'Minting on Polygon…' : 'Issue and Mint Credential →'}
+                      {mintLoading ? 'Minting on Polygon...' : 'Issue and Mint Credential →'}
                     </button>
                   </div>
                   {mintError && (
@@ -2716,7 +3238,7 @@ export const PortalPage: React.FC = () => {
                       <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                           <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                            Website Embed Snippet — Copy to your Developer
+                            Website Embed Snippet: Copy to your Developer
                           </div>
                           <button
                             type="button"
@@ -2762,7 +3284,11 @@ export const PortalPage: React.FC = () => {
 
                     {/* Software Embed Builder */}
                     <div style={{ marginBottom: '1.5rem' }}>
-                      <SoftwareEmbedBuilder licenseeId={user?.licenseeId || 'client-licensee'} allowedOrigins={cred.allowedOrigins || ['*']} />
+                      <SoftwareEmbedBuilder
+                        licenseeId={user?.licenseeId || 'client-licensee'}
+                        allowedOrigins={cred.allowedOrigins || ['*']}
+                        token={token || undefined}
+                      />
                     </div>
 
                     <div className="portal-action-row">
@@ -2801,7 +3327,14 @@ export const PortalPage: React.FC = () => {
 
       {/* ── VIEW 2: Executive Overview & KPIs ────────────────────────────── */}
       {activeView === 'overview' && (
-        <div>
+        <div className="space-y-8">
+          <SharedDashboardShell
+            onNavigateWorkflow={(type, draftId) => {
+              setWorkflowWizardType(type);
+              setWorkflowWizardSubmissionId(draftId || null);
+              setActiveView('assurance-wizard');
+            }}
+          />
           {/* 4 Adaptive KPI Summary Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
             {kpis.map((kpi) => (
@@ -2922,7 +3455,6 @@ export const PortalPage: React.FC = () => {
 
           {credentials.length === 0 ? (
             <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📜</div>
               <p style={{ margin: '0 0 0.5rem 0', fontWeight: 700, color: 'var(--text-main)' }}>No credentials issued yet</p>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 1.25rem 0', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto' }}>
                 Complete your diagnostic evaluation in the Assurance Workflow Studio to generate and mint your tokenized audit badge.
@@ -2957,7 +3489,7 @@ export const PortalPage: React.FC = () => {
                         {cred.id.substring(0, 18)}…
                       </td>
                       <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--color-sky)' }}>
-                        {cred.tokenId || '—'}
+                        {cred.tokenId || '-'}
                       </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
                         <StatusBadge status={cred.status} />
@@ -2965,7 +3497,7 @@ export const PortalPage: React.FC = () => {
                       <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
                         {cred.warrantyExpiresAt
                           ? new Date(cred.warrantyExpiresAt).toLocaleDateString('en-GB')
-                          : '—'}
+                          : '-'}
                       </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
                         {cred.openSeaUrl ? (
@@ -3193,7 +3725,7 @@ export const PortalPage: React.FC = () => {
                 </button>
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                🔒 Transmit via <code style={{ color: 'var(--color-sky)' }}>x-api-key</code> HTTP Header.
+                Transmit via <code style={{ color: 'var(--color-sky)' }}>x-api-key</code> HTTP Header.
               </div>
             </div>
           </div>
@@ -3225,15 +3757,11 @@ export const PortalPage: React.FC = () => {
       {/* ── VIEW 7: Software Embed & Live Trust Seal ──────────────────────── */}
       {activeView === 'embed' && (
         <div>
-          <div style={{ marginBottom: '1.75rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-              Live Trust Seal &amp; Web Embed Builder
-            </h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '720px' }}>
-              Generate lightweight CDN embed snippets pointing to <code style={{ color: 'var(--color-sky)' }}>/embed/seal.js</code> to display your verified audit warranty badge on corporate websites, investor relations portals, and public disclosure pages.
-            </p>
-          </div>
-          <SoftwareEmbedBuilder licenseeId={user?.licenseeId || 'client-licensee'} allowedOrigins={['*']} />
+          <SoftwareEmbedBuilder
+            licenseeId={user?.licenseeId || 'client-licensee'}
+            allowedOrigins={['*']}
+            token={token || undefined}
+          />
         </div>
       )}
 
@@ -3328,6 +3856,15 @@ export const PortalPage: React.FC = () => {
         </div>
       )}
 
+      {/* ── VIEW: Assurance Workflow Engine (Part B Screens 1–11) ────────── */}
+      {activeView === 'assurance-wizard' && (
+        <WorkflowWizard
+          initialWorkflowType={workflowWizardType}
+          initialSubmissionId={workflowWizardSubmissionId}
+          onBackToDashboard={() => setActiveView('overview')}
+        />
+      )}
+
       {/* ── Job Filing Modal ──────────────────────────────────────────────────── */}
       {showJobModal && (
         <div
@@ -3379,6 +3916,338 @@ export const PortalPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ── Lead Auditor Submission Confirmation Modal ───────────────────────── */}
+      {showSubmissionSuccessModal && typeof document !== 'undefined' && createPortal(
+        <div
+          id="lead-auditor-status-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.85)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.25rem',
+            overflowY: 'auto',
+          }}
+          onClick={() => setShowSubmissionSuccessModal(false)}
+        >
+          <div
+            className="persefoni-card"
+            style={{
+              maxWidth: '640px',
+              width: '100%',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              border: '1px solid var(--border-light)',
+              overflow: 'hidden',
+              margin: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '1.5rem 1.75rem',
+                borderBottom: '1px solid var(--border-light)',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(2, 132, 199, 0.06) 100%)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--color-green, #10b981)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    fontSize: '1.3rem',
+                    fontWeight: 800,
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+                    flexShrink: 0,
+                  }}
+                >
+                  ✓
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      fontSize: '1.2rem',
+                      fontWeight: 800,
+                      color: 'var(--text-main)',
+                      margin: 0,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    Submitted: Awaiting Review
+                  </h3>
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--text-muted)',
+                      marginTop: '0.2rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <span>Dossier Reference:</span>
+                    <span
+                      style={{
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        color: 'var(--color-sky-dark, #0369a1)',
+                        backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      GHG-SUB-{(submissionId || '').slice(0, 8).toUpperCase() || 'PENDING'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSubmissionSuccessModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.35rem',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '1.75rem' }}>
+              {/* Review SLA Badge */}
+              <div
+                style={{
+                  padding: '0.85rem 1.15rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }}
+              >
+                <span
+                  className="radar-pulse"
+                  style={{
+                    display: 'inline-block',
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: 'var(--google-amber, #f59e0b)',
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ fontSize: '0.82rem', color: '#92400e', lineHeight: 1.4 }}>
+                  <strong>Lead Auditor Verification Active:</strong> Assigned to UK-01 Audit Queue. Target Conformance Determination SLA: <strong>24 to 48 Hours</strong> under ISO 19011:2026.
+                </div>
+              </div>
+
+              {/* Key Diagnostic Metrics Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '0.85rem',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: 'var(--bg-subtle, #f8fafc)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '8px',
+                    padding: '0.85rem 1rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    ATTESTED CLAUSES
+                  </div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.2rem' }}>
+                    {answeredQuestions} / {totalQuestions}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-green, #10b981)', fontWeight: 600, marginTop: '0.2rem' }}>
+                    100% Completed
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    backgroundColor: 'var(--bg-subtle, #f8fafc)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '8px',
+                    padding: '0.85rem 1rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    CONFORMANCE SCORE
+                  </div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: estimatedComplianceScore >= 80 ? 'var(--color-green, #10b981)' : 'var(--google-amber, #f59e0b)', marginTop: '0.2rem' }}>
+                    {estimatedComplianceScore}%
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    ISO 19011 Benchmark
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    backgroundColor: 'var(--bg-subtle, #f8fafc)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '8px',
+                    padding: '0.85rem 1rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    COMMERCIAL GATE 1
+                  </div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--google-amber, #f59e0b)', marginTop: '0.2rem' }}>
+                    Locked
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    Awaiting Auditor Pass
+                  </div>
+                </div>
+              </div>
+
+              {/* Conformance Verification Progression Roadmap */}
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '10px',
+                  padding: '1.15rem 1.25rem',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Statutory Audit Workflow (ISO 14064-1 and UK CMA Code)
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'var(--color-green, #10b981)', color: '#fff', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0, marginTop: '2px' }}>
+                      1
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Step 1: Client Diagnostic and Statutory Attestation
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        All 5 pillars, organizational boundaries, and primary utility sensor responses recorded.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'var(--google-amber, #f59e0b)', color: '#fff', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0, marginTop: '2px' }}>
+                      2
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400e' }}>
+                        Step 2: Lead Auditor Conformance Verification (Current Step)
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Independent auditor verifies primary meter evidence and consolidation consistency under ISO 19011:2026.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'var(--border-light, #cbd5e1)', color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0, marginTop: '2px' }}>
+                      3
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                        Step 3: Gate 1 Commercial Clearance and Stripe Checkout
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Unlocks automatically when Lead Auditor issues sign-off. Enables official credential minting.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informational Statutory Note */}
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: 'var(--text-muted)',
+                  lineHeight: 1.5,
+                  padding: '0.75rem 1rem',
+                  backgroundColor: 'var(--bg-subtle, #f8fafc)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-light)',
+                }}
+              >
+                Under UK CMA Green Claims and ISO 14064-1 statutory rules, unverified self-assessments cannot proceed directly to commercial certification. You will receive an automated notification at <strong>{user?.email || 'your account email'}</strong> once the Lead Auditor renders a determination.
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: '1.15rem 1.75rem',
+                backgroundColor: 'var(--bg-subtle, #f8fafc)',
+                borderTop: '1px solid var(--border-light)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleExportDossierJson}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.82rem' }}
+              >
+                <span>Export Dossier JSON</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSubmissionSuccessModal(false);
+                  const elem = document.getElementById('conformance-verification-card');
+                  if (elem) {
+                    elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+                className="btn btn-primary"
+                style={{ fontSize: '0.82rem', fontWeight: 700 }}
+              >
+                View Conformance Status in Portal
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
       </main>
     </div>

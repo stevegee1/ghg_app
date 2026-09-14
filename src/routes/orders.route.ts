@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient, SouvenirOrderStatus } from '@prisma/client';
 import PDFDocument from 'pdfkit';
+import { authenticateToken } from '../middleware/auth.middleware';
+import { runWithRls } from '../db/rls';
 
 /**
  * Generates a human-readable order number: GHG-ORD-YYYY-XXXXX
@@ -227,9 +229,15 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
   /**
    * PATCH /api/orders/admin/:orderNumber/status
    * Admin/printing store: advance the order fulfillment status.
+   * Authenticated via JWT, strictly restricted to ADMIN role.
    * Body: { status: SouvenirOrderStatus, courierName?, trackingNumber?, trackingUrl?, estimatedDelivery? }
    */
-  router.patch('/api/orders/admin/:orderNumber/status', async (req: Request, res: Response) => {
+  router.patch('/api/orders/admin/:orderNumber/status', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user || user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required.' });
+    }
+
     const { orderNumber } = req.params;
     const { status, courierName, trackingNumber, trackingUrl, estimatedDelivery } = req.body || {};
 
@@ -241,15 +249,17 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
     }
 
     try {
-      const updated = await prisma.souvenirOrder.update({
-        where: { orderNumber: orderNumber.trim().toUpperCase() },
-        data: {
-          status,
-          ...(courierName && { courierName }),
-          ...(trackingNumber && { trackingNumber }),
-          ...(trackingUrl && { trackingUrl }),
-          ...(estimatedDelivery && { estimatedDelivery: new Date(estimatedDelivery) }),
-        },
+      const updated = await runWithRls(prisma, user, async (tx) => {
+        return tx.souvenirOrder.update({
+          where: { orderNumber: orderNumber.trim().toUpperCase() },
+          data: {
+            status,
+            ...(courierName && { courierName }),
+            ...(trackingNumber && { trackingNumber }),
+            ...(trackingUrl && { trackingUrl }),
+            ...(estimatedDelivery && { estimatedDelivery: new Date(estimatedDelivery) }),
+          },
+        });
       });
 
       return res.status(200).json({

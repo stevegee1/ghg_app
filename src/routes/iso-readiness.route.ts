@@ -1,10 +1,10 @@
 /**
  * iso-readiness.route.ts
  * Handles the ISO Audit-Readiness Diagnostic workflow:
- *  GET  /api/iso-readiness/framework  — Returns official structured questions
- *  POST /api/iso-readiness/submit     — Persists client questionnaire answers
- *  POST /api/iso-readiness/checkout   — Creates Stripe Checkout session (£1,250/£3,500)
- *  GET  /api/iso-readiness/status/:licenseeId — Returns submission + payment state
+ *  GET  /api/iso-readiness/framework  : Returns official structured questions
+ *  POST /api/iso-readiness/submit     : Persists client questionnaire answers
+ *  POST /api/iso-readiness/checkout   : Creates Stripe Checkout session (£1,250/£3,500)
+ *  GET  /api/iso-readiness/status/:licenseeId : Returns submission + payment state
  */
 
 import { Router, Request, Response } from 'express';
@@ -12,6 +12,7 @@ import { PrismaClient, IsoReadinessStatus } from '@prisma/client';
 import { CheckoutService } from '../services/checkout.service';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { FrameworkRegistryService } from '../services/framework-registry.service';
+import { runWithRls } from '../db/rls';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OFFICIAL ISO AUDIT-READINESS FRAMEWORK QUESTIONS
@@ -39,7 +40,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S1-Q1',
           isoClause: 'ISO 14001:2015 Clause 4.1 / ISO 50001:2018 Clause 4.1',
-          legalMandate: 'UK SECR — Directors Report energy disclosure',
+          legalMandate: 'UK SECR: Directors Report energy disclosure',
           questionText:
             'Has your organisation formally identified all internal and external issues that affect its ability to achieve the intended outcomes of its Environmental Management System?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -48,7 +49,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S1-Q2',
           isoClause: 'ISO 14001:2015 Clause 4.3 / ISO 50001:2018 Clause 4.3',
-          legalMandate: 'EU CSRD Article 19a — Scope definition',
+          legalMandate: 'EU CSRD Article 19a: Scope definition',
           questionText:
             'Is the EMS/EnMS scope formally documented and does it identify all organisational units, physical locations, and activities included within the management system boundary?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -57,7 +58,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S1-Q3',
           isoClause: 'ISO 50001:2018 Clause 4.4',
-          legalMandate: 'GHG Protocol Corporate Standard — Operational control approach',
+          legalMandate: 'GHG Protocol Corporate Standard: Operational control approach',
           questionText:
             'Has an energy review been conducted to identify all significant energy uses (SEUs), including those under operational control, in the past 12 months?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -72,7 +73,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S2-Q1',
           isoClause: 'ISO 14001:2015 Clause 5.2 / ISO 50001:2018 Clause 5.2',
-          legalMandate: 'TCFD — Governance pillar: Board-level climate oversight',
+          legalMandate: 'TCFD: Governance pillar: Board-level climate oversight',
           questionText:
             'Is there a formally documented and top-management-approved Environmental and/or Energy Policy that includes a commitment to continual improvement and compliance obligations?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -81,7 +82,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S2-Q2',
           isoClause: 'ISO 50001:2018 Clause 5.1',
-          legalMandate: 'CDP — C1.1b Leadership responsibility',
+          legalMandate: 'CDP: C1.1b Leadership responsibility',
           questionText:
             'Has top management appointed a designated Management Representative (or equivalent role) with defined authority and responsibility for the EnMS/EMS?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -96,7 +97,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S3-Q1',
           isoClause: 'ISO 14001:2015 Clause 6.1.2',
-          legalMandate: 'EU CSRD — Material environmental impacts identification',
+          legalMandate: 'EU CSRD: Material environmental impacts identification',
           questionText:
             'Has the organisation identified and assessed its significant environmental aspects using a documented, repeatable methodology (e.g. severity × probability matrix)?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -105,7 +106,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S3-Q2',
           isoClause: 'ISO 50001:2018 Clause 6.3',
-          legalMandate: 'UK SECR — Baseline year and normalisation factor',
+          legalMandate: 'UK SECR: Baseline year and normalisation factor',
           questionText:
             'Has an energy performance baseline been established using data from a minimum of 12 consecutive months, with relevant variables (e.g. production output, degree days) identified?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -114,7 +115,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S3-Q3',
           isoClause: 'ISO 14064-1:2018 Clause 5',
-          legalMandate: 'GHG Protocol — Scope 1, 2, and 3 inventory',
+          legalMandate: 'GHG Protocol: Scope 1, 2, and 3 inventory',
           questionText:
             'Has a GHG inventory been prepared for the most recent reporting year covering Scope 1 (direct), Scope 2 (purchased energy), and material Scope 3 (value chain) emissions?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -129,7 +130,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S4-Q1',
           isoClause: 'ISO 50001:2018 Clause 7.3',
-          legalMandate: 'ISO 19011:2026 Clause 6.3.2 — Competence of remote auditors',
+          legalMandate: 'ISO 19011:2026 Clause 6.3.2: Competence of remote auditors',
           questionText:
             'Are personnel whose work affects energy performance trained and assessed as competent? Is training evidence documented and periodically reviewed?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -138,7 +139,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S4-Q2',
           isoClause: 'ISO 50001:2018 Clause 8.1',
-          legalMandate: 'UK SECR — Operational efficiency measures',
+          legalMandate: 'UK SECR: Operational efficiency measures',
           questionText:
             'Are operational controls (e.g. purchasing criteria for energy-significant equipment, operating procedures for SEUs) documented, implemented, and maintained?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -153,7 +154,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S5-Q1',
           isoClause: 'ISO 50001:2018 Clause 9.1.1',
-          legalMandate: 'TCFD Metrics and Targets — Quantitative energy KPIs',
+          legalMandate: 'TCFD Metrics and Targets: Quantitative energy KPIs',
           questionText:
             'Are Energy Performance Indicators (EnPIs) defined, monitored at planned intervals, and compared against the baseline to demonstrate improvement or identify regression?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -162,7 +163,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S5-Q2',
           isoClause: 'ISO 14001:2015 Clause 9.2 / ISO 19011:2026 Clause 6',
-          legalMandate: 'ISO 19011:2026 — Remote audit technique compliance',
+          legalMandate: 'ISO 19011:2026: Remote audit technique compliance',
           questionText:
             'Has an internal audit programme been established and implemented? Does it include the use of remote auditing techniques (ICT-based document review, remote witness, virtual facility tour) as permitted under ISO 19011:2026 Annex A?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -171,7 +172,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S5-Q3',
           isoClause: 'ISO 14001:2015 Clause 9.3 / ISO 50001:2018 Clause 9.3',
-          legalMandate: 'CDP — C1.3 Management review of climate governance',
+          legalMandate: 'CDP: C1.3 Management review of climate governance',
           questionText:
             'Has management review been conducted within the last 12 months, with outputs including decisions on opportunities for improvement and any resource requirements?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -186,7 +187,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S6-Q1',
           isoClause: 'ISO 14001:2015 Clause 10.2 / ISO 50001:2018 Clause 10.1',
-          legalMandate: 'EU CSRD — Corrective action and improvement tracking',
+          legalMandate: 'EU CSRD: Corrective action and improvement tracking',
           questionText:
             'Does the organisation have a documented process for identifying, recording, correcting, and verifying corrective actions for non-conformances and environmental/energy incidents?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -195,7 +196,7 @@ const ISO_FRAMEWORK = {
         {
           questionId: 'S6-Q2',
           isoClause: 'ISO 50001:2018 Clause 10.2',
-          legalMandate: 'GHG Protocol — Continual improvement commitment',
+          legalMandate: 'GHG Protocol: Continual improvement commitment',
           questionText:
             'Can the organisation demonstrate measurable energy or environmental performance improvement against the baseline over the most recent reporting cycle?',
           answerType: 'YES_NO_WITH_EVIDENCE',
@@ -247,10 +248,12 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
   // POST /api/iso-readiness/submit
   router.post('/api/iso-readiness/submit', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    const { answers, tierSelected, selectedFrameworks } = req.body as {
+    const { answers, tierSelected, selectedFrameworks, submissionId, isNewWorkflow } = req.body as {
       answers: Array<{ questionId: string; questionText: string; answer: string; isoClause: string }>;
       tierSelected?: string;
       selectedFrameworks?: string[];
+      submissionId?: string;
+      isNewWorkflow?: boolean;
     };
 
     if (!user?.licenseeId) {
@@ -277,40 +280,48 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     const initialScore = Math.min(100, Math.round((totalAnswered / Math.max(answers.length, 1)) * 100));
 
     try {
-      const existing = await prisma.isoReadinessSubmission.findFirst({
-        where: {
-          licenseeId: user.licenseeId,
-          status: { in: [IsoReadinessStatus.SUBMITTED, IsoReadinessStatus.UNDER_REVIEW, IsoReadinessStatus.REVISION_REQUIRED] },
-          paidAt: null,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const submission = await runWithRls(prisma, user, async (tx) => {
+        let existing = null;
+        if (submissionId) {
+          existing = await tx.isoReadinessSubmission.findFirst({
+            where: { id: submissionId, licenseeId: user.licenseeId },
+          });
+        } else if (!isNewWorkflow) {
+          existing = await tx.isoReadinessSubmission.findFirst({
+            where: {
+              licenseeId: user.licenseeId,
+              status: { in: [IsoReadinessStatus.SUBMITTED, IsoReadinessStatus.UNDER_REVIEW, IsoReadinessStatus.REVISION_REQUIRED] },
+              paidAt: null,
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+        }
 
-      let submission;
-      if (existing) {
-        submission = await prisma.isoReadinessSubmission.update({
-          where: { id: existing.id },
-          data: {
-            answers,
-            tierSelected: tier,
-            selectedFrameworks: frameworks,
-            complianceScore: initialScore,
-            status: IsoReadinessStatus.SUBMITTED,
-            updatedAt: new Date(),
-          },
-        });
-      } else {
-        submission = await prisma.isoReadinessSubmission.create({
-          data: {
-            licenseeId: user.licenseeId,
-            answers,
-            tierSelected: tier,
-            selectedFrameworks: frameworks,
-            complianceScore: initialScore,
-            status: IsoReadinessStatus.SUBMITTED,
-          },
-        });
-      }
+        if (existing) {
+          return tx.isoReadinessSubmission.update({
+            where: { id: existing.id },
+            data: {
+              answers,
+              tierSelected: tier,
+              selectedFrameworks: frameworks,
+              complianceScore: initialScore,
+              status: IsoReadinessStatus.SUBMITTED,
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          return tx.isoReadinessSubmission.create({
+            data: {
+              licenseeId: user.licenseeId,
+              answers,
+              tierSelected: tier,
+              selectedFrameworks: frameworks,
+              complianceScore: initialScore,
+              status: IsoReadinessStatus.SUBMITTED,
+            },
+          });
+        }
+      });
 
       return res.status(201).json({
         success: true,
@@ -347,7 +358,9 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
 
     try {
-      const submission = await prisma.isoReadinessSubmission.findUnique({ where: { id: submissionId } });
+      const submission = await runWithRls(prisma, user, async (tx) => {
+        return tx.isoReadinessSubmission.findUnique({ where: { id: submissionId } });
+      });
       if (!submission) {
         return res.status(404).json({ error: 'Submission not found.' });
       }
@@ -361,14 +374,16 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
       const score = typeof complianceScore === 'number' ? complianceScore : (isApproved ? 95 : 60);
       const notes = auditorNotes || reviewerNotes || (isApproved ? 'Audit verified conformant. Audit-Ready certified.' : 'Additional evidence required.');
 
-      const updated = await prisma.isoReadinessSubmission.update({
-        where: { id: submissionId },
-        data: {
-          status: newStatus,
-          reviewerNotes: notes,
-          complianceScore: score,
-          auditReadyAt: isApproved ? new Date() : null,
-        },
+      const updated = await runWithRls(prisma, user, async (tx) => {
+        return tx.isoReadinessSubmission.update({
+          where: { id: submissionId },
+          data: {
+            status: newStatus,
+            reviewerNotes: notes,
+            complianceScore: score,
+            auditReadyAt: isApproved ? new Date() : null,
+          },
+        });
       });
 
       return res.status(200).json({
@@ -404,7 +419,9 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
       return res.status(400).json({ error: `Unknown tier: ${tierSelected}. Valid values: ${Object.keys(TIERS).join(', ')}` });
     }
 
-    const submission = await prisma.isoReadinessSubmission.findUnique({ where: { id: submissionId } });
+    const submission = await runWithRls(prisma, user, async (tx) => {
+      return tx.isoReadinessSubmission.findUnique({ where: { id: submissionId } });
+    });
     if (!submission || (submission.licenseeId !== user.licenseeId && user.role !== 'ADMIN')) {
       return res.status(404).json({ error: 'Submission not found or access denied.' });
     }
@@ -427,22 +444,37 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
 
     try {
+      const lic = await prisma.licensee.findUnique({ where: { id: user.licenseeId } });
+      if (lic && !lic.stripeConnectedAccountId) {
+        await prisma.licensee.update({
+          where: { id: lic.id },
+          data: { stripeConnectedAccountId: process.env.STRIPE_PLATFORM_ACCOUNT_ID || 'acct_platform_default_001' },
+        });
+      }
+
+      const separator = successUrl.includes('?') ? '&' : '?';
       const sessionResult = await checkoutService.createCheckoutSession({
         licenseeId: user.licenseeId,
         itemTitle: tier.name,
         grossAmountCents: tier.grossAmountCents,
         currency: tier.currency,
-        successUrl: `${successUrl}?submission_id=${submissionId}&tier=${tierSelected}`,
+        successUrl: `${successUrl}${separator}submission_id=${submissionId}&tier=${tierSelected}`,
         cancelUrl,
+        metadata: {
+          submissionId,
+          tierSelected,
+        },
       });
 
       // Record the session ID on the submission for webhook matching
-      await prisma.isoReadinessSubmission.update({
-        where: { id: submissionId },
-        data: {
-          stripeSessionId: sessionResult.sessionId,
-          tierSelected,
-        },
+      await runWithRls(prisma, user, async (tx) => {
+        return tx.isoReadinessSubmission.update({
+          where: { id: submissionId },
+          data: {
+            stripeSessionId: sessionResult.sessionId,
+            tierSelected,
+          },
+        });
       });
 
       return res.status(200).json({
@@ -470,14 +502,32 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
 
     try {
-      const submissions = await prisma.isoReadinessSubmission.findMany({
-        where: { licenseeId },
-        include: { credential: true },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
+      const submissions = await runWithRls(prisma, user, async (tx) => {
+        return tx.isoReadinessSubmission.findMany({
+          where: { licenseeId },
+          include: { credential: true },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        });
       });
 
       const latest = submissions[0] || null;
+
+      const recentSubmissions = submissions.slice(0, 5).map((sub) => ({
+        id: sub.id,
+        status: sub.status,
+        tierSelected: sub.tierSelected,
+        paidAt: sub.paidAt,
+        reviewerNotes: sub.reviewerNotes,
+        complianceScore: sub.complianceScore,
+        selectedFrameworks: sub.selectedFrameworks,
+        hasCredential: !!sub.credential,
+        credentialStatus: sub.credential?.status || null,
+        openSeaUrl: sub.credential?.openSeaUrl || null,
+        createdAt: sub.createdAt,
+        updatedAt: sub.updatedAt,
+        answers: sub.answers,
+      }));
 
       return res.status(200).json({
         success: true,
@@ -498,11 +548,148 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
               updatedAt: latest.updatedAt,
             }
           : null,
+        recentSubmissions,
         totalSubmissions: submissions.length,
       });
     } catch (err: any) {
       console.error('[ISO STATUS ERROR]', err);
       return res.status(500).json({ error: 'Failed to fetch submission status.' });
+    }
+  });
+
+  // ── GET /api/admin/iso-submissions (Lead Auditor Review Queue) ─────────────
+  router.get('/api/admin/iso-submissions', authenticateToken, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden: Admin / Lead Auditor access required.' });
+    }
+
+    const { status, search, page = '1', limit = '20' } = req.query as {
+      status?: string;
+      search?: string;
+      page?: string;
+      limit?: string;
+    };
+
+    try {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+      const skip = (pageNum - 1) * limitNum;
+
+      const where: any = {};
+      if (status && Object.values(IsoReadinessStatus).includes(status as any)) {
+        where.status = status as IsoReadinessStatus;
+      }
+      if (search && search.trim()) {
+        where.licensee = {
+          name: { contains: search.trim(), mode: 'insensitive' },
+        };
+      }
+
+      const [submissions, total] = await runWithRls(prisma, user, async (tx) => {
+        return Promise.all([
+          tx.isoReadinessSubmission.findMany({
+            where,
+            skip,
+            take: limitNum,
+            orderBy: { updatedAt: 'desc' },
+            include: {
+              licensee: {
+                select: { id: true, name: true, vertical: true },
+              },
+              credential: {
+                select: { id: true, status: true },
+              },
+            },
+          }),
+          tx.isoReadinessSubmission.count({ where }),
+        ]);
+      });
+
+      const items = submissions.map((sub) => {
+        const answersArray = Array.isArray(sub.answers) ? sub.answers : [];
+        return {
+          id: sub.id,
+          licenseeId: sub.licenseeId,
+          licenseeName: sub.licensee?.name || sub.licenseeId,
+          licenseeVertical: sub.licensee?.vertical || null,
+          tierSelected: sub.tierSelected,
+          selectedFrameworks: sub.selectedFrameworks || [],
+          complianceScore: sub.complianceScore,
+          status: sub.status,
+          answersCount: answersArray.length,
+          reviewerNotes: sub.reviewerNotes,
+          paidAt: sub.paidAt,
+          auditReadyAt: sub.auditReadyAt,
+          hasCredential: !!sub.credential,
+          createdAt: sub.createdAt,
+          updatedAt: sub.updatedAt,
+        };
+      });
+
+      return res.status(200).json({
+        success: true,
+        items,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (err: any) {
+      console.error('[ADMIN SUBMISSIONS QUEUE ERROR]', err);
+      return res.status(500).json({ error: 'Failed to fetch admin submissions queue.' });
+    }
+  });
+
+  // ── GET /api/admin/iso-submissions/:id (Single Submission Dossier) ─────────
+  router.get('/api/admin/iso-submissions/:id', authenticateToken, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden: Admin / Lead Auditor access required.' });
+    }
+
+    const { id } = req.params;
+
+    try {
+      const { submission, evidenceDocuments } = await runWithRls(prisma, user, async (tx) => {
+        const sub = await tx.isoReadinessSubmission.findUnique({
+          where: { id },
+          include: {
+            licensee: {
+              select: { id: true, name: true, vertical: true, stripeConnectedAccountId: true },
+            },
+            credential: true,
+          },
+        });
+
+        if (!sub) {
+          return { submission: null, evidenceDocuments: [] };
+        }
+
+        // Fetch evidence documents uploaded by this licensee
+        const docs = await tx.auditEvidenceDocument.findMany({
+          where: { licenseeId: sub.licenseeId },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        });
+
+        return { submission: sub, evidenceDocuments: docs };
+      });
+
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found.' });
+      }
+
+      return res.status(200).json({
+        success: true,
+        submission,
+        evidenceDocuments,
+      });
+    } catch (err: any) {
+      console.error('[ADMIN SUBMISSION DETAIL ERROR]', err);
+      return res.status(500).json({ error: 'Failed to fetch submission details.' });
     }
   });
 

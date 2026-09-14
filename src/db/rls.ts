@@ -30,6 +30,7 @@ export async function runWithRls<T>(
     const safeIsAdmin = isAdmin ? 'true' : 'false';
 
     await tx.$executeRawUnsafe('SET LOCAL ROLE ghg_app_user;');
+    await tx.$executeRawUnsafe('SET LOCAL search_path TO public;');
     await tx.$executeRawUnsafe(
       `SET LOCAL app.current_licensee_id = '${safeLicenseeId}';`
     );

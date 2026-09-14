@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export const Footer: React.FC = () => {
+  const { isAuthenticated, isAdmin } = useAuth();
   return (
     <footer className="cerebrium-footer">
       {/* 3D Curving Plum Ribbons with Kinetic Laser in Footer Background (Image 2 Exact Spec) */}
@@ -171,12 +173,20 @@ export const Footer: React.FC = () => {
           </h2>
 
           <div className="cerebrium-footer-cta-buttons">
-            <Link to="/create-account" className="cerebrium-btn-solid-magenta">
-              GET STARTED
-            </Link>
-            <Link to="/licensing" className="cerebrium-btn-ghost-dark">
-              BOOK A DEMO
-            </Link>
+            {isAuthenticated ? (
+              <Link to={isAdmin ? '/admin' : '/portal'} className="cerebrium-btn-solid-magenta">
+                {isAdmin ? 'OPEN ADMIN CONSOLE →' : 'GO TO MY DASHBOARD →'}
+              </Link>
+            ) : (
+              <>
+                <Link to="/create-account" className="cerebrium-btn-solid-magenta">
+                  GET STARTED
+                </Link>
+                <Link to="/book-demo" className="cerebrium-btn-ghost-dark">
+                  BOOK A DEMO
+                </Link>
+              </>
+            )}
           </div>
         </div>
 

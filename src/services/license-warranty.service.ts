@@ -183,15 +183,36 @@ export class LicenseWarrantyService {
   /**
    * Updates allowed origin domains for dynamic embed seal CORS checking.
    */
-  public async updateAllowedOrigins(licenseeId: string, allowedOrigins: string[]) {
-    const cred = await this.prisma.auditWarrantyCredential.findFirst({
+  public async updateAllowedOrigins(licenseeId: string, allowedOrigins: string[], client?: any) {
+    const db = client || this.prisma;
+    const cred = await db.auditWarrantyCredential.findFirst({
       where: { licenseeId },
       orderBy: { createdAt: 'desc' },
     });
     if (!cred) {
+      const sub = await db.isoReadinessSubmission.findFirst({
+        where: { licenseeId },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (sub) {
+        return db.auditWarrantyCredential.upsert({
+          where: { submissionId: sub.id },
+          create: {
+            licenseeId,
+            submissionId: sub.id,
+            clientMessage: 'Statutory ISO 14064-1 Audit Seal',
+            clientLogoUrl: '',
+            allowedOrigins,
+            status: 'PENDING',
+          },
+          update: {
+            allowedOrigins,
+          },
+        });
+      }
       throw new Error(`Credential for licensee ${licenseeId} not found.`);
     }
-    return this.prisma.auditWarrantyCredential.update({
+    return db.auditWarrantyCredential.update({
       where: { id: cred.id },
       data: { allowedOrigins },
     });

@@ -27,8 +27,16 @@ export const LoginPage: React.FC = () => {
       
       const fromState = (location.state as any)?.from;
       let targetPath = res.user.role === 'ADMIN' ? '/admin' : '/portal';
-      if (fromState?.pathname && fromState.pathname !== '/portal/login') {
-        targetPath = `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`;
+      if (res.user.role === 'ADMIN') {
+        // Administrators are strictly routed to the Admin Console unless deep-linking into an /admin sub-route
+        if (fromState?.pathname?.startsWith('/admin')) {
+          targetPath = `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`;
+        }
+      } else {
+        // Partners/Licensees are strictly routed to the Partner Portal
+        if (fromState?.pathname && !fromState.pathname.includes('/login') && !fromState.pathname.startsWith('/admin')) {
+          targetPath = `${fromState.pathname}${fromState.search || ''}${fromState.hash || ''}`;
+        }
       }
       navigate(targetPath, { replace: true });
     } catch (err: any) {

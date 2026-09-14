@@ -30,6 +30,8 @@ model Licensee {
   evidenceDocuments        AuditEvidenceDocument[]
   isoReadinessSubmissions  IsoReadinessSubmission[]
   auditWarrantyCredentials AuditWarrantyCredential[]
+  workflowSubmissions      WorkflowSubmission[]
+  workflowApiKeys          WorkflowApiKey[]
 }
 
 enum Vertical {
@@ -103,8 +105,11 @@ enum FulfillmentStatus {
 }
 
 enum CharityStatus {
-  PENDING
+  PENDING_APPLICATION
+  APPROVED_AWAITING_STRIPE
   ACTIVE
+  EXPIRED
+  PENDING
   INACTIVE
 }
 
@@ -113,7 +118,14 @@ model Charity {
   name                     String
   stripeConnectedAccountId String?
   status                   CharityStatus       @default(ACTIVE)
+  contractStartDate        DateTime?
+  contractEndDate          DateTime?
+  walletAddress            String?
+  registeredCharityNumber  String?
+  contactEmail             String?
+  statement                String?
   createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @default(now()) @updatedAt
 
   allocations              CharityAllocation[]
 }
@@ -405,6 +417,8 @@ model AuditEvidenceDocument {
   uploadedBy    String
   createdAt     DateTime          @default(now())
 
+  workflowAnswers WorkflowAnswer[]
+
   @@index([licenseeId, category])
   @@index([reportId])
 }
@@ -596,3 +610,158 @@ model DemoBooking {
   @@index([workEmail])
   @@index([requestedSlot])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKFLOW ENGINE: Parameterized Carbon & Job Reporting Compliance State Machine
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum WorkflowType {
+  CARBON
+  JOB
+}
+
+enum WorkflowStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PAID
+  BADGE_ISSUED
+  MINTED
+}
+
+enum WorkflowAnswerType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+}
+
+enum ReviewOverallDecision {
+  APPROVED
+  REJECTED
+}
+
+model WorkflowFramework {
+  id            String              @id
+  workflowType  WorkflowType
+  code          String              @unique
+  name          String
+  governingBody String?
+  jurisdiction  String?
+  description   String?
+  createdAt     DateTime            @default(now())
+
+  questions     WorkflowQuestion[]
+  submissions   WorkflowSubmission[]
+
+  @@index([workflowType])
+}
+
+model WorkflowQuestion {
+  id                 String              @id @default(cuid())
+  frameworkId        String
+  framework          WorkflowFramework   @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  orderIndex         Int
+  text               String
+  answerType         WorkflowAnswerType  @default(TEXT)
+  options            String[]            @default([])
+  evidenceRequired   Boolean             @default(false)
+  isoClauseReference String
+  guidanceNotes      String?
+  createdAt          DateTime            @default(now())
+
+  answers            WorkflowAnswer[]
+
+  @@index([frameworkId, orderIndex])
+}
+
+model WorkflowSubmission {
+  id              String                  @id @default(cuid())
+  licenseeId      String
+  licensee        Licensee                @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  workflowType    WorkflowType
+  frameworkId     String
+  framework       WorkflowFramework       @relation(fields: [frameworkId], references: [id])
+  status          WorkflowStatus          @default(DRAFT)
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewerId      String?
+  complianceScore Int?
+  paidAt          DateTime?
+  stripeSessionId String?
+  clientMessage   String?
+  clientLogoUrl   String?
+  compositeBadgeUrl String?
+  tokenId         String?
+  contractAddress String?
+  transactionHash String?
+  openSeaUrl      String?
+  mintedAt        DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  answers         WorkflowAnswer[]
+  reviewDecision  WorkflowReviewDecision?
+  transitions     WorkflowTransitionLog[]
+
+  @@index([licenseeId, status])
+  @@index([workflowType, status])
+}
+
+model WorkflowAnswer {
+  id                 String                 @id @default(cuid())
+  submissionId       String
+  submission         WorkflowSubmission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId         String
+  question           WorkflowQuestion       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  value              String
+  evidenceDocumentId String?
+  evidenceDocument   AuditEvidenceDocument? @relation(fields: [evidenceDocumentId], references: [id])
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@unique([submissionId, questionId])
+  @@index([submissionId])
+}
+
+model WorkflowReviewDecision {
+  id                   String                 @id @default(cuid())
+  submissionId         String                 @unique
+  submission           WorkflowSubmission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  reviewerId           String?
+  overallDecision      ReviewOverallDecision
+  overallScore         Int
+  perQuestionDecisions Json
+  reviewerNotes        String?
+  createdAt            DateTime               @default(now())
+}
+
+model WorkflowTransitionLog {
+  id             String             @id @default(cuid())
+  submissionId   String
+  submission     WorkflowSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  previousStatus WorkflowStatus?
+  newStatus      WorkflowStatus
+  triggeredBy    String
+  triggerReason  String?
+  timestamp      DateTime           @default(now())
+
+  @@index([submissionId, timestamp])
+}
+
+model WorkflowApiKey {
+  id           String       @id @default(cuid())
+  licenseeId   String
+  licensee     Licensee     @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  workflowType WorkflowType
+  keyHash      String       @unique
+  maskedKey    String
+  name         String?
+  createdAt    DateTime     @default(now())
+  revokedAt    DateTime?
+
+  @@index([licenseeId, workflowType])
+}
+

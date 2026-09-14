@@ -105,6 +105,7 @@ export function createPortalRouter(prisma: PrismaClient): Router {
       });
 
       return res.status(200).json({
+        transactions: result.transactions,
         data: result.transactions,
         pagination: {
           total: result.total,
@@ -321,5 +322,35 @@ export function createPortalRouter(prisma: PrismaClient): Router {
     }
   });
 
+  /**
+   * GET /api/portal/dashboard
+   * Part B.5 Standard Client Profile Dashboard endpoint:
+   * Returns unified profile, multi-role chips, top audit cards, reverse-chronological activity feed
+   * (including drafts/in-progress items), credentials panel, and telemetry API access.
+   * Scoped via RLS to authenticated user. Admins can inspect any client with ?licenseeId= or ?userId=.
+   */
+  router.get('/api/portal/dashboard', async (req: Request, res: Response) => {
+    const user = req.user!;
+    const targetLicenseeId =
+      user.role === 'ADMIN' ? (req.query.licenseeId as string) || user.licenseeId : user.licenseeId;
+    const targetUserId =
+      user.role === 'ADMIN' ? (req.query.userId as string) || user.userId : user.userId;
+
+    try {
+      const { DashboardService } = await import('../services/dashboard.service');
+      const dashboardService = new DashboardService(prisma);
+
+      const data = await runWithRls(prisma, user, async () => {
+        return dashboardService.getDashboardData(targetUserId, targetLicenseeId);
+      });
+
+      return res.status(200).json({ dashboard: data });
+    } catch (err: any) {
+      console.error('[PORTAL DASHBOARD ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to retrieve client profile dashboard data.' });
+    }
+  });
+
   return router;
 }
+

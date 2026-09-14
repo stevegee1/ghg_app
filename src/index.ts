@@ -8,6 +8,17 @@ import { scheduleReconciliationJob } from './jobs/reconcile.job';
 async function main() {
   console.log('GHG Logo Drop Backend - Milestone 3 Initialized');
 
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.JWT_SECRET) {
+      console.error('FATAL: JWT_SECRET environment variable must be set in production. Refusing to start.');
+      process.exit(1);
+    }
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error('FATAL: STRIPE_WEBHOOK_SECRET environment variable must be set in production. Refusing to start.');
+      process.exit(1);
+    }
+  }
+
   const app = createApp();
   const port = Number(process.env.PORT) || 3000;
 

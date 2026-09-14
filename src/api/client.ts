@@ -1,7 +1,6 @@
 import { mockApi } from './mockClient';
-const USE_MOCK_ENV = typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_USE_MOCK === 'true';
-
-export let isUsingMockData = USE_MOCK_ENV;
+const USE_MOCK_ENV = false;
+export let isUsingMockData = false;
 
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -581,7 +580,7 @@ export const api = {
 
   async submitIsoAnswers(
     token: string,
-    params: { answers: any[]; tierSelected?: string; selectedFrameworks?: string[] }
+    params: { answers: any[]; tierSelected?: string; selectedFrameworks?: string[]; submissionId?: string; isNewWorkflow?: boolean }
   ): Promise<any> {
     const res = await fetch('/api/iso-readiness/submit', {
       method: 'POST',
@@ -593,14 +592,92 @@ export const api = {
     return data;
   },
 
+  async uploadEvidenceProofFile(
+    token: string,
+    params: { file: File; licenseeId?: string; questionId?: string; matrixRowId?: string; reportId?: string; category?: string }
+  ): Promise<any> {
+    const form = new FormData();
+    form.append('file', params.file);
+    if (params.licenseeId) form.append('licenseeId', params.licenseeId);
+    if (params.questionId) form.append('questionId', params.questionId);
+    if (params.matrixRowId) form.append('matrixRowId', params.matrixRowId);
+    if (params.reportId) form.append('reportId', params.reportId);
+    if (params.category) form.append('category', params.category);
+
+    const res = await fetch('/api/portal/iso/evidence/upload-file', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      const errorMsg =
+        (typeof data?.error === 'string' && data.error) ||
+        (typeof data?.message === 'string' && data.message) ||
+        (text && text.length < 150 && !text.startsWith('<') ? text : `Upload failed with HTTP ${res.status}`);
+      throw new Error(errorMsg);
+    }
+    return data;
+  },
+
+  async getEvidenceDocuments(token: string, licenseeId?: string): Promise<any> {
+    const url = licenseeId ? `/api/portal/iso/evidence?licenseeId=${encodeURIComponent(licenseeId)}` : '/api/portal/iso/evidence';
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
   async reviewIsoSubmission(
     token: string,
-    params: { submissionId: string; auditorNotes?: string; targetStatus?: string }
+    params: {
+      submissionId: string;
+      auditorNotes?: string;
+      targetStatus?: string;
+      decision?: 'APPROVE' | 'REQUIRE_REVISION';
+      reviewerNotes?: string;
+      complianceScore?: number;
+    }
   ): Promise<any> {
     const res = await fetch('/api/iso-readiness/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminIsoSubmissions(
+    token: string,
+    params?: { status?: string; search?: string; page?: number; limit?: number }
+  ): Promise<any> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.search) query.set('search', params.search);
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+
+    const res = await fetch(`/api/admin/iso-submissions?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminIsoSubmissionDetail(token: string, submissionId: string): Promise<any> {
+    const res = await fetch(`/api/admin/iso-submissions/${encodeURIComponent(submissionId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -681,6 +758,20 @@ export const api = {
   async getBadgeStatus(licenseeId: string, origin?: string): Promise<any> {
     const query = origin ? `?licenseeId=${encodeURIComponent(licenseeId)}&origin=${encodeURIComponent(origin)}` : `?licenseeId=${encodeURIComponent(licenseeId)}`;
     const res = await fetch(`/api/v1/badges/status${query}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async updateAllowedOrigins(token: string, allowedOrigins: string[]): Promise<any> {
+    const res = await fetch('/api/v1/badges/origins', {
+      method: 'POST',
+      headers: {
+        ...getAuthHeader(token),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ allowedOrigins }),
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;

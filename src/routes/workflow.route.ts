@@ -1,0 +1,702 @@
+import crypto from 'crypto';
+import { Router, Request, Response } from 'express';
+import { PrismaClient, WorkflowType, WorkflowStatus } from '@prisma/client';
+import { authenticateToken } from '../middleware/auth.middleware';
+import {
+  WorkflowEngineService,
+  InvalidWorkflowTransitionError,
+  MissingRequiredEvidenceError,
+} from '../services/workflow-engine.service';
+import { CheckoutService } from '../services/checkout.service';
+import { runWithRls } from '../db/rls';
+
+export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: CheckoutService): Router {
+  const router = Router();
+  const workflowService = new WorkflowEngineService(prisma);
+
+  // Initialize standard frameworks asynchronously in background on startup
+  workflowService.seedStandardFrameworks().catch((err) => {
+    console.error('[WORKFLOW SEED WARN]', err);
+  });
+
+  const requireAdmin = (req: Request, res: Response, next: () => void) => {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required.' });
+    }
+    next();
+  };
+
+  /**
+   * GET /api/workflow/frameworks
+   * Lists supported frameworks and their ordered questions parameterized by workflowType ('CARBON' | 'JOB').
+   */
+  router.get('/api/workflow/frameworks', async (req: Request, res: Response) => {
+    try {
+      const { type } = req.query;
+      let workflowType: WorkflowType | undefined = undefined;
+
+      if (type && typeof type === 'string') {
+        const upper = type.toUpperCase();
+        if (upper === 'CARBON' || upper === 'JOB') {
+          workflowType = upper as WorkflowType;
+        } else {
+          return res.status(400).json({ error: `Invalid workflow type: ${type}. Must be 'CARBON' or 'JOB'.` });
+        }
+      }
+
+      const frameworks = await workflowService.listFrameworks(workflowType);
+      return res.status(200).json({ frameworks });
+    } catch (err: any) {
+      console.error('[WORKFLOW FRAMEWORKS GET ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve workflow frameworks.' });
+    }
+  });
+
+  /**
+   * POST /api/workflow/draft
+   * Initializes a new DRAFT submission for the authenticated licensee.
+   */
+  router.post('/api/workflow/draft', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    const licenseeId = user.licenseeId || req.body.licenseeId;
+
+    if (!licenseeId) {
+      return res.status(400).json({ error: 'licenseeId is required.' });
+    }
+
+    const { workflowType, frameworkId } = req.body || {};
+
+    if (!workflowType || (workflowType !== 'CARBON' && workflowType !== 'JOB')) {
+      return res.status(400).json({ error: "workflowType must be 'CARBON' or 'JOB'." });
+    }
+
+    if (!frameworkId || typeof frameworkId !== 'string') {
+      return res.status(400).json({ error: 'frameworkId is required.' });
+    }
+
+    try {
+      const submission = await runWithRls(prisma, user, async () => {
+        return workflowService.createDraft(
+          licenseeId,
+          workflowType as WorkflowType,
+          frameworkId,
+          user.userId
+        );
+      });
+
+      return res.status(201).json({
+        success: true,
+        submission,
+      });
+    } catch (err: any) {
+      console.error('[WORKFLOW DRAFT CREATE ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to create workflow draft.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/submissions
+   * Lists submissions scoped to the tenant (or all for Admin).
+   */
+  router.get('/api/workflow/submissions', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    const { workflowType, status } = req.query;
+
+    try {
+      const submissions = await runWithRls(prisma, user, async (tx) => {
+        const where: any = {};
+
+        if (user.role !== 'ADMIN' && user.licenseeId) {
+          where.licenseeId = user.licenseeId;
+        } else if (req.query.licenseeId && typeof req.query.licenseeId === 'string') {
+          where.licenseeId = req.query.licenseeId;
+        }
+
+        if (workflowType && typeof workflowType === 'string') {
+          where.workflowType = workflowType.toUpperCase() as WorkflowType;
+        }
+
+        if (status && typeof status === 'string') {
+          where.status = status.toUpperCase() as WorkflowStatus;
+        }
+
+        return tx.workflowSubmission.findMany({
+          where,
+          include: {
+            framework: { select: { id: true, code: true, name: true } },
+            licensee: { select: { id: true, name: true } },
+            _count: { select: { answers: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      });
+
+      return res.status(200).json({ submissions });
+    } catch (err: any) {
+      console.error('[WORKFLOW SUBMISSIONS LIST ERROR]', err);
+      return res.status(500).json({ error: 'Failed to list submissions.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/submissions/:id
+   * Retrieves full submission dossier with answers, evidence, and transition logs.
+   */
+  router.get('/api/workflow/submissions/:id', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+
+    try {
+      const dossier = await runWithRls(prisma, user, async () => {
+        return workflowService.getSubmissionDossier(id);
+      });
+
+      if (!dossier) {
+        return res.status(404).json({ error: 'Submission not found.' });
+      }
+
+      if (user.role !== 'ADMIN' && user.licenseeId && dossier.licenseeId !== user.licenseeId) {
+        return res.status(403).json({ error: 'Forbidden: You do not have access to this submission.' });
+      }
+
+      return res.status(200).json({ submission: dossier });
+    } catch (err: any) {
+      console.error('[WORKFLOW DOSSIER GET ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve submission dossier.' });
+    }
+  });
+
+  /**
+   * PATCH /api/workflow/submissions/:id/answers
+   * Autosaves answers to a draft or rejected submission.
+   */
+  router.patch('/api/workflow/submissions/:id/answers', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    const { answers } = req.body || {};
+
+    if (!Array.isArray(answers)) {
+      return res.status(400).json({ error: 'answers must be an array of { questionId, value, evidenceDocumentId? }.' });
+    }
+
+    try {
+      const updated = await runWithRls(prisma, user, async (tx) => {
+        const existing = await tx.workflowSubmission.findUnique({ where: { id } });
+        if (!existing) throw new Error('Submission not found.');
+
+        const effectiveLicenseeId = user.role === 'ADMIN' ? existing.licenseeId : user.licenseeId!;
+        return workflowService.saveAnswers(id, effectiveLicenseeId, answers);
+      });
+
+      return res.status(200).json({ success: true, submission: updated });
+    } catch (err: any) {
+      console.error('[WORKFLOW ANSWERS SAVE ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to save answers.' });
+    }
+  });
+
+  /**
+   * POST /api/workflow/submissions/:id/submit
+   * Submits a DRAFT (or resubmits REJECTED) for Lead Auditor review.
+   * Validates that all questions with evidenceRequired: true have valid evidence attachments.
+   */
+  router.post('/api/workflow/submissions/:id/submit', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+
+    try {
+      const submitted = await runWithRls(prisma, user, async (tx) => {
+        const existing = await tx.workflowSubmission.findUnique({ where: { id } });
+        if (!existing) throw new Error('Submission not found.');
+
+        if (user.role !== 'ADMIN' && user.licenseeId && existing.licenseeId !== user.licenseeId) {
+          throw new Error('Forbidden: Licensee mismatch.');
+        }
+
+        return workflowService.transitionStatus(
+          id,
+          WorkflowStatus.SUBMITTED,
+          { userId: user.userId, role: user.role },
+          'Client finalized and submitted questionnaire for review'
+        );
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Submission successfully submitted for Lead Auditor review.',
+        submission: submitted,
+      });
+    } catch (err: any) {
+      if (err instanceof MissingRequiredEvidenceError) {
+        return res.status(422).json({
+          error: err.message,
+          missingQuestions: err.missingQuestions,
+        });
+      }
+      if (err instanceof InvalidWorkflowTransitionError) {
+        return res.status(400).json({ error: err.message });
+      }
+      console.error('[WORKFLOW SUBMIT ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to submit questionnaire.' });
+    }
+  });
+
+  /**
+   * POST /api/workflow/submissions/:id/transition
+   * Allows authorized transition across the state machine.
+   */
+  router.post('/api/workflow/submissions/:id/transition', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    const { targetStatus, reason, notes } = req.body || {};
+    const triggerReason = reason || notes;
+
+    if (!targetStatus || !Object.values(WorkflowStatus).includes(targetStatus)) {
+      return res.status(400).json({ error: `Invalid targetStatus: ${targetStatus}.` });
+    }
+
+    try {
+      // transitionStatus enforces role and licensee checks internally; runWithRls is not used
+      // here to avoid nested Prisma interactive transactions which expire at 5000ms.
+      const updated = await workflowService.transitionStatus(
+        id,
+        targetStatus as WorkflowStatus,
+        { userId: user.userId, role: user.role },
+        triggerReason
+      );
+
+      return res.status(200).json({ success: true, submission: updated });
+    } catch (err: any) {
+      if (err instanceof InvalidWorkflowTransitionError) {
+        return res.status(400).json({ error: err.message });
+      }
+      console.error('[WORKFLOW TRANSITION ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to transition workflow status.' });
+    }
+  });
+
+  /**
+   * POST /api/workflow/submissions/:id/review
+   * Admin-only: Records structured review decision (APPROVED | REJECTED) with per-question breakdowns.
+   */
+  router.post('/api/workflow/submissions/:id/review', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    const { overallDecision, overallScore, perQuestionDecisions, reviewerNotes } = req.body || {};
+
+    if (!overallDecision || (overallDecision !== 'APPROVED' && overallDecision !== 'REJECTED')) {
+      return res.status(400).json({ error: "overallDecision must be 'APPROVED' or 'REJECTED'." });
+    }
+
+    if (typeof overallScore !== 'number' || overallScore < 0 || overallScore > 100) {
+      return res.status(400).json({ error: 'overallScore must be an integer between 0 and 100.' });
+    }
+
+    if (!Array.isArray(perQuestionDecisions) || perQuestionDecisions.length === 0) {
+      return res.status(400).json({
+        error: 'perQuestionDecisions must be a non-empty array of { questionId, accepted, reasonIfRejected }.',
+      });
+    }
+
+    try {
+      const reviewed = await runWithRls(prisma, user, async () => {
+        return workflowService.submitReview(
+          id,
+          {
+            overallDecision,
+            overallScore,
+            perQuestionDecisions,
+            reviewerNotes,
+          },
+          { userId: user.userId, role: user.role }
+        );
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Submission marked ${overallDecision} with conformance score ${overallScore}%.`,
+        submission: reviewed,
+      });
+    } catch (err: any) {
+      console.error('[WORKFLOW REVIEW ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to record review decision.' });
+    }
+  });
+
+  /**
+   * Screen 7: POST /api/workflow/submissions/:id/checkout-session
+   * Initiates flat-fee statutory assurance checkout session with 15% ESG direct charity allocation.
+   */
+  router.post('/api/workflow/submissions/:id/checkout-session', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    const licenseeId = user.licenseeId || req.body.licenseeId;
+
+    try {
+      const submission = await runWithRls(prisma, user, async (tx) => {
+        return tx.workflowSubmission.findUnique({
+          where: { id },
+          include: { framework: true, licensee: true },
+        });
+      });
+
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found.' });
+      }
+
+      if (user.role !== 'ADMIN' && submission.licenseeId !== licenseeId) {
+        return res.status(403).json({ error: 'Forbidden: Licensee mismatch.' });
+      }
+
+      if (submission.status !== WorkflowStatus.APPROVED) {
+        return res.status(400).json({
+          error: `Cannot initiate checkout for submission in '${submission.status}' status. Submission must be 'APPROVED'.`,
+        });
+      }
+
+      // Statutory flat fee: £1,500.00 (never priced by carbon credits/volume per Part D.2)
+      const grossAmountCents = 150000;
+      const charitySplitCents = 22500; // 15% Statutory ESG Charity Split
+      const softwareFeeCents = 127500; // 85% Platform Assurance & Software Fee
+
+      const host = req.get('host') || 'localhost:8080';
+      const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const successUrl = `${protocol}://${host}/portal?view=workflow&submissionId=${id}&step=8&session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${protocol}://${host}/portal?view=workflow&submissionId=${id}&step=6`;
+
+      let checkoutUrl: string | null = null;
+      let stripeSessionId: string = `cs_live_wf_${crypto.randomBytes(12).toString('hex')}`;
+
+      if (checkoutService) {
+        try {
+          const session = await checkoutService.createCheckoutSession({
+            licenseeId: submission.licenseeId,
+            itemTitle: `GHG Assurance Fee — ${submission.framework.name}`,
+            grossAmountCents,
+            currency: 'GBP',
+            successUrl,
+            cancelUrl,
+          });
+          checkoutUrl = session.sessionUrl;
+          if (session.sessionId) {
+            stripeSessionId = session.sessionId;
+          }
+        } catch (stripeErr) {
+          // Fallback for local development/offline environments
+          console.warn('[WORKFLOW CHECKOUT SESSION] Stripe hosted session fallback:', (stripeErr as Error).message);
+        }
+      }
+
+      if (!checkoutUrl) {
+        checkoutUrl = `/api/portal/assurance-checkout-return?session_id=${stripeSessionId}&submissionId=${id}&simulated=true`;
+      }
+
+      return res.status(200).json({
+        success: true,
+        submissionId: id,
+        grossAmountCents,
+        charitySplitCents,
+        softwareFeeCents,
+        currency: 'GBP',
+        checkoutUrl,
+        stripeSessionId,
+      });
+    } catch (err: any) {
+      console.error('[WORKFLOW CHECKOUT SESSION ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to create checkout session.' });
+    }
+  });
+
+  /**
+   * Screen 7: POST /api/workflow/submissions/:id/pay
+   * Confirms payment settlement (transitions APPROVED -> PAID).
+   */
+  router.post('/api/workflow/submissions/:id/pay', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    const licenseeId = user.licenseeId || req.body.licenseeId;
+
+    try {
+      const updated = await runWithRls(prisma, user, async () => {
+        return workflowService.simulatePayment(
+          id,
+          licenseeId,
+          { userId: user.userId, role: user.role },
+          req.body.stripeSessionId
+        );
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment settled. Audit submission is now PAID.',
+        submission: updated,
+      });
+    } catch (err: any) {
+      if (err instanceof InvalidWorkflowTransitionError) {
+        return res.status(400).json({ error: err.message });
+      }
+      console.error('[WORKFLOW PAY ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to settle payment.' });
+    }
+  });
+
+  /**
+   * Screen 8: POST /api/workflow/submissions/:id/badge-setup
+   * Collects client message (max 100 chars) and logo, composites badge, and transitions PAID -> BADGE_ISSUED.
+   */
+  router.post('/api/workflow/submissions/:id/badge-setup', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    const licenseeId = user.licenseeId || req.body.licenseeId;
+    const clientMessage = req.body?.clientMessage || req.body?.badgeMessage;
+    const clientLogoUrl = req.body?.clientLogoUrl || req.body?.badgeLogoUrl;
+
+    if (!clientMessage || typeof clientMessage !== 'string') {
+      return res.status(400).json({ error: 'clientMessage is required.' });
+    }
+
+    if (clientMessage.trim().length > 100) {
+      return res.status(400).json({ error: 'clientMessage must not exceed 100 characters.' });
+    }
+
+    try {
+      const result = await runWithRls(prisma, user, async () => {
+        return workflowService.setupBadge(
+          id,
+          licenseeId,
+          {
+            clientMessage,
+            clientLogoUrl,
+          },
+          { userId: user.userId, role: user.role }
+        );
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Audit Warranty Badge composited and issued.',
+        submission: result.submission,
+        compositeResult: result.compositeResult,
+      });
+    } catch (err: any) {
+      if (err instanceof InvalidWorkflowTransitionError) {
+        return res.status(400).json({ error: err.message });
+      }
+      console.error('[WORKFLOW BADGE SETUP ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to generate badge.' });
+    }
+  });
+
+  /**
+   * Screen 9: POST /api/workflow/submissions/:id/mint
+   * Validates Polygon wallet address and mints ERC-1155 token (transitions BADGE_ISSUED -> MINTED).
+   */
+  router.post('/api/workflow/submissions/:id/mint', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+    const licenseeId = user.licenseeId || req.body.licenseeId;
+    const recipientAddress = req.body?.recipientAddress || req.body?.walletAddress;
+
+    if (!recipientAddress || typeof recipientAddress !== 'string') {
+      return res.status(400).json({ error: 'recipientAddress is required.' });
+    }
+
+    const ethRegex = /^0x[a-fA-F0-9]{40}$/;
+    if (!ethRegex.test(recipientAddress.trim())) {
+      return res.status(400).json({
+        error: `Invalid wallet address format: '${recipientAddress}'. Must be a valid 42-character 0x-prefixed hex address.`,
+      });
+    }
+
+    try {
+      const result = await runWithRls(prisma, user, async () => {
+        return workflowService.mintBadge(
+          id,
+          licenseeId,
+          recipientAddress.trim(),
+          { userId: user.userId, role: user.role }
+        );
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Token successfully minted on Polygon PoS.',
+        submission: result.submission,
+        mintResult: result.mintResult,
+      });
+    } catch (err: any) {
+      if (err instanceof InvalidWorkflowTransitionError) {
+        return res.status(400).json({ error: err.message });
+      }
+      console.error('[WORKFLOW MINT ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to mint token.' });
+    }
+  });
+
+  /**
+   * Screen 9 & 10: GET /api/workflow/submissions/:id/pdf & /download-pdf
+   * Streams downloadable PDF Proof of Audit and Badge Warranty Certificate.
+   */
+  router.get(['/api/workflow/submissions/:id/pdf', '/api/workflow/submissions/:id/download-pdf'], async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+      const pdfBuffer = await workflowService.generatePdfProof(id);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="GHG-Audit-Proof-${id}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      return res.status(200).send(pdfBuffer);
+    } catch (err: any) {
+      console.error('[WORKFLOW PDF ERROR]', err);
+      return res.status(404).json({ error: err.message || 'Failed to generate PDF proof.' });
+    }
+  });
+
+  /**
+   * Screen 10: GET /api/workflow/my-badges
+   * Returns all issued and minted badges for the authenticated licensee.
+   */
+  router.get('/api/workflow/my-badges', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    const licenseeId = user.licenseeId || (req.query.licenseeId as string);
+
+    try {
+      const submissions = await runWithRls(prisma, user, async (tx) => {
+        return tx.workflowSubmission.findMany({
+          where: {
+            ...(licenseeId ? { licenseeId } : {}),
+            status: { in: [WorkflowStatus.BADGE_ISSUED, WorkflowStatus.MINTED] },
+          },
+          include: { framework: true, licensee: true },
+          orderBy: { updatedAt: 'desc' },
+        });
+      });
+
+      const badges = submissions.map((sub) => ({
+        id: sub.id,
+        workflowType: sub.workflowType,
+        frameworkId: sub.frameworkId,
+        frameworkCode: sub.framework.code,
+        frameworkName: sub.framework.name,
+        companyName: sub.licensee.name,
+        badgeMessage: sub.clientMessage,
+        badgeLogoUrl: sub.clientLogoUrl,
+        auditDate: sub.reviewedAt ? sub.reviewedAt.toISOString() : sub.updatedAt.toISOString(),
+        status: sub.status,
+        polygonTxHash: sub.transactionHash,
+        walletAddress: sub.tokenId,
+        contractAddress: sub.contractAddress || '0x7b96aF9Bd211cBf6BA5b0dd53aa61Dc5806b6AcE',
+        pdfDownloadUrl: `/api/workflow/submissions/${sub.id}/pdf`,
+      }));
+
+      return res.status(200).json({ success: true, badges });
+    } catch (err: any) {
+      console.error('[MY BADGES ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to fetch badges.' });
+    }
+  });
+
+  /**
+   * Screen 11: POST /api/workflow/telemetry-keys & /telemetry-key
+   * Generates a unique scoped API key for that client & workflow type.
+   * Returns full raw key ONCE.
+   */
+  router.post(['/api/workflow/telemetry-keys', '/api/workflow/telemetry-key'], authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    const licenseeId = user.licenseeId || req.body.licenseeId;
+    const workflowType = req.body?.workflowType || 'CARBON';
+    const name = req.body?.name || req.body?.keyLabel || `${workflowType} Live Sensor Key`;
+
+    if (!licenseeId) {
+      return res.status(400).json({ error: 'licenseeId is required.' });
+    }
+
+    if (workflowType !== 'CARBON' && workflowType !== 'JOB') {
+      return res.status(400).json({ error: "workflowType must be 'CARBON' or 'JOB'." });
+    }
+
+    try {
+      const result = await runWithRls(prisma, user, async () => {
+        return workflowService.generateTelemetryApiKey(
+          licenseeId,
+          workflowType as WorkflowType,
+          name
+        );
+      });
+
+      return res.status(201).json({
+        success: true,
+        key: result,
+      });
+    } catch (err: any) {
+      console.error('[WORKFLOW TELEMETRY KEY ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to generate telemetry key.' });
+    }
+  });
+
+  /**
+   * Screen 11: GET /api/workflow/telemetry-keys
+   * Lists masked keys for authenticated tenant.
+   */
+  router.get('/api/workflow/telemetry-keys', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    const licenseeId = user.licenseeId || (req.query.licenseeId as string);
+
+    if (!licenseeId) {
+      return res.status(400).json({ error: 'licenseeId is required.' });
+    }
+
+    try {
+      const keys = await runWithRls(prisma, user, async () => {
+        return workflowService.listTelemetryApiKeys(licenseeId);
+      });
+
+      return res.status(200).json({ keys });
+    } catch (err: any) {
+      console.error('[WORKFLOW TELEMETRY KEYS LIST ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to list telemetry keys.' });
+    }
+  });
+
+  /**
+   * Screen 4: POST /api/workflow/evidence/upload
+   * Registers evidence document for questionnaire answers.
+   */
+  router.post('/api/workflow/evidence/upload', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    const licenseeId = user.licenseeId || req.body.licenseeId;
+    const { fileName, mimeType, fileSizeBytes, fileBufferBase64, category } = req.body || {};
+
+    if (!licenseeId || !fileName) {
+      return res.status(400).json({ error: 'licenseeId and fileName are required.' });
+    }
+
+    try {
+      const buffer = fileBufferBase64 ? Buffer.from(fileBufferBase64, 'base64') : undefined;
+
+      const doc = await runWithRls(prisma, user, async () => {
+        return workflowService.uploadEvidenceDocument({
+          licenseeId,
+          uploadedBy: user.userId,
+          fileName,
+          mimeType: mimeType || 'application/pdf',
+          fileSizeBytes: fileSizeBytes || (buffer ? buffer.length : 1024),
+          fileBuffer: buffer,
+          category,
+        });
+      });
+
+      return res.status(201).json({
+        success: true,
+        evidenceDocument: doc,
+      });
+    } catch (err: any) {
+      console.error('[WORKFLOW EVIDENCE UPLOAD ERROR]', err);
+      return res.status(400).json({ error: err.message || 'Failed to register evidence document.' });
+    }
+  });
+
+  return router;
+}
+

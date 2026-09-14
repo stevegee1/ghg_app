@@ -23,9 +23,14 @@ import { BlogPage } from './pages/BlogPage';
 import { BookDemoPage } from './pages/BookDemoPage';
 import { BookDemoModal } from './components/BookDemoModal';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({
+const ProtectedRoute: React.FC<{
+  children: React.ReactNode;
+  adminOnly?: boolean;
+  partnerOnly?: boolean;
+}> = ({
   children,
   adminOnly = false,
+  partnerOnly = false,
 }) => {
   const { isAuthenticated, isAdmin } = useAuth();
 
@@ -33,8 +38,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
     return <Navigate to="/portal/login" replace />;
   }
 
+  // If this route is restricted to admins only, redirect non-admins to the partner portal
   if (adminOnly && !isAdmin) {
     return <Navigate to="/portal" replace />;
+  }
+
+  // If this route is client/partner only, redirect administrators to the admin console
+  if (partnerOnly && isAdmin) {
+    return <Navigate to="/admin" replace />;
   }
 
   return <>{children}</>;
@@ -53,10 +64,13 @@ export const AppRoutes: React.FC = () => {
         <Route path="jobs" element={<JobReportingPage />} />
         <Route path="souvenirs" element={<EventSouvenirPage />} />
         <Route path="public-tracker" element={<PublicTrackerPage />} />
+        <Route path="track/:orderNumber" element={<PublicTrackerPage />} />
+        <Route path="track" element={<PublicTrackerPage />} />
         <Route path="merch" element={<MerchStorePage />} />
         <Route path="partner/drop" element={<PartnerLogoDropPage />} />
         <Route path="certificate/:id" element={<CertificateViewPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="checkout/success" element={<CheckoutPage />} />
         <Route path="transparency" element={<TransparencyPage />} />
         <Route path="book-demo" element={<BookDemoPage />} />
         <Route path="demo" element={<BookDemoPage />} />
@@ -78,7 +92,7 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="portal"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute partnerOnly>
               <PortalPage />
             </ProtectedRoute>
           }

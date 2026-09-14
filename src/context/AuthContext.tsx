@@ -19,18 +19,41 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // In-memory authentication state (does not persist sensitive tokens to localStorage)
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('ghg_auth_token') || sessionStorage.getItem('ghg_auth_token') || null;
+  });
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('ghg_auth_user') || sessionStorage.getItem('ghg_auth_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
+    try {
+      localStorage.setItem('ghg_auth_token', newToken);
+      localStorage.setItem('ghg_auth_user', JSON.stringify(newUser));
+    } catch (e) {
+      console.warn('Failed to persist auth token', e);
+    }
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
+    try {
+      localStorage.removeItem('ghg_auth_token');
+      localStorage.removeItem('ghg_auth_user');
+    } catch (e) {
+      console.warn('Failed to clear auth token', e);
+    }
   };
 
   return (

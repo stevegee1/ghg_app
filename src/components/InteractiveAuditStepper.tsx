@@ -23,8 +23,15 @@ interface InteractiveAuditStepperProps {
   answers: Record<string, any>;
   onAnswerChange: (questionId: string, answer: string) => void;
   isAuditReady: boolean;
+  isSubmittedPendingReview?: boolean;
   onProceedToCheckout?: () => void;
+  onSubmitForReview?: () => void;
   estimatedScore: number;
+  submitting?: boolean;
+  submitError?: string | null;
+  onViewReviewStatus?: () => void;
+  onUploadEvidence?: (questionId: string, file: File) => Promise<any>;
+  evidenceByQuestion?: Record<string, Array<{ fileName: string; sha256Hash: string; fileUrl: string; fileSizeBytes?: number }>>;
 }
 
 export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = ({
@@ -32,30 +39,96 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
   answers,
   onAnswerChange,
   isAuditReady,
+  isSubmittedPendingReview,
   onProceedToCheckout,
+  onSubmitForReview,
   estimatedScore,
+  submitting = false,
+  submitError = null,
+  onViewReviewStatus,
+  onUploadEvidence,
+  evidenceByQuestion = {},
 }) => {
   const [activePillarIdx, setActivePillarIdx] = useState<number>(0);
   const [activeQuestionIdx, setActiveQuestionIdx] = useState<number>(0);
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [autoAdvanceTimer, setAutoAdvanceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [uploadingEvidence, setUploadingEvidence] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const currentPillar = pillars[activePillarIdx] || pillars[0];
   const currentQuestions = currentPillar?.questions || [];
   const currentQuestion = currentQuestions[activeQuestionIdx] || currentQuestions[0];
   const currentQId = currentQuestion ? (currentQuestion.questionId || currentQuestion.id || '') : '';
   const currentSelectedAnswer = answers[currentQId];
+  const questionEvidenceList = evidenceByQuestion[currentQId] || [];
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    if (!onUploadEvidence) {
+      setUploadError('Evidence upload handler is not configured.');
+      return;
+    }
+    setUploadingEvidence(true);
+    try {
+      await onUploadEvidence(currentQId, file);
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload proof document.');
+    } finally {
+      setUploadingEvidence(false);
+      e.target.value = '';
+    }
+  };
 
   // Navigation handlers with clean, instantaneous state updates
   const goToNext = useCallback(() => {
+    if (submitting) return;
+    setDirection('next');
+
     if (activeQuestionIdx < currentQuestions.length - 1) {
       setActiveQuestionIdx((prev) => prev + 1);
     } else if (activePillarIdx < pillars.length - 1) {
       setActivePillarIdx((prev) => prev + 1);
       setActiveQuestionIdx(0);
+    } else {
+      // Reached the end of the entire diagnostic: Trigger Review & Submission
+      if (isAuditReady && onProceedToCheckout) {
+        onProceedToCheckout();
+      } else if (isSubmittedPendingReview) {
+        if (onViewReviewStatus) {
+          onViewReviewStatus();
+        } else {
+          const elem = document.getElementById('conformance-verification-card');
+          if (elem) {
+            elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      } else if (onSubmitForReview) {
+        onSubmitForReview();
+      } else {
+        const elem = document.getElementById('conformance-verification-card');
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
     }
-  }, [activeQuestionIdx, activePillarIdx, currentQuestions.length, pillars.length]);
+  }, [
+    activeQuestionIdx,
+    activePillarIdx,
+    currentQuestions.length,
+    pillars.length,
+    isAuditReady,
+    isSubmittedPendingReview,
+    submitting,
+    onProceedToCheckout,
+    onSubmitForReview,
+    onViewReviewStatus,
+  ]);
 
   const goToPrev = useCallback(() => {
+    setDirection('prev');
     if (activeQuestionIdx > 0) {
       setActiveQuestionIdx((prev) => prev - 1);
     } else if (activePillarIdx > 0) {
@@ -183,6 +256,7 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => {
+                      setDirection(pIdx >= activePillarIdx ? 'next' : 'prev');
                       setActivePillarIdx(pIdx);
                       setActiveQuestionIdx(0);
                     }}
@@ -258,12 +332,9 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
               }}
             >
               <div
+                className="cerebrium-laser-bar"
                 style={{
-                  height: '100%',
                   width: `${completionPct}%`,
-                  backgroundColor:
-                    completionPct === 100 ? 'var(--color-green)' : 'var(--color-sky)',
-                  transition: 'width 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               />
             </div>
@@ -327,7 +398,10 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                   return (
                     <div
                       key={q.questionId || q.id || idx}
-                      onClick={() => setActiveQuestionIdx(idx)}
+                      onClick={() => {
+                        setDirection(idx >= activeQuestionIdx ? 'next' : 'prev');
+                        setActiveQuestionIdx(idx);
+                      }}
                       className={`cerebrium-step-dot ${isDotActive ? 'active' : ''} ${
                         qAns ? 'completed' : ''
                       }`}
@@ -371,108 +445,280 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
               </div>
             </div>
 
-            {/* Question Animated Presentation Stage */}
-            <div
-              key={`${activePillarIdx}_${activeQuestionIdx}`}
-              style={{
-                animation: 'saasQuestionFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both',
-              }}
-            >
-              {/* Question Headline */}
-              <h2 className="cerebrium-question-heading">
-                {currentQuestion.text || currentQuestion.questionText}
-              </h2>
-
-              {/* Statutory Evidence Requirement */}
-              {currentQuestion.evidenceRequired && (
-                <div
-                  style={{
-                    fontSize: '0.82rem',
-                    color: 'var(--text-muted)',
-                    backgroundColor: 'var(--bg-subtle)',
-                    border: '1px solid var(--border-light)',
-                    borderLeft: '3px solid var(--color-sky)',
-                    borderRadius: '6px',
-                    padding: '0.75rem 1rem',
-                    marginBottom: '1.25rem',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <strong style={{ color: 'var(--text-main)' }}>
-                    Statutory Evidence Requirement:
-                  </strong>{' '}
-                  {currentQuestion.evidenceRequired}
-                </div>
-              )}
-
-              {/* 4 Interactive Option Cards */}
+            {/* Question Animated Presentation Stage with Cerebrium 3D Kinetic Swing */}
+            <div className="cerebrium-question-viewport">
               <div
-                className="cerebrium-options-grid"
-                role="radiogroup"
-                aria-label="Compliance answers"
+                key={`${activePillarIdx}_${activeQuestionIdx}`}
+                className={direction === 'next' ? 'cerebrium-swing-next' : 'cerebrium-swing-prev'}
               >
-                {questionOptions.map((opt, idx) => {
-                  const isSelected = currentSelectedAnswer === opt;
-                  const keyLetter = ['A', 'B', 'C', 'D'][idx] || String(idx + 1);
+                {/* Question Headline */}
+                <h2 className="cerebrium-question-heading">
+                  {currentQuestion.text || currentQuestion.questionText}
+                </h2>
 
-                  return (
-                    <div
-                      key={opt}
-                      role="radio"
-                      aria-checked={isSelected}
-                      tabIndex={0}
-                      onClick={() => handleSelectOption(opt)}
-                      className={`cerebrium-option-card ${
-                        isSelected ? 'selected-compliant' : ''
-                      }`}
-                    >
-                      <div className="cerebrium-keycap-pill">{keyLetter}</div>
-                      <div className="cerebrium-option-label">{opt}</div>
-                      <div className="cerebrium-option-radio-indicator">
-                        {isSelected ? '✓' : '○'}
+                {/* Statutory Evidence Requirement */}
+                {currentQuestion.evidenceRequired && (
+                  <div
+                    style={{
+                      fontSize: '0.82rem',
+                      color: 'var(--text-muted)',
+                      backgroundColor: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-light)',
+                      borderLeft: '3px solid var(--color-sky)',
+                      borderRadius: '6px',
+                      padding: '0.75rem 1rem',
+                      marginBottom: '1.25rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <strong style={{ color: 'var(--text-main)' }}>
+                      Statutory Evidence Requirement:
+                    </strong>{' '}
+                    {currentQuestion.evidenceRequired}
+                  </div>
+                )}
+
+                {/* 4 Interactive Option Cards */}
+                <div
+                  className="cerebrium-options-grid"
+                  role="radiogroup"
+                  aria-label="Compliance answers"
+                >
+                  {questionOptions.map((opt, idx) => {
+                    const isSelected = currentSelectedAnswer === opt;
+                    const keyLetter = ['A', 'B', 'C', 'D'][idx] || String(idx + 1);
+
+                    return (
+                      <div
+                        key={opt}
+                        role="radio"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        onClick={() => handleSelectOption(opt)}
+                        className={`cerebrium-option-card ${
+                          isSelected ? 'selected-compliant' : ''
+                        }`}
+                      >
+                        <div className="cerebrium-keycap-pill">{keyLetter}</div>
+                        <div className="cerebrium-option-label">{opt}</div>
+                        <div className="cerebrium-option-radio-indicator">
+                          {isSelected ? '✓' : '○'}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Continuous Telemetry & Audit Evidence Stream Panel */}
-              <div className="cerebrium-terminal-card">
-                <div className="cerebrium-terminal-header">
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                    <span className="radar-pulse" style={{ width: '7px', height: '7px' }} />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                      Continuous Audit Trail &amp; Telemetry Sync
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                    Node UK-01 · Active
-                  </span>
+                    );
+                  })}
                 </div>
-                <div className="cerebrium-terminal-code">
-                  <div>
-                    <span className="cerebrium-terminal-success">✓</span> Standard:{' '}
-                    <span className="cerebrium-terminal-hash">
-                      {currentQuestion.applicableStandards?.[0] || 'ISO 14064-1:2018'}
-                    </span>{' '}
-                    Clause Conformance Matrix Synced
-                  </div>
-                  <div>
-                    <span className="cerebrium-terminal-success">✓</span> Telemetry Stream:{' '}
-                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Healthy</span> (15-min statutory verification epoch)
-                  </div>
-                  {currentSelectedAnswer && (
-                    <div style={{ marginTop: '0.25rem' }}>
-                      <span className="cerebrium-terminal-success">⚡</span> Attested Conformance:{' '}
-                      <span style={{ color: 'var(--color-sky-dark)', fontWeight: 700 }}>
-                        "{currentSelectedAnswer}"
+
+                {/* Proof Document Attachment Section */}
+                <div className="cerebrium-evidence-uploader">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.65rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-sky)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                      </svg>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Proof Document Attachment (Clause Verification)
                       </span>
                     </div>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                      PDF, DOC, DOCX, XLS, CSV, PNG, JPG (up to 25MB)
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <label
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--color-sky)',
+                        color: '#ffffff',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: uploadingEvidence ? 'not-allowed' : 'pointer',
+                        opacity: uploadingEvidence ? 0.7 : 1,
+                        userSelect: 'none',
+                      }}
+                    >
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp"
+                        onChange={handleFileUpload}
+                        disabled={uploadingEvidence}
+                        style={{ display: 'none' }}
+                      />
+                      {uploadingEvidence ? 'Uploading & Computing SHA-256...' : 'Attach Proof Document'}
+                    </label>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Cryptographic SHA-256 checksum is computed on upload.
+                    </span>
+                  </div>
+
+                  {uploadError && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--google-red, #dc2626)' }}>
+                      {uploadError}
+                    </div>
                   )}
+
+                  {/* Attached Evidence List */}
+                  {questionEvidenceList.length > 0 && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
+                        Attached Proof Documents ({questionEvidenceList.length})
+                      </div>
+                      {questionEvidenceList.map((doc, dIdx) => (
+                        <div key={dIdx} className="cerebrium-evidence-item">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                            <span style={{ fontSize: '0.85rem' }}>📄</span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '240px' }}>
+                              {doc.fileName}
+                            </span>
+                            <span className="cerebrium-evidence-chip">
+                              ✓ SHA-256: {doc.sha256Hash?.substring(0, 10)}...
+                            </span>
+                          </div>
+                          {doc.fileUrl && (
+                            <a
+                              href={doc.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                fontSize: '0.72rem',
+                                color: 'var(--color-sky)',
+                                textDecoration: 'none',
+                                fontWeight: 600,
+                              }}
+                            >
+                              View Document ↗
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Continuous Telemetry & Audit Evidence Stream Panel */}
+                <div className="cerebrium-terminal-card">
+                  <div className="cerebrium-terminal-header">
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <span className="radar-pulse" style={{ width: '7px', height: '7px' }} />
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Continuous Audit Trail &amp; Telemetry Sync
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      Node UK-01 · Active
+                    </span>
+                  </div>
+                  <div className="cerebrium-terminal-code">
+                    <div>
+                      <span className="cerebrium-terminal-success">✓</span> Standard:{' '}
+                      <span className="cerebrium-terminal-hash">
+                        {currentQuestion.applicableStandards?.[0] || 'ISO 14064-1:2018'}
+                      </span>{' '}
+                      Clause Conformance Matrix Synced
+                    </div>
+                    <div>
+                      <span className="cerebrium-terminal-success">✓</span> Telemetry Stream:{' '}
+                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Healthy</span> (15-min statutory verification epoch)
+                    </div>
+                    {currentSelectedAnswer && (
+                      <div style={{ marginTop: '0.25rem' }}>
+                        <span className="cerebrium-terminal-success">✓</span> Attested Conformance:{' '}
+                        <span style={{ color: 'var(--color-sky-dark)', fontWeight: 700 }}>
+                          "{currentSelectedAnswer}"
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Submission Error Banner */}
+          {submitError && (() => {
+            const isAuthError =
+              submitError.toLowerCase().includes('token') ||
+              submitError.toLowerCase().includes('unauthorized') ||
+              submitError.toLowerCase().includes('authentication');
+
+            return (
+              <div
+                style={{
+                  marginTop: '1.25rem',
+                  padding: '0.85rem 1.25rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid var(--google-red, #ef4444)',
+                  color: 'var(--google-red, #dc2626)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                  fontSize: '0.84rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>
+                    <strong>{isAuthError ? 'Authentication Session Expired:' : 'Lead Auditor Submission Notice:'}</strong>{' '}
+                    {isAuthError
+                      ? 'Your security session has timed out. All your answers are safely saved in local storage.'
+                      : submitError}
+                  </span>
+                </div>
+                {isAuthError ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <a
+                      href="/portal/login"
+                      style={{
+                        backgroundColor: 'var(--google-red, #dc2626)',
+                        color: '#ffffff',
+                        textDecoration: 'none',
+                        borderRadius: '6px',
+                        padding: '0.45rem 0.95rem',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                        display: 'inline-block',
+                      }}
+                    >
+                      Log In to Complete Submission
+                    </a>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSubmitForReview && onSubmitForReview()}
+                    disabled={submitting}
+                    style={{
+                      backgroundColor: 'var(--google-red, #dc2626)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.4rem 0.85rem',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: submitting ? 'not-allowed' : 'pointer',
+                      opacity: submitting ? 0.6 : 1,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {submitting ? 'Retrying...' : 'Retry Submission'}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Bottom Action Row */}
           <div
@@ -498,7 +744,7 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                   fontSize: '0.82rem',
                 }}
               >
-                ← Previous
+                Previous
               </button>
               <span
                 style={{
@@ -506,22 +752,107 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                   color: 'var(--text-muted)',
                 }}
               >
-                Press <kbd className="kbd-hint">A–D</kbd> or <kbd className="kbd-hint">1–4</kbd> • <kbd className="kbd-hint">Enter ↵</kbd>
+                Press <kbd className="kbd-hint">A-D</kbd> or <kbd className="kbd-hint">1-4</kbd> | <kbd className="kbd-hint">Enter</kbd>
               </span>
             </div>
 
-            <div>
-              {isEntireAssessmentComplete && isLastQuestionInPillar && isLastPillar ? (
+            <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+              {isSubmittedPendingReview ? (
+                <>
+                  {(!isLastQuestionInPillar || !isLastPillar) && (
+                    <button
+                      type="button"
+                      onClick={goToNext}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '0.65rem 1.25rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span>
+                        {isLastQuestionInPillar
+                          ? `Next Pillar: ${pillars[activePillarIdx + 1]?.pillarTitle || ''}`
+                          : 'Next Question'}
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onViewReviewStatus) onViewReviewStatus();
+                    }}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '0.65rem 1.65rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      backgroundColor: 'var(--google-amber, #f59e0b)',
+                      color: '#ffffff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)',
+                    }}
+                  >
+                    <span
+                      className="radar-pulse"
+                      style={{
+                        display: 'inline-block',
+                        width: '8px',
+                        height: '8px',
+                        backgroundColor: '#ffffff',
+                      }}
+                    />
+                    <span>In Lead Auditor Queue: View Status</span>
+                  </button>
+                </>
+              ) : isLastQuestionInPillar && isLastPillar ? (
                 <button
                   type="button"
-                  onClick={onProceedToCheckout}
+                  disabled={!currentSelectedAnswer || submitting}
+                  onClick={() => {
+                    if (isAuditReady && onProceedToCheckout) {
+                      onProceedToCheckout();
+                    } else if (onSubmitForReview) {
+                      onSubmitForReview();
+                    } else {
+                      goToNext();
+                    }
+                  }}
                   className="btn btn-primary"
-                  style={{ padding: '0.65rem 1.65rem', fontSize: '0.85rem' }}
+                  style={{
+                    padding: '0.65rem 1.65rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    opacity: currentSelectedAnswer && !submitting ? 1 : 0.5,
+                    cursor: currentSelectedAnswer && !submitting ? 'pointer' : 'not-allowed',
+                    backgroundColor: isAuditReady
+                      ? 'var(--color-green, #10b981)'
+                      : undefined,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
                 >
+                  {submitting && (
+                    <span
+                      className="radar-pulse"
+                      style={{
+                        display: 'inline-block',
+                        width: '8px',
+                        height: '8px',
+                        backgroundColor: '#ffffff',
+                      }}
+                    />
+                  )}
                   <span>
-                    {isAuditReady
-                      ? 'Proceed to Step 2: Commercial Tier →'
-                      : 'Complete Diagnostic & Request Sign-Off →'}
+                    {submitting
+                      ? 'Submitting Dossier to Lead Auditor...'
+                      : isAuditReady
+                      ? 'Proceed to Step 2: Commercial Tier'
+                      : 'Diagnostic Complete: Submit for Review'}
                   </span>
                 </button>
               ) : (
@@ -540,9 +871,9 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                   <span>
                     {isLastQuestionInPillar
                       ? `Next Pillar: ${
-                          pillars[activePillarIdx + 1]?.pillarTitle || 'Review'
-                        } →`
-                      : 'Next Question →'}
+                          pillars[activePillarIdx + 1]?.pillarTitle || ''
+                        }`
+                      : 'Next Question'}
                   </span>
                 </button>
               )}

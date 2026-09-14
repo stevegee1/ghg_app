@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, CharityFocusPillar, CharityApplicationStatus } from '@prisma/client';
+import { PrismaClient, CharityFocusPillar, CharityApplicationStatus, CharityStatus } from '@prisma/client';
+import { generateCharityPartnershipPdf } from '../services/charity-partnership-pdf.service';
 
 const MAX_ACTIVE_CHARITIES = 3;
 
@@ -177,6 +178,208 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
     } catch (err: any) {
       console.error('[CHARITY REGISTER ERROR]', err);
       return res.status(500).json({ error: 'Failed to submit charity registration.' });
+    }
+  });
+
+  /**
+   * GET /api/charities/slots
+   * Returns current statutory capacity status for the 3 slots.
+   */
+  router.get('/api/charities/slots', async (_req: Request, res: Response) => {
+    try {
+      const committedCount = await prisma.charity.count({
+        where: {
+          status: { in: [CharityStatus.ACTIVE, CharityStatus.APPROVED_AWAITING_STRIPE] },
+        },
+      });
+
+      const activeCharities = await prisma.charity.findMany({
+        where: {
+          status: { in: [CharityStatus.ACTIVE, CharityStatus.APPROVED_AWAITING_STRIPE, CharityStatus.EXPIRED] },
+        },
+        orderBy: { createdAt: 'asc' },
+        take: MAX_ACTIVE_CHARITIES,
+      });
+
+      const availableSlots = Math.max(0, MAX_ACTIVE_CHARITIES - committedCount);
+      const registrationOpen = committedCount < MAX_ACTIVE_CHARITIES;
+
+      return res.status(200).json({
+        maxCapacity: MAX_ACTIVE_CHARITIES,
+        committedCount,
+        availableSlots,
+        registrationOpen,
+        slots: activeCharities.map((c) => ({
+          id: c.id,
+          name: c.name,
+          status: c.status,
+          contractStartDate: c.contractStartDate,
+          contractEndDate: c.contractEndDate,
+          walletAddress: c.walletAddress,
+          stripeConnectedAccountId: c.stripeConnectedAccountId,
+        })),
+      });
+    } catch (err: any) {
+      console.error('[CHARITIES SLOTS ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve charity slot status.' });
+    }
+  });
+
+  /**
+   * POST /api/charities/apply
+   * Step 1 of Part C Charity Lifecycle:
+   * Org submits name, registered charity number (if applicable), contact email, and a short statement.
+   * NO Stripe or wallet info required at this stage.
+   * Status = PENDING_APPLICATION.
+   * Gated: Enforces server-side that new applications are only accepted while fewer than 3 charities
+   * are in ACTIVE or APPROVED_AWAITING_STRIPE status combined.
+   */
+  router.post('/api/charities/apply', async (req: Request, res: Response) => {
+    try {
+      // Enforce server-side slot cap (never trust frontend alone)
+      const committedCount = await prisma.charity.count({
+        where: {
+          status: { in: [CharityStatus.ACTIVE, CharityStatus.APPROVED_AWAITING_STRIPE] },
+        },
+      });
+
+      if (committedCount >= MAX_ACTIVE_CHARITIES) {
+        return res.status(423).json({
+          error: 'Registration is currently closed. All 3 statutory charity positions are currently filled or in active onboarding.',
+          registrationOpen: false,
+          committedCount,
+          maxCapacity: MAX_ACTIVE_CHARITIES,
+        });
+      }
+
+      const { name, registeredCharityNumber, contactEmail, statement } = req.body || {};
+
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: 'Charity name is required.' });
+      }
+
+      if (!contactEmail || typeof contactEmail !== 'string' || !contactEmail.includes('@')) {
+        return res.status(400).json({ error: 'A valid contact email address is required.' });
+      }
+
+      if (!statement || typeof statement !== 'string' || !statement.trim()) {
+        return res.status(400).json({ error: 'A short mission/impact statement is required.' });
+      }
+
+      // Check for duplicate pending application with same email
+      const existing = await prisma.charity.findFirst({
+        where: {
+          contactEmail: contactEmail.toLowerCase().trim(),
+          status: { in: [CharityStatus.PENDING_APPLICATION, CharityStatus.APPROVED_AWAITING_STRIPE, CharityStatus.ACTIVE] },
+        },
+      });
+
+      if (existing) {
+        return res.status(409).json({
+          error: 'An active or pending charity partner record already exists with this contact email.',
+          charityId: existing.id,
+          status: existing.status,
+        });
+      }
+
+      const charity = await prisma.charity.create({
+        data: {
+          name: name.trim(),
+          registeredCharityNumber: registeredCharityNumber?.trim() || null,
+          contactEmail: contactEmail.toLowerCase().trim(),
+          statement: statement.trim(),
+          status: CharityStatus.PENDING_APPLICATION,
+          // No Stripe or wallet info at this stage
+          stripeConnectedAccountId: null,
+          walletAddress: null,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Charity partner application submitted successfully. Awaiting Lead Auditor review.',
+        charity: {
+          id: charity.id,
+          name: charity.name,
+          status: charity.status,
+          contactEmail: charity.contactEmail,
+          submittedAt: charity.createdAt,
+        },
+      });
+    } catch (err: any) {
+      console.error('[CHARITY APPLY ERROR]', err);
+      return res.status(500).json({ error: 'Failed to submit charity application.' });
+    }
+  });
+
+  /**
+   * GET /api/charities/:id/partnership-pdf
+   * Step 4: Downloads/streams the official PDF Proof of Partnership.
+   */
+  router.get('/api/charities/:id/partnership-pdf', async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+      const charity = await prisma.charity.findUnique({
+        where: { id },
+      });
+
+      if (!charity) {
+        return res.status(404).json({ error: 'Charity not found.' });
+      }
+
+      const pdfBuffer = await generateCharityPartnershipPdf(charity);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="GHG-Charity-Partnership-${charity.id}.pdf"`
+      );
+      return res.status(200).send(pdfBuffer);
+    } catch (err: any) {
+      console.error('[CHARITY PARTNERSHIP PDF ERROR]', err);
+      return res.status(500).json({ error: 'Failed to generate charity partnership PDF.' });
+    }
+  });
+
+  /**
+   * PATCH /api/charities/:id/wallet
+   * Optional on-chain wallet address can be added any time after ACTIVE.
+   */
+  router.patch('/api/charities/:id/wallet', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { walletAddress } = req.body || {};
+
+    if (!walletAddress || typeof walletAddress !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim())) {
+      return res.status(400).json({ error: 'Invalid EVM/Polygon wallet address. Must be a 42-character hex address starting with 0x.' });
+    }
+
+    try {
+      const charity = await prisma.charity.findUnique({ where: { id } });
+      if (!charity) {
+        return res.status(404).json({ error: 'Charity not found.' });
+      }
+
+      if (charity.status !== CharityStatus.ACTIVE) {
+        return res.status(400).json({
+          error: `Crypto wallet address can only be linked once charity is ACTIVE. Current status: ${charity.status}`,
+        });
+      }
+
+      const updated = await prisma.charity.update({
+        where: { id },
+        data: { walletAddress: walletAddress.trim() },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'On-chain payout wallet address successfully updated.',
+        charityId: updated.id,
+        walletAddress: updated.walletAddress,
+      });
+    } catch (err: any) {
+      console.error('[CHARITY WALLET UPDATE ERROR]', err);
+      return res.status(500).json({ error: 'Failed to update charity wallet address.' });
     }
   });
 

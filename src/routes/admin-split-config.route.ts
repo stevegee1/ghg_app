@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, PortalRole, CharityStatus } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { resolveActiveSplitConfig } from '../services/split-config.service';
+import { runWithRls } from '../db/rls';
 
 export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -25,7 +26,9 @@ export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
     const licenseeId = req.query.licenseeId as string | undefined;
 
     try {
-      const config = await resolveActiveSplitConfig(prisma, licenseeId);
+      const config = await runWithRls(prisma, req.user!, async (tx) => {
+        return resolveActiveSplitConfig(tx as any, licenseeId);
+      });
       return res.status(200).json(config);
     } catch (err: any) {
       return res.status(404).json({ error: err.message });
@@ -76,7 +79,7 @@ export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
     }
 
     try {
-      const newConfig = await prisma.$transaction(async (tx) => {
+      const newConfig = await runWithRls(prisma, req.user!, async (tx) => {
         // Find existing active config for scope
         const activeConfig = await tx.splitConfigHistory.findFirst({
           where: {
@@ -124,14 +127,17 @@ export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
     const targetLicenseeId = licenseeId && typeof licenseeId === 'string' && licenseeId.trim() ? licenseeId.trim() : null;
 
     try {
-      const history = await prisma.splitConfigHistory.findMany({
-        where: {
-          licenseeId: targetLicenseeId,
-        },
-        orderBy: { changedAt: 'desc' },
-        include: {
-          changedByUser: { select: { id: true, email: true, role: true } },
-        },
+      // Authenticated admin scope directly from req.user
+      const history = await runWithRls(prisma, req.user!, async (tx) => {
+        return tx.splitConfigHistory.findMany({
+          where: {
+            licenseeId: targetLicenseeId,
+          },
+          orderBy: { changedAt: 'desc' },
+          include: {
+            changedByUser: { select: { id: true, email: true, role: true } },
+          },
+        });
       });
 
       return res.status(200).json(history);

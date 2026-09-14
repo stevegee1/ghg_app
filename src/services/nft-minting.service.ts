@@ -35,7 +35,7 @@ const POLYGON_TESTNET_OPENSEA_BASE = 'https://testnets.opensea.io/assets/amoy';
 
 /**
  * Derives a deterministic uint256 token ID from the credential UUID.
- * Uses the first 32 hex chars of the SHA-256 of the credentialId — fits
+ * Uses the first 32 hex chars of the SHA-256 of the credentialId, which fits
  * safely in a uint256 and is reproducible for pre-mint receipts.
  */
 function deriveTokenId(credentialId: string): string {

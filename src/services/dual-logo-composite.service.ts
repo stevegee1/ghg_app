@@ -112,7 +112,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
     ctx.lineTo(WIDTH / 2, HEIGHT - 40);
     ctx.stroke();
 
-    // ── Left panel — Client Logo ───────────────────────────────────────────────
+    // ── Left panel: Client Logo ───────────────────────────────────────────────
     const leftCenterX = WIDTH / 4;
     try {
       const clientImg = await loadImage(clientLogoPath);
@@ -136,7 +136,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
       ctx.fillText('CLIENT LOGO', leftCenterX, 145);
     }
 
-    // ── Right panel — GHG Mark ─────────────────────────────────────────────────
+    // ── Right panel: GHG Mark ─────────────────────────────────────────────────
     const rightCenterX = (3 * WIDTH) / 4;
     try {
       const ghgImg = await loadImage(GHG_LOGO_PATH);

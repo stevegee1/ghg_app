@@ -254,10 +254,44 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         }),
       } as any);
 
+      // 3. Create Stripe Checkout Session for hosted checkout option
+      const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
+      const defaultSuccessUrl = `${origin}/checkout/success`;
+      const defaultCancelUrl = `${origin}/merch`;
+
+      let sessionUrl: string | null = null;
+      let sessionId: string | null = null;
+
+      try {
+        const sessionResult = await checkoutService.createCheckoutSession({
+          licenseeId: licenseeId.trim(),
+          itemTitle: isGoalFrenzy
+            ? `NFTY LOGS Goal Frenzy: ${frenzyClub || ''} ${frenzyMoment || ''} (${preview.garmentModel})`
+            : `NFTY LOGS Custom Keepsake: ${preview.garmentModel}`,
+          grossAmountCents: preview.financialSummary.grossAmountCents,
+          currency,
+          successUrl: defaultSuccessUrl,
+          cancelUrl: defaultCancelUrl,
+          metadata: {
+            transactionId: checkoutResult.transactionId,
+            garmentModel: preview.garmentModel,
+            inscribedText: preview.inscribedText,
+            isGoalFrenzy: isGoalFrenzy ? 'true' : 'false',
+            frenzyClub: frenzyClub || '',
+          },
+        });
+        sessionUrl = sessionResult.sessionUrl;
+        sessionId = sessionResult.sessionId;
+      } catch (stripeErr: any) {
+        console.warn('[CUSTOM KEEPSAKE STRIPE SESSION WARN]', stripeErr?.message);
+      }
+
       return res.status(201).json({
         message: 'Custom milestone keepsake order successfully initiated.',
         transactionId: checkoutResult.transactionId,
         clientSecret: checkoutResult.clientSecret,
+        sessionUrl,
+        sessionId,
         financialSummary: preview.financialSummary,
         dualImpactMetrics: preview.dualImpactMetrics,
         keepsakeSpec,
@@ -273,7 +307,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
    * Handles Event Souvenir Logo Drop ordering.
    * Users select: eventCategory (SPORTS|GALA|TECH_SUMMIT|WEDDING), eventName,
    * logoDropCount (10, 25, 50, 100, 250, 500), shippingAddress, customerEmail.
-   * No user artwork upload — GHG Logo Drop mark is applied by the printing store.
+   * No user artwork upload: GHG Logo Drop mark is applied by the printing store.
    * Returns a Stripe Hosted Checkout URL and tracking URL.
    */
   router.post('/api/souvenirs/order', async (req: Request, res: Response) => {
@@ -372,27 +406,18 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       let transactionId: string | null = null;
 
       try {
-        const checkoutResult = await checkoutService.initiateCheckout({
+        const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
+        const sessionResult = await checkoutService.createCheckoutSession({
           licenseeId: targetLicensee.id,
-          checkoutReferenceId: refId,
+          itemTitle: `NFTY LOGS® Event Souvenir Logo Drop (${count} units) - ${eventName.trim()}`,
           grossAmountCents,
           currency,
-          triggerEvent: {
-            verificationSource: VerificationSource.CONSUMER_OPT_IN,
-            deliveryType: DeliveryType.PHYSICAL,
-            fulfillmentStatus: FulfillmentStatus.PENDING,
-            rawPayload: {
-              orderNumber,
-              eventCategory,
-              eventName: eventName.trim(),
-              logoDropCount: count,
-              customerEmail,
-            },
-          },
+          successUrl: `${origin}/track/${orderNumber}`,
+          cancelUrl: `${origin}/souvenirs`,
         });
 
-        transactionId = checkoutResult.transactionId;
-        sessionUrl = (checkoutResult as any).sessionUrl || null;
+        transactionId = sessionResult.transactionId;
+        sessionUrl = sessionResult.sessionUrl;
 
         // Link transaction to the souvenir order
         if (transactionId) {
@@ -406,7 +431,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         }
       } catch (stripeErr: any) {
         console.error('[SOUVENIR STRIPE ERROR]', stripeErr);
-        // Soft fail: order is recorded, stripe session failed — return order ref so customer can retry
+        // Soft fail: order is recorded, stripe session failed, return order ref so customer can retry
       }
 
       const trackUrl = `/track/${orderNumber}`;

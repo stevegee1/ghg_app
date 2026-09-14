@@ -219,6 +219,31 @@ describe('2. POST /api/iso-readiness/submit', () => {
     });
     expect(count).toBe(1);
   });
+
+  it('persists diagnostic bundle question answers across 5 pillars with selectedFrameworks and transitions to SUBMITTED', async () => {
+    const diagnosticAnswers = [
+      { questionId: 'P1-Q1', questionText: 'Boundary Consolidation', answer: 'Fully compliant & documented', isoClause: 'ISO 14064-1:2018 Clause 5.1' },
+      { questionId: 'P2-Q1', questionText: 'Scope 1 & 2 Meter Logs', answer: 'Fully compliant & documented', isoClause: 'GHG Protocol Scope 1 & 2' },
+      { questionId: 'P3-Q1', questionText: 'Scope 3 Upstream Boundaries', answer: 'Fully compliant & documented', isoClause: 'ISO 14064-1:2018 Clause 5.2' },
+      { questionId: 'P4-Q1', questionText: 'Sensor Uncertainty & Precision', answer: 'Partially implemented', isoClause: 'ISO 14064-1:2018 Clause 5.4' },
+      { questionId: 'P5-Q1', questionText: 'Anti-Greenwashing Claims Proof', answer: 'Fully compliant & documented', isoClause: 'UK CMA Principle 1' },
+    ];
+
+    const res = await request(testApp)
+      .post('/api/iso-readiness/submit')
+      .set('Authorization', `Bearer ${testAuthToken}`)
+      .send({
+        answers: diagnosticAnswers,
+        tierSelected: 'TIER_1_READINESS',
+        selectedFrameworks: ['ISO_14064_1', 'UK_SECR', 'ISO_50001'],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.status).toBe(IsoReadinessStatus.SUBMITTED);
+    expect(res.body.selectedFrameworks).toEqual(['ISO_14064_1', 'UK_SECR', 'ISO_50001']);
+    expect(res.body.complianceScore).toBe(100);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
