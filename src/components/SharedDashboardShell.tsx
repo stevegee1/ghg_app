@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/client';
 
 export interface ActivityItem {
   id: string;
@@ -72,13 +71,12 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   isAdminViewing = false,
   onNavigateWorkflow,
 }) => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
 
   const [data, setData] = useState<ClientDashboardData | null>(initialData || null);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [copiedKey, setCopiedKey] = useState<boolean>(false);
 
   useEffect(() => {
@@ -98,21 +96,25 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
         const res = await fetch(`/api/portal/dashboard${query}`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
           },
         });
 
         if (!res.ok) {
-          throw new Error(`Failed to load profile dashboard (${res.status})`);
+          throw new Error(`Failed to load dashboard: ${res.statusText}`);
         }
 
         const json = await res.json();
         if (isMounted) {
-          setData(json.dashboard);
+          if (json.success && json.dashboard) {
+            setData(json.dashboard);
+          } else {
+            setData(json);
+          }
         }
       } catch (err: any) {
         if (isMounted) {
-          setError(err.message || 'Error loading dashboard');
+          console.error('[SHARED DASHBOARD FETCH ERROR]', err);
+          setError(err.message || 'Error loading dashboard metrics.');
         }
       } finally {
         if (isMounted) {
@@ -147,10 +149,10 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[500px] w-full bg-slate-900/50 rounded-2xl border border-slate-800 p-8">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-10 h-10 border-3 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-          <p className="text-sm text-slate-400 font-medium">Loading Enterprise Client Profile...</p>
+      <div className="shared-dash-glass-card" style={{ minHeight: '360px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ width: '38px', height: '38px', border: '3px solid rgba(16, 185, 129, 0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500 }}>Loading Enterprise Client Profile...</span>
         </div>
       </div>
     );
@@ -158,19 +160,13 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
 
   if (error || !data) {
     return (
-      <div className="p-8 bg-rose-950/30 border border-rose-800/50 rounded-2xl text-center max-w-xl mx-auto my-12">
-        <div className="inline-flex p-3 bg-rose-900/40 rounded-full text-rose-400 mb-3">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold text-white mb-2">Unable to Load Dashboard</h3>
-        <p className="text-sm text-rose-300/80 mb-6">{error || 'Unknown error occurred while fetching dashboard data.'}</p>
+      <div className="shared-dash-glass-card" style={{ maxWidth: '580px', margin: '2rem auto', textAlign: 'center', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f87171', marginBottom: '0.5rem' }}>Unable to Load Dashboard</h3>
+        <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1.25rem' }}>{error || 'Unknown error occurred while fetching dashboard data.'}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-sm font-medium transition-colors"
+          className="shared-dash-cta-btn"
+          style={{ maxWidth: '200px', margin: '0 auto' }}
         >
           Retry Connection
         </button>
@@ -181,65 +177,47 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   const { profile, auditCards, recentActivity, credentials, telemetryApi } = data;
 
   return (
-    <div className="w-full space-y-8 text-slate-100 antialiased">
-      {/* Admin Inspection Banner (if applicable) */}
+    <div className="shared-dash-container">
+      {/* Admin Inspection Banner */}
       {isAdminViewing && (
-        <div className="flex items-center justify-between px-5 py-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-medium">
-          <div className="flex items-center space-x-2.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span>
-              Administrator Inspection Mode: Viewing <strong>{profile.organizationName}</strong> in read-only tenant view.
-            </span>
-          </div>
-          <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-amber-400/20 rounded border border-amber-400/30">
-            Read Only
-          </span>
+        <div style={{ padding: '0.75rem 1.25rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', color: '#fcd34d', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Administrator Inspection Mode: Viewing <strong>{profile.organizationName}</strong> in read-only tenant view.</span>
+          <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', padding: '0.15rem 0.5rem', background: 'rgba(245, 158, 11, 0.2)', borderRadius: '4px', border: '1px solid rgba(245, 158, 11, 0.4)' }}>Read Only</span>
         </div>
       )}
 
       {/* ── 1. Profile Header & Role Badges ───────────────────────────────────── */}
-      <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
-          <div className="flex items-start sm:items-center space-x-4 sm:space-x-5">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xl sm:text-2xl shadow-inner shrink-0">
+      <section className="shared-dash-glass-card">
+        <div className="shared-dash-ambient-glow" />
+        <div className="shared-dash-profile-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+            <div className="shared-dash-avatar">
               {profile.organizationName.slice(0, 2).toUpperCase()}
             </div>
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <h1 style={{ fontSize: '1.65rem', fontWeight: 700, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
                   {profile.organizationName}
                 </h1>
-                {/* Multi-role badge chips: Show all that apply */}
-                <div className="flex flex-wrap items-center gap-1.5 ml-1">
+                <div className="shared-dash-roles-row">
                   {profile.accountRoles.map((role) => {
                     if (role === 'AUDIT_CLIENT') {
                       return (
-                        <span
-                          key={role}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                        >
+                        <span key={role} className="shared-dash-badge-client">
                           Audit Client
                         </span>
                       );
                     }
                     if (role === 'CHARITY_PARTNER') {
                       return (
-                        <span
-                          key={role}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-500/15 text-sky-300 border border-sky-500/30"
-                        >
+                        <span key={role} className="shared-dash-badge-charity">
                           Charity Partner
                         </span>
                       );
                     }
                     if (role === 'MERCH_BUYER') {
                       return (
-                        <span
-                          key={role}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
-                        >
+                        <span key={role} className="shared-dash-badge-merch">
                           Merch Buyer
                         </span>
                       );
@@ -248,22 +226,22 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
                   })}
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-slate-400 font-mono">
+              <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'var(--font-mono, monospace)', margin: '0.35rem 0 0 0' }}>
                 {profile.email} &bull; ID: {profile.userId.slice(0, 10)}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 shrink-0">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <Link
               to="/portal?tab=evidence"
-              className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+              style={{ padding: '0.55rem 1rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '10px', color: '#cbd5e1', fontSize: '0.8rem', fontWeight: 500, textDecoration: 'none', transition: 'all 0.15s ease' }}
             >
               Evidence Locker
             </Link>
             <Link
               to="/portal?tab=credentials"
-              className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shadow-lg shadow-emerald-900/30"
+              style={{ padding: '0.55rem 1.15rem', background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '10px', color: '#ffffff', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)', transition: 'all 0.15s ease' }}
             >
               View Credentials
             </Link>
@@ -271,46 +249,47 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
         </div>
       </section>
 
-      {/* ── 2. Top Action Cards for Audit Clients (Screen 1) ─────────────────── */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* ── 2. Top Action Cards for Audit Clients (Part B.5) ──────────────────── */}
+      <section className="shared-dash-workflow-grid">
         {/* Carbon Emission Audit Card */}
-        <div className="bg-slate-900/70 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-6 sm:p-7 backdrop-blur transition-all duration-200 flex flex-col justify-between space-y-6 group">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="inline-flex items-center space-x-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+        <div className="shared-dash-workflow-card">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 600, color: '#34d399', background: 'rgba(16, 185, 129, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '9999px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34d399' }} />
                 <span>ISO 14064-1 &bull; ISO 50001 &bull; GHG Protocol</span>
               </div>
               {auditCards.carbon.latestDraftId && (
-                <span className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20">
+                <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono, monospace)', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.12)', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
                   Draft in Progress
                 </span>
               )}
             </div>
+
             <div>
-              <h2 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.35rem 0' }}>
                 Carbon Emission Audit
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-1">
+              <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
                 Corporate greenhouse gas inventories, Scope 1-3 assurance, and energy management audit-readiness assessment.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-800/80">
+          <div className="shared-dash-metrics-grid">
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">{auditCards.carbon.activeSubmissions}</div>
-              <div className="text-xs text-slate-400 font-medium">Active Submissions</div>
+              <div className="shared-dash-metric-num">{auditCards.carbon.activeSubmissions}</div>
+              <div className="shared-dash-metric-lbl">Active Submissions</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-emerald-400 tracking-tight">{auditCards.carbon.approvedBadges}</div>
-              <div className="text-xs text-slate-400 font-medium">Approved Badges</div>
+              <div className="shared-dash-metric-num" style={{ color: '#34d399' }}>{auditCards.carbon.approvedBadges}</div>
+              <div className="shared-dash-metric-lbl">Approved Badges</div>
             </div>
           </div>
 
           <button
             onClick={() => handleStartWorkflow('CARBON', auditCards.carbon.latestDraftId)}
-            className="w-full inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md shadow-emerald-950/50"
+            className="shared-dash-cta-btn"
           >
             <span>{auditCards.carbon.latestDraftId ? 'Resume Carbon Draft' : 'Start New Carbon Audit'}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -320,43 +299,44 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
         </div>
 
         {/* Job Reporting Audit Card */}
-        <div className="bg-slate-900/70 border border-slate-800 hover:border-teal-500/40 rounded-2xl p-6 sm:p-7 backdrop-blur transition-all duration-200 flex flex-col justify-between space-y-6 group">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="inline-flex items-center space-x-2 text-xs font-semibold text-teal-400 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+        <div className="shared-dash-workflow-card job-scope">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 600, color: '#2dd4bf', background: 'rgba(20, 184, 166, 0.12)', padding: '0.25rem 0.65rem', borderRadius: '9999px', border: '1px solid rgba(20, 184, 166, 0.25)' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#2dd4bf' }} />
                 <span>UK Section 106 &bull; Social Value PPN 06/20</span>
               </div>
               {auditCards.job.latestDraftId && (
-                <span className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20">
+                <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono, monospace)', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.12)', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
                   Draft in Progress
                 </span>
               )}
             </div>
+
             <div>
-              <h2 className="text-xl font-bold text-white group-hover:text-teal-300 transition-colors">
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.35rem 0' }}>
                 Job Reporting Audit
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-1">
+              <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
                 Local resident workforce, apprentice density quotas, and Section 106 statutory social value compliance.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-800/80">
+          <div className="shared-dash-metrics-grid">
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">{auditCards.job.activeSubmissions}</div>
-              <div className="text-xs text-slate-400 font-medium">Active Submissions</div>
+              <div className="shared-dash-metric-num">{auditCards.job.activeSubmissions}</div>
+              <div className="shared-dash-metric-lbl">Active Submissions</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-teal-400 tracking-tight">{auditCards.job.approvedBadges}</div>
-              <div className="text-xs text-slate-400 font-medium">Approved Badges</div>
+              <div className="shared-dash-metric-num" style={{ color: '#2dd4bf' }}>{auditCards.job.approvedBadges}</div>
+              <div className="shared-dash-metric-lbl">Approved Badges</div>
             </div>
           </div>
 
           <button
             onClick={() => handleStartWorkflow('JOB', auditCards.job.latestDraftId)}
-            className="w-full inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl text-sm font-semibold bg-teal-600 hover:bg-teal-500 text-white transition-all shadow-md shadow-teal-950/50"
+            className="shared-dash-cta-btn job-btn"
           >
             <span>{auditCards.job.latestDraftId ? 'Resume Job Draft' : 'Start New Job Audit'}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -367,93 +347,91 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
       </section>
 
       {/* ── 3. Recent Activity & Unified Reverse-Chronological Transactions Feed ─ */}
-      <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur">
-        <div className="flex items-center justify-between mb-6">
+      <section className="shared-dash-glass-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.25rem' }}>
           <div>
-            <h3 className="text-lg font-bold text-white">Recent Activity & Ledger Feed</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Recent Activity & Ledger Feed</h3>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.2rem 0 0 0' }}>
               Reverse-chronological record of workflow milestones, payments, payouts, and in-progress drafts.
             </p>
           </div>
-          <span className="text-xs text-slate-400 font-mono">
+          <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono, monospace)', color: '#94a3b8' }}>
             {recentActivity.length} Recent Records
           </span>
         </div>
 
         {recentActivity.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
-            <p className="text-sm text-slate-400 font-medium">No recent transactions or activity recorded yet.</p>
-            <p className="text-xs text-slate-500 mt-1">Start a compliance assessment or order merch to populate your ledger feed.</p>
+          <div style={{ textAlign: 'center', padding: '2.5rem 1rem', border: '1px dashed rgba(255, 255, 255, 0.1)', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.2)' }}>
+            <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500, margin: 0 }}>No recent transactions or activity recorded yet.</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem' }}>Start a compliance assessment or order merch to populate your ledger feed.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm border-collapse">
+          <div className="shared-dash-table-wrap">
+            <table className="shared-dash-table">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-3">Date</th>
-                  <th className="py-3 px-3">Type</th>
-                  <th className="py-3 px-3">Description</th>
-                  <th className="py-3 px-3">Amount</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3 text-right">Detail</th>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Detail</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
+              <tbody>
                 {recentActivity.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="py-3.5 px-3 whitespace-nowrap text-slate-400 font-mono text-xs">
+                  <tr key={item.id}>
+                    <td style={{ fontFamily: 'var(--font-mono, monospace)', color: '#94a3b8', whiteSpace: 'nowrap' }}>
                       {new Date(item.date).toLocaleDateString('en-GB', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric',
                       })}
                     </td>
-                    <td className="py-3.5 px-3 whitespace-nowrap">
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       {item.type === 'WORKFLOW_SUBMISSION' && (
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                        <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.12)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
                           Workflow
                         </span>
                       )}
                       {item.type === 'PAYMENT' && (
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                        <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.12)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
                           Payment
                         </span>
                       )}
                       {item.type === 'CHARITY_PAYOUT' && (
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                        <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
                           ESG Payout
                         </span>
                       )}
                       {item.type === 'MERCH_ORDER' && (
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                        <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(168, 85, 247, 0.12)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.25)' }}>
                           Merch
                         </span>
                       )}
                     </td>
-                    <td className="py-3.5 px-3 text-slate-200">
-                      {item.title}
-                    </td>
-                    <td className="py-3.5 px-3 font-mono text-slate-300 whitespace-nowrap">
+                    <td style={{ color: '#f1f5f9' }}>{item.title}</td>
+                    <td style={{ fontFamily: 'var(--font-mono, monospace)', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
                       {typeof item.amountCents === 'number'
                         ? `£${(item.amountCents / 100).toFixed(2)}`
                         : '-'}
                     </td>
-                    <td className="py-3.5 px-3 whitespace-nowrap">
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       {item.isDraftOrPending ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-pulse" />
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.15)', color: '#fcd34d', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                          <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#f59e0b', animation: 'pulse 1.5s infinite' }} />
                           Draft / Pending
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                           {item.status}
                         </span>
                       )}
                     </td>
-                    <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <Link
                         to={item.link}
-                        className="text-emerald-400 hover:text-emerald-300 text-xs font-semibold underline underline-offset-4"
+                        style={{ color: '#34d399', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none' }}
                       >
                         View &rarr;
                       </Link>
@@ -467,66 +445,66 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
       </section>
 
       {/* ── 4. Credentials Panel (Badges, On-Chain Tokens, PDF Proofs) ───────── */}
-      <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur">
-        <div className="flex items-center justify-between mb-6">
+      <section className="shared-dash-glass-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.25rem' }}>
           <div>
-            <h3 className="text-lg font-bold text-white">Credentials & Proofs Locker</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Credentials & Proofs Locker</h3>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.2rem 0 0 0' }}>
               Issued assurance badges, ERC-1155 on-chain tokens, and statutory partnership certificates.
             </p>
           </div>
           <Link
             to="/portal?tab=credentials"
-            className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+            style={{ fontSize: '0.78rem', color: '#34d399', fontWeight: 600, textDecoration: 'none' }}
           >
             Open Credential Studio &rarr;
           </Link>
         </div>
 
         {credentials.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl bg-slate-950/30">
-            <p className="text-sm text-slate-400 font-medium">No verified credentials issued yet.</p>
-            <p className="text-xs text-slate-500 mt-1">Complete an ISO audit or Section 106 review to generate a digital badge.</p>
+          <div style={{ textAlign: 'center', padding: '2.5rem 1rem', border: '1px dashed rgba(255, 255, 255, 0.1)', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.2)' }}>
+            <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500, margin: 0 }}>No verified credentials issued yet.</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem' }}>Complete an ISO audit or Section 106 review to generate a digital badge.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
             {credentials.map((cred) => (
               <div
                 key={cred.id}
-                className="bg-slate-950/60 border border-slate-800/80 hover:border-emerald-500/30 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all"
+                style={{ background: 'rgba(10, 15, 29, 0.7)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '14px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem', transition: 'all 0.2s ease' }}
               >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono, monospace)', textTransform: 'uppercase', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.06)', color: '#cbd5e1' }}>
                       {cred.type === 'AUDIT_BADGE' ? 'Assurance Badge' : 'Statutory Partnership'}
                     </span>
-                    <span className="text-[11px] font-mono text-emerald-400">
+                    <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono, monospace)', color: '#34d399' }}>
                       {cred.status}
                     </span>
                   </div>
-                  <h4 className="font-semibold text-white text-sm line-clamp-1">{cred.title}</h4>
-                  <p className="text-xs text-slate-400 line-clamp-2">{cred.frameworkOrScope}</p>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#ffffff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cred.title}</h4>
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>{cred.frameworkOrScope}</p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                <div style={{ paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                   {cred.openSeaUrl ? (
                     <a
                       href={cred.openSeaUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sky-400 hover:text-sky-300 underline font-mono text-[11px]"
+                      style={{ color: '#38bdf8', fontFamily: 'var(--font-mono, monospace)', textDecoration: 'underline' }}
                     >
                       Polygon PoS #{cred.tokenId || 'Token'}
                     </a>
                   ) : (
-                    <span className="text-slate-500 font-mono text-[11px]">
+                    <span style={{ color: '#64748b', fontFamily: 'var(--font-mono, monospace)' }}>
                       Issued: {new Date(cred.issuedAt).toLocaleDateString('en-GB')}
                     </span>
                   )}
                   <a
                     href={cred.pdfDownloadUrl}
                     download
-                    className="inline-flex items-center space-x-1 text-emerald-400 hover:text-emerald-300 font-medium"
+                    style={{ color: '#34d399', fontWeight: 500, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                   >
                     <span>Download PDF</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -544,21 +522,21 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
 
       {/* ── 5. Telemetry API Access Panel (Shown only post-badge / active key) ─ */}
       {telemetryApi && telemetryApi.isEnabled && (
-        <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+        <section className="shared-dash-glass-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
             <div>
-              <div className="inline-flex items-center space-x-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', fontWeight: 600, color: '#34d399', background: 'rgba(16, 185, 129, 0.12)', padding: '0.2rem 0.6rem', borderRadius: '9999px', border: '1px solid rgba(16, 185, 129, 0.25)', marginBottom: '0.4rem' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34d399' }} />
                 <span>Statutory Machine-to-Machine Ingestion</span>
               </div>
-              <h3 className="text-lg font-bold text-white">Live Telemetry API Key</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Live Telemetry API Key</h3>
+              <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.2rem 0 0 0' }}>
                 Automated ingestion key for continuous Scope 1 & 2 SCADA, sub-meter, and workforce data feeds.
               </p>
             </div>
             <Link
               to={telemetryApi.docsUrl}
-              className="inline-flex items-center space-x-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300 shrink-0"
+              style={{ fontSize: '0.78rem', fontWeight: 600, color: '#34d399', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
               <span>View OpenAPI Docs</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -569,21 +547,21 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
             </Link>
           </div>
 
-          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Production API Key</span>
-              <div className="font-mono text-sm text-emerald-300 select-all">
+          <div className="shared-dash-telemetry-box">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Production API Key</span>
+              <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '0.9rem', color: '#6ee7b7', userSelect: 'all' }}>
                 {telemetryApi.maskedApiKey || 'ghg_live_••••••••'}
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <span className="text-xs text-slate-400 font-mono">
-                {telemetryApi.telemetryCount} Telemetry Logs Recorded
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'var(--font-mono, monospace)' }}>
+                {telemetryApi.telemetryCount} Logs Recorded
               </span>
               <button
                 onClick={() => handleCopyKey(telemetryApi.maskedApiKey || '')}
-                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
+                style={{ padding: '0.45rem 0.95rem', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '8px', color: '#ffffff', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s ease' }}
               >
                 {copiedKey ? 'Copied' : 'Copy'}
               </button>

@@ -955,13 +955,47 @@ export const PortalPage: React.FC = () => {
     setTimeout(() => setCopiedApiKey(false), 2000);
   };
 
-  // Corporate display name resolver (never shows raw licensee ID as greeting)
+  // Corporate display name resolver (never shows raw licensee ID or generic email provider names)
   const getDisplayName = (): string => {
     if (user?.email) {
-      const domain = user.email.split('@')[1];
-      if (domain) {
-        const base = domain.split('.')[0];
-        return base.charAt(0).toUpperCase() + base.slice(1);
+      const parts = user.email.split('@');
+      const localPart = parts[0] || '';
+      const domain = (parts[1] || '').toLowerCase();
+
+      const PUBLIC_EMAIL_PROVIDERS = new Set([
+        'gmail.com',
+        'googlemail.com',
+        'outlook.com',
+        'hotmail.com',
+        'yahoo.com',
+        'yahoo.co.uk',
+        'icloud.com',
+        'proton.me',
+        'protonmail.com',
+        'mail.com',
+        'aol.com',
+        'live.com',
+        'msn.com',
+      ]);
+
+      // 1. Corporate custom domain (e.g. itm-power.com -> ITM Power)
+      if (domain && !PUBLIC_EMAIL_PROVIDERS.has(domain)) {
+        const base = domain.split('.')[0] || '';
+        return base
+          .split(/[-_]/)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+      }
+
+      // 2. Generic provider (e.g. bospec@gmail.com -> Bospec)
+      if (localPart) {
+        const cleaned = localPart.replace(/[._-]+/g, ' ').trim();
+        if (cleaned) {
+          return cleaned
+            .split(' ')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(' ');
+        }
       }
     }
     return 'Enterprise Partner';
