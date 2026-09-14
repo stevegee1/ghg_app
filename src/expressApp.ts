@@ -30,6 +30,9 @@ import rateLimit from 'express-rate-limit';
 export function createApp(stripeInstance?: Stripe): Express {
   const app = express();
 
+  // Trust Railway reverse proxy for accurate IP resolution and express-rate-limit compatibility
+  app.set('trust proxy', 1);
+
   const stripe =
     stripeInstance ||
     new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
