@@ -4,6 +4,8 @@ import { TransactionService } from './services/transaction.service';
 import { CheckoutService } from './services/checkout.service';
 import { createApp } from './expressApp';
 import { scheduleReconciliationJob } from './jobs/reconcile.job';
+import * as bcrypt from 'bcrypt';
+import { PortalRole } from '@prisma/client';
 
 async function main() {
   console.log('GHG Logo Drop Backend - Milestone 3 Initialized');
@@ -82,9 +84,54 @@ async function main() {
       },
     });
 
+    // 3. Ensure default Lead Auditor / Administrator account exists on Railway
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@ghglogodrop.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'SecurePassword123!';
+    const passwordHash = await bcrypt.hash(adminPassword, 10);
+
+    const seededAdmin = await prisma.portalUser.upsert({
+      where: { email: adminEmail },
+      update: {
+        role: PortalRole.ADMIN,
+      },
+      create: {
+        id: 'usr_admin_001',
+        email: adminEmail,
+        passwordHash,
+        role: PortalRole.ADMIN,
+      },
+    });
+
+    // 4. Ensure platform default split configuration exists
+    await prisma.splitConfigHistory.upsert({
+      where: { id: 'cfg_platform_default_001' },
+      update: {
+        royaltyBps: 8500,
+        charityAllocationBps: [
+          { charityId: 'charity_green_earth', bps: 3333 },
+          { charityId: 'charity_ocean_clean', bps: 3333 },
+          { charityId: 'charity_youth_sport', bps: 3334 },
+        ],
+        isActive: true,
+      },
+      create: {
+        id: 'cfg_platform_default_001',
+        licenseeId: null,
+        royaltyBps: 8500,
+        charityAllocationBps: [
+          { charityId: 'charity_green_earth', bps: 3333 },
+          { charityId: 'charity_ocean_clean', bps: 3333 },
+          { charityId: 'charity_youth_sport', bps: 3334 },
+        ],
+        isActive: true,
+        changedByUserId: seededAdmin.id,
+      },
+    });
+
     const licenseeCount = await prisma.licensee.count();
     const transactionCount = await prisma.transaction.count();
     console.log(`✅ Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
+    console.log(`✅ Default Admin user initialized: ${adminEmail}`);
   } catch (e: any) {
     console.error('⚠️  DB connection failed (check DATABASE_URL):', e?.message ?? e);
     // Don't exit — server remains up to handle health checks and API errors gracefully
