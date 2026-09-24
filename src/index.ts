@@ -5,6 +5,7 @@ import { CheckoutService } from './services/checkout.service';
 import { createApp } from './expressApp';
 import { scheduleReconciliationJob } from './jobs/reconcile.job';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PortalRole } from '@prisma/client';
 
 async function main() {
@@ -84,15 +85,32 @@ async function main() {
       },
     });
 
-    // 3. Ensure default Lead Auditor / Administrator account exists on Railway
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@ghglogodrop.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'SecurePassword123!';
-    const passwordHash = await bcrypt.hash(adminPassword, 10);
+    // 3. Ensure Lead Auditor / Administrator account exists (Google SaaS Standard)
+    const isProd = process.env.NODE_ENV === 'production';
+    const adminEmail = process.env.ADMIN_EMAIL || (isProd ? 'admin@ghglogodrop.com' : 'admin@ghglogodrop.com');
+    let adminPassword = process.env.ADMIN_PASSWORD;
+    let generatedOneTimeBootstrap = false;
+
+    if (!adminPassword) {
+      if (isProd) {
+        // Google Cloud / Workspace Standard: Generate high-entropy CSPRNG bootstrap secret
+        adminPassword = crypto.randomBytes(18).toString('base64url') + '!A9';
+        generatedOneTimeBootstrap = true;
+      } else {
+        adminPassword = 'LocalDevPassword123!';
+      }
+    } else if (isProd && adminPassword.length < 14) {
+      console.warn('⚠️  [SECURITY AUDIT WARNING] ADMIN_PASSWORD should be at least 14 characters long according to NIST SP 800-63B standards.');
+    }
+
+    const saltRounds = isProd ? 12 : 10;
+    const passwordHash = await bcrypt.hash(adminPassword, saltRounds);
 
     const seededAdmin = await prisma.portalUser.upsert({
       where: { email: adminEmail },
       update: {
         role: PortalRole.ADMIN,
+        passwordHash,
       },
       create: {
         id: 'usr_admin_001',
@@ -101,6 +119,17 @@ async function main() {
         role: PortalRole.ADMIN,
       },
     });
+
+    if (generatedOneTimeBootstrap) {
+      console.log('════════════════════════════════════════════════════════════════════════════');
+      console.log('🔐 [ENTERPRISE BOOTSTRAP] Production Lead Auditor Initialized via CSPRNG:');
+      console.log(`   Admin Email:    ${adminEmail}`);
+      console.log(`   One-Time Token: ${adminPassword}`);
+      console.log('   Action:         Set ADMIN_PASSWORD in Railway Variables to pin your own.');
+      console.log('════════════════════════════════════════════════════════════════════════════');
+    } else {
+      console.log(`✅ Production Administrator account verified for: ${adminEmail}`);
+    }
 
     // 4. Ensure platform default split configuration exists
     await prisma.splitConfigHistory.upsert({
