@@ -1,37 +1,19 @@
-import { mockApi } from './mockClient';
-const USE_MOCK_ENV = false;
-export let isUsingMockData = false;
-
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export const api = {
   async checkout(params: { licenseeId: string; grossAmountCents: number; checkoutReferenceId?: string }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.checkout(params);
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Checkout request failed' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Checkout request failed' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (e.message && !e.message.includes('Failed to fetch')) throw e;
-      if (USE_MOCK_ENV) {
-        isUsingMockData = true;
-        return mockApi.checkout(params);
-      }
-      throw e;
-    }
+    return res.json();
   },
 
   async createCheckoutSession(params: {
@@ -60,73 +42,23 @@ export const api = {
     attestationNote?: string;
     logoName?: string;
   }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.b2bTrigger(params);
+    const res = await fetch('/api/b2b/trigger', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': 'b2b_key_itm_secret',
+      },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'B2B Licensing trigger failed' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/b2b/trigger', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': 'b2b_key_itm_secret',
-        },
-        body: JSON.stringify(params),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'B2B Licensing trigger failed' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, using mock b2bTrigger', e);
-      isUsingMockData = true;
-      return mockApi.b2bTrigger(params);
-    }
-  },
-
-  async createAnnualLicense(params: {
-    licenseeId: string;
-    partnerName: string;
-    annualCarbonTonnes: number;
-  }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.createAnnualLicense(params);
-    }
-    try {
-      isUsingMockData = false;
-      return mockApi.createAnnualLicense(params);
-    } catch (e) {
-      isUsingMockData = true;
-      return mockApi.createAnnualLicense(params);
-    }
-  },
-
-  async createSouvenirOrder(params: {
-    eventName: string;
-    eventType: string;
-    eventDate: string;
-    itemTitle: string;
-    quantity: number;
-    pricePerItemCents: number;
-  }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.createSouvenirOrder(params);
-    }
-    try {
-      isUsingMockData = false;
-      return mockApi.createSouvenirOrder(params);
-    } catch (e) {
-      isUsingMockData = true;
-      return mockApi.createSouvenirOrder(params);
-    }
+    return res.json();
   },
 
   async getSouvenirTracker(orderId?: string) {
-    // Public endpoint - no mock fallback in production
+    // Public endpoint - strictly real data
     const orderNumber = orderId?.trim().toUpperCase();
     if (!orderNumber) return null;
     const res = await fetch(`/api/orders/track/${encodeURIComponent(orderNumber)}`);
@@ -135,122 +67,73 @@ export const api = {
       const err = await res.json().catch(() => ({ error: 'Failed to track order' }));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    isUsingMockData = false;
     return res.json();
   },
 
   async register(params: { firstName: string; lastName: string; email: string; password: string; companyName: string }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.register(params);
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Account registration failed' }));
+      throw new Error(err.error || 'Registration failed');
     }
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Account registration failed' }));
-        throw new Error(err.error || 'Registration failed');
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (e.message && !e.message.includes('fetch')) throw e;
-      console.warn('[API Client] Backend unreachable for register, using mock API', e);
-      isUsingMockData = true;
-      return mockApi.register(params);
-    }
+    return res.json();
   },
 
   async login(email: string, password: string) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.login(email, password);
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Invalid email or password' }));
+      throw new Error(err.error || 'Invalid email or password');
     }
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Invalid email or password' }));
-        throw new Error(err.error || 'Invalid email or password');
+    const data = await res.json();
+    if (!data.user && data.token) {
+      try {
+        const payload = JSON.parse(atob(data.token.split('.')[1]));
+        data.user = {
+          id: payload.userId,
+          email,
+          role: payload.role,
+          licenseeId: payload.licenseeId,
+        };
+      } catch (e) {
+        console.error('Failed to decode JWT payload', e);
       }
-      isUsingMockData = false;
-      const data = await res.json();
-      if (!data.user && data.token) {
-        try {
-          const payload = JSON.parse(atob(data.token.split('.')[1]));
-          data.user = {
-            id: payload.userId,
-            email,
-            role: payload.role,
-            licenseeId: payload.licenseeId,
-          };
-        } catch (e) {
-          console.error('Failed to decode JWT payload', e);
-        }
-      }
-      return data;
-    } catch (e: any) {
-      if (e.message === 'Invalid email or password') throw e;
-      console.warn('[API Client] Backend unreachable for login, using mock API', e);
-      isUsingMockData = true;
-      return mockApi.login(email, password);
     }
+    return data;
   },
 
   async forgotPassword(email: string) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.forgotPassword(email);
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to request password reset' }));
+      throw new Error(err.error || 'Failed to request password reset');
     }
-    try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Failed to request password reset' }));
-        throw new Error(err.error || 'Failed to request password reset');
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (e.message && !e.message.includes('Failed to fetch')) throw e;
-      console.warn('[API Client] Backend unreachable for forgot password, using mock API', e);
-      isUsingMockData = true;
-      return mockApi.forgotPassword(email);
-    }
+    return res.json();
   },
 
   async resetPassword(params: { token: string; email: string; password: string }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.resetPassword(params);
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to reset password' }));
+      throw new Error(err.error || 'Failed to reset password');
     }
-    try {
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Failed to reset password' }));
-        throw new Error(err.error || 'Failed to reset password');
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (e.message && !e.message.includes('Failed to fetch')) throw e;
-      console.warn('[API Client] Backend unreachable for reset password, using mock API', e);
-      isUsingMockData = true;
-      return mockApi.resetPassword(params);
-    }
+    return res.json();
   },
 
   async createEventSouvenirOrder(params: {
@@ -271,7 +154,6 @@ export const api = {
       const err = await res.json().catch(() => ({ error: 'Failed to place souvenir order' }));
       throw new Error(err.error || 'Failed to place souvenir order');
     }
-    isUsingMockData = false;
     return res.json();
   },
 
@@ -282,7 +164,6 @@ export const api = {
       const err = await res.json().catch(() => ({ error: 'Failed to load charities' }));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    isUsingMockData = false;
     return res.json();
   },
 
@@ -305,7 +186,6 @@ export const api = {
         body: err,
       });
     }
-    isUsingMockData = false;
     return res.json();
   },
 
@@ -337,7 +217,6 @@ export const api = {
         body: err,
       });
     }
-    isUsingMockData = false;
     return res.json();
   },
 
@@ -359,7 +238,6 @@ export const api = {
       const err = await res.json().catch(() => ({ error: 'Preview failed' }));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    isUsingMockData = false;
     return res.json();
   },
 
@@ -390,7 +268,6 @@ export const api = {
       const err = await res.json().catch(() => ({ error: 'Custom merch checkout failed' }));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    isUsingMockData = false;
     return res.json();
   },
 
@@ -400,80 +277,46 @@ export const api = {
   },
 
   async getPortalSummary(token: string) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.getPortalSummary();
+    const res = await fetch('/api/portal/summary', {
+      headers: getAuthHeader(token),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch summary' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/portal/summary', {
-        headers: getAuthHeader(token),
-      });
-      if (!res.ok) throw new Error('Failed to fetch summary');
-      isUsingMockData = false;
-      return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, using mock summary', e);
-      isUsingMockData = true;
-      return mockApi.getPortalSummary();
-    }
+    return res.json();
   },
 
   async getPortalTransactions(token?: string) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.getPortalTransactions();
+    const res = await fetch('/api/portal/transactions', {
+      headers: getAuthHeader(token),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch transactions' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/portal/transactions', {
-        headers: getAuthHeader(token),
-      });
-      if (!res.ok) throw new Error('Failed to fetch transactions');
-      isUsingMockData = false;
-      return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, using mock transactions', e);
-      isUsingMockData = true;
-      return mockApi.getPortalTransactions();
-    }
+    return res.json();
   },
 
   async getTransparencyLedger() {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.getTransparencyLedger();
+    const res = await fetch('/api/v1/transparency-ledger');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch transparency ledger' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/v1/transparency-ledger');
-      if (!res.ok) throw new Error('Failed to fetch transparency ledger');
-      isUsingMockData = false;
-      return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, using mock transparency ledger', e);
-      isUsingMockData = true;
-      return mockApi.getTransparencyLedger();
-    }
+    return res.json();
   },
 
   async getSplitConfigHistory(token: string, licenseeId?: string) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.getSplitConfigHistory(licenseeId);
+    const query = licenseeId ? `?licenseeId=${encodeURIComponent(licenseeId)}` : '';
+    const res = await fetch(`/api/admin/split-config/history${query}`, {
+      headers: getAuthHeader(token),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch split config history' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const query = licenseeId ? `?licenseeId=${encodeURIComponent(licenseeId)}` : '';
-      const res = await fetch(`/api/admin/split-config/history${query}`, {
-        headers: getAuthHeader(token),
-      });
-      if (!res.ok) throw new Error('Failed to fetch split config history');
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (USE_MOCK_ENV) {
-        isUsingMockData = true;
-        return mockApi.getSplitConfigHistory(licenseeId);
-      }
-      throw e;
-    }
+    return res.json();
   },
 
   async getSplitLicensees(token: string) {
@@ -488,10 +331,6 @@ export const api = {
   },
 
   async createSplitConfig(token: string, data: { licenseeId?: string | null; royaltyBps: number; charityAllocationBps: Array<{ charityId: string; bps: number }> }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.createSplitConfig(data);
-    }
     const res = await fetch('/api/admin/split-config', {
       method: 'POST',
       headers: {
@@ -504,55 +343,34 @@ export const api = {
       const err = await res.json().catch(() => ({ error: 'Failed to create split config' }));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    isUsingMockData = false;
     return res.json();
   },
 
   async getPortalJobReports(token: string) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.getPortalJobReports();
+    const res = await fetch('/api/portal/job-reports', {
+      headers: getAuthHeader(token),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch portal job reports' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/portal/job-reports', {
-        headers: getAuthHeader(token),
-      });
-      if (!res.ok) throw new Error('Failed to fetch portal job reports');
-      isUsingMockData = false;
-      return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, using mock getPortalJobReports', e);
-      isUsingMockData = true;
-      return mockApi.getPortalJobReports();
-    }
+    return res.json();
   },
 
   async submitPortalJobReport(token: string, data: { periodType: string; periodStart: string; periodEnd: string; jobsCreated: number; attestationNote?: string }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.submitPortalJobReport(data);
+    const res = await fetch('/api/portal/job-reports', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(token),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to submit job creation report' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/portal/job-reports', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(token),
-        },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Failed to submit job creation report' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (e.message && !e.message.includes('fetch')) throw e;
-      console.warn('[API Client] Backend unreachable, using mock submitPortalJobReport', e);
-      isUsingMockData = true;
-      return mockApi.submitPortalJobReport(data);
-    }
+    return res.json();
   },
 
   async assessJobCompliance(params: {
@@ -563,24 +381,16 @@ export const api = {
     livingWageCompliant: boolean;
     trainingHours?: number;
   }) {
-    if (USE_MOCK_ENV) {
-      isUsingMockData = true;
-      return mockApi.assessJobCompliance(params);
+    const res = await fetch('/api/jobs/assess', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Assessment calculation failed' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
-    try {
-      const res = await fetch('/api/jobs/assess', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (!res.ok) throw new Error('Assessment calculation failed');
-      isUsingMockData = false;
-      return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, using mock assessJobCompliance', e);
-      isUsingMockData = true;
-      return mockApi.assessJobCompliance(params);
-    }
+    return res.json();
   },
 
   // -- ISO Audit-Readiness & Carbon Compliance -----------------------------

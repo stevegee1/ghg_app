@@ -128,11 +128,8 @@ export const AdminPage: React.FC = () => {
   const [licenseeId, setLicenseeId] = useState<string>(''); // empty = platform default
   const [availableLicensees, setAvailableLicensees] = useState<Array<{ id: string; name: string; vertical?: string }>>([]);
 
-  // Split charities
-  const [charities, setCharities] = useState<Array<{ charityId: string; charityName: string; bps: number }>>([
-    { charityId: 'charity_green_earth', charityName: 'Green Earth Foundation', bps: 5000 },
-    { charityId: 'charity_ocean_clean', charityName: 'Clean Oceans Trust', bps: 5000 },
-  ]);
+  // Split charities (populated dynamically from database)
+  const [charities, setCharities] = useState<Array<{ charityId: string; charityName: string; bps: number }>>([]);
 
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -270,16 +267,44 @@ export const AdminPage: React.FC = () => {
     });
   }, [token, isAdmin]);
 
-  // Fetch Split History
+  // Fetch Split History & Active Charities
   useEffect(() => {
     let isMounted = true;
-    async function loadHistory() {
+    async function loadSplitsData() {
       if (!token) return;
       setLoadingHistory(true);
       try {
-        const res = await api.getSplitConfigHistory(token, licenseeId || undefined);
-        const list = Array.isArray(res) ? res : (res.history || []);
-        if (isMounted) setHistory(list);
+        const [res, charitiesRes] = await Promise.all([
+          api.getSplitConfigHistory(token, licenseeId || undefined),
+          api.getActiveCharities().catch(() => ({ charities: [] })),
+        ]);
+        const list = Array.isArray(res) ? res : (res?.history || []);
+        if (isMounted) {
+          setHistory(list);
+          const activeCfg = list.find((c: any) => c.isActive) || list[0];
+          if (activeCfg && Array.isArray(activeCfg.charityAllocationBps) && activeCfg.charityAllocationBps.length > 0) {
+            setRoyaltyBps(activeCfg.royaltyBps ?? 8500);
+            setCharities(
+              activeCfg.charityAllocationBps.map((c: any) => ({
+                charityId: c.charityId,
+                charityName: c.charityName || c.charityId,
+                bps: c.bps,
+              }))
+            );
+          } else if (Array.isArray(charitiesRes?.charities) && charitiesRes.charities.length > 0) {
+            const activeList = charitiesRes.charities;
+            const count = activeList.length;
+            const baseBps = Math.floor(10000 / count);
+            const remainder = 10000 % count;
+            setCharities(
+              activeList.map((c: any, i: number) => ({
+                charityId: c.id,
+                charityName: c.name,
+                bps: baseBps + (i === 0 ? remainder : 0),
+              }))
+            );
+          }
+        }
       } catch (err: any) {
         if (isMounted) setError('Failed to load split configuration history');
       } finally {
@@ -287,7 +312,7 @@ export const AdminPage: React.FC = () => {
       }
     }
     if (activeAdminTab === 'SPLITS') {
-      loadHistory();
+      loadSplitsData();
     }
     return () => { isMounted = false; };
   }, [token, licenseeId, activeAdminTab]);
@@ -1353,63 +1378,79 @@ export const AdminPage: React.FC = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                    {charities.map((ch, idx) => (
+                    {charities.length === 0 ? (
                       <div
-                        key={ch.charityId}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '1rem',
-                          padding: '0.75rem 1rem',
+                          padding: '1.25rem',
+                          textAlign: 'center',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.875rem',
                           backgroundColor: 'var(--bg-subtle, #f8fafc)',
                           borderRadius: '8px',
                           border: '1px solid var(--border-light, #e2e8f0)',
                         }}
                       >
-                        <div>
-                          <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                            {ch.charityName}
-                          </div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            ID: <code>{ch.charityId}</code>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="number"
-                            min="0"
-                            max="10000"
-                            step="100"
-                            value={ch.bps}
-                            onChange={(e) => {
-                              const newBps = parseInt(e.target.value, 10) || 0;
-                              const updated = [...charities];
-                              updated[idx].bps = newBps;
-                              setCharities(updated);
-                            }}
-                            className="form-input"
-                            style={{ width: '85px', textAlign: 'right', fontWeight: 700, padding: '0.4rem 0.55rem', borderRadius: '6px' }}
-                          />
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>bps</span>
-                          <span
-                            style={{
-                              minWidth: '55px',
-                              textAlign: 'right',
-                              fontSize: '0.8125rem',
-                              fontWeight: 700,
-                              color: '#059669',
-                              backgroundColor: '#ecfdf5',
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                            }}
-                          >
-                            {(ch.bps / 100).toFixed(1)}%
-                          </span>
-                        </div>
+                        Loading statutory charities from database...
                       </div>
-                    ))}
+                    ) : (
+                      charities.map((ch, idx) => (
+                        <div
+                          key={ch.charityId}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '1rem',
+                            padding: '0.75rem 1rem',
+                            backgroundColor: 'var(--bg-subtle, #f8fafc)',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border-light, #e2e8f0)',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                              {ch.charityName}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              ID: <code>{ch.charityId}</code>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                              type="number"
+                              min="0"
+                              max="10000"
+                              step="100"
+                              value={ch.bps}
+                              onChange={(e) => {
+                                const newBps = parseInt(e.target.value, 10) || 0;
+                                const updated = [...charities];
+                                updated[idx].bps = newBps;
+                                setCharities(updated);
+                              }}
+                              className="form-input"
+                              style={{ width: '85px', textAlign: 'right', fontWeight: 700, padding: '0.4rem 0.55rem', borderRadius: '6px' }}
+                            />
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>bps</span>
+                            <span
+                              style={{
+                                minWidth: '55px',
+                                textAlign: 'right',
+                                fontSize: '0.8125rem',
+                                fontWeight: 700,
+                                color: '#059669',
+                                backgroundColor: '#ecfdf5',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                              }}
+                            >
+                              {(ch.bps / 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
