@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 import { OpenSeaBadge } from '../components/OpenSeaBadge';
@@ -9,12 +10,14 @@ interface MerchItem {
   title: string;
   licenseeId: string;
   partnerName: string;
-  priceCents: number;
+  priceCents: number | null; // null = price not yet determined, shows Contact for Order
   imageUrl: string;
   category: string;
   description: string;
   objectPosition?: string;
 }
+
+const CAP_ITEM_ID = 'item_nfty_cap';
 
 const MERCH_CATALOG: MerchItem[] = [
   {
@@ -22,7 +25,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Vagaries of GHG Emissions Embroidered Cap',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 2500, // £25.00
+    priceCents: 3500, // £35.00 - fixed retail price
     imageUrl: '/images/merch/804c16c8-6d00-4596-b456-dfe607b635b7.jpeg',
     category: 'Official Headwear',
     description: 'Black structured cotton cap with high-density embroidered multi-color NFTY LOGS® Vagaries of GHG Emissions accountability badge.',
@@ -33,7 +36,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® "Vibing The Vagaries" Heavyweight Hoodie',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 6500, // £65.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/a014f871-4e03-4f3d-a056-47f3f3dbe729.jpeg',
     category: 'Graphic Art Hoodies',
     description: 'Heavyweight black pullover hoodie with embroidered "Re-awakened Volcanoes, Melting Glaciers" chest artwork and dual GHG logo drops.',
@@ -44,7 +47,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Tech Fleece Full-Zip Performance Hoodie',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 7500, // £75.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/09acb896-19df-488f-9a9b-ac1241c6dc97.jpeg',
     category: 'Performance Apparel',
     description: 'Charcoal tech fleece full-zip hoodie with zippered sleeve utility pocket, tailored seamlines, and embroidered GHG accountability badges.',
@@ -55,7 +58,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Arsenal FC Milestone Match Commemorative Hoodie',
     licenseeId: 'lic_arsenal_fc',
     partnerName: 'Arsenal FC Merchandise',
-    priceCents: 8000, // £80.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/fa1c261d-9fd9-4cb7-a5c3-a4425c641db7.jpeg',
     category: 'Special Edition Sports',
     description: 'Commemorative dark fleece hoodie celebrating the 2025 West Ham derby milestone with embroidered match narrative and official GHG badge.',
@@ -66,7 +69,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Heavyweight Insulated Puffer Jacket',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 9500, // £95.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/5df490db-a560-4754-924d-9a27581f0c23.jpeg',
     category: 'Premium Winterwear',
     description: 'High-loft quilted puffer jacket with full-length storm zip, insulated hood, and embroidered NFTY LOGS® Greenhouse Gas accountability mark.',
@@ -77,7 +80,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Web3 Provenance Embroidered Softshell Vest',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 5500, // £55.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/ca6c871a-d643-4695-a605-9a357fb26ae3.jpeg',
     category: 'Official Outerwear',
     description: 'Sleeveless softshell vest embroidered with direct blockchain collectibles search paths for OpenSea, Rarible, and NFTY LOGS Labs.',
@@ -88,7 +91,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Disaster Relief Charity Edition Softshell Vest',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 5500, // £55.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/3bf3f794-fcb4-412a-a556-b3289bbebd39.jpeg',
     category: 'Official Outerwear',
     description: 'Embroidered with worldwide extreme weather survivor succour donation mandate and "While..." prompt blockchain collectibles statement.',
@@ -99,7 +102,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Premium Embroidered Fleece Joggers',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 4500, // £45.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/66e17346-415e-4f20-9c86-3aa5c4587af6.jpeg',
     category: 'Loungewear & Bottoms',
     description: 'Organic heavyweight French terry fleece sweatpants with embroidered NFTY LOGS® Vagaries of Greenhouse Gases [GHGs] thigh badge.',
@@ -110,7 +113,7 @@ const MERCH_CATALOG: MerchItem[] = [
     title: 'NFTY LOGS® Arm-Badge Puffer Jacket (Sleeve Detail Edition)',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
-    priceCents: 9500, // £95.00
+    priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/82ccfad7-9e7b-4882-990d-f9805bc52a22.jpeg',
     category: 'Premium Winterwear',
     description: 'Close-up sleeve edition showcasing the intricate multi-thread embroidery of the official NFTY LOGS® Vagaries of Greenhouse Gases mark.',
@@ -149,8 +152,72 @@ const PRESET_CLUBS = [
   'Liverpool FC',
   'Manchester City',
   'Tottenham Hotspur',
-  'Aston Villa',
 ];
+
+const CharityAllocationCallout: React.FC = () => (
+  <div
+    style={{
+      marginTop: '1.25rem',
+      padding: '0.85rem 1rem',
+      borderRadius: '10px',
+      backgroundColor: 'var(--bg-subtle)',
+      border: '1px solid var(--border-light)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '0.75rem',
+      boxSizing: 'border-box',
+    }}
+  >
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+      <div
+        style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(2, 132, 199, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-sky)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.25 }}>
+          Registered Charity or Trust?
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
+          Apply for 15% statutory checkout allocation
+        </div>
+      </div>
+    </div>
+    <Link
+      to="/charities/apply"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.25rem',
+        padding: '0.45rem 0.75rem',
+        fontSize: '0.78rem',
+        fontWeight: 600,
+        color: 'var(--color-sky)',
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border-light)',
+        borderRadius: '6px',
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        transition: 'all 0.15s ease',
+      }}
+    >
+      Apply <span aria-hidden="true">→</span>
+    </Link>
+  </div>
+);
 
 export const MerchStorePage: React.FC = () => {
   // Navigation mode
@@ -167,7 +234,7 @@ export const MerchStorePage: React.FC = () => {
   const [frenzyOpponent, setFrenzyOpponent] = useState<string>('West Ham United');
   const [frenzyMinute, setFrenzyMinute] = useState<string>("89'");
   const [frenzyMoment, setFrenzyMoment] = useState<string>('Derby match winner at Emirates Stadium');
-  const [frenzyQuote, setFrenzyQuote] = useState<string>('89th Minute Winning Strike — North Bank Heritage');
+  const [frenzyQuote, setFrenzyQuote] = useState<string>('89th Minute Winning Strike - North Bank Heritage');
   const [garmentModel, setGarmentModel] = useState<string>('HEAVYWEIGHT_HOODIE');
   const [threadColor, setThreadColor] = useState<string>('GOLD_METALLIC');
   const [placement, setPlacement] = useState<string>('LEFT_CHEST');
@@ -179,12 +246,17 @@ export const MerchStorePage: React.FC = () => {
 
   // Checkout State
   const [optInMark, setOptInMark] = useState<boolean>(true);
-  const [cardNumber, setCardNumber] = useState<string>('');
-  const [cardExpiry, setCardExpiry] = useState<string>('');
-  const [cardCvc, setCardCvc] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<any | null>(null);
+
+  // "Contact for Order" enquiry state (for non-priced items)
+  const [enquiryName, setEnquiryName] = useState<string>('');
+  const [enquiryEmail, setEnquiryEmail] = useState<string>('');
+  const [enquiryMessage, setEnquiryMessage] = useState<string>('');
+  const [enquiryLoading, setEnquiryLoading] = useState<boolean>(false);
+  const [enquirySuccess, setEnquirySuccess] = useState<string | null>(null);
+  const [enquiryError, setEnquiryError] = useState<string | null>(null);
 
   const categories = ['All', ...Array.from(new Set(MERCH_CATALOG.map((i) => i.category)))];
   const filteredItems = selectedCategory === 'All'
@@ -232,22 +304,14 @@ export const MerchStorePage: React.FC = () => {
     };
   }, [activeTab, activeClubName, frenzyOpponent, frenzyMinute, frenzyQuote, garmentModel, threadColor, placement, frenzyQuantity]);
 
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').substring(0, 16);
-    const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
-    setCardNumber(formatted);
-  };
-
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').substring(0, 4);
-    const formatted = val.length >= 3 ? `${val.substring(0, 2)}/${val.substring(2)}` : val;
-    setCardExpiry(formatted);
-  };
-
-  // Standard Catalog Checkout
+  // Standard Catalog Stripe Hosted Checkout (cap only - priceCents must be non-null)
   const handleCatalogStripeHostedCheckout = async () => {
     if (!optInMark) {
       setError('Please check the GHG Accountability Mark opt-in box to proceed.');
+      return;
+    }
+    if (selectedItem.priceCents === null) {
+      setError('This item is not yet available for direct purchase. Please use the Contact for Order form.');
       return;
     }
     setLoading(true);
@@ -276,35 +340,36 @@ export const MerchStorePage: React.FC = () => {
     }
   };
 
-  const handleCatalogCardCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!optInMark) {
-      setError('Please check the GHG Accountability Mark opt-in box to proceed.');
+  // "Contact for Order" enquiry submission for non-priced items
+  const handleEnquirySubmit = async () => {
+    if (!enquiryName.trim() || !enquiryEmail.trim()) {
+      setEnquiryError('Your name and email address are required.');
       return;
     }
-    if (cardNumber.replace(/\s/g, '').length < 15) {
-      setError('Please enter a valid card number.');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-
+    setEnquiryLoading(true);
+    setEnquiryError(null);
+    setEnquirySuccess(null);
     try {
-      const result = await api.checkout({
-        licenseeId: selectedItem.licenseeId,
-        grossAmountCents: selectedItem.priceCents,
-        checkoutReferenceId: `ref_merch_${Date.now()}`,
+      await api.submitMerchEnquiry({
+        itemId: selectedItem.id,
+        itemTitle: selectedItem.title,
+        contactName: enquiryName.trim(),
+        contactEmail: enquiryEmail.trim(),
+        message: enquiryMessage.trim() || undefined,
       });
-      setSuccessResult(result);
+      setEnquirySuccess('Enquiry received. Our team will be in touch within 1 to 2 business days.');
+      setEnquiryName('');
+      setEnquiryEmail('');
+      setEnquiryMessage('');
     } catch (err: any) {
-      setError(err.message || 'Checkout failed.');
+      setEnquiryError(err.message || 'Failed to submit enquiry. Please try again.');
     } finally {
-      setLoading(false);
+      setEnquiryLoading(false);
     }
   };
 
-  // Goal Frenzy Studio Checkout
-  const handleGoalFrenzyCheckout = async (isDirectCard: boolean) => {
+  // Goal Frenzy Studio Stripe Hosted Checkout
+  const handleGoalFrenzyCheckout = async () => {
     if (!optInMark) {
       setError('Please check the GHG Accountability Mark opt-in box to proceed.');
       return;
@@ -316,10 +381,6 @@ export const MerchStorePage: React.FC = () => {
     const quoteText = frenzyQuote.trim() || `${activeClubName} ${frenzyMoment} (${frenzyMinute})`;
     if (quoteText.length > 80) {
       setError('Embroidery quote must be 80 characters or fewer.');
-      return;
-    }
-    if (isDirectCard && cardNumber.replace(/\s/g, '').length < 15) {
-      setError('Please enter a valid card number.');
       return;
     }
 
@@ -345,7 +406,7 @@ export const MerchStorePage: React.FC = () => {
         frenzyQuote: quoteText,
       });
 
-      if (!isDirectCard && res?.sessionUrl) {
+      if (res?.sessionUrl) {
         window.location.href = res.sessionUrl;
         return;
       }
@@ -365,40 +426,38 @@ export const MerchStorePage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 0 4rem 0' }}>
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem 1rem 4rem 1rem' }}>
       
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            backgroundColor: 'var(--accent-light)',
-            border: '1px solid rgba(2, 132, 199, 0.25)',
-            padding: '0.35rem 0.85rem',
-            borderRadius: 'var(--radius-pill)',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            color: 'var(--color-sky)',
-            letterSpacing: '0.04em',
-            marginBottom: '0.75rem',
-          }}
-        >
-          <span className="radar-pulse" />
-          <span>GHG EMISSIONS REGISTERED TRADE MARK</span>
-        </div>
-
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
-          Survivors Donation Keepsake
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+          Support Extreme weather
         </h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: '780px', margin: 0 }}>
-          Certified bespoke apparel and disaster survivor keepsakes. Unit prices are determined by supplier base production specifications, with an immediate contractual 85% supplier fulfillment / 15% statutory charity split at checkout.
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: '820px', margin: 0 }}>
+          Bespoke apparel and extreme weather support. Unit prices are determined by supplier base production specifications, with an immediate contractual 85% supplier fulfillment / 15% statutory charity split at checkout.
         </p>
 
-        {/* Tab Switcher */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+        {/* Google SaaS Segmented Tab Switcher */}
+        <div
+          role="tablist"
+          aria-label="Merchandise navigation"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'var(--bg-subtle)',
+            border: '1px solid var(--border-light)',
+            borderRadius: '12px',
+            padding: '4px',
+            marginTop: '1.25rem',
+            width: '100%',
+            maxWidth: '520px',
+            gap: '4px',
+            boxSizing: 'border-box',
+          }}
+        >
           <button
+            role="tab"
+            aria-selected={activeTab === 'catalog'}
             type="button"
             onClick={() => {
               setActiveTab('catalog');
@@ -406,20 +465,29 @@ export const MerchStorePage: React.FC = () => {
               setError(null);
             }}
             style={{
-              padding: '0.55rem 1.25rem',
+              flex: 1,
+              padding: '0.65rem 0.85rem',
               borderRadius: '8px',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
+              fontSize: '0.875rem',
+              fontWeight: activeTab === 'catalog' ? 700 : 500,
               cursor: 'pointer',
               border: 'none',
-              backgroundColor: activeTab === 'catalog' ? 'var(--color-sky)' : 'transparent',
-              color: activeTab === 'catalog' ? '#ffffff' : 'var(--text-muted)',
-              transition: 'all 0.2s ease',
+              backgroundColor: activeTab === 'catalog' ? 'var(--bg-card)' : 'transparent',
+              color: activeTab === 'catalog' ? 'var(--text-main)' : 'var(--text-muted)',
+              boxShadow: activeTab === 'catalog' ? '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' : 'none',
+              transition: 'all 0.15s ease',
+              minHeight: '44px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
             }}
           >
-            Survivors Keepsake Catalog
+            Official Apparel Catalog
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'goal_frenzy'}
             type="button"
             onClick={() => {
               setActiveTab('goal_frenzy');
@@ -427,22 +495,27 @@ export const MerchStorePage: React.FC = () => {
               setError(null);
             }}
             style={{
-              padding: '0.55rem 1.25rem',
+              flex: 1,
+              padding: '0.65rem 0.85rem',
               borderRadius: '8px',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
+              fontSize: '0.875rem',
+              fontWeight: activeTab === 'goal_frenzy' ? 700 : 500,
               cursor: 'pointer',
-              border: activeTab === 'goal_frenzy' ? 'none' : '1px solid var(--border-light)',
-              backgroundColor: activeTab === 'goal_frenzy' ? '#0F172A' : 'var(--bg-card)',
-              color: activeTab === 'goal_frenzy' ? '#38BDF8' : 'var(--text-main)',
+              border: 'none',
+              backgroundColor: activeTab === 'goal_frenzy' ? 'var(--bg-card)' : 'transparent',
+              color: activeTab === 'goal_frenzy' ? 'var(--text-main)' : 'var(--text-muted)',
+              boxShadow: activeTab === 'goal_frenzy' ? '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' : 'none',
+              transition: 'all 0.15s ease',
+              minHeight: '44px',
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '0.5rem',
-              transition: 'all 0.2s ease',
+              textAlign: 'center',
             }}
           >
             <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#22C55E' }} />
-            Goal Frenzy™ Sports Studio
+            Frenzy Custom Studio
           </button>
         </div>
       </div>
@@ -510,7 +583,7 @@ export const MerchStorePage: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div style={{ position: 'relative', height: '480px', backgroundColor: '#020617' }}>
+                <div style={{ position: 'relative', height: 'min(480px, 50vh)', backgroundColor: '#020617' }}>
                   <img
                     src={lightboxImage.imageUrl}
                     alt={lightboxImage.title}
@@ -554,7 +627,7 @@ export const MerchStorePage: React.FC = () => {
           <div className="store-layout-grid">
             
             {/* Left Column: Product Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.5rem' }}>
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
@@ -627,18 +700,27 @@ export const MerchStorePage: React.FC = () => {
                       </p>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '0.85rem' }}>
-                      <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
-                        £{(item.priceCents / 100).toFixed(2)}
-                      </span>
+                    {/* Price / Contact badge */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '0.85rem', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {item.priceCents !== null ? (
+                        <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+                          £{(item.priceCents / 100).toFixed(2)}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-amber, #F59E0B)', backgroundColor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', padding: '3px 9px', borderRadius: '20px' }}>
+                          Contact for Order
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
                           setSelectedItem(item);
                           setSuccessResult(null);
+                          setEnquirySuccess(null);
+                          setEnquiryError(null);
                         }}
                         className={selectedItem.id === item.id ? 'btn btn-primary' : 'btn btn-secondary'}
-                        style={{ padding: '0.45rem 1rem', fontSize: '0.8rem', minHeight: '38px' }}
+                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', minHeight: '48px', flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         {selectedItem.id === item.id ? 'Selected' : 'Select Item'}
                       </button>
@@ -688,17 +770,18 @@ export const MerchStorePage: React.FC = () => {
                   <button
                     onClick={() => setSuccessResult(null)}
                     className="btn btn-secondary"
-                    style={{ width: '100%', marginTop: '1.25rem' }}
+                    style={{ width: '100%', minHeight: '48px', marginTop: '1.25rem' }}
                   >
                     Purchase Another Item
                   </button>
                 </div>
-              ) : (
-                <form onSubmit={handleCatalogCardCheckout}>
+              ) : selectedItem.priceCents !== null ? (
+                /* PRICED ITEM: CAP AT £35.00 */
+                <div>
                   <div style={{ padding: '1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>{selectedItem.title}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{selectedItem.partnerName}</div>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-sky)', marginTop: '0.5rem', fontFamily: 'var(--font-mono)' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-sky)', marginTop: '0.5rem', fontFamily: 'var(--font-mono)' }}>
                       £{(selectedItem.priceCents / 100).toFixed(2)}
                     </div>
                   </div>
@@ -714,100 +797,206 @@ export const MerchStorePage: React.FC = () => {
                       <div>
                         <div style={{ fontWeight: 800, color: 'var(--color-green-dark)' }}>Verified GHG Accountability Mark</div>
                         <div style={{ color: 'var(--text-main)', marginTop: '0.2rem', lineHeight: 1.4 }}>
-                          Exact 15% of purchase is automatically routed to verified local environmental restoration funds.
+                          Exact 15% of purchase is automatically routed to verified local environmental restoration and extreme weather relief funds.
                         </div>
                       </div>
                     </label>
                   </div>
 
+                  {/* Single Payment Option: Stripe Hosted Checkout */}
                   <div style={{ marginBottom: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                        Payment Details
-                      </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Payment Method
+                      </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                         256-Bit SSL Encrypted
                       </span>
                     </div>
 
-                    <div style={{ marginBottom: '0.65rem' }}>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Card number (4242 •••• •••• ••••)"
-                        value={cardNumber}
-                        onChange={handleCardNumberChange}
-                        className="form-input"
-                        style={{ fontFamily: 'var(--font-mono)' }}
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCatalogStripeHostedCheckout}
+                      disabled={loading || !optInMark}
+                      style={{
+                        width: '100%',
+                        minHeight: '48px',
+                        padding: '0.85rem 1.25rem',
+                        backgroundColor: '#635BFF',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        cursor: loading || !optInMark ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        transition: 'opacity 0.2s',
+                        boxShadow: '0 4px 12px rgba(99, 91, 255, 0.25)',
+                      }}
+                    >
+                      <span>{loading ? 'Connecting to Stripe...' : `Pay £${(selectedItem.priceCents / 100).toFixed(2)} with Stripe Checkout`}</span>
+                    </button>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM / YY"
-                        value={cardExpiry}
-                        onChange={handleExpiryChange}
-                        className="form-input"
-                        style={{ fontFamily: 'var(--font-mono)' }}
-                      />
-                      <input
-                        type="password"
-                        required
-                        maxLength={4}
-                        placeholder="CVC"
-                        value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                        className="form-input"
-                        style={{ fontFamily: 'var(--font-mono)' }}
-                      />
+                    <div style={{ marginTop: '0.65rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                      256-Bit SSL Encrypted via Stripe Checkout. Supports Credit/Debit Cards, Apple Pay, and Google Pay.
                     </div>
                   </div>
 
-                  {/* Stripe Hosted Checkout (Primary Option) */}
-                  <button
-                    type="button"
-                    onClick={handleCatalogStripeHostedCheckout}
-                    disabled={loading || !optInMark}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem 1.25rem',
-                      backgroundColor: '#635BFF',
-                      color: '#ffffff',
-                      fontWeight: 800,
-                      fontSize: '0.92rem',
-                      borderRadius: '10px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      marginBottom: '1rem',
-                      transition: 'opacity 0.2s',
-                      boxShadow: '0 4px 12px rgba(99, 91, 255, 0.25)',
-                    }}
-                  >
-                    <span>Pay with Stripe</span>
-                    <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>(Cards, Apple Pay, Google Pay)</span>
-                  </button>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1rem 0' }}>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-light)' }} />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>OR PAY DIRECTLY</span>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-light)' }} />
+                  {/* Statutory Non-Profit Application Link */}
+                  <CharityAllocationCallout />
+                </div>
+              ) : (
+                /* UNPRICED ITEM: CONTACT ON ORDER */
+                <div>
+                  <div style={{ padding: '1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>{selectedItem.title}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{selectedItem.partnerName}</div>
+                    <div style={{ marginTop: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.85rem', backgroundColor: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '20px', color: '#F59E0B', fontWeight: 700, fontSize: '0.85rem' }}>
+                      <span>Price on Request • Contact on Order</span>
+                    </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading || !optInMark}
-                    className="btn btn-secondary"
-                    style={{ width: '100%' }}
-                  >
-                    {loading ? 'Processing...' : `Pay £${(selectedItem.priceCents / 100).toFixed(2)} with Encrypted Card →`}
-                  </button>
-                </form>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+                    Submit your contact details below to register an order enquiry
+                  </p>
+
+                  {enquirySuccess ? (
+                    <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', border: '1px solid #22C55E', borderRadius: '10px', padding: '1.25rem', textAlign: 'center' }}>
+                      <div style={{ fontWeight: 800, color: '#16A34A', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
+                        Inquiry Registered Successfully
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-main)', margin: '0 0 1rem 0' }}>
+                        {enquirySuccess}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEnquirySuccess(null);
+                          setEnquiryError(null);
+                        }}
+                        className="btn btn-secondary"
+                        style={{ width: '100%', minHeight: '48px', fontSize: '0.85rem' }}
+                      >
+                        Submit Another Inquiry
+                      </button>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleEnquirySubmit();
+                      }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                    >
+                      {enquiryError && (
+                        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
+                          {enquiryError}
+                        </div>
+                      )}
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.3rem' }}>
+                          Your Name <span style={{ color: 'var(--google-red)' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={enquiryName}
+                          onChange={(e) => setEnquiryName(e.target.value)}
+                          placeholder="e.g. Jane Doe"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            minHeight: '48px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border-light)',
+                            backgroundColor: 'var(--bg-main)',
+                            color: 'var(--text-main)',
+                            fontSize: '0.875rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.3rem' }}>
+                          Contact Email <span style={{ color: 'var(--google-red)' }}>*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={enquiryEmail}
+                          onChange={(e) => setEnquiryEmail(e.target.value)}
+                          placeholder="name@company.com"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            minHeight: '48px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border-light)',
+                            backgroundColor: 'var(--bg-main)',
+                            color: 'var(--text-main)',
+                            fontSize: '0.875rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.3rem' }}>
+                          Order Notes / Quantity / Sizing <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(Optional)</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={enquiryMessage}
+                          onChange={(e) => setEnquiryMessage(e.target.value)}
+                          placeholder="Specify desired quantity, sizes (e.g. L, XL), or delivery requirements..."
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border-light)',
+                            backgroundColor: 'var(--bg-main)',
+                            color: 'var(--text-main)',
+                            fontSize: '0.875rem',
+                            resize: 'vertical',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={enquiryLoading}
+                        style={{
+                          width: '100%',
+                          minHeight: '48px',
+                          padding: '0.85rem 1.25rem',
+                          backgroundColor: 'var(--color-sky, #0284c7)',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.92rem',
+                          borderRadius: '10px',
+                          border: 'none',
+                          cursor: enquiryLoading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          transition: 'opacity 0.2s',
+                          boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                        }}
+                      >
+                        {enquiryLoading ? 'Submitting Inquiry...' : 'Contact on Order'}
+                      </button>
+                    </form>
+                  )}
+
+                  <CharityAllocationCallout />
+                </div>
               )}
             </div>
 
@@ -829,14 +1018,11 @@ export const MerchStorePage: React.FC = () => {
               border: '1px solid #1E293B',
             }}
           >
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-pill)', fontSize: '0.75rem', fontWeight: 600, color: '#38BDF8', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-              <span>GOAL FRENZY™ SPORTS MILESTONE STUDIO</span>
-            </div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0 0 0.5rem 0', letterSpacing: '-0.02em', color: '#F8FAFC' }}>
               Sports Milestone Commemoration Studio
             </h2>
             <p style={{ fontSize: '0.875rem', color: '#94A3B8', maxWidth: '780px', lineHeight: 1.55, margin: 0 }}>
-              Configure bespoke commemorative club apparel celebrating milestone matches and defining moments. Every garment is crafted from certified organic textiles with ISO 14067 carbon accounting metrics and automated 15% statutory ESG charitable routing.
+              Configure bespoke commemorative club apparel celebrating milestone matches and defining moments. Every garment is crafted from certified organic textiles with automated 15% statutory ESG charitable routing.
             </p>
           </div>
 
@@ -854,43 +1040,65 @@ export const MerchStorePage: React.FC = () => {
                   Specify the club, opponent, and decisive match minute.
                 </p>
 
-                {/* Club Preset Buttons */}
+                {/* Club Selector Dropdown */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                  <label htmlFor="club-select" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
                     Select Club
                   </label>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-                    {PRESET_CLUBS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => {
-                          setFrenzyClub(c);
+                  <div style={{ position: 'relative', marginBottom: '0.65rem' }}>
+                    <select
+                      id="club-select"
+                      value={customClub ? '__custom__' : (frenzyClub || '')}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setFrenzyClub('');
+                          setCustomClub(' ');
+                        } else {
+                          setFrenzyClub(e.target.value);
                           setCustomClub('');
-                        }}
-                        style={{
-                          padding: '0.45rem 0.95rem',
-                          borderRadius: '8px',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          border: frenzyClub === c && !customClub ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                          backgroundColor: frenzyClub === c && !customClub ? 'var(--accent-light)' : 'var(--bg-subtle)',
-                          color: frenzyClub === c && !customClub ? 'var(--color-sky)' : 'var(--text-main)',
-                        }}
-                      >
-                        {c}
-                      </button>
-                    ))}
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        padding: '0.75rem 2.5rem 0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid var(--color-sky)',
+                        backgroundColor: 'var(--bg-subtle)',
+                        color: 'var(--text-main)',
+                        fontSize: '0.875rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      <option value="">-- Choose a club --</option>
+                      {PRESET_CLUBS.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                      <option value="__custom__">Other / Custom club...</option>
+                    </select>
+                    <span style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-sky)', fontSize: '0.75rem' }}>
+                      ▼
+                    </span>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Or enter custom club (e.g. Newcastle United, Celtic FC)"
-                    value={customClub}
-                    onChange={(e) => setCustomClub(e.target.value)}
-                    className="form-input"
-                    style={{ fontSize: '0.85rem' }}
-                  />
+                  {/* Reveal text input only when "Other" is chosen */}
+                  {customClub !== '' && (
+                    <input
+                      type="text"
+                      placeholder="Enter club name (e.g. Newcastle United, Celtic FC)"
+                      value={customClub.trim() === '' ? '' : customClub}
+                      onChange={(e) => {
+                        setCustomClub(e.target.value);
+                        setFrenzyClub(e.target.value);
+                      }}
+                      className="form-input"
+                      style={{ fontSize: '0.85rem' }}
+                      autoFocus
+                    />
+                  )}
                 </div>
 
                 {/* Opponent & Minute */}
@@ -966,96 +1174,138 @@ export const MerchStorePage: React.FC = () => {
                   Select silhouette, organic thread color, and embroidery placement.
                 </p>
 
-                {/* Garment Grid */}
+                {/* Garment Silhouette Dropdown */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                  <label htmlFor="garment-select" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
                     Garment Silhouette
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-                    {GARMENT_OPTIONS.map((g) => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => setGarmentModel(g.id)}
-                        style={{
-                          padding: '0.85rem',
-                          borderRadius: '10px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          border: garmentModel === g.id ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                          backgroundColor: garmentModel === g.id ? 'var(--accent-light)' : 'var(--bg-subtle)',
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)' }}>{g.label}</div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.35rem' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
-                            £{(g.priceCents / 100).toFixed(2)}
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            {g.baseLca}g CO2e
-                          </span>
-                        </div>
-                      </button>
-                    ))}
+                  <div style={{ position: 'relative' }}>
+                    <select
+                      id="garment-select"
+                      value={garmentModel}
+                      onChange={(e) => setGarmentModel(e.target.value)}
+                      style={{
+                        width: '100%',
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        padding: '0.75rem 2.5rem 0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid var(--color-sky)',
+                        backgroundColor: 'var(--bg-subtle)',
+                        color: 'var(--text-main)',
+                        fontSize: '0.875rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {GARMENT_OPTIONS.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.label} - £{(g.priceCents / 100).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
+                    <span style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-sky)', fontSize: '0.75rem' }}>
+                      ▼
+                    </span>
                   </div>
+                  {/* Selected summary chip */}
+                  {(() => {
+                    const g = GARMENT_OPTIONS.find((x) => x.id === garmentModel);
+                    return g ? (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.72rem', backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: 700 }}>
+                          £{(g.priceCents / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
 
-                {/* Thread Color */}
+                {/* Thread Color Dropdown */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                  <label htmlFor="thread-select" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
                     3D Embroidery Thread Color
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.65rem' }}>
-                    {THREAD_COLORS.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setThreadColor(t.id)}
-                        style={{
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.65rem',
-                          cursor: 'pointer',
-                          border: threadColor === t.id ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                          backgroundColor: 'var(--bg-subtle)',
-                        }}
-                      >
-                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: t.hex, border: '1px solid rgba(0,0,0,0.2)', flexShrink: 0 }} />
-                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>{t.label}</span>
-                      </button>
-                    ))}
+                  <div style={{ position: 'relative' }}>
+                    <select
+                      id="thread-select"
+                      value={threadColor}
+                      onChange={(e) => setThreadColor(e.target.value)}
+                      style={{
+                        width: '100%',
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        padding: '0.75rem 2.5rem 0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid var(--color-sky)',
+                        backgroundColor: 'var(--bg-subtle)',
+                        color: 'var(--text-main)',
+                        fontSize: '0.875rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {THREAD_COLORS.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                    <span style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-sky)', fontSize: '0.75rem' }}>
+                      ▼
+                    </span>
                   </div>
+                  {/* Color swatch preview */}
+                  {(() => {
+                    const t = THREAD_COLORS.find((x) => x.id === threadColor);
+                    return t ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: t.hex, border: '1px solid rgba(0,0,0,0.25)', flexShrink: 0, boxShadow: `0 0 6px ${t.hex}66` }} />
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t.label} selected</span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
 
-                {/* Placement */}
+                {/* Embroidery Placement Dropdown */}
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                  <label htmlFor="placement-select" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
                     Embroidery Placement
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem' }}>
-                    {PLACEMENT_OPTIONS.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setPlacement(p.id)}
-                        style={{
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: '8px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          border: placement === p.id ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                          backgroundColor: placement === p.id ? 'var(--accent-light)' : 'var(--bg-subtle)',
-                          color: placement === p.id ? 'var(--color-sky)' : 'var(--text-main)',
-                        }}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
+                  <div style={{ position: 'relative' }}>
+                    <select
+                      id="placement-select"
+                      value={placement}
+                      onChange={(e) => setPlacement(e.target.value)}
+                      style={{
+                        width: '100%',
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        padding: '0.75rem 2.5rem 0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid var(--color-sky)',
+                        backgroundColor: 'var(--bg-subtle)',
+                        color: 'var(--text-main)',
+                        fontSize: '0.875rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {PLACEMENT_OPTIONS.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                    <span style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-sky)', fontSize: '0.75rem' }}>
+                      ▼
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1122,14 +1372,8 @@ export const MerchStorePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Dual Impact ISO Metrics */}
+                {/* Dual Impact Metrics */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginTop: '1.25rem' }}>
-                  <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>ISO 14067 LCA Carbon</div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.2rem', fontFamily: 'var(--font-mono)' }}>
-                      {livePreview?.dualImpactMetrics?.estimatedLcaCarbonGrams ?? (activeGarment.baseLca * frenzyQuantity)} g CO2e
-                    </div>
-                  </div>
                   <div style={{ padding: '0.85rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Artisan Hand Labor</div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.2rem', fontFamily: 'var(--font-mono)' }}>
@@ -1150,7 +1394,7 @@ export const MerchStorePage: React.FC = () => {
             <div className="persefoni-card" style={{ padding: '1.75rem', position: 'sticky', top: '100px' }}>
               <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--color-sky)', fontWeight: 800, textTransform: 'uppercase' }}>
-                  Goal Frenzy™ Milestone Order
+                  Frenzy Custom Studio™ Milestone Order
                 </div>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.2rem 0 0.25rem 0' }}>
                   Bespoke Commemoration
@@ -1163,7 +1407,7 @@ export const MerchStorePage: React.FC = () => {
               {successResult ? (
                 <div>
                   <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
-                    <div style={{ fontWeight: 800, color: 'var(--color-green-dark)', fontSize: '1rem' }}>Goal Frenzy Order Initiated!</div>
+                    <div style={{ fontWeight: 800, color: 'var(--color-green-dark)', fontSize: '1rem' }}>Frenzy Custom Order Initiated!</div>
                     <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', fontFamily: 'var(--font-mono)' }}>
                       Transaction: <code>{successResult.transactionId}</code>
                     </div>
@@ -1199,7 +1443,7 @@ export const MerchStorePage: React.FC = () => {
                   {/* Order Summary Box */}
                   <div style={{ padding: '1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
-                      {activeClubName} — {activeGarment.label}
+                      {activeClubName} - {activeGarment.label}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                       Thread: {activeThread.label} • Placement: {placement}
@@ -1259,93 +1503,50 @@ export const MerchStorePage: React.FC = () => {
                     </label>
                   </div>
 
-                  {/* Payment Details */}
+                  {/* Single Payment Option: Stripe Hosted Checkout */}
                   <div style={{ marginBottom: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                        Payment Details
-                      </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Payment Method
+                      </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                         256-Bit SSL Encrypted
                       </span>
                     </div>
 
-                    <div style={{ marginBottom: '0.65rem' }}>
-                      <input
-                        type="text"
-                        placeholder="Card number (4242 •••• •••• ••••)"
-                        value={cardNumber}
-                        onChange={handleCardNumberChange}
-                        className="form-input"
-                        style={{ fontFamily: 'var(--font-mono)' }}
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGoalFrenzyCheckout}
+                      disabled={loading || !optInMark}
+                      style={{
+                        width: '100%',
+                        minHeight: '48px',
+                        padding: '0.85rem 1.25rem',
+                        backgroundColor: '#635BFF',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        cursor: loading || !optInMark ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        transition: 'opacity 0.2s',
+                        boxShadow: '0 4px 12px rgba(99, 91, 255, 0.25)',
+                      }}
+                    >
+                      <span>{loading ? 'Connecting to Stripe...' : `Pay £${(frenzyGrossCents / 100).toFixed(2)} with Stripe Checkout`}</span>
+                    </button>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                      <input
-                        type="text"
-                        placeholder="MM / YY"
-                        value={cardExpiry}
-                        onChange={handleExpiryChange}
-                        className="form-input"
-                        style={{ fontFamily: 'var(--font-mono)' }}
-                      />
-                      <input
-                        type="password"
-                        maxLength={4}
-                        placeholder="CVC"
-                        value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                        className="form-input"
-                        style={{ fontFamily: 'var(--font-mono)' }}
-                      />
+                    <div style={{ marginTop: '0.65rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                      256-Bit SSL Encrypted via Stripe Checkout. Supports Credit/Debit Cards, Apple Pay, and Google Pay.
                     </div>
                   </div>
 
-                  {/* Primary Stripe Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleGoalFrenzyCheckout(false)}
-                    disabled={loading || !optInMark}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem 1.25rem',
-                      backgroundColor: '#635BFF',
-                      color: '#ffffff',
-                      fontWeight: 800,
-                      fontSize: '0.92rem',
-                      borderRadius: '10px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      marginBottom: '1rem',
-                      transition: 'opacity 0.2s',
-                      boxShadow: '0 4px 12px rgba(99, 91, 255, 0.25)',
-                    }}
-                  >
-                    <span>Pay with Stripe</span>
-                    <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>(Cards, Apple Pay, Google Pay)</span>
-                  </button>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1rem 0' }}>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-light)' }} />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>OR PAY DIRECTLY</span>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-light)' }} />
-                  </div>
-
-                  {/* Direct Encrypted Card Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleGoalFrenzyCheckout(true)}
-                    disabled={loading || !optInMark}
-                    className="btn btn-secondary"
-                    style={{ width: '100%' }}
-                  >
-                    {loading ? 'Processing...' : `Pay £${(frenzyGrossCents / 100).toFixed(2)} with Encrypted Card →`}
-                  </button>
+                  {/* Statutory Non-Profit Application Link */}
+                  <CharityAllocationCallout />
                 </div>
               )}
             </div>

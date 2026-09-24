@@ -1988,7 +1988,8 @@ export const PortalPage: React.FC = () => {
 
 
               {bundleLoading && (
-                <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div className="dash-loading-state">
+                  <span className="dash-spinner" />
                   Harmonising multi-framework requirements across pillars...
                 </div>
               )}
@@ -3566,11 +3567,15 @@ export const PortalPage: React.FC = () => {
             </button>
           </div>
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading filings…</div>
+            <div className="dash-loading-state">
+              <span className="dash-spinner" />
+              Loading filings...
+            </div>
           ) : jobReports.length === 0 ? (
-            <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px' }}>
-              <p style={{ margin: '0 0 1rem 0', fontWeight: 700, color: 'var(--text-main)' }}>No job filings recorded yet</p>
-              <button onClick={() => setShowJobModal(true)} className="btn btn-primary">Submit Your First Filing</button>
+            <div className="dash-empty-state">
+              <div className="dash-empty-state-title">No Job Filings Recorded</div>
+              <div className="dash-empty-state-desc">No Section 106 local authority filings have been logged for this period.</div>
+              <button onClick={() => setShowJobModal(true)} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>Submit Your First Filing</button>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -3591,7 +3596,7 @@ export const PortalPage: React.FC = () => {
                         <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>{report.periodType}</span>
                       </td>
                       <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                        {new Date(report.periodStart).toLocaleDateString('en-GB')} – {new Date(report.periodEnd).toLocaleDateString('en-GB')}
+                        {new Date(report.periodStart).toLocaleDateString('en-GB')} - {new Date(report.periodEnd).toLocaleDateString('en-GB')}
                       </td>
                       <td style={{ padding: '0.85rem 1rem', fontWeight: 800, fontSize: '1rem', color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
                         {report.jobsCreated}
@@ -3638,10 +3643,14 @@ export const PortalPage: React.FC = () => {
             </div>
           </div>
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading transactions…</div>
+            <div className="dash-loading-state">
+              <span className="dash-spinner" />
+              Loading transactions...
+            </div>
           ) : filteredTransactions.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-              No transactions for filter: <strong>{statusFilter}</strong>
+            <div className="dash-empty-state">
+              <div className="dash-empty-state-title">No Transactions Found</div>
+              <div className="dash-empty-state-desc">No settlement records match filter: <strong>{statusFilter}</strong></div>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>

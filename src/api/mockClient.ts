@@ -47,6 +47,8 @@ export interface MockSouvenirOrder {
   createdAt: string;
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const mockSouvenirOrders: MockSouvenirOrder[] = [
   {
     orderId: 'ord_wedding_9988',
@@ -71,6 +73,146 @@ const mockSouvenirOrders: MockSouvenirOrder[] = [
     status: 'SHIPPED',
     trackingNumber: 'GB-ROYAL-554499',
     createdAt: '2026-08-05T14:20:00Z',
+  },
+];
+
+const mockKeepsakeOrders: any[] = [
+  {
+    id: 'keepsake_01',
+    transactionId: 'tx_frenzy_01',
+    garmentModel: 'HEAVYWEIGHT_HOODIE',
+    inscribedText: "Bukayo Saka 89' Top-Corner Derby Winner",
+    threadColor: 'GOLD_METALLIC',
+    placement: 'LEFT_CHEST',
+    isGoalFrenzy: true,
+    sportType: 'Football',
+    frenzyClub: 'Arsenal FC',
+    frenzyOpponent: 'Tottenham Hotspur',
+    frenzyMinute: "89'",
+    frenzyMoment: 'Top-Corner Derby Winner',
+    frenzyQuote: 'North London is Red',
+    garmentSize: 'L',
+    fulfillmentStatus: 'PENDING',
+    customerName: 'Marcus Sterling',
+    customerEmail: 'marcus.s@example.com',
+    shippingAddress: {
+      recipientName: 'Marcus Sterling',
+      street: '14 Highbury Park',
+      city: 'London',
+      state: 'Greater London',
+      postalCode: 'N5 2AB',
+      country: 'United Kingdom',
+      phone: '+44 7700 900123',
+    },
+    trackingNumber: null,
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    transaction: {
+      grossAmountCents: 12500,
+      currency: 'GBP',
+      financialSplit: {
+        licensorAmountCents: 10625,
+        charityTotalCents: 1875,
+        charityAllocations: [
+          { charity: { name: 'Arsenal Foundation UK' }, amountCents: 1875 },
+        ],
+      },
+    },
+  },
+  {
+    id: 'keepsake_02',
+    transactionId: 'tx_frenzy_02',
+    garmentModel: 'STRUCTURED_CAP',
+    inscribedText: "LeBron James 4Q 0.2s Buzzer Beater Fadeaway",
+    threadColor: 'STERLING_SILVER',
+    placement: 'RIGHT_SLEEVE',
+    isGoalFrenzy: true,
+    sportType: 'Basketball',
+    frenzyClub: 'Los Angeles Lakers',
+    frenzyOpponent: 'Golden State Warriors',
+    frenzyMinute: '4Q 0.2s',
+    frenzyMoment: 'Fadeaway Game Winner',
+    frenzyQuote: 'Witness Greatness',
+    garmentSize: 'M',
+    fulfillmentStatus: 'IN_PRODUCTION',
+    customerName: 'Aisha Chen',
+    customerEmail: 'aisha.chen@example.com',
+    shippingAddress: {
+      recipientName: 'Aisha Chen',
+      street: '88 Figueroa St, Apt 4B',
+      city: 'Los Angeles',
+      state: 'CA',
+      postalCode: '90015',
+      country: 'United States',
+      phone: '+1 213 555 0199',
+    },
+    trackingNumber: '1Z9999999999999999',
+    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    transaction: {
+      grossAmountCents: 6500,
+      currency: 'USD',
+      financialSplit: {
+        licensorAmountCents: 5525,
+        charityTotalCents: 975,
+        charityAllocations: [
+          { charity: { name: 'Clean Oceans Trust' }, amountCents: 975 },
+        ],
+      },
+    },
+  },
+];
+
+const mockAdminSouvenirOrders: any[] = [
+  {
+    id: 'souv_01',
+    orderNumber: 'GHG-ORD-2026-X8F9K',
+    customerEmail: 'events@emiratesstadium.co.uk',
+    customerName: 'Arsenal FC Foundation Operations',
+    eventCategory: 'SPORTS',
+    eventName: 'Arsenal Community Cup Final 2026',
+    logoDropCount: 100,
+    itemType: 'GHG_LOGO_DROP',
+    grossAmountCents: 250000,
+    licensorCents: 212500,
+    charityCents: 37500,
+    status: 'ORDER_PLACED',
+    courierName: 'DHL Express',
+    trackingNumber: 'DHL-UK-882910',
+    trackingUrl: 'https://www.dhl.com/en/express/tracking.html?AWB=DHL-UK-882910',
+    estimatedDelivery: new Date(Date.now() + 86400000 * 4).toISOString(),
+    shippingAddress: {
+      street: '75 Drayton Park, Arsenal Stadium East Stand',
+      city: 'London',
+      country: 'United Kingdom',
+      postalCode: 'N5 1BU',
+    },
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  },
+  {
+    id: 'souv_02',
+    orderNumber: 'GHG-ORD-2026-K7M3P',
+    customerEmail: 'david.h@greenhydrogen.org',
+    customerName: 'David Henderson',
+    eventCategory: 'TECH_SUMMIT',
+    eventName: 'European Clean Tech Summit 2026',
+    logoDropCount: 250,
+    itemType: 'GHG_LOGO_DROP',
+    grossAmountCents: 500000,
+    licensorCents: 425000,
+    charityCents: 75000,
+    status: 'QUEUED_FOR_PRINT',
+    courierName: 'FedEx International',
+    trackingNumber: 'FDX-774910284',
+    trackingUrl: 'https://www.fedex.com/fedextrack/?trknbr=FDX-774910284',
+    estimatedDelivery: new Date(Date.now() + 86400000 * 6).toISOString(),
+    shippingAddress: {
+      street: 'Rue de la Loi 170',
+      city: 'Brussels',
+      country: 'Belgium',
+      postalCode: '1040',
+    },
+    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
   },
 ];
 
@@ -603,6 +745,54 @@ export const mockApi = {
       notes,
       isAuditReady: score >= 80,
     };
+  },
+
+  async getAdminKeepsakeOrders(_token: string): Promise<any> {
+    await delay(150);
+    return {
+      success: true,
+      count: mockKeepsakeOrders.length,
+      orders: mockKeepsakeOrders,
+    };
+  },
+
+  async updateAdminKeepsakeOrder(_token: string, id: string, params: { fulfillmentStatus?: string; trackingNumber?: string }): Promise<any> {
+    await delay(150);
+    const order = mockKeepsakeOrders.find((o) => o.id === id);
+    if (!order) throw new Error('Order not found');
+    if (params.fulfillmentStatus) order.fulfillmentStatus = params.fulfillmentStatus;
+    if (params.trackingNumber !== undefined) order.trackingNumber = params.trackingNumber;
+    return { success: true, updated: order };
+  },
+
+  async getAdminSouvenirOrders(_token: string, params?: { status?: string; search?: string }): Promise<any> {
+    await delay(150);
+    let list = [...mockAdminSouvenirOrders];
+    if (params?.status && params.status !== 'ALL') {
+      list = list.filter((o) => o.status === params.status);
+    }
+    if (params?.search && params.search.trim()) {
+      const q = params.search.toLowerCase();
+      list = list.filter((o) =>
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.customerEmail.toLowerCase().includes(q) ||
+        (o.customerName && o.customerName.toLowerCase().includes(q)) ||
+        o.eventName.toLowerCase().includes(q)
+      );
+    }
+    return { success: true, count: list.length, orders: list };
+  },
+
+  async updateAdminSouvenirOrderStatus(_token: string, orderNumber: string, params: { status: string; courierName?: string; trackingNumber?: string; trackingUrl?: string; estimatedDelivery?: string }): Promise<any> {
+    await delay(150);
+    const order = mockAdminSouvenirOrders.find((o) => o.orderNumber === orderNumber);
+    if (!order) throw new Error('Souvenir order not found');
+    order.status = params.status;
+    if (params.courierName !== undefined) order.courierName = params.courierName;
+    if (params.trackingNumber !== undefined) order.trackingNumber = params.trackingNumber;
+    if (params.trackingUrl !== undefined) order.trackingUrl = params.trackingUrl;
+    if (params.estimatedDelivery !== undefined) order.estimatedDelivery = params.estimatedDelivery;
+    return { success: true, order };
   },
 };
 

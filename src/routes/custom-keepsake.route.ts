@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, VerificationSource, DeliveryType, FulfillmentStatus, TransactionStatus } from '@prisma/client';
 import { CustomKeepsakeService } from '../services/custom-keepsake.service';
 import { CheckoutService } from '../services/checkout.service';
+import { authenticateToken as verifyJwt } from '../middleware/auth.middleware';
+
 
 export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService: CheckoutService): Router {
   const router = Router();
@@ -123,7 +125,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
     return res.status(200).json({
       success: true,
-      trademark: 'GHG Emissions Registered Trade Mark',
+      trademark: 'GHG Emissions Registered Trade Mark (Nice Class 25)',
       studioName: 'Survivors Donation Keepsake',
       splitRule: '85% Supplier Production & Fulfillment / 15% Statutory Charity Endowment',
       products,
@@ -178,13 +180,19 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         quantity = 1,
         unitPriceCents = 8500,
         currency = 'GBP',
-        // Goal Frenzy fields
+        // Sports Custom Studio fields
         isGoalFrenzy = false,
+        sportType = 'Football',
         frenzyClub,
         frenzyOpponent,
         frenzyMinute,
         frenzyMoment,
         frenzyQuote,
+        garmentSize = 'M',
+        // Customer & Delivery Destination
+        customerName,
+        customerEmail,
+        shippingAddress,
       } = req.body || {};
 
       if (!licenseeId || typeof licenseeId !== 'string') {
@@ -195,8 +203,8 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         return res.status(400).json({ error: 'Invalid input: inscribedText is required.' });
       }
 
-      if (isGoalFrenzy && !frenzyClub) {
-        return res.status(400).json({ error: 'Goal Frenzy orders require frenzyClub.' });
+      if (isGoalFrenzy && (!frenzyClub || typeof frenzyClub !== 'string' || !frenzyClub.trim())) {
+        return res.status(400).json({ error: 'Invalid input: frenzyClub is required for Goal Frenzy orders.' });
       }
 
       // Generate preview metrics
@@ -211,7 +219,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
       const uniqueRef = checkoutReferenceId || `keepsake_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-      // 1. Invoke CheckoutService to handle transaction and 15% split
+      // 1. Invoke CheckoutService to handle transaction and 15% statutory split
       const checkoutResult = await checkoutService.initiateCheckout({
         licenseeId: licenseeId.trim(),
         checkoutReferenceId: uniqueRef,
@@ -223,18 +231,24 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
           fulfillmentStatus: FulfillmentStatus.PENDING,
           rawPayload: {
             garmentModel: preview.garmentModel,
+            garmentSize,
             inscribedText: preview.inscribedText,
             threadColor: preview.threadColor,
             placement: preview.placement,
-            lcaCarbonGrams: preview.dualImpactMetrics.estimatedLcaCarbonGrams,
-            artisanLaborHours: preview.dualImpactMetrics.artisanLaborHours,
-            isGoalFrenzy,
+            sportType,
             frenzyClub: frenzyClub || null,
+            frenzyOpponent: frenzyOpponent || null,
+            frenzyMinute: frenzyMinute || null,
+            frenzyMoment: frenzyMoment || null,
+            frenzyQuote: frenzyQuote || null,
+            customerName: customerName || null,
+            customerEmail: customerEmail || null,
+            shippingAddress: shippingAddress || null,
           },
         },
       });
 
-      // 2. Persist CustomKeepsakeSpec with Goal Frenzy fields
+      // 2. Persist CustomKeepsakeSpec with full milestone, sizing, and shipping specs
       const keepsakeSpec = await keepsakeService.recordKeepsakeSpec({
         transactionId: checkoutResult.transactionId,
         garmentModel: preview.garmentModel,
@@ -243,18 +257,21 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         placement: preview.placement,
         artisanLaborHours: preview.dualImpactMetrics.artisanLaborHours,
         lcaCarbonGrams: preview.dualImpactMetrics.estimatedLcaCarbonGrams,
-        // Goal Frenzy
-        ...(isGoalFrenzy && {
-          isGoalFrenzy: true,
-          frenzyClub: frenzyClub || null,
-          frenzyOpponent: frenzyOpponent || null,
-          frenzyMinute: frenzyMinute || null,
-          frenzyMoment: frenzyMoment || null,
-          frenzyQuote: frenzyQuote || null,
-        }),
-      } as any);
+        isGoalFrenzy: !!isGoalFrenzy,
+        sportType: sportType || 'Football',
+        frenzyClub: frenzyClub || null,
+        frenzyOpponent: frenzyOpponent || null,
+        frenzyMinute: frenzyMinute || null,
+        frenzyMoment: frenzyMoment || null,
+        frenzyQuote: frenzyQuote || null,
+        garmentSize: garmentSize || 'M',
+        shippingAddress: shippingAddress || null,
+        customerEmail: customerEmail || null,
+        customerName: customerName || null,
+        fulfillmentStatus: 'PENDING',
+      });
 
-      // 3. Create Stripe Checkout Session for hosted checkout option
+      // 3. Create Stripe Checkout Session for hosted checkout option with shipping collection
       const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
       const defaultSuccessUrl = `${origin}/checkout/success`;
       const defaultCancelUrl = `${origin}/merch`;
@@ -263,21 +280,25 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       let sessionId: string | null = null;
 
       try {
+        const itemDesc = frenzyClub ? `${sportType} Keepsake: ${frenzyClub}` : `${sportType} Keepsake`;
         const sessionResult = await checkoutService.createCheckoutSession({
           licenseeId: licenseeId.trim(),
-          itemTitle: isGoalFrenzy
-            ? `NFTY LOGS Goal Frenzy: ${frenzyClub || ''} ${frenzyMoment || ''} (${preview.garmentModel})`
-            : `NFTY LOGS Custom Keepsake: ${preview.garmentModel}`,
+          itemTitle: `NFTY LOGS Custom Keepsake (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
           grossAmountCents: preview.financialSummary.grossAmountCents,
           currency,
           successUrl: defaultSuccessUrl,
           cancelUrl: defaultCancelUrl,
+          customerEmail: customerEmail || undefined,
+          deliveryType: DeliveryType.PHYSICAL,
+          shippingAddress: shippingAddress || undefined,
           metadata: {
             transactionId: checkoutResult.transactionId,
             garmentModel: preview.garmentModel,
+            garmentSize: garmentSize || 'M',
             inscribedText: preview.inscribedText,
-            isGoalFrenzy: isGoalFrenzy ? 'true' : 'false',
+            sportType: sportType || 'Football',
             frenzyClub: frenzyClub || '',
+            recipientName: shippingAddress?.recipientName || customerName || '',
           },
         });
         sessionUrl = sessionResult.sessionUrl;
@@ -454,6 +475,77 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
     } catch (err: any) {
       console.error('[EVENT SOUVENIR ORDER ERROR]', err);
       return res.status(500).json({ error: err.message || 'Failed to place event souvenir order' });
+    }
+  });
+
+  /**
+   * GET /api/admin/keepsake-orders
+   * Retrieves all sports custom keepsake orders with shipping addresses, sizing, and fulfillment info.
+   */
+  router.get('/api/admin/keepsake-orders', verifyJwt, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Access denied: Administrator privileges required.' });
+      }
+
+      const orders = await prisma.customKeepsakeSpec.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          transaction: {
+            include: {
+              financialSplit: {
+                include: {
+                  charityAllocations: {
+                    include: {
+                      charity: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return res.status(200).json({ success: true, count: orders.length, orders });
+    } catch (err: any) {
+      console.error('[ADMIN GET KEEPSAKE ORDERS ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to fetch custom keepsake orders.' });
+    }
+  });
+
+  /**
+   * PATCH /api/admin/keepsake-orders/:id
+   * Updates fulfillment status and tracking number for physical delivery.
+   */
+  router.patch('/api/admin/keepsake-orders/:id', verifyJwt, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Access denied: Administrator privileges required.' });
+      }
+
+      const { id } = req.params;
+      const { fulfillmentStatus, trackingNumber } = req.body || {};
+
+      const existing = await prisma.customKeepsakeSpec.findUnique({ where: { id } });
+      if (!existing) {
+        return res.status(404).json({ error: 'Custom keepsake order not found.' });
+      }
+
+      const updated = await prisma.customKeepsakeSpec.update({
+        where: { id },
+        data: {
+          ...(fulfillmentStatus ? { fulfillmentStatus } : {}),
+          ...(trackingNumber !== undefined ? { trackingNumber } : {}),
+        },
+      });
+
+      return res.status(200).json({ success: true, updated });
+    } catch (err: any) {
+      console.error('[ADMIN PATCH KEEPSAKE ORDER ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to update custom keepsake order.' });
     }
   });
 

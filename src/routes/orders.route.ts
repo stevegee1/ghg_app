@@ -227,6 +227,60 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
   });
 
   /**
+   * GET /api/orders/admin
+   * Lists all standard souvenir/merch orders with search and status filtering.
+   * Authenticated via JWT, strictly restricted to ADMIN role.
+   */
+  router.get('/api/orders/admin', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user || user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required.' });
+    }
+
+    const { status, search } = req.query as { status?: string; search?: string };
+
+    try {
+      const whereClause: any = {};
+      if (status && status !== 'ALL') {
+        whereClause.status = status;
+      }
+      if (search && search.trim()) {
+        const query = search.trim();
+        whereClause.OR = [
+          { orderNumber: { contains: query, mode: 'insensitive' } },
+          { customerEmail: { contains: query, mode: 'insensitive' } },
+          { customerName: { contains: query, mode: 'insensitive' } },
+          { eventName: { contains: query, mode: 'insensitive' } },
+          { trackingNumber: { contains: query, mode: 'insensitive' } },
+        ];
+      }
+
+      const orders = await prisma.souvenirOrder.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          transaction: {
+            include: {
+              financialSplit: {
+                include: {
+                  charityAllocations: {
+                    include: { charity: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return res.status(200).json({ success: true, count: orders.length, orders });
+    } catch (err: any) {
+      console.error('[ADMIN GET ORDERS ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to fetch orders.' });
+    }
+  });
+
+  /**
    * PATCH /api/orders/admin/:orderNumber/status
    * Admin/printing store: advance the order fulfillment status.
    * Authenticated via JWT, strictly restricted to ADMIN role.

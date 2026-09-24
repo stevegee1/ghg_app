@@ -160,6 +160,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/portal?tab=telemetry" className="cerebrium-footer-link">Docs &amp; Telemetry API</Link></li>
               <li><Link to="/blog" className="cerebrium-footer-link">Blog &amp; Field Guides</Link></li>
               <li><Link to="/about#security" className="cerebrium-footer-link">Security &amp; Architecture</Link></li>
+              <li><Link to="/charities/apply" className="cerebrium-footer-link">Apply for Charity Allocation (15% Split)</Link></li>
               <li><Link to="/transparency" className="cerebrium-footer-link">Status &amp; Telemetry Health</Link></li>
               <li><Link to="/about" className="cerebrium-footer-link">UKIPO Registered Mark</Link></li>
             </ul>

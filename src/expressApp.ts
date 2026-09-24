@@ -23,6 +23,7 @@ import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { createDemoBookingRouter } from './routes/demo-booking.route';
 import { createWorkflowRouter } from './routes/workflow.route';
+import { createMerchEnquiryRouter } from './routes/merch-enquiry.route';
 import { CheckoutService } from './services/checkout.service';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -142,6 +143,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createBadgeEmbedRouter(prisma));
   app.use(createDemoBookingRouter(prisma));
   app.use(createWorkflowRouter(prisma, checkoutService));
+  app.use(createMerchEnquiryRouter(prisma));
 
   // SPA Wildcard fallback: serve index.html for all non-API routes
   app.get('*', (req, res) => {

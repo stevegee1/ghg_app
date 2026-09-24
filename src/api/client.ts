@@ -126,7 +126,7 @@ export const api = {
   },
 
   async getSouvenirTracker(orderId?: string) {
-    // Public endpoint — no mock fallback in production
+    // Public endpoint - no mock fallback in production
     const orderNumber = orderId?.trim().toUpperCase();
     if (!orderNumber) return null;
     const res = await fetch(`/api/orders/track/${encodeURIComponent(orderNumber)}`);
@@ -275,7 +275,7 @@ export const api = {
     return res.json();
   },
 
-  /** GET /api/charities/active — public */
+  /** GET /api/charities/active - public */
   async getActiveCharities() {
     const res = await fetch('/api/charities/active');
     if (!res.ok) {
@@ -286,7 +286,30 @@ export const api = {
     return res.json();
   },
 
-  /** POST /api/charities/register — capacity-gated on the server */
+  /** POST /api/charities/apply - Step 1 charity onboarding */
+  async applyCharity(params: {
+    name: string;
+    registeredCharityNumber?: string;
+    contactEmail: string;
+    statement: string;
+  }) {
+    const res = await fetch('/api/charities/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Application submission failed' }));
+      throw Object.assign(new Error(err.error || `HTTP ${res.status}`), {
+        status: res.status,
+        body: err,
+      });
+    }
+    isUsingMockData = false;
+    return res.json();
+  },
+
+  /** POST /api/charities/register - capacity-gated on the server */
   async registerCharity(params: {
     legalEntityName: string;
     registrationNumber: string;
@@ -444,11 +467,24 @@ export const api = {
       if (!res.ok) throw new Error('Failed to fetch split config history');
       isUsingMockData = false;
       return res.json();
-    } catch (e) {
-      console.warn('[API Client] Backend unreachable, using mock split history', e);
-      isUsingMockData = true;
-      return mockApi.getSplitConfigHistory(licenseeId);
+    } catch (e: any) {
+      if (USE_MOCK_ENV) {
+        isUsingMockData = true;
+        return mockApi.getSplitConfigHistory(licenseeId);
+      }
+      throw e;
     }
+  },
+
+  async getSplitLicensees(token: string) {
+    const res = await fetch('/api/admin/split-config/licensees', {
+      headers: getAuthHeader(token),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch licensees' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
   },
 
   async createSplitConfig(token: string, data: { licenseeId?: string | null; royaltyBps: number; charityAllocationBps: Array<{ charityId: string; bps: number }> }) {
@@ -456,27 +492,20 @@ export const api = {
       isUsingMockData = true;
       return mockApi.createSplitConfig(data);
     }
-    try {
-      const res = await fetch('/api/admin/split-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(token),
-        },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Failed to create split config' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      isUsingMockData = false;
-      return res.json();
-    } catch (e: any) {
-      if (e.message && !e.message.includes('fetch')) throw e;
-      console.warn('[API Client] Backend unreachable, using mock createSplitConfig', e);
-      isUsingMockData = true;
-      return mockApi.createSplitConfig(data);
+    const res = await fetch('/api/admin/split-config', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(token),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to create split config' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
+    isUsingMockData = false;
+    return res.json();
   },
 
   async getPortalJobReports(token: string) {
@@ -554,7 +583,7 @@ export const api = {
     }
   },
 
-  // ── ISO Audit-Readiness & Carbon Compliance ─────────────────────────────
+  // -- ISO Audit-Readiness & Carbon Compliance -----------------------------
 
   async getComplianceFrameworks(): Promise<any> {
     const res = await fetch('/api/iso-readiness/frameworks');
@@ -707,7 +736,7 @@ export const api = {
     return data;
   },
 
-  // ── Credential Studio & Trust Seal ──────────────────────────────────────────
+  // -- Credential Studio & Trust Seal ------------------------------------------
 
   async composeBadge(
     token: string,
@@ -779,6 +808,131 @@ export const api = {
 
   async getDemoBookings(token: string): Promise<any> {
     const res = await fetch('/api/admin/demo-bookings', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async submitMerchEnquiry(params: {
+    itemId: string;
+    itemTitle: string;
+    contactName: string;
+    contactEmail: string;
+    message?: string;
+  }): Promise<any> {
+    const res = await fetch('/api/merch/enquiry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminMerchEnquiries(token: string, status?: string): Promise<any> {
+    const query = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await fetch(`/api/admin/merch-enquiries${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async updateMerchEnquiry(token: string, id: string, params: { status?: string; adminNotes?: string }): Promise<any> {
+    const res = await fetch(`/api/admin/merch-enquiries/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminKeepsakeOrders(token: string): Promise<any> {
+    const res = await fetch('/api/admin/keepsake-orders', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async updateAdminKeepsakeOrder(
+    token: string,
+    id: string,
+    params: { fulfillmentStatus?: string; trackingNumber?: string }
+  ): Promise<any> {
+    const res = await fetch(`/api/admin/keepsake-orders/${id}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminSouvenirOrders(token: string, params?: { status?: string; search?: string }): Promise<any> {
+    const queryParts: string[] = [];
+    if (params?.status && params.status !== 'ALL') {
+      queryParts.push(`status=${encodeURIComponent(params.status)}`);
+    }
+    if (params?.search && params.search.trim()) {
+      queryParts.push(`search=${encodeURIComponent(params.search.trim())}`);
+    }
+    const query = queryParts.length ? `?${queryParts.join('&')}` : '';
+    const res = await fetch(`/api/orders/admin${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async updateAdminSouvenirOrderStatus(
+    token: string,
+    orderNumber: string,
+    params: {
+      status: string;
+      courierName?: string;
+      trackingNumber?: string;
+      trackingUrl?: string;
+      estimatedDelivery?: string;
+    }
+  ): Promise<any> {
+    const res = await fetch(`/api/orders/admin/${encodeURIComponent(orderNumber)}/status`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminCharities(token: string): Promise<any> {
+    const res = await fetch('/api/admin/charities', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async approveAdminCharity(token: string, charityId: string): Promise<any> {
+    const res = await fetch(`/api/admin/charities/${encodeURIComponent(charityId)}/approve`, {
+      method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();

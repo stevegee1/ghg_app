@@ -147,5 +147,26 @@ export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
     }
   });
 
+  /**
+   * GET /api/admin/split-config/licensees
+   * Returns list of registered licensees for dynamic split override targeting.
+   */
+  router.get('/api/admin/split-config/licensees', requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const licensees = await prisma.licensee.findMany({
+        select: {
+          id: true,
+          name: true,
+          vertical: true,
+        },
+        orderBy: { name: 'asc' },
+      });
+      return res.status(200).json({ success: true, licensees });
+    } catch (err: any) {
+      console.error('[ADMIN GET LICENSEES ERROR]', err);
+      return res.status(500).json({ error: 'Failed to load licensees' });
+    }
+  });
+
   return router;
 }

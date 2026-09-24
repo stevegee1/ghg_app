@@ -6523,3 +6523,90 @@ h4 {
   }
 }
 
+
+/* ─────────────────────────────────────────────
+   Admin Console Utility Classes
+   Google SaaS Standard – Production Quality
+────────────────────────────────────────────── */
+
+/* Spinning loader ring */
+.admin-spinner,
+.dash-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--accent-primary, #0284c7);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.admin-spinner-sm,
+.dash-spinner-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Loading state placeholder */
+.admin-loading-state,
+.dash-loading-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* Empty state */
+.admin-empty-state,
+.dash-empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  border: 1.5px dashed var(--border-light);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+}
+
+.admin-empty-state-icon,
+.dash-empty-state-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--bg-subtle); color: var(--text-muted); margin-bottom: 0.35rem; border: 1px solid var(--border-light); }
+.admin-empty-state-icon svg,
+.dash-empty-state-icon svg { width: 22px; height: 22px; stroke-width: 1.75; }
+.admin-empty-state-title,
+.dash-empty-state-title { font-size: 0.9375rem; font-weight: 700; color: var(--text-main); }
+.admin-empty-state-desc,
+.dash-empty-state-desc { font-size: 0.8125rem; color: var(--text-muted); max-width: 340px; line-height: 1.45; }
+
+/* Tab section context header */
+.admin-tab-section-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-light); }
+.admin-tab-section-title { font-size: 1.1rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; margin: 0 0 0.2rem 0; }
+.admin-tab-section-desc { font-size: 0.8125rem; color: var(--text-muted); margin: 0; max-width: 600px; }
+
+/* Quick stat pill row */
+.admin-stat-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.admin-stat-pill { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill); border: 1px solid var(--border-light); background: var(--bg-subtle); color: var(--text-muted); white-space: nowrap; }
+.admin-stat-pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* Inline error/success banner */
+.admin-inline-error { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.65rem 0.85rem; background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25); border-radius: 6px; font-size: 0.8125rem; color: #dc2626; font-weight: 500; }
+.admin-inline-success { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.65rem 0.85rem; background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); border-radius: 6px; font-size: 0.8125rem; color: #059669; font-weight: 500; }
+
+/* Mobile responsive admin tab navigation */
+@media (max-width: 768px) {
+  .admin-tab-nav-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+  .admin-tab-nav-wrap::-webkit-scrollbar { display: none; }
+  .admin-tab-nav-wrap > div { min-width: max-content; }
+}

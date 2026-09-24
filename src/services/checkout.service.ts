@@ -246,9 +246,12 @@ export class CheckoutService {
     currency?: string;
     successUrl: string;
     cancelUrl: string;
+    customerEmail?: string;
+    deliveryType?: DeliveryType;
+    shippingAddress?: any;
     metadata?: Record<string, string>;
   }) {
-    const { licenseeId, itemTitle, grossAmountCents, currency = 'GBP', successUrl, cancelUrl, metadata } = params;
+    const { licenseeId, itemTitle, grossAmountCents, currency = 'GBP', successUrl, cancelUrl, customerEmail, deliveryType = DeliveryType.PHYSICAL, shippingAddress, metadata } = params;
 
     const refId = `stripe_cs_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const checkoutResult = await this.initiateCheckout({
@@ -258,7 +261,13 @@ export class CheckoutService {
       currency,
       triggerEvent: {
         verificationSource: VerificationSource.CONSUMER_OPT_IN,
-        deliveryType: DeliveryType.DIGITAL,
+        deliveryType,
+        fulfillmentStatus: deliveryType === DeliveryType.PHYSICAL ? FulfillmentStatus.PENDING : undefined,
+        rawPayload: {
+          itemTitle,
+          customerEmail: customerEmail || null,
+          shippingAddress: shippingAddress || null,
+        },
       },
     });
 
@@ -273,6 +282,15 @@ export class CheckoutService {
       }
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        ...(customerEmail ? { customer_email: customerEmail } : {}),
+        shipping_address_collection: {
+          allowed_countries: [
+            'GB', 'US', 'CA', 'AU', 'NZ', 'IE', 'FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'SE', 'NO', 'DK', 'FI', 'CH', 'AT', 'PT', 'PL', 'ZA', 'JP', 'SG'
+          ],
+        },
+        phone_number_collection: {
+          enabled: true,
+        },
         line_items: [
           {
             price_data: {
@@ -292,6 +310,7 @@ export class CheckoutService {
         metadata: {
           transactionId: checkoutResult.transactionId,
           licenseeId,
+          ...(customerEmail ? { customerEmail } : {}),
           ...(metadata || {}),
         },
       });

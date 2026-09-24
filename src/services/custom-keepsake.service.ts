@@ -38,8 +38,8 @@ export const SUPPLIER_PRICING_SCHEDULE: Record<
 export interface KeepsakePreviewInput {
   garmentModel: GarmentModelType | string;
   inscribedText: string;
-  threadColor: 'GOLD_METALLIC' | 'STERLING_SILVER' | 'EMERALD_GREEN' | 'PURE_WHITE';
-  placement: 'LEFT_CHEST' | 'RIGHT_SLEEVE' | 'BACK_COLLAR';
+  threadColor: string;
+  placement: string;
   quantity?: number;
   unitPriceCents?: number;
 }
@@ -53,6 +53,19 @@ export interface RecordKeepsakeSpecInput {
   artisanLaborHours?: number;
   lcaCarbonGrams?: number;
   openSeaTokenUri?: string;
+  isGoalFrenzy?: boolean;
+  sportType?: string;
+  frenzyClub?: string;
+  frenzyOpponent?: string;
+  frenzyMinute?: string;
+  frenzyMoment?: string;
+  frenzyQuote?: string;
+  garmentSize?: string;
+  shippingAddress?: any;
+  customerEmail?: string;
+  customerName?: string;
+  fulfillmentStatus?: string;
+  trackingNumber?: string;
 }
 
 export class CustomKeepsakeService {
@@ -200,6 +213,19 @@ export class CustomKeepsakeService {
         artisanLaborHours,
         lcaCarbonGrams,
         openSeaTokenUri: openSeaTokenUri || null,
+        isGoalFrenzy: !!input.isGoalFrenzy,
+        sportType: input.sportType || 'Football',
+        frenzyClub: input.frenzyClub || null,
+        frenzyOpponent: input.frenzyOpponent || null,
+        frenzyMinute: input.frenzyMinute || null,
+        frenzyMoment: input.frenzyMoment || null,
+        frenzyQuote: input.frenzyQuote || null,
+        garmentSize: input.garmentSize || 'M',
+        shippingAddress: input.shippingAddress || null,
+        customerEmail: input.customerEmail || null,
+        customerName: input.customerName || null,
+        fulfillmentStatus: input.fulfillmentStatus || 'PENDING',
+        trackingNumber: input.trackingNumber || null,
       },
     });
   }

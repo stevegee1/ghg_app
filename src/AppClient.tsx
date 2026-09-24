@@ -22,6 +22,7 @@ import { AboutPage } from './pages/AboutPage';
 import { BlogPage } from './pages/BlogPage';
 import { BookDemoPage } from './pages/BookDemoPage';
 import { BookDemoModal } from './components/BookDemoModal';
+import { CharityApplicationPage } from './pages/CharityApplicationPage';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -67,6 +68,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="track/:orderNumber" element={<PublicTrackerPage />} />
         <Route path="track" element={<PublicTrackerPage />} />
         <Route path="merch" element={<MerchStorePage />} />
+        <Route path="charities/apply" element={<CharityApplicationPage />} />
+        <Route path="charity/apply" element={<CharityApplicationPage />} />
         <Route path="partner/drop" element={<PartnerLogoDropPage />} />
         <Route path="certificate/:id" element={<CertificateViewPage />} />
         <Route path="checkout" element={<CheckoutPage />} />

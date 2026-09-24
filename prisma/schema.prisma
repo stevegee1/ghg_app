@@ -382,13 +382,20 @@ model CustomKeepsakeSpec {
   artisanLaborHours Float        @default(1.5)
   lcaCarbonGrams    Int          @default(450)
   openSeaTokenUri   String?
-  // Goal Frenzy sports moment customizer fields
+  // Sports milestone customizer fields
   isGoalFrenzy      Boolean      @default(false)
-  frenzyClub        String?      // e.g. "Arsenal FC"
-  frenzyOpponent    String?      // e.g. "Tottenham Hotspur"
-  frenzyMinute      String?      // e.g. "89'"
-  frenzyMoment      String?      // e.g. "Last-minute top-corner winner, Emirates Stadium"
+  sportType         String?      // e.g. "Football", "Basketball", "Rugby", "Tennis", "Athletics", "Running", "Motorsport"
+  frenzyClub        String?      // e.g. "Arsenal FC", "Los Angeles Lakers"
+  frenzyOpponent    String?      // e.g. "Tottenham Hotspur", "Boston Celtics"
+  frenzyMinute      String?      // e.g. "89'", "Q4 0.2s"
+  frenzyMoment      String?      // e.g. "Last-minute top-corner winner"
   frenzyQuote       String?      // e.g. "Absolute limbs in the North Bank!"
+  garmentSize       String?      // "S", "M", "L", "XL", "XXL"
+  shippingAddress   Json?        // { recipientName, street, city, state, postalCode, country, phone }
+  customerEmail     String?
+  customerName      String?
+  fulfillmentStatus String       @default("PENDING") // "PENDING", "IN_PRODUCTION", "DISPATCHED"
+  trackingNumber    String?
   createdAt         DateTime     @default(now())
 }
 
@@ -751,6 +758,7 @@ model WorkflowTransitionLog {
   @@index([submissionId, timestamp])
 }
 
+
 model WorkflowApiKey {
   id           String       @id @default(cuid())
   licenseeId   String
@@ -765,3 +773,24 @@ model WorkflowApiKey {
   @@index([licenseeId, workflowType])
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MERCH ENQUIRY: "Contact for Order" submissions from the merchandise store
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MerchEnquiry {
+  id            String   @id @default(cuid())
+  itemId        String   // e.g. "item_nfty_volcano_hoodie"
+  itemTitle     String
+  contactName   String
+  contactEmail  String
+  message       String?
+  status        String   @default("PENDING") // PENDING | RESPONDED | CLOSED
+  adminNotes    String?
+  ipAddress     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([contactEmail])
+  @@index([createdAt])
+}
