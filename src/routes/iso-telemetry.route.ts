@@ -1,10 +1,18 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient, SensorType, MetricType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { EventEmitter } from 'events';
 import { IsoCalibrationService } from '../services/iso-calibration.service';
 import { AnomalyDetectionService } from '../services/anomaly-detection.service';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { UserAuthScope } from '../db/rls';
+
+/**
+ * Module-level singleton EventEmitter for real-time telemetry SSE stream.
+ * Emitting 'telemetry' here broadcasts to all connected SSE clients.
+ */
+export const telemetryEmitter = new EventEmitter();
+telemetryEmitter.setMaxListeners(500); // support up to 500 concurrent SSE subscribers
 
 export function createIsoTelemetryRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -198,7 +206,7 @@ export function createIsoTelemetryRouter(prisma: PrismaClient): Router {
         requiresSupervisor,
       });
 
-      return res.status(201).json({
+      const responsePayload = {
         message: 'Telemetry successfully ingested and verified against active calibration certificate.',
         telemetryRecord,
         anomalyEvaluation: anomalyResult
@@ -209,13 +217,64 @@ export function createIsoTelemetryRouter(prisma: PrismaClient): Router {
               exportLockActive: anomalyResult.hasAnomaly,
             }
           : null,
+      };
+
+      // Broadcast to all SSE subscribers so the real-time stream claim holds
+      telemetryEmitter.emit('telemetry', {
+        licenseeId: telemetryRecord.licenseeId,
+        assetTag: telemetryRecord.assetTag,
+        metricType: telemetryRecord.metricType,
+        numericValue: telemetryRecord.numericValue,
+        rawUnit: telemetryRecord.rawUnit,
+        isWithinBaseline: telemetryRecord.isWithinBaseline,
+        requiresSupervisor: telemetryRecord.requiresSupervisor,
+        hasAnomaly: anomalyResult?.hasAnomaly ?? false,
+        recordedAt: telemetryRecord.createdAt ?? new Date(),
       });
+
+      return res.status(201).json(responsePayload);
     } catch (err: any) {
       const isCalibrationError =
         err.message?.includes('calibration') || err.message?.includes('Calibration') || err.message?.includes('expired');
       const statusCode = isCalibrationError ? 422 : 400;
       return res.status(statusCode).json({ error: err.message || 'Telemetry ingestion rejected.' });
     }
+  });
+
+  /**
+   * GET /api/iso/telemetry/stream
+   * Server-Sent Events (SSE) real-time telemetry stream.
+   * Authenticated via JWT bearer token. Broadcasts every successful telemetry ingest.
+   * Clients connect with: EventSource('/api/iso/telemetry/stream', { headers: { Authorization: 'Bearer <token>' } })
+   */
+  router.get('/api/iso/telemetry/stream', authenticateToken, (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // disable Nginx proxy buffering
+    res.flushHeaders();
+
+    // Send initial keepalive comment so the client knows the stream is live
+    res.write(': connected\n\n');
+
+    const onTelemetry = (data: object) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    telemetryEmitter.on('telemetry', onTelemetry);
+
+    // Heartbeat every 25s to prevent proxy/load-balancer idle timeouts
+    const heartbeat = setInterval(() => {
+      if (!res.writableEnded) {
+        res.write(': heartbeat\n\n');
+      }
+    }, 25000);
+
+    // Clean up listener and interval when client disconnects
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      telemetryEmitter.off('telemetry', onTelemetry);
+    });
   });
 
   /**

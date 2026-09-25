@@ -57,7 +57,7 @@ export const LandingPage: React.FC = () => {
               NFTY LOGS® CONTINUOUS ASSURANCE
             </span>
             <span style={{ fontSize: '0.78rem', color: '#cfd7e7', fontFamily: 'var(--font-mono)' }}>
-              UK Corporation No. <strong>15230476</strong> • ISO 14001, 50001 &amp; UK CMA Certified
+              UK Corporation No. <strong>15230476</strong> • ISO 14064, 50001 &amp; UK CMA Audit-Ready
             </span>
           </div>
 
@@ -92,7 +92,7 @@ export const LandingPage: React.FC = () => {
                   maxWidth: '560px',
                 }}
               >
-                Deploy verified ISO 14064, 50001 &amp; Section 106 statutory screening pipelines with sub-second IoT telemetry sync, tamper-proof calibration, and automated on-chain Polygon trust seals.
+                Deploy verified ISO 14064, 50001 &amp; Section 106 statutory screening pipelines with real-time IoT telemetry stream, tamper-proof calibration, and automated on-chain Polygon trust seals.
               </p>
 
               {/* Action Buttons & Statutory Badges (Cerebrium Action Pair) */}
@@ -145,7 +145,7 @@ export const LandingPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.35rem', flexWrap: 'wrap', fontSize: '0.78rem', color: '#b3c0d4', fontFamily: 'var(--font-mono)' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#10b981', fontWeight: 600 }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
-                    UK CMA Green Claims Code Validated
+                    CMA Green Claims Code Audit-Ready
                   </span>
                   <span style={{ opacity: 0.3 }}>•</span>
                   <span>ISO 19011:2026 Remote Auditing</span>
@@ -274,11 +274,11 @@ export const LandingPage: React.FC = () => {
               {heroStationTab === 'CERT' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {[
-                    { framework: 'ISO 14064-1:2018', scope: 'GHG Quantification and Reporting', status: 'CERTIFIED', color: '#10b981' },
-                    { framework: 'ISO 50001:2018', scope: 'Energy Management System', status: 'CERTIFIED', color: '#10b981' },
-                    { framework: 'UK CMA Green Claims Code', scope: 'Section 3.2 Environmental Claims', status: 'VALIDATED', color: '#38bdf8' },
+                    { framework: 'ISO 14064-1:2018', scope: 'GHG Quantification and Reporting', status: 'AUDIT-READY', color: '#10b981' },
+                    { framework: 'ISO 50001:2018', scope: 'Energy Management System', status: 'AUDIT-READY', color: '#10b981' },
+                    { framework: 'UK CMA Green Claims Code', scope: 'Section 3.2 Environmental Claims', status: 'AUDIT-READY', color: '#38bdf8' },
                     { framework: 'TCFD / CSRD Aligned', scope: 'Climate Risk Disclosure Framework', status: 'ALIGNED', color: '#a78bfa' },
-                    { framework: 'UK SECR', scope: 'Streamlined Energy and Carbon Reporting', status: 'COMPLIANT', color: '#f59e0b' },
+                    { framework: 'UK SECR', scope: 'Streamlined Energy and Carbon Reporting', status: 'AUDIT-READY', color: '#f59e0b' },
                   ].map(cert => (
                     <div
                       key={cert.framework}
@@ -622,7 +622,7 @@ export const LandingPage: React.FC = () => {
                 <span className="cerebrium-arch-idx">04</span>
               </div>
               <h4 className="cerebrium-arch-title">Auditable Competitive Edge</h4>
-              <p className="cerebrium-arch-desc">Upholding ISO 14001/50001 certification under ISO 19011:2026 remote auditing is fundamental to winning enterprise bids.</p>
+              <p className="cerebrium-arch-desc">Maintaining ISO 14064/50001 compliance readiness under ISO 19011:2026 remote auditing protocols is fundamental to winning enterprise bids.</p>
             </div>
           </div>
         </div>
