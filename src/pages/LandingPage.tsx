@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { RiskSpeedometer } from '../components/RiskSpeedometer';
 import { CmaClaimsLinter } from '../components/CmaClaimsLinter';
@@ -8,8 +7,6 @@ import { CerebriumAnimatedHeroBackground } from '../components/CerebriumAnimated
 
 export const LandingPage: React.FC = () => {
   const { isAuthenticated, isAdmin } = useAuth();
-  const [ledgerData, setLedgerData] = useState<any | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [activeDemoTab, setActiveDemoTab] = useState<'CALIBRATION' | 'ANOMALY' | 'SCORECARD' | 'CMA' | 'JOBS'>('CALIBRATION');
 
   // Cerebrium Feature Showcase States (Image 4)
@@ -26,34 +23,21 @@ export const LandingPage: React.FC = () => {
   const [simJobsApprentices, setSimJobsApprentices] = useState<number>(6);
   const [simJobsLivingWage, setSimJobsLivingWage] = useState<boolean>(true);
 
-  // Live Animated Hero Telemetry Card States
-  const [liveDrops, setLiveDrops] = useState<number>(0);
-  const [livePurity, setLivePurity] = useState<number>(99.97);
-  const [livePue, setLivePue] = useState<number>(1.12);
-  const [pulseCount, setPulseCount] = useState<boolean>(false);
+  // Hero Station Demo Simulator States
+  const [heroStationTab, setHeroStationTab] = useState<'SENSORS' | 'EFFICIENCY' | 'CERT'>('SENSORS');
+  const [isSimulatingSweep, setIsSimulatingSweep] = useState<boolean>(false);
+  const [sweepCount, setSweepCount] = useState<number>(142);
+  const [lastSweepTime, setLastSweepTime] = useState<string>('Just now');
 
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchLedger() {
-      try {
-        const res = await api.getTransparencyLedger();
-        if (isMounted && res) {
-          setLedgerData(res);
-          setLiveDrops(res.totalSettledTransactions || 108);
-        }
-      } catch (err) {
-        if (isMounted) setLedgerData(null);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    fetchLedger();
-    return () => { isMounted = false; };
-  }, []);
-
-  const totalDrops = ledgerData?.totalSettledTransactions ?? liveDrops;
-  const totalCharityCents = ledgerData?.totalCharityGiftCents ?? (liveDrops * 1500);
-  const totalCharityPounds = (totalCharityCents / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' });
+  const handleTriggerSweep = () => {
+    if (isSimulatingSweep) return;
+    setIsSimulatingSweep(true);
+    setTimeout(() => {
+      setIsSimulatingSweep(false);
+      setSweepCount(prev => prev + 1);
+      setLastSweepTime('Just now');
+    }, 900);
+  };
 
   // Anomaly math for simulator (baseline = 1.14)
   const pueVariance = Math.abs((simulatedPue - 1.14) / 1.14) * 100;
@@ -171,11 +155,11 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Hero: Cerebrium-Style Dark Glassmorphic Telemetry Terminal */}
+            {/* Right Hero: Interactive Platform Demo Simulator */}
             <div
               style={{
                 position: 'relative',
-                backgroundColor: 'rgba(12, 16, 29, 0.85)',
+                backgroundColor: 'rgba(12, 16, 29, 0.88)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -184,124 +168,172 @@ export const LandingPage: React.FC = () => {
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 45, 141, 0.12)',
               }}
             >
-              {/* Top Reduction Badge with Cerebrium Pink Glow */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '4px 10px', borderRadius: '4px', color: '#10b981', fontSize: '0.75rem', fontWeight: 700 }}>
-                  <span>Reduction:</span>
-                  <span style={{ backgroundColor: '#10b981', color: '#ffffff', fontSize: '0.625rem', padding: '1px 5px', borderRadius: '2px', fontWeight: 800 }}>100%</span>
-                  <span style={{ fontFamily: 'var(--font-mono)' }}>-300 tCO2e</span>
-                </div>
-                <span style={{ fontSize: '0.68rem', color: 'var(--cerebrium-magenta)', fontFamily: 'var(--font-mono)', fontWeight: 800, letterSpacing: '0.06em', backgroundColor: 'rgba(255, 45, 141, 0.12)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255, 45, 141, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span className="radar-pulse" style={{ width: '4px', height: '4px', backgroundColor: 'var(--cerebrium-magenta)' }} />
-                  DEMO AUDIT SIMULATOR
-                </span>
-              </div>
-
-              {/* Continuous Platform Telemetry Station Card */}
-              <div
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  padding: '1.25rem',
-                  marginBottom: '1rem',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--cerebrium-magenta)', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-                    • CONTINUOUS TELEMETRY NODE
+              {/* Card Header: Station ID and Demo Badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: '0.5rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--cerebrium-magenta)', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: '0.25rem' }}>
+                    CONTINUOUS TELEMETRY NODE
                   </div>
-                  <span style={{ backgroundColor: '#10b981', color: '#ffffff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <span className="radar-pulse" style={{ width: '5px', height: '5px', backgroundColor: '#fff' }} />
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.2 }}>
+                    Industrial Telemetry Station UK-01
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
+                    station-uk01.nftylogslabs.com
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem', flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--cerebrium-magenta)', fontFamily: 'var(--font-mono)', fontWeight: 800, letterSpacing: '0.06em', backgroundColor: 'rgba(255, 45, 141, 0.12)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(255, 45, 141, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span className="radar-pulse" style={{ width: '4px', height: '4px', backgroundColor: 'var(--cerebrium-magenta)' }} />
+                    DEMO AUDIT SIMULATOR
+                  </span>
+                  <span style={{ backgroundColor: '#10b981', color: '#ffffff', fontSize: '0.62rem', fontWeight: 800, padding: '2px 7px', borderRadius: '4px', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span className="radar-pulse" style={{ width: '4px', height: '4px', backgroundColor: '#fff' }} />
                     OPERATIONAL
                   </span>
                 </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0.2rem 0' }}>
-                  Industrial Telemetry Station UK-01
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#cfd7e7', marginBottom: '0.75rem', lineHeight: 1.5 }}>
-                  Statutory continuous emission data ingestion node adhering to ISO 14064-1 and ISO 50001 calibration standards.
-                </div>
-                <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: '#94a3b8', flexWrap: 'wrap', fontFamily: 'var(--font-mono)' }}>
-                  <span>Sector: Clean Energy &amp; Industrial Infrastructure</span>
-                  <span>Jurisdiction: United Kingdom</span>
-                  <span style={{ color: 'var(--cerebrium-magenta)' }}>station-uk01.nftylogslabs.com</span>
-                </div>
               </div>
 
-              {/* Floating Metric Card Overlap */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                  gap: '1rem',
-                  marginBottom: '1rem',
-                }}
-              >
-                <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', padding: '1rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>Settled Drops</div>
-                    <span className="radar-pulse" style={{ width: '6px', height: '6px', backgroundColor: 'var(--cerebrium-magenta)' }} />
-                  </div>
-                  <div
+              {/* Tabbed Demo Panels */}
+              <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                {(['SENSORS', 'EFFICIENCY', 'CERT'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setHeroStationTab(tab)}
                     style={{
-                      fontSize: '1.5rem',
-                      fontWeight: 800,
-                      color: '#ffffff',
-                      marginTop: '0.2rem',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
                       fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.06em',
+                      padding: '4px 10px',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      backgroundColor: heroStationTab === tab ? 'rgba(255, 45, 141, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                      color: heroStationTab === tab ? 'var(--cerebrium-magenta)' : '#94a3b8',
+                      outline: heroStationTab === tab ? '1px solid rgba(255, 45, 141, 0.4)' : '1px solid transparent',
                     }}
                   >
-                    {totalDrops.toLocaleString()} <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>drops</span>
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
-                    ● 15% ESG: {totalCharityPounds}
-                  </div>
-                </div>
-
-                <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', padding: '1rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>Footprint Analytics</div>
-                  <div style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-mono)' }}>
-                    <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#38bdf8' }} />
-                    <span>PUE {livePue} (ISO 50001)</span>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-mono)' }}>
-                    <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                    <span>94.6% Thermal Re-Use</span>
-                  </div>
-                </div>
+                    {tab}
+                  </button>
+                ))}
               </div>
 
-              {/* Equipment / Sensor Callout Rows */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)', fontSize: '0.75rem' }}>
-                  <span style={{ fontWeight: 600, color: '#cfd7e7' }}>EV-Fleet-Truck-1802 (Heavy Duty)</span>
-                  <span style={{ color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: 'var(--font-mono)' }}>
-                    <span className="radar-pulse" style={{ width: '6px', height: '6px', backgroundColor: '#10b981' }} />
-                    <span>Fuel Verified</span>
-                  </span>
+              {/* Tab: SENSORS */}
+              {heroStationTab === 'SENSORS' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {[
+                    { id: 'PDU-07', label: 'PDU Smart Meter', value: '48.2 kWh', unit: 'ISO 50001', color: '#38bdf8', status: 'CALIBRATED' },
+                    { id: 'EV-1802', label: 'EV-Fleet-Truck-1802', value: '0.0 gCO2/km', unit: 'Fuel Verified', color: '#10b981', status: 'VERIFIED' },
+                    { id: 'NH-011', label: 'NH-Gen-011 H2 Electrolyzer', value: '99.97% Purity', unit: 'ISO 14064', color: '#a78bfa', status: 'ONLINE' },
+                  ].map(sensor => (
+                    <div
+                      key={sensor.id}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)', fontSize: '0.75rem' }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#cfd7e7', marginBottom: '0.1rem' }}>{sensor.label}</div>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>{sensor.id} · {sensor.unit}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ color: sensor.color, fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{sensor.value}</div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                          <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: sensor.color, display: 'inline-block' }} />
+                          <span style={{ fontSize: '0.62rem', color: sensor.color, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{sensor.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)', fontSize: '0.75rem' }}>
-                  <span style={{ fontWeight: 600, color: '#cfd7e7' }}>NH-Gen-011 (H2 Electrolyzer)</span>
-                  <span style={{ color: '#38bdf8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: 'var(--font-mono)' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#38bdf8' }} />
-                    <span>{livePurity.toFixed(2)}% Purity</span>
-                  </span>
+              {/* Tab: EFFICIENCY */}
+              {heroStationTab === 'EFFICIENCY' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {[
+                    { label: 'Power Usage Effectiveness (PUE)', value: '1.12', benchmark: 'Industry avg: 1.58', color: '#38bdf8', bar: 71 },
+                    { label: 'Thermal Energy Re-Use Rate', value: '94.6%', benchmark: 'ISO 50001 target: 85%', color: '#10b981', bar: 94 },
+                    { label: 'Renewable Energy Share', value: '100%', benchmark: 'SECR mandated: 60%', color: '#a78bfa', bar: 100 },
+                    { label: 'Scope 2 Market-Based Intensity', value: '0.00 tCO2e', benchmark: 'Reduction: -300 tCO2e', color: '#f59e0b', bar: 100 },
+                  ].map(metric => (
+                    <div key={metric.label}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#cfd7e7', fontWeight: 600 }}>{metric.label}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: metric.color, fontFamily: 'var(--font-mono)' }}>{metric.value}</span>
+                      </div>
+                      <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${metric.bar}%`, backgroundColor: metric.color, borderRadius: '2px', transition: 'width 0.6s ease' }} />
+                      </div>
+                      <div style={{ fontSize: '0.62rem', color: '#64748b', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>{metric.benchmark}</div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
 
-              {/* Framework Badges */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '3px 8px', borderRadius: '4px', fontWeight: 600, color: '#cfd7e7', fontFamily: 'var(--font-mono)' }}>
-                  TCFD / ISO 14064
-                </span>
-                <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '3px 8px', borderRadius: '4px', fontWeight: 600, color: '#cfd7e7', fontFamily: 'var(--font-mono)' }}>
-                  SECR / CSRD Disclosures
-                </span>
-                <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '3px 8px', borderRadius: '4px', fontWeight: 600, color: '#cfd7e7', fontFamily: 'var(--font-mono)' }}>
-                  CDP Aligned
-                </span>
+              {/* Tab: CERT */}
+              {heroStationTab === 'CERT' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {[
+                    { framework: 'ISO 14064-1:2018', scope: 'GHG Quantification and Reporting', status: 'CERTIFIED', color: '#10b981' },
+                    { framework: 'ISO 50001:2018', scope: 'Energy Management System', status: 'CERTIFIED', color: '#10b981' },
+                    { framework: 'UK CMA Green Claims Code', scope: 'Section 3.2 Environmental Claims', status: 'VALIDATED', color: '#38bdf8' },
+                    { framework: 'TCFD / CSRD Aligned', scope: 'Climate Risk Disclosure Framework', status: 'ALIGNED', color: '#a78bfa' },
+                    { framework: 'UK SECR', scope: 'Streamlined Energy and Carbon Reporting', status: 'COMPLIANT', color: '#f59e0b' },
+                  ].map(cert => (
+                    <div
+                      key={cert.framework}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#e2e8f0', fontFamily: 'var(--font-mono)' }}>{cert.framework}</div>
+                        <div style={{ fontSize: '0.62rem', color: '#64748b', marginTop: '0.1rem' }}>{cert.scope}</div>
+                      </div>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 800, color: cert.color, fontFamily: 'var(--font-mono)', letterSpacing: '0.04em', flexShrink: 0 }}>{cert.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Interactive Sweep Action Footer */}
+              <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ color: '#94a3b8' }}>Sweeps simulated:</span>{' '}
+                  <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{sweepCount}</span>
+                  <span style={{ marginLeft: '0.75rem', color: '#64748b' }}>Last: {lastSweepTime}</span>
+                </div>
+                <button
+                  id="hero-trigger-sweep-btn"
+                  onClick={handleTriggerSweep}
+                  disabled={isSimulatingSweep}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                    letterSpacing: '0.06em',
+                    padding: '6px 14px',
+                    borderRadius: '5px',
+                    border: '1px solid rgba(255, 45, 141, 0.4)',
+                    backgroundColor: isSimulatingSweep ? 'rgba(255, 45, 141, 0.06)' : 'rgba(255, 45, 141, 0.14)',
+                    color: isSimulatingSweep ? '#94a3b8' : 'var(--cerebrium-magenta)',
+                    cursor: isSimulatingSweep ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {isSimulatingSweep ? (
+                    <>
+                      <span className="radar-pulse" style={{ width: '5px', height: '5px', backgroundColor: 'var(--cerebrium-magenta)' }} />
+                      SWEEPING...
+                    </>
+                  ) : (
+                    <>
+                      <span>&#9654;</span>
+                      TRIGGER SWEEP
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -344,19 +376,19 @@ export const LandingPage: React.FC = () => {
           <div className="greenly-ticker">
             <div className="greenly-ticker-item">
               <span style={{ color: 'var(--color-sky)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>80% Remote Audits</strong> — ISO 19011:2026 Annex A</span>
+              <span><strong>80% Remote Audits</strong> | ISO 19011:2026 Annex A</span>
             </div>
             <div className="greenly-ticker-item">
               <span style={{ color: 'var(--color-green)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>Zero Brokerage Conflict</strong> — Section X Software Firewall</span>
+              <span><strong>Zero Brokerage Conflict</strong> | Section X Software Firewall</span>
             </div>
             <div className="greenly-ticker-item">
               <span style={{ color: 'var(--color-sky)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>100% Calibrated Hardware</strong> — ISO 17025 Gatekeeper</span>
+              <span><strong>100% Calibrated Hardware</strong> | ISO 17025 Gatekeeper</span>
             </div>
             <div className="greenly-ticker-item">
               <span style={{ color: 'var(--color-green)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>15% ESG Split</strong> — Automated Charity Disbursements</span>
+              <span><strong>15% ESG Split</strong> | Automated Charity Disbursements</span>
             </div>
           </div>
 
