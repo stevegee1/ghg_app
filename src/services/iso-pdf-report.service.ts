@@ -44,6 +44,19 @@ export class IsoPdfReportService {
         throw new Error('Forbidden: Cannot generate PDF report for other licensees.');
       }
 
+      // Statutory Export Lock Check under ISO Clause 10.2 / Milestone ISO-2
+      const unresolvedAnomalies = await tx.nonConformanceEvent.findMany({
+        where: { licenseeId: report.licenseeId, isResolved: false },
+      });
+      if (unresolvedAnomalies.length > 0) {
+        const lockErr: any = new Error(
+          `Transparency export locked: ${unresolvedAnomalies.length} unresolved baseline anomaly event(s) require supervisor verification under ISO Clause 10.2.`
+        );
+        lockErr.statusCode = 423;
+        lockErr.details = unresolvedAnomalies;
+        throw lockErr;
+      }
+
       // 2. Query Dual-Impact Stats (Settled charity gift & verified jobs)
       const settledTransactions = await tx.transaction.findMany({
         where: { licenseeId: report.licenseeId, status: TransactionStatus.SETTLED },

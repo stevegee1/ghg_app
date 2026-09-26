@@ -270,6 +270,16 @@ export function createIsoEvidenceRouter(prisma: PrismaClient): Router {
 
       return res.status(200).send(pdfBuffer);
     } catch (err: any) {
+      if (err.statusCode === 423 || err.message?.includes('export locked') || err.message?.includes('Transparency export locked')) {
+        return res.status(423).json({
+          error: {
+            code: 423,
+            status: 'RESOURCE_LOCKED',
+            message: err.message,
+            details: err.details,
+          },
+        });
+      }
       const isForbidden = err.message?.includes('Forbidden');
       const statusCode = isForbidden ? 403 : 404;
       return res.status(statusCode).json({ error: err.message || 'Failed to generate PDF audit report.' });

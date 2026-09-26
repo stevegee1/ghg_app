@@ -221,6 +221,21 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         );
       });
 
+      // Automatically trigger AI Assurance Agent asynchronously (production / dev)
+      if (process.env.NODE_ENV !== 'test') {
+        import('../services/review-pipeline/ai-audit-reviewer.service')
+          .then(({ AiAuditReviewer }) => {
+            const reviewer = new AiAuditReviewer(prisma);
+            return reviewer.evaluateSubmission(id);
+          })
+          .then((result) => {
+            console.log(`[AUTO_AI_SCREEN] Submission ${id} auto-evaluated: score=${result.complianceScore}%, decision=${result.decision}`);
+          })
+          .catch((err) => {
+            console.warn(`[AUTO_AI_SCREEN] Non-blocking notice for submission ${id}:`, err?.message);
+          });
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Submission successfully submitted for Lead Auditor review.',
@@ -238,6 +253,108 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       }
       console.error('[WORKFLOW SUBMIT ERROR]', err);
       return res.status(400).json({ error: err.message || 'Failed to submit questionnaire.' });
+    }
+  });
+
+
+  /**
+   * POST /api/workflow/submissions/:id/ai-screen
+   * Triggers the AI Assurance Agent to evaluate a SUBMITTED submission.
+   * The agent evaluates each answer against ISO clauses and produces structured
+   * ClauseReviewFinding[] docket, then transitions the submission to AI_SCREENED.
+   *
+   * This runs asynchronously — returns immediately with a 202 Accepted.
+   * Lead Auditor sees the findings when they open the submission in UNDER_REVIEW.
+   *
+   * Can be called by ADMIN or the owning licensee.
+   */
+  router.post('/api/workflow/submissions/:id/ai-screen', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+
+    try {
+      const submission = await prisma.workflowSubmission.findUnique({
+        where: { id },
+        select: { id: true, licenseeId: true, status: true },
+      });
+
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found.' });
+      }
+
+      if (user.role !== 'ADMIN' && user.licenseeId && submission.licenseeId !== user.licenseeId) {
+        return res.status(403).json({ error: 'Forbidden: Access to other licensees is prohibited.' });
+      }
+
+      const { AiAuditReviewer } = await import('../services/review-pipeline/ai-audit-reviewer.service');
+      const reviewer = new AiAuditReviewer(prisma);
+
+      // Run asynchronously so the HTTP response returns immediately
+      reviewer.evaluateSubmission(id)
+        .then((result) => {
+          console.log(`[AI_SCREEN] Submission ${id} pre-screened: score=${result.complianceScore}%, decision=${result.decision}, by=${result.reviewedBy}`);
+        })
+        .catch((err) => {
+          console.error(`[AI_SCREEN] Failed for submission ${id}:`, err.message);
+        });
+
+      return res.status(202).json({
+        success: true,
+        message: 'AI Assurance Agent screening initiated. The submission will transition to AI_SCREENED status when complete.',
+        submissionId: id,
+      });
+    } catch (err: any) {
+      console.error('[AI_SCREEN INIT ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to initiate AI screening.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/submissions/:id/ai-findings
+   * Returns the AI pre-screen findings stored in WorkflowReviewDecision.
+   * Used by the Lead Auditor console to view the AI docket before making a decision.
+   */
+  router.get('/api/workflow/submissions/:id/ai-findings', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = req.user!;
+
+    try {
+      const submission = await prisma.workflowSubmission.findUnique({
+        where: { id },
+        select: { id: true, licenseeId: true, status: true, complianceScore: true },
+      });
+
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found.' });
+      }
+
+      if (user.role !== 'ADMIN' && user.licenseeId && submission.licenseeId !== user.licenseeId) {
+        return res.status(403).json({ error: 'Forbidden: Access to other licensees is prohibited.' });
+      }
+
+      const decision = await prisma.workflowReviewDecision.findUnique({
+        where: { submissionId: id },
+      });
+
+      if (!decision) {
+        return res.status(404).json({ error: 'No AI pre-screen findings found for this submission. Trigger /ai-screen first.' });
+      }
+
+      return res.status(200).json({
+        submissionId: id,
+        status: submission?.status,
+        complianceScore: submission?.complianceScore,
+        aiFindings: {
+          overallDecision: decision.overallDecision,
+          overallScore: decision.overallScore,
+          reviewerNotes: decision.reviewerNotes,
+          clauseFindings: decision.perQuestionDecisions,
+          createdAt: decision.createdAt,
+        },
+      });
+    } catch (err: any) {
+      console.error('[AI_FINDINGS GET ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve AI screening findings.' });
     }
   });
 
@@ -274,6 +391,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       return res.status(400).json({ error: err.message || 'Failed to transition workflow status.' });
     }
   });
+
 
   /**
    * POST /api/workflow/submissions/:id/review

@@ -185,6 +185,50 @@ describe('Milestone ISO-4: Evidence Locker & Executive/Event PDF Generator', () 
       const pdfHeader = res.body.toString('ascii', 0, 4);
       expect(pdfHeader).toBe('%PDF');
     });
+
+    it('should block PDF export with HTTP 423 Locked when unresolved baseline anomaly exists under ISO Clause 10.2', async () => {
+      // Create an active non-conformance event for licenseeA
+      const event = await prisma.nonConformanceEvent.create({
+        data: {
+          licenseeId: licenseeA.id,
+          isoClause: 'ISO 50001:2018 Clause 9.1.1 (Energy Performance Evaluation)',
+          assetTag: 'PUE-METER-01',
+          metricName: 'PUE',
+          baselineValue: 1.15,
+          observedValue: 1.45,
+          percentageVariance: 26.09,
+          conformanceGrade: ConformanceGrade.MAJOR_NON_CONFORMANCE_GREENWASHING_RISK,
+          isResolved: false,
+        },
+      });
+
+      const resLocked = await request(app)
+        .get(`/api/portal/iso/reports/${reportA.id}/pdf`)
+        .set('Authorization', `Bearer ${tokenA}`);
+
+      expect(resLocked.status).toBe(423);
+      expect(resLocked.body.error.code).toBe(423);
+      expect(resLocked.body.error.status).toBe('RESOURCE_LOCKED');
+      expect(resLocked.body.error.message).toContain('Transparency export locked');
+
+      // Resolve the non-conformance event
+      await prisma.nonConformanceEvent.update({
+        where: { id: event.id },
+        data: {
+          isResolved: true,
+          resolvedAt: new Date(),
+          rootCauseAnalysis: 'Recalibrated faulty sensor probe.',
+          correctiveAction: 'Replaced thermocouple probe and performed zero-point calibration.',
+        },
+      });
+
+      // Export must now unlock and succeed
+      const resUnlocked = await request(app)
+        .get(`/api/portal/iso/reports/${reportA.id}/pdf`)
+        .set('Authorization', `Bearer ${tokenA}`);
+
+      expect(resUnlocked.status).toBe(200);
+    });
   });
 
   describe('4. Multi-Tenant Row-Level Security on Evidence & PDF Exports', () => {

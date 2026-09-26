@@ -1,4 +1,4 @@
-import { PrismaClient, SensorType, MetricType } from '@prisma/client';
+import { PrismaClient, SensorType, MetricType, GhgScope } from '@prisma/client';
 import crypto from 'crypto';
 import { runWithRls, UserAuthScope } from '../db/rls';
 
@@ -24,6 +24,12 @@ export interface IngestTelemetryInput {
   transactionId?: string;
   isWithinBaseline?: boolean;
   requiresSupervisor?: boolean;
+  // GHG Protocol Scope 1/2/3 classification (ISO 14064-1:2018 Clause 5.2)
+  ghgScope?: GhgScope;
+  activityAmount?: number;    // Quantity in activity unit (litres of diesel, kWh electricity, etc.)
+  unitOfMeasure?: string;     // e.g. "litres", "kWh", "km", "tonnes"
+  emissionFactorKgCo2PerUnit?: number; // DEFRA/IPCC emission factor kg CO2e per unit
+  calculatedKgCo2e?: number;  // Computed: activityAmount * emissionFactorKgCo2PerUnit
 }
 
 export class IsoCalibrationService {
@@ -185,6 +191,11 @@ export class IsoCalibrationService {
         rawUnit: rawUnit.trim(),
         isWithinBaseline,
         requiresSupervisor,
+        ghgScope: input.ghgScope ?? undefined,
+        activityAmount: input.activityAmount ?? undefined,
+        unitOfMeasure: input.unitOfMeasure ?? undefined,
+        emissionFactorKgCo2PerUnit: input.emissionFactorKgCo2PerUnit ?? undefined,
+        calculatedKgCo2e: input.calculatedKgCo2e ?? undefined,
         rawTelemetryJson: rawTelemetryJson ?? undefined,
         transactionId: transactionId || null,
       },

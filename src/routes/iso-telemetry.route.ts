@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, SensorType, MetricType } from '@prisma/client';
+import { PrismaClient, SensorType, MetricType, GhgScope } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { EventEmitter } from 'events';
 import { IsoCalibrationService } from '../services/iso-calibration.service';
@@ -144,6 +144,11 @@ export function createIsoTelemetryRouter(prisma: PrismaClient): Router {
         rawTelemetryJson,
         transactionId,
         isoClause,
+        // GHG Protocol Scope 1/2/3 fields (ISO 14064-1:2018 Clause 5.2)
+        ghgScope,
+        activityAmount,
+        unitOfMeasure,
+        emissionFactorKgCo2PerUnit,
       } = req.body || {};
 
       if (!licenseeId || typeof licenseeId !== 'string') {
@@ -194,6 +199,20 @@ export function createIsoTelemetryRouter(prisma: PrismaClient): Router {
       }
 
       // 3. Ingest Telemetry (Enforces Calibration Gatekeeper)
+      // Calculate kgCO2e if emission factor and activity amount are provided
+      const parsedActivityAmount = typeof activityAmount === 'number' ? activityAmount : undefined;
+      const parsedEmissionFactor = typeof emissionFactorKgCo2PerUnit === 'number' ? emissionFactorKgCo2PerUnit : undefined;
+      const calculatedKgCo2e =
+        parsedActivityAmount !== undefined && parsedEmissionFactor !== undefined
+          ? Math.round(parsedActivityAmount * parsedEmissionFactor * 1000) / 1000
+          : undefined;
+
+      // Validate ghgScope enum value if provided
+      const validatedGhgScope: GhgScope | undefined =
+        ghgScope && Object.values(GhgScope).includes(ghgScope as GhgScope)
+          ? (ghgScope as GhgScope)
+          : undefined;
+
       const telemetryRecord = await calibrationService.ingestTelemetry({
         licenseeId: licensee.id,
         assetTag: assetTag.trim(),
@@ -204,6 +223,11 @@ export function createIsoTelemetryRouter(prisma: PrismaClient): Router {
         transactionId,
         isWithinBaseline,
         requiresSupervisor,
+        ghgScope: validatedGhgScope,
+        activityAmount: parsedActivityAmount,
+        unitOfMeasure: unitOfMeasure || undefined,
+        emissionFactorKgCo2PerUnit: parsedEmissionFactor,
+        calculatedKgCo2e,
       });
 
       const responsePayload = {
@@ -226,6 +250,8 @@ export function createIsoTelemetryRouter(prisma: PrismaClient): Router {
         metricType: telemetryRecord.metricType,
         numericValue: telemetryRecord.numericValue,
         rawUnit: telemetryRecord.rawUnit,
+        ghgScope: telemetryRecord.ghgScope ?? null,
+        calculatedKgCo2e: telemetryRecord.calculatedKgCo2e ?? null,
         isWithinBaseline: telemetryRecord.isWithinBaseline,
         requiresSupervisor: telemetryRecord.requiresSupervisor,
         hasAnomaly: anomalyResult?.hasAnomaly ?? false,

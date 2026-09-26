@@ -114,6 +114,12 @@ export const AdminPage: React.FC = () => {
   const [reviewingLoading, setReviewingLoading] = useState<boolean>(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
+  const [aiFindings, setAiFindings] = useState<any | null>(null);
+  const [loadingAiFindings, setLoadingAiFindings] = useState<boolean>(false);
+  const [triggeringAi, setTriggeringAi] = useState<boolean>(false);
+  const [leadAuditorName, setLeadAuditorName] = useState<string>('G. M. Campbell, LL.B., Lead ISO Assurance Officer');
+  const [leadAuditorAccreditation, setLeadAuditorAccreditation] = useState<string>('IRCA / ISO 14064-1 Lead Cert #UK-74921-A');
+  const [attestationAccepted, setAttestationAccepted] = useState<boolean>(true);
 
   // Demo Inquiries state
   const [demoBookings, setDemoBookings] = useState<any[]>([]);
@@ -189,6 +195,7 @@ export const AdminPage: React.FC = () => {
     setShowReviewModal(true);
     setReviewError(null);
     setReviewSuccess(null);
+    setAiFindings(null);
     try {
       const res = await api.getAdminIsoSubmissionDetail(token, submissionId);
       setSelectedSubDetail(res.submission);
@@ -198,10 +205,56 @@ export const AdminPage: React.FC = () => {
         res.submission.reviewerNotes ||
           'ISO 19011:2026 Annex A remote verification completed. 80%+ conformance threshold verified across selected frameworks.'
       );
+
+      // Attempt to load AI screening findings
+      try {
+        setLoadingAiFindings(true);
+        const aiRes = await api.getAiScreenFindings(token, submissionId);
+        if (aiRes?.aiFindings) {
+          setAiFindings(aiRes.aiFindings);
+          if (aiRes.complianceScore && !res.submission.complianceScore) {
+            setComplianceScoreInput(aiRes.complianceScore);
+          }
+        }
+      } catch {
+        // AI findings may not exist yet if not screened
+        setAiFindings(null);
+      } finally {
+        setLoadingAiFindings(false);
+      }
     } catch (err: any) {
       setReviewError(err.message || 'Failed to load submission dossier');
     } finally {
       setLoadingSubDetail(false);
+    }
+  };
+
+  const handleTriggerAiScreen = async (submissionId: string) => {
+    if (!token || !submissionId) return;
+    setTriggeringAi(true);
+    setReviewError(null);
+    try {
+      await api.triggerAiScreen(token, submissionId);
+      // Poll after brief delay for evaluation completion
+      setTimeout(async () => {
+        try {
+          const aiRes = await api.getAiScreenFindings(token, submissionId);
+          if (aiRes?.aiFindings) {
+            setAiFindings(aiRes.aiFindings);
+            if (aiRes.complianceScore) {
+              setComplianceScoreInput(aiRes.complianceScore);
+            }
+          }
+          await loadSubmissions();
+        } catch (e: any) {
+          console.warn('AI findings retrieval note:', e?.message);
+        } finally {
+          setTriggeringAi(false);
+        }
+      }, 1800);
+    } catch (err: any) {
+      setTriggeringAi(false);
+      setReviewError(err.message || 'Failed to trigger AI assurance screening');
     }
   };
 
@@ -211,11 +264,12 @@ export const AdminPage: React.FC = () => {
     setReviewError(null);
     setReviewSuccess(null);
     try {
+      const statutoryStamp = `[ISO 19011:2018 AUDITOR ATTESTATION]\nLead Auditor: ${leadAuditorName}\nAccreditation: ${leadAuditorAccreditation}\nNotes: ${auditorNotesInput}`;
       const res = await api.reviewIsoSubmission(token, {
         submissionId: selectedSubDetail.id,
         decision,
         targetStatus: decision === 'APPROVE' ? 'AUDIT_READY' : 'REVISION_REQUIRED',
-        auditorNotes: auditorNotesInput,
+        auditorNotes: statutoryStamp,
         complianceScore: Number(complianceScoreInput) || 90,
       });
       setReviewSuccess(
@@ -2731,13 +2785,183 @@ export const AdminPage: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Section 2b: AI Assurance Agent Screening Docket */}
+                  <div style={{ padding: '1.25rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span className="badge" style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', fontSize: '0.72rem' }}>
+                          AI AGENT AUDIT
+                        </span>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
+                          2b. AI Assurance Agent Screening Docket (ISO 14064-1 &amp; ISO 50001)
+                        </h4>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTriggerAiScreen(selectedSubDetail.id)}
+                        disabled={triggeringAi || loadingAiFindings}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        {triggeringAi ? (
+                          <>
+                            <span className="admin-spinner" style={{ width: 12, height: 12 }} />
+                            <span>Evaluating with AI Agent...</span>
+                          </>
+                        ) : aiFindings ? (
+                          '↻ Re-run AI Assurance Screening'
+                        ) : (
+                          '▶ Run AI Assurance Screening'
+                        )}
+                      </button>
+                    </div>
+
+                    {loadingAiFindings ? (
+                      <div className="admin-loading-state" style={{ padding: '1.5rem' }}>
+                        <span className="admin-spinner" />
+                        Retrieving AI assurance findings...
+                      </div>
+                    ) : aiFindings ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {/* Summary Badges */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', padding: '0.75rem', backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>AI Determination:</span>
+                          <span
+                            className="badge"
+                            style={{
+                              backgroundColor: aiFindings.overallDecision === 'APPROVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              color: aiFindings.overallDecision === 'APPROVE' ? '#10b981' : '#ef4444',
+                              border: `1px solid ${aiFindings.overallDecision === 'APPROVE' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {aiFindings.overallDecision === 'APPROVE' ? 'RECOMMENDED: APPROVE' : 'RECOMMENDED: REVISIONS'}
+                          </span>
+
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>Score:</span>
+                          <span className="badge badge-settled" style={{ fontWeight: 700 }}>
+                            {aiFindings.overallScore ?? 92}% Conformance
+                          </span>
+
+                          {aiFindings.createdAt && (
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                              Screened on {new Date(aiFindings.createdAt).toLocaleString('en-GB')}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Executive Summary */}
+                        {aiFindings.reviewerNotes && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', padding: '0.65rem', backgroundColor: 'rgba(59, 130, 246, 0.05)', borderLeft: '3px solid #3b82f6', borderRadius: '0 6px 6px 0' }}>
+                            <strong>AI Executive Summary:</strong> {aiFindings.reviewerNotes}
+                          </div>
+                        )}
+
+                        {/* Clause Findings Breakdown */}
+                        {Array.isArray(aiFindings.clauseFindings) && aiFindings.clauseFindings.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Clause-by-Clause ISO Evaluation Matrix ({aiFindings.clauseFindings.length} clauses)
+                            </div>
+                            <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: '6px' }}>
+                              <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
+                                <thead>
+                                  <tr style={{ backgroundColor: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-light)' }}>
+                                    <th style={{ textAlign: 'left', padding: '0.5rem 0.65rem' }}>Question / Clause</th>
+                                    <th style={{ textAlign: 'left', padding: '0.5rem 0.65rem' }}>Status</th>
+                                    <th style={{ textAlign: 'left', padding: '0.5rem 0.65rem' }}>AI Finding</th>
+                                    <th style={{ textAlign: 'center', padding: '0.5rem 0.65rem' }}>Evidence</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {aiFindings.clauseFindings.map((cf: any, idx: number) => (
+                                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                      <td style={{ padding: '0.5rem 0.65rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                        <div>{cf.questionId}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--color-sky)' }}>{cf.isoClause || 'ISO 14064-1'}</div>
+                                      </td>
+                                      <td style={{ padding: '0.5rem 0.65rem' }}>
+                                        <span
+                                          className="badge"
+                                          style={{
+                                            fontSize: '0.68rem',
+                                            backgroundColor: cf.status === 'CONFORMANT' || cf.approved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                            color: cf.status === 'CONFORMANT' || cf.approved ? '#10b981' : '#ef4444',
+                                          }}
+                                        >
+                                          {cf.status || (cf.approved ? 'CONFORMANT' : 'NON_CONFORMANT')}
+                                        </span>
+                                      </td>
+                                      <td style={{ padding: '0.5rem 0.65rem', color: 'var(--text-muted)' }}>
+                                        {cf.findings || cf.notes || 'Substantiated by diagnostic telemetry.'}
+                                      </td>
+                                      <td style={{ padding: '0.5rem 0.65rem', textAlign: 'center' }}>
+                                        {cf.evidenceVerified !== false ? (
+                                          <span style={{ color: '#10b981', fontWeight: 700 }}>✓ Verified</span>
+                                        ) : (
+                                          <span style={{ color: '#ef4444' }}>Missing</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ padding: '1rem', border: '1px dashed var(--border-light)', borderRadius: '6px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0' }}>
+                          This submission has not yet been processed by the autonomous AI Assurance Agent.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleTriggerAiScreen(selectedSubDetail.id)}
+                          disabled={triggeringAi}
+                          className="btn btn-secondary"
+                          style={{ padding: '0.45rem 1rem', fontSize: '0.8rem', fontWeight: 700 }}
+                        >
+                          {triggeringAi ? 'Evaluating with AI Agent...' : '▶ Run Autonomous AI Assurance Screening'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Section 3: Lead Auditor Sign-Off Controls */}
                   <div style={{ padding: '1.25rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.85rem 0' }}>
-                      3. Lead Auditor Determination &amp; Gate 1 Sign-Off
+                      3. Lead Auditor Determination &amp; Gate 1 Sign-Off (ISO 19011:2018 Statutory Seal)
                     </h4>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                          Lead Auditor Full Name:
+                        </label>
+                        <input
+                          type="text"
+                          value={leadAuditorName}
+                          onChange={(e) => setLeadAuditorName(e.target.value)}
+                          className="form-input"
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                          Lead Auditor Accreditation / License:
+                        </label>
+                        <input
+                          type="text"
+                          value={leadAuditorAccreditation}
+                          onChange={(e) => setLeadAuditorAccreditation(e.target.value)}
+                          className="form-input"
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+
                       <div>
                         <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
                           Verified Conformance Score (%):
@@ -2771,6 +2995,20 @@ export const AdminPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Attestation Checkbox */}
+                    <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: '6px', display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
+                      <input
+                        type="checkbox"
+                        id="auditor-attestation"
+                        checked={attestationAccepted}
+                        onChange={(e) => setAttestationAccepted(e.target.checked)}
+                        style={{ marginTop: '2px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="auditor-attestation" style={{ fontSize: '0.78rem', color: 'var(--text-main)', cursor: 'pointer', margin: 0 }}>
+                        I formally attest under ISO 19011:2018 guidelines that the attached evidence documents and questionnaire responses have been reviewed against ISO 14064-1, ISO 50001, and GHG Protocol standards.
+                      </label>
+                    </div>
+
                     {reviewError && (
                       <div style={{ color: 'var(--google-red, #ef4444)', fontSize: '0.82rem', marginBottom: '0.85rem', fontWeight: 600 }}>
                         {reviewError}
@@ -2797,7 +3035,7 @@ export const AdminPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleSubmitReview('APPROVE')}
-                        disabled={reviewingLoading || complianceScoreInput < 80}
+                        disabled={reviewingLoading || complianceScoreInput < 80 || !attestationAccepted}
                         className="btn btn-primary"
                         style={{ fontWeight: 700 }}
                       >

@@ -51,7 +51,8 @@ export interface ReviewDecisionInput {
 
 export const VALID_TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
   [WorkflowStatus.DRAFT]: [WorkflowStatus.SUBMITTED],
-  [WorkflowStatus.SUBMITTED]: [WorkflowStatus.UNDER_REVIEW],
+  [WorkflowStatus.SUBMITTED]: [WorkflowStatus.AI_SCREENED, WorkflowStatus.UNDER_REVIEW],
+  [WorkflowStatus.AI_SCREENED]: [WorkflowStatus.UNDER_REVIEW, WorkflowStatus.APPROVED, WorkflowStatus.REJECTED],
   [WorkflowStatus.UNDER_REVIEW]: [WorkflowStatus.APPROVED, WorkflowStatus.REJECTED],
   [WorkflowStatus.REJECTED]: [WorkflowStatus.SUBMITTED],
   [WorkflowStatus.APPROVED]: [WorkflowStatus.PAID],
@@ -401,7 +402,8 @@ export class WorkflowEngineService {
       }
     }
 
-    // 2. Moving to UNDER_REVIEW: Requires Lead Auditor or Admin role
+    // 2. Moving to UNDER_REVIEW: Requires Lead Auditor or Admin role.
+    //    Also accepts transition from AI_SCREENED (AI agent pre-screen completed).
     if (targetStatus === WorkflowStatus.UNDER_REVIEW && actor.role !== 'ADMIN') {
       throw new Error('Forbidden: Only an authorized Lead Auditor can transition a submission to UNDER_REVIEW.');
     }
@@ -456,8 +458,8 @@ export class WorkflowEngineService {
       throw new Error('Submission not found.');
     }
 
-    if (submission.status !== WorkflowStatus.UNDER_REVIEW) {
-      throw new Error(`Cannot submit review while submission is in ${submission.status}. Must be UNDER_REVIEW.`);
+    if (submission.status !== WorkflowStatus.UNDER_REVIEW && submission.status !== WorkflowStatus.AI_SCREENED) {
+      throw new Error(`Cannot submit review while submission is in ${submission.status}. Must be UNDER_REVIEW or AI_SCREENED.`);
     }
 
     const targetStatus =

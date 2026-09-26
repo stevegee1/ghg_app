@@ -523,6 +523,25 @@ export const api = {
     return data;
   },
 
+  async getAiScreenFindings(token: string, submissionId: string): Promise<any> {
+    const res = await fetch(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/ai-findings`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async triggerAiScreen(token: string, submissionId: string): Promise<any> {
+    const res = await fetch(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/ai-screen`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
   async createIsoCheckout(
     token: string,
     params: { submissionId: string; tierSelected: string; successUrl: string; cancelUrl: string }

@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface CerebriumAnimatedHeroBackgroundProps {
   children?: React.ReactNode;
-  showRadarNode?: boolean;
+  showRadarNode?: boolean; // kept for API compat, no longer renders a node
 }
 
 export const CerebriumAnimatedHeroBackground: React.FC<CerebriumAnimatedHeroBackgroundProps> = ({
   children,
-  showRadarNode = true,
 }) => {
-  const [isHolding, setIsHolding] = useState(false);
 
   return (
     <div className="cerebrium-hero-wrapper">
@@ -126,26 +124,6 @@ export const CerebriumAnimatedHeroBackground: React.FC<CerebriumAnimatedHeroBack
         </svg>
       </div>
 
-      {/* 4. Interactive Radar Target ("Click and Hold") */}
-      {showRadarNode && (
-        <div
-          className="cerebrium-radar-target"
-          onMouseDown={() => setIsHolding(true)}
-          onMouseUp={() => setIsHolding(false)}
-          onTouchStart={() => setIsHolding(true)}
-          onTouchEnd={() => setIsHolding(false)}
-          title="Interactive Telemetry Node UK-01"
-        >
-          <div className="cerebrium-radar-ring" style={{ transform: isHolding ? 'scale(1.8)' : undefined }} />
-          <div className="cerebrium-radar-ring" style={{ transform: isHolding ? 'scale(2.4)' : undefined }} />
-          <div className="cerebrium-radar-core" style={{ transform: isHolding ? 'scale(1.3)' : undefined }}>
-            <span style={{ color: '#ffffff', fontSize: '0.75rem', fontWeight: 900 }}>⚡</span>
-          </div>
-          <div className="cerebrium-radar-caption">
-            {isHolding ? 'CONNECTED • 15ms' : 'CLICK & HOLD'}
-          </div>
-        </div>
-      )}
 
       {/* Content Slot */}
       <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%' }}>

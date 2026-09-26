@@ -247,6 +247,13 @@ enum MetricType {
   CO2_PPM
 }
 
+/// GHG Protocol Corporate Standard scope classification (ISO 14064-1:2018 Clause 5.2)
+enum GhgScope {
+  SCOPE_1 // Direct emissions from owned/controlled sources
+  SCOPE_2 // Indirect emissions from purchased energy
+  SCOPE_3 // All other indirect value chain emissions
+}
+
 model AssetCalibrationRecord {
   id                String         @id @default(cuid())
   licenseeId        String
@@ -268,23 +275,29 @@ model AssetCalibrationRecord {
 }
 
 model TelemetryLog {
-  id                 String                 @id @default(cuid())
-  licenseeId         String
-  licensee           Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  assetCalibrationId String
-  assetCalibration   AssetCalibrationRecord @relation(fields: [assetCalibrationId], references: [id])
-  assetTag           String
-  metricType         MetricType
-  numericValue       Float
-  rawUnit            String                 // e.g. "kW/h", "m3/h", "%", "ppm"
-  isWithinBaseline   Boolean                @default(true)
-  requiresSupervisor Boolean                @default(false)
-  rawTelemetryJson   Json?
-  transactionId      String?                @unique
-  transaction        Transaction?           @relation(fields: [transactionId], references: [id])
-  createdAt          DateTime               @default(now())
+  id                       String                 @id @default(cuid())
+  licenseeId               String
+  licensee                 Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetCalibrationId       String
+  assetCalibration         AssetCalibrationRecord @relation(fields: [assetCalibrationId], references: [id])
+  assetTag                 String
+  metricType               MetricType
+  numericValue             Float
+  rawUnit                  String                 // e.g. "kW/h", "m3/h", "%", "ppm"
+  ghgScope                 GhgScope?              // GHG Protocol Scope 1/2/3 classification
+  activityAmount           Float?                 // Activity data quantity (fuel litres, kWh, km etc)
+  unitOfMeasure            String?                // Activity data unit e.g. "litres", "kWh"
+  emissionFactorKgCo2PerUnit Float?               // DEFRA/IPCC emission factor applied
+  calculatedKgCo2e         Float?                 // Computed: activityAmount * emissionFactorKgCo2PerUnit
+  isWithinBaseline         Boolean                @default(true)
+  requiresSupervisor       Boolean                @default(false)
+  rawTelemetryJson         Json?
+  transactionId            String?                @unique
+  transaction              Transaction?           @relation(fields: [transactionId], references: [id])
+  createdAt                DateTime               @default(now())
 
   @@index([licenseeId, metricType])
+  @@index([licenseeId, ghgScope])
   @@index([assetTag, createdAt])
 }
 
@@ -630,7 +643,8 @@ enum WorkflowType {
 enum WorkflowStatus {
   DRAFT
   SUBMITTED
-  UNDER_REVIEW
+  AI_SCREENED  // AI Assurance Agent has evaluated and produced clause findings; awaiting Lead Auditor
+  UNDER_REVIEW // Lead Auditor is conducting manual review of AI findings
   APPROVED
   REJECTED
   PAID

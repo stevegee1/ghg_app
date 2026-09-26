@@ -32,6 +32,7 @@ export interface WorkflowSubmission {
   status:
     | 'DRAFT'
     | 'SUBMITTED'
+    | 'AI_SCREENED'
     | 'UNDER_REVIEW'
     | 'APPROVED'
     | 'REJECTED'
@@ -213,6 +214,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
           setCurrentScreen(4);
           break;
         case 'SUBMITTED':
+        case 'AI_SCREENED':
         case 'UNDER_REVIEW':
           setCurrentScreen(5);
           break;
@@ -1147,33 +1149,153 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
           Status badge: "Under Review", SLA notice, read-only answers
       ───────────────────────────────────────────────────────────────────────────── */}
       {currentScreen === 5 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-10 space-y-6 shadow-2xl text-center">
-          <div className="inline-flex p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400 mb-2">
-            <svg className="w-10 h-10 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-10 space-y-6 shadow-2xl">
+          {/* Status header changes based on exact workflow state */}
+          {submission?.status === 'AI_SCREENED' ? (
+            /* AI_SCREENED: AI agent finished, waiting for Lead Auditor */
+            <div className="text-center space-y-4">
+              <div className="inline-flex p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl text-blue-400 mb-2">
+                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
+                </svg>
+              </div>
+              <div className="space-y-2 max-w-xl mx-auto">
+                <div className="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30 uppercase tracking-wider">
+                  AI Pre-Screen Completed
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  AI Assurance Agent Review Complete
+                </h2>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  The AI Assurance Engine has evaluated your submission against ISO 14064-1:2018 and ISO 50001:2018 clauses.
+                  A structured findings docket has been prepared for the Lead Auditor.
+                </p>
+              </div>
 
-          <div className="space-y-2 max-w-xl mx-auto">
-            <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-bold rounded-full border border-amber-500/30 uppercase tracking-wider">
-              Status: Under Review
+              {/* AI Findings Docket Preview */}
+              {submission.reviewDecision && (
+                <div className="bg-slate-950/70 border border-blue-500/20 rounded-xl p-5 text-left space-y-4 max-w-2xl mx-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                      <div className="text-xs font-bold text-blue-300 uppercase tracking-wider">AI Pre-Screen Docket</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Per-Clause Conformity Findings</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-white">{submission.complianceScore ?? submission.reviewDecision.overallScore}%</div>
+                      <div className="text-xs text-slate-400">Pre-Screen Score</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-56 overflow-y-auto">
+                    {(submission.reviewDecision.perQuestionDecisions as any[]).map((finding: any, idx: number) => {
+                      const questionObj = questions.find((q) => q.id === finding.questionId);
+                      const isConformant = finding.status === 'CONFORMANT' || finding.accepted === true;
+                      const status = finding.status || (finding.accepted ? 'CONFORMANT' : 'NON_CONFORMANT');
+                      return (
+                        <div
+                          key={finding.questionId || idx}
+                          className={`flex items-start space-x-3 p-3 rounded-lg border text-xs ${
+                            status === 'CONFORMANT'
+                              ? 'bg-emerald-950/20 border-emerald-700/30'
+                              : status === 'INSUFFICIENT_EVIDENCE'
+                              ? 'bg-amber-950/20 border-amber-700/30'
+                              : 'bg-rose-950/20 border-rose-700/30'
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                            status === 'CONFORMANT' ? 'bg-emerald-500 text-white' :
+                            status === 'INSUFFICIENT_EVIDENCE' ? 'bg-amber-500 text-white' :
+                            'bg-rose-500 text-white'
+                          }`}>
+                            {status === 'CONFORMANT' ? '✓' : status === 'INSUFFICIENT_EVIDENCE' ? '?' : '✗'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-mono text-slate-400 text-[10px] mb-0.5">
+                              {finding.isoClause || questionObj?.isoClauseReference || `Clause ${idx + 1}`}
+                            </div>
+                            <div className={`font-medium truncate ${
+                              status === 'CONFORMANT' ? 'text-emerald-300' :
+                              status === 'INSUFFICIENT_EVIDENCE' ? 'text-amber-300' :
+                              'text-rose-300'
+                            }`}>
+                              {finding.findings || finding.reasonIfRejected || questionObj?.text || `Finding ${idx + 1}`}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800 text-xs text-slate-500">
+                    {submission.reviewDecision.reviewerNotes?.split('\n')[0]}
+                  </div>
+                </div>
+              )}
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Audit Dossier Submitted Successfully
-            </h2>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Our Lead Auditor team is reviewing your questionnaire answers and evidence documents. You will be notified
-              once a formal review decision is issued.
-            </p>
-          </div>
+          ) : submission?.status === 'UNDER_REVIEW' ? (
+            /* UNDER_REVIEW: Lead Auditor is actively reviewing */
+            <div className="text-center space-y-4">
+              <div className="inline-flex p-4 bg-violet-500/10 border border-violet-500/30 rounded-2xl text-violet-400 mb-2">
+                <svg className="w-10 h-10 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+              <div className="space-y-2 max-w-xl mx-auto">
+                <div className="inline-block px-3 py-1 bg-violet-500/10 text-violet-400 text-xs font-bold rounded-full border border-violet-500/30 uppercase tracking-wider">
+                  Lead Auditor Review in Progress
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Under Active Lead Auditor Review
+                </h2>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  Your dossier has been assigned to the Lead Auditor team under ISO 19011:2018 Annex A remote
+                  verification guidelines. A formal decision will be communicated shortly.
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* SUBMITTED: Waiting for AI screening */
+            <div className="text-center space-y-4">
+              <div className="inline-flex p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400 mb-2">
+                <svg className="w-10 h-10 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="space-y-2 max-w-xl mx-auto">
+                <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-bold rounded-full border border-amber-500/30 uppercase tracking-wider">
+                  Submitted for AI Pre-Screen
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Audit Dossier Submitted Successfully
+                </h2>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  The AI Assurance Agent is evaluating your questionnaire answers and evidence documents against the
+                  ISO framework clauses. This typically completes within 60 seconds.
+                </p>
+              </div>
+            </div>
+          )}
 
-          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-400 max-w-lg mx-auto space-y-1 text-left">
+          {/* Common bottom: submission metadata and refresh */}
+          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-400 max-w-lg mx-auto space-y-1.5 text-left">
             <div><span className="text-slate-500">Submission ID:</span> <span className="font-mono text-slate-300">{submission?.id}</span></div>
             <div><span className="text-slate-500">Framework:</span> <span className="text-slate-300">{submission?.framework?.name}</span></div>
-            <div><span className="text-slate-500">Submitted At:</span> <span className="text-slate-300">{submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'Just now'}</span></div>
+            <div><span className="text-slate-500">Status:</span> <span className={`font-semibold ${
+              submission?.status === 'AI_SCREENED' ? 'text-blue-400' :
+              submission?.status === 'UNDER_REVIEW' ? 'text-violet-400' :
+              'text-amber-400'
+            }`}>{submission?.status?.replace('_', ' ')}</span></div>
+            <div><span className="text-slate-500">Submitted:</span> <span className="text-slate-300">{submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'Just now'}</span></div>
+            {submission?.complianceScore !== null && submission?.complianceScore !== undefined && (
+              <div><span className="text-slate-500">Pre-Screen Score:</span> <span className="text-slate-300 font-semibold">{submission.complianceScore}%</span></div>
+            )}
           </div>
 
-          <div className="pt-4 flex justify-center space-x-3">
+          <div className="pt-4 flex justify-center gap-3">
             {onBackToDashboard && (
               <button
                 type="button"
@@ -1195,6 +1317,8 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
           </div>
         </div>
       )}
+
+
 
       {/* ─────────────────────────────────────────────────────────────────────────────
           SCREEN 6a / 6b: Rejection / Approval State
