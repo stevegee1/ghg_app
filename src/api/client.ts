@@ -768,6 +768,134 @@ export const api = {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
   },
+
+  async applyFulfillmentPartner(params: {
+    companyName: string;
+    workEmail: string;
+    countryCode: string;
+    regionOfOperation: string;
+    capabilities: string[];
+    monthlyCapacityUnits: string;
+    certifications: string[];
+    message?: string;
+  }): Promise<{ success: boolean; applicationId: string; message: string }> {
+    const res = await fetch('/api/partners/fulfillment/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async applyCharityPartner(params: {
+    orgName: string;
+    workEmail: string;
+    countryCode: string;
+    registrationNumber?: string;
+    orgType: string;
+    focusAreas: string[];
+    annualReportUrl?: string;
+    website?: string;
+    message?: string;
+  }): Promise<{ success: boolean; applicationId: string; message: string }> {
+    const res = await fetch('/api/partners/charity/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminFulfillmentPartners(token: string, status?: string): Promise<any> {
+    const query = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await fetch(`/api/admin/partners/fulfillment${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminCharityPartners(token: string, status?: string): Promise<any> {
+    const query = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await fetch(`/api/admin/partners/charity${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async updateAdminFulfillmentPartner(
+    token: string,
+    id: string,
+    params: { status?: string; reviewNotes?: string }
+  ): Promise<any> {
+    const res = await fetch(`/api/admin/partners/fulfillment/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async updateAdminCharityPartner(
+    token: string,
+    id: string,
+    params: { status?: string; reviewNotes?: string }
+  ): Promise<any> {
+    const res = await fetch(`/api/admin/partners/charity/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async verifyEmail(token: string): Promise<{ success: boolean; message: string; token: string; user: any }> {
+    const res = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async resendVerificationEmail(email?: string, token?: string): Promise<{ success: boolean; message: string }> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch('/api/auth/resend-verification', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(email ? { email } : {}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getOrderSummary(params: { sessionId?: string; txId?: string }): Promise<any> {
+    const query = new URLSearchParams();
+    if (params.sessionId) query.set('session_id', params.sessionId);
+    if (params.txId) query.set('tx_id', params.txId);
+    const res = await fetch(`/api/checkout/order-summary?${query.toString()}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
 };
+
 
 

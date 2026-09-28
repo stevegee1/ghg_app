@@ -211,6 +211,11 @@ const ISO_FRAMEWORK = {
 // TIER DEFINITIONS (must match custom-keepsake.route.ts /api/preparation/pricing)
 // ─────────────────────────────────────────────────────────────────────────────
 const TIERS: Record<string, { name: string; grossAmountCents: number; currency: string }> = {
+  TIER_STATUTORY_READINESS: {
+    name: 'Statutory ISO Audit Readiness & Partner License',
+    grossAmountCents: 20000, // £200.00
+    currency: 'GBP',
+  },
   TIER_1_READINESS: {
     name: 'Single-Site Remote Readiness (ISO 14001 / ISO 50001 / ISO 19011:2026)',
     grossAmountCents: 125000, // £1,250
@@ -275,9 +280,20 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
       ? selectedFrameworks
       : ['ISO_14064_1', 'UK_SECR'];
 
-    // Calculate initial conformance score
-    const totalAnswered = answers.filter((a) => a.answer && a.answer.trim().length > 0).length;
-    const initialScore = Math.min(100, Math.round((totalAnswered / Math.max(answers.length, 1)) * 100));
+    // ─────────────────────────────────────────────────────────────────────────────
+    // LIVE STATUTORY READINESS ENGINE: AI AUDIT REVIEW & 80% THRESHOLD (ISO 19011:2026)
+    // ─────────────────────────────────────────────────────────────────────────────
+    const { AiAuditReviewer } = await import('../services/review-pipeline/ai-audit-reviewer.service');
+    const reviewer = new AiAuditReviewer(prisma);
+    const evaluation = await reviewer.evaluateIsoSubmission({
+      licenseeName: user.name || user.email || 'Licensee Account',
+      selectedFrameworks: frameworks,
+      answers,
+      evidenceFileNames: answers.filter(a => a.answer && (a.answer.includes('.pdf') || a.answer.includes('.xlsx') || a.answer.includes('.csv'))).map(a => a.answer),
+    });
+
+    const isAuditReady = evaluation.targetStatus === 'AUDIT_READY' && evaluation.complianceScore >= 80;
+    const resolvedStatus = isAuditReady ? IsoReadinessStatus.AUDIT_READY : IsoReadinessStatus.REVISION_REQUIRED;
 
     try {
       const submission = await runWithRls(prisma, user, async (tx) => {
@@ -290,7 +306,7 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
           existing = await tx.isoReadinessSubmission.findFirst({
             where: {
               licenseeId: user.licenseeId,
-              status: { in: [IsoReadinessStatus.SUBMITTED, IsoReadinessStatus.UNDER_REVIEW, IsoReadinessStatus.REVISION_REQUIRED] },
+              status: { in: [IsoReadinessStatus.SUBMITTED, IsoReadinessStatus.UNDER_REVIEW, IsoReadinessStatus.AUDIT_READY, IsoReadinessStatus.REVISION_REQUIRED] },
               paidAt: null,
             },
             orderBy: { createdAt: 'desc' },
@@ -304,8 +320,10 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
               answers,
               tierSelected: tier,
               selectedFrameworks: frameworks,
-              complianceScore: initialScore,
-              status: IsoReadinessStatus.SUBMITTED,
+              complianceScore: evaluation.complianceScore,
+              status: resolvedStatus,
+              reviewerNotes: evaluation.reviewerNotes,
+              auditReadyAt: isAuditReady ? new Date() : null,
               updatedAt: new Date(),
             },
           });
@@ -316,8 +334,10 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
               answers,
               tierSelected: tier,
               selectedFrameworks: frameworks,
-              complianceScore: initialScore,
-              status: IsoReadinessStatus.SUBMITTED,
+              complianceScore: evaluation.complianceScore,
+              status: resolvedStatus,
+              reviewerNotes: evaluation.reviewerNotes,
+              auditReadyAt: isAuditReady ? new Date() : null,
             },
           });
         }
@@ -327,10 +347,15 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
         success: true,
         submissionId: submission.id,
         status: submission.status,
-        complianceScore: initialScore,
+        complianceScore: evaluation.complianceScore,
+        reviewerNotes: evaluation.reviewerNotes,
+        clauseFindings: evaluation.clauseFindings,
+        reviewedBy: evaluation.reviewedBy,
         tierSelected: tier,
         selectedFrameworks: frameworks,
-        message: 'Compliance assessment submitted. Pending auditor verification.',
+        message: isAuditReady
+          ? 'Statutory compliance assessment verified AUDIT-READY under ISO 19011:2026.'
+          : 'Compliance assessment submitted. Revision required to achieve 80% statutory threshold.',
       });
     } catch (err: any) {
       console.error('[ISO READINESS SUBMIT ERROR]', err);
@@ -426,15 +451,19 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
       return res.status(404).json({ error: 'Submission not found or access denied.' });
     }
 
-    // Gate 1: Check audit-ready status
+    // Gate 1: Check audit-ready status (80% minimum statutory conformance threshold)
+    const isPassing = (submission.complianceScore ?? 0) >= 80;
     if (
       submission.status !== IsoReadinessStatus.AUDIT_READY &&
       submission.status !== IsoReadinessStatus.APPROVED &&
+      !(submission.status === IsoReadinessStatus.SUBMITTED && isPassing) &&
       user.role !== 'ADMIN'
     ) {
       return res.status(403).json({
-        error: 'Audit diagnostic must be approved (AUDIT_READY) before initiating licensing payment.',
+        error: 'Statutory conformance threshold not attained. Submissions require a minimum 80% audit conformance score under ISO 19011:2026 to unlock Stripe checkout.',
         currentStatus: submission.status,
+        complianceScore: submission.complianceScore,
+        requiredThreshold: 80,
         code: 'AUDIT_NOT_READY',
       });
     }
@@ -502,6 +531,40 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
 
     try {
+      const sessionId = (req.query.session_id as string) || undefined;
+      if (sessionId && (checkoutService as any)?.stripe) {
+        try {
+          const stripe = (checkoutService as any).stripe;
+          const session = await stripe.checkout.sessions.retrieve(sessionId);
+          if (session && session.payment_status === 'paid') {
+            await runWithRls(prisma, { role: 'ADMIN', licenseeId: '' }, async (tx) => {
+              const subToUpdate = await tx.isoReadinessSubmission.findFirst({
+                where: {
+                  OR: [
+                    { stripeSessionId: sessionId },
+                    ...(session.metadata?.submissionId ? [{ id: session.metadata.submissionId }] : []),
+                    { licenseeId },
+                  ],
+                },
+                orderBy: { createdAt: 'desc' },
+              });
+              if (subToUpdate && !subToUpdate.paidAt) {
+                await tx.isoReadinessSubmission.update({
+                  where: { id: subToUpdate.id },
+                  data: {
+                    paidAt: new Date(),
+                    status: IsoReadinessStatus.APPROVED,
+                    stripeSessionId: sessionId,
+                  },
+                });
+              }
+            });
+          }
+        } catch (sErr: any) {
+          console.warn('[ISO STATUS RECONCILIATION WARN]', sErr?.message);
+        }
+      }
+
       const submissions = await runWithRls(prisma, user, async (tx) => {
         return tx.isoReadinessSubmission.findMany({
           where: { licenseeId },

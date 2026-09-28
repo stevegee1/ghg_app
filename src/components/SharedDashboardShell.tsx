@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 
 export interface ActivityItem {
   id: string;
@@ -71,13 +72,29 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   isAdminViewing = false,
   onNavigateWorkflow,
 }) => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
 
   const [data, setData] = useState<ClientDashboardData | null>(initialData || null);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<boolean>(false);
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
+  const [resendingEmail, setResendingEmail] = useState<boolean>(false);
+
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+    setResendingEmail(true);
+    setResendStatus(null);
+    try {
+      const res = await api.resendVerificationEmail(user.email, token || undefined);
+      setResendStatus(res.message || 'Verification link sent to your work email.');
+    } catch (err: any) {
+      setResendStatus(err.message || 'Failed to dispatch verification email.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -105,11 +122,8 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
 
         const json = await res.json();
         if (isMounted) {
-          if (json.success && json.dashboard) {
-            setData(json.dashboard);
-          } else {
-            setData(json);
-          }
+          const dashboardData = json.dashboard ? json.dashboard : (json.profile ? json : null);
+          setData(dashboardData);
         }
       } catch (err: any) {
         if (isMounted) {
@@ -174,14 +188,102 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
     );
   }
 
-  const { profile, auditCards, recentActivity, credentials, telemetryApi } = data;
+  const profile = data?.profile || {
+    userId: '',
+    email: '',
+    name: 'Authorized Entity',
+    organizationName: 'Authorized Entity',
+    logoUrl: null,
+    accountRoles: ['AUDIT_CLIENT'] as ('AUDIT_CLIENT' | 'CHARITY_PARTNER' | 'MERCH_BUYER')[],
+  };
+  const orgName = profile.organizationName || profile.name || 'Authorized Entity';
+  const orgInitials = (orgName.slice(0, 2) || 'AE').toUpperCase();
+  const accountRoles = Array.isArray(profile.accountRoles) ? profile.accountRoles : ['AUDIT_CLIENT'];
+  const auditCards = data?.auditCards || {
+    carbon: { activeSubmissions: 0, approvedBadges: 0, latestDraftId: null },
+    job: { activeSubmissions: 0, approvedBadges: 0, latestDraftId: null },
+  };
+  const recentActivity = Array.isArray(data?.recentActivity) ? data.recentActivity : [];
+  const credentials = Array.isArray(data?.credentials) ? data.credentials : [];
+  const telemetryApi = data?.telemetryApi || null;
 
   return (
     <div className="shared-dash-container">
+      {/* Unverified Work Email Security Notice */}
+      {user && user.emailVerified === false && (
+        <div
+          role="alert"
+          style={{
+            padding: '0.85rem 1.25rem',
+            backgroundColor: '#111726',
+            border: '1px solid rgba(255, 45, 141, 0.4)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '260px', flex: 1 }}>
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#ff2d8d',
+                display: 'inline-block',
+                boxShadow: '0 0 10px #ff2d8d',
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ fontSize: '0.825rem', color: '#e2e8f0', lineHeight: 1.4 }}>
+              <strong>Unverified Work Email:</strong> Verification link sent to <strong>{user.email}</strong>. Verify your address to activate full audit signing credentials.
+              {resendStatus && (
+                <span style={{ display: 'block', color: '#ff2d8d', marginTop: '0.2rem', fontWeight: 600 }}>
+                  {resendStatus}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendingEmail}
+              style={{
+                padding: '0.45rem 0.85rem',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(255, 45, 141, 0.15)',
+                border: '1px solid #ff2d8d',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: resendingEmail ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {resendingEmail ? 'Sending...' : 'Resend Verification Email'}
+            </button>
+            <Link
+              to="/verify-email"
+              style={{
+                fontSize: '0.78rem',
+                color: '#94a3b8',
+                textDecoration: 'none',
+              }}
+            >
+              Help &amp; Token Input
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Admin Inspection Banner */}
       {isAdminViewing && (
         <div style={{ padding: '0.75rem 1.25rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', color: '#fcd34d', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>Administrator Inspection Mode: Viewing <strong>{profile.organizationName}</strong> in read-only tenant view.</span>
+          <span>Administrator Inspection Mode: Viewing <strong>{orgName}</strong> in read-only tenant view.</span>
           <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', padding: '0.15rem 0.5rem', background: 'rgba(245, 158, 11, 0.2)', borderRadius: '4px', border: '1px solid rgba(245, 158, 11, 0.4)' }}>Read Only</span>
         </div>
       )}
@@ -192,15 +294,15 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
         <div className="shared-dash-profile-row">
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
             <div className="shared-dash-avatar">
-              {profile.organizationName.slice(0, 2).toUpperCase()}
+              {orgInitials}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <h1 style={{ fontSize: '1.65rem', fontWeight: 700, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
-                  {profile.organizationName}
+                  {orgName}
                 </h1>
                 <div className="shared-dash-roles-row">
-                  {profile.accountRoles.map((role) => {
+                  {accountRoles.map((role) => {
                     if (role === 'AUDIT_CLIENT') {
                       return (
                         <span key={role} className="shared-dash-badge-client">
@@ -227,7 +329,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
                 </div>
               </div>
               <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'var(--font-mono, monospace)', margin: '0.35rem 0 0 0' }}>
-                {profile.email} &bull; ID: {profile.userId.slice(0, 10)}
+                {profile.email || 'licensee@ghglogodrop.com'} &bull; ID: {profile.userId ? profile.userId.slice(0, 10) : 'VERIFIED'}
               </p>
             </div>
           </div>

@@ -110,29 +110,57 @@ async function main() {
     const saltRounds = isProd ? 12 : 10;
     const passwordHash = await bcrypt.hash(adminPassword, saltRounds);
 
-    const seededAdmin = await prisma.portalUser.upsert({
-      where: { email: adminEmail },
-      update: {
-        role: PortalRole.ADMIN,
-        passwordHash,
-      },
-      create: {
-        id: 'usr_admin_001',
-        email: adminEmail,
-        passwordHash,
-        role: PortalRole.ADMIN,
-      },
-    });
+    try {
+      const existingByEmail = await prisma.portalUser.findUnique({
+        where: { email: adminEmail },
+      });
 
-    if (generatedOneTimeBootstrap) {
-      console.log('════════════════════════════════════════════════════════════════════════════');
-      console.log('🔐 [ENTERPRISE BOOTSTRAP] Production Lead Auditor Initialized via CSPRNG:');
-      console.log(`   Admin Email:    ${adminEmail}`);
-      console.log(`   One-Time Token: ${adminPassword}`);
-      console.log('   Action:         Set ADMIN_PASSWORD in Railway Variables to pin your own.');
-      console.log('════════════════════════════════════════════════════════════════════════════');
-    } else {
-      console.log(`✅ Production Administrator account verified for: ${adminEmail}`);
+      if (existingByEmail) {
+        await prisma.portalUser.update({
+          where: { id: existingByEmail.id },
+          data: {
+            role: PortalRole.ADMIN,
+            passwordHash,
+          },
+        });
+      } else {
+        const existingById = await prisma.portalUser.findUnique({
+          where: { id: 'usr_admin_001' },
+        });
+
+        if (existingById) {
+          await prisma.portalUser.update({
+            where: { id: 'usr_admin_001' },
+            data: {
+              email: adminEmail,
+              role: PortalRole.ADMIN,
+              passwordHash,
+            },
+          });
+        } else {
+          await prisma.portalUser.create({
+            data: {
+              id: 'usr_admin_001',
+              email: adminEmail,
+              passwordHash,
+              role: PortalRole.ADMIN,
+            },
+          });
+        }
+      }
+
+      if (generatedOneTimeBootstrap) {
+        console.log('════════════════════════════════════════════════════════════════════════════');
+        console.log('🔐 [ENTERPRISE BOOTSTRAP] Production Lead Auditor Initialized via CSPRNG:');
+        console.log(`   Admin Email:    ${adminEmail}`);
+        console.log(`   One-Time Token: ${adminPassword}`);
+        console.log('   Action:         Set ADMIN_PASSWORD in Railway Variables to pin your own.');
+        console.log('════════════════════════════════════════════════════════════════════════════');
+      } else {
+        console.log(`✅ Production Administrator account verified for: ${adminEmail}`);
+      }
+    } catch (adminErr: any) {
+      console.warn('⚠️  [ADMIN BOOTSTRAP WARNING] Non-blocking admin init notice:', adminErr?.message || adminErr);
     }
 
     // 4. Ensure platform default split configuration exists
@@ -157,7 +185,7 @@ async function main() {
           { charityId: 'charity_youth_sport', bps: 3334 },
         ],
         isActive: true,
-        changedByUserId: seededAdmin.id,
+        changedByUserId: 'usr_admin_001',
       },
     });
 

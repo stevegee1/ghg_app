@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { validateWorkEmail } from '../utils/emailValidation';
 
 export const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -23,6 +24,13 @@ export const SignUpPage: React.FC = () => {
       setError('Please agree to the Terms of Service and Privacy Policy.');
       return;
     }
+
+    const emailValidation = validateWorkEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || 'Please provide an official corporate or organizational work email address.');
+      return;
+    }
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;

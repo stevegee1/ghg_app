@@ -1,0 +1,266 @@
+import { Router, Request, Response } from 'express';
+import { PrismaClient, FulfillmentPartnerStatus, CharityPartnerStatus } from '@prisma/client';
+import { authenticateToken } from '../middleware/auth.middleware';
+import { validateWorkEmail } from '../utils/emailValidation';
+
+export function createPartnerNetworkRouter(prisma: PrismaClient): Router {
+  const router = Router();
+
+  /**
+   * POST /api/partners/fulfillment/apply
+   * Public - submit an application to join the global sustainable fulfillment partner network.
+   */
+  router.post('/api/partners/fulfillment/apply', async (req: Request, res: Response) => {
+    try {
+      const {
+        companyName,
+        workEmail,
+        countryCode,
+        regionOfOperation,
+        capabilities,
+        monthlyCapacityUnits,
+        certifications,
+        message,
+      } = req.body;
+
+      if (!companyName || !workEmail || !countryCode || !regionOfOperation || !monthlyCapacityUnits) {
+        return res.status(400).json({
+          error: 'Company name, work email, country code, region of operation, and monthly capacity are required.',
+        });
+      }
+
+      const emailCheck = validateWorkEmail(workEmail);
+      if (!emailCheck.isValid) {
+        return res.status(400).json({
+          error: emailCheck.error || 'A valid corporate work email is required.',
+        });
+      }
+
+      const validCapabilities = Array.isArray(capabilities)
+        ? capabilities.map((c: any) => String(c).trim()).filter(Boolean)
+        : [];
+
+      const validCertifications = Array.isArray(certifications)
+        ? certifications.map((c: any) => String(c).trim()).filter(Boolean)
+        : [];
+
+      const application = await prisma.fulfillmentPartnerApplication.create({
+        data: {
+          companyName: String(companyName).trim(),
+          workEmail: String(workEmail).trim().toLowerCase(),
+          countryCode: String(countryCode).trim().toUpperCase(),
+          regionOfOperation: String(regionOfOperation).trim(),
+          capabilities: validCapabilities,
+          monthlyCapacityUnits: String(monthlyCapacityUnits).trim(),
+          certifications: validCertifications,
+          message: message ? String(message).trim() : null,
+          ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || null,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        applicationId: application.id,
+        message: 'Your partner application has been recorded. Our supply chain operations team will review your dossier and contact your work email within 2 business days to schedule an introductory technical evaluation.',
+      });
+    } catch (err: any) {
+      console.error('[FULFILLMENT PARTNER APPLY POST]', err);
+      return res.status(500).json({ error: 'Failed to process partner application. Please try again.' });
+    }
+  });
+
+  /**
+   * POST /api/partners/charity/apply
+   * Public - submit an application for an environmental or community NGO/charity to receive verified split donations.
+   */
+  router.post('/api/partners/charity/apply', async (req: Request, res: Response) => {
+    try {
+      const {
+        orgName,
+        workEmail,
+        countryCode,
+        registrationNumber,
+        orgType,
+        focusAreas,
+        annualReportUrl,
+        website,
+        message,
+      } = req.body;
+
+      if (!orgName || !workEmail || !countryCode || !orgType) {
+        return res.status(400).json({
+          error: 'Organization name, work email, country code, and organization type are required.',
+        });
+      }
+
+      const emailCheck = validateWorkEmail(workEmail);
+      if (!emailCheck.isValid) {
+        return res.status(400).json({
+          error: emailCheck.error || 'A valid official organization email is required.',
+        });
+      }
+
+      const validFocusAreas = Array.isArray(focusAreas)
+        ? focusAreas.map((f: any) => String(f).trim()).filter(Boolean)
+        : [];
+
+      const application = await prisma.charityPartnerApplication.create({
+        data: {
+          orgName: String(orgName).trim(),
+          workEmail: String(workEmail).trim().toLowerCase(),
+          countryCode: String(countryCode).trim().toUpperCase(),
+          registrationNumber: registrationNumber ? String(registrationNumber).trim() : null,
+          orgType: String(orgType).trim(),
+          focusAreas: validFocusAreas,
+          annualReportUrl: annualReportUrl ? String(annualReportUrl).trim() : null,
+          website: website ? String(website).trim() : null,
+          message: message ? String(message).trim() : null,
+          ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || null,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        applicationId: application.id,
+        message: 'Your organization application has been submitted successfully. Our compliance and governance board will review your credentials and be in touch within 3 business days.',
+      });
+    } catch (err: any) {
+      console.error('[CHARITY PARTNER APPLY POST]', err);
+      return res.status(500).json({ error: 'Failed to submit organization application. Please try again.' });
+    }
+  });
+
+  /**
+   * GET /api/admin/partners/fulfillment
+   * Admin only - view list of fulfillment partner applications.
+   */
+  router.get('/api/admin/partners/fulfillment', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Access denied: Administrator privileges required.' });
+      }
+
+      const { status } = req.query;
+      const where: any = {};
+      if (status && status !== 'ALL') {
+        where.status = status as FulfillmentPartnerStatus;
+      }
+
+      const applications = await prisma.fulfillmentPartnerApplication.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return res.json({ success: true, applications });
+    } catch (err: any) {
+      console.error('[ADMIN FULFILLMENT PARTNERS GET]', err);
+      return res.status(500).json({ error: 'Failed to retrieve fulfillment partner applications.' });
+    }
+  });
+
+  /**
+   * GET /api/admin/partners/charity
+   * Admin only - view list of charity partner applications.
+   */
+  router.get('/api/admin/partners/charity', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Access denied: Administrator privileges required.' });
+      }
+
+      const { status } = req.query;
+      const where: any = {};
+      if (status && status !== 'ALL') {
+        where.status = status as CharityPartnerStatus;
+      }
+
+      const applications = await prisma.charityPartnerApplication.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return res.json({ success: true, applications });
+    } catch (err: any) {
+      console.error('[ADMIN CHARITY PARTNERS GET]', err);
+      return res.status(500).json({ error: 'Failed to retrieve charity partner applications.' });
+    }
+  });
+
+  /**
+   * PATCH /api/admin/partners/fulfillment/:id
+   * Admin only - update application review status and notes.
+   */
+  router.patch('/api/admin/partners/fulfillment/:id', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Access denied: Administrator privileges required.' });
+      }
+
+      const { id } = req.params;
+      const { status, reviewNotes } = req.body;
+
+      const validStatuses = Object.values(FulfillmentPartnerStatus);
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
+      }
+
+      const updated = await prisma.fulfillmentPartnerApplication.update({
+        where: { id },
+        data: {
+          ...(status ? { status, reviewedAt: new Date() } : {}),
+          ...(reviewNotes !== undefined ? { reviewNotes: String(reviewNotes).trim() } : {}),
+        },
+      });
+
+      return res.json({ success: true, application: updated });
+    } catch (err: any) {
+      if (err.code === 'P2025') {
+        return res.status(404).json({ error: 'Application not found.' });
+      }
+      console.error('[ADMIN FULFILLMENT PARTNER PATCH]', err);
+      return res.status(500).json({ error: 'Failed to update partner application.' });
+    }
+  });
+
+  /**
+   * PATCH /api/admin/partners/charity/:id
+   * Admin only - update charity application review status and notes.
+   */
+  router.patch('/api/admin/partners/charity/:id', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Access denied: Administrator privileges required.' });
+      }
+
+      const { id } = req.params;
+      const { status, reviewNotes } = req.body;
+
+      const validStatuses = Object.values(CharityPartnerStatus);
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
+      }
+
+      const updated = await prisma.charityPartnerApplication.update({
+        where: { id },
+        data: {
+          ...(status ? { status, reviewedAt: new Date() } : {}),
+          ...(reviewNotes !== undefined ? { reviewNotes: String(reviewNotes).trim() } : {}),
+        },
+      });
+
+      return res.json({ success: true, application: updated });
+    } catch (err: any) {
+      if (err.code === 'P2025') {
+        return res.status(404).json({ error: 'Application not found.' });
+      }
+      console.error('[ADMIN CHARITY PARTNER PATCH]', err);
+      return res.status(500).json({ error: 'Failed to update charity application.' });
+    }
+  });
+
+  return router;
+}

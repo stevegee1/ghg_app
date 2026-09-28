@@ -23,55 +23,67 @@ export const OpenSeaBadge: React.FC<OpenSeaBadgeProps> = ({
         onClick={() => setShowModal(true)}
         className={`opensea-badge ${className}`}
         title="View On-Chain Digital Provenance on OpenSea"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.45rem 0.85rem',
+          borderRadius: '8px',
+          border: '1px solid rgba(255, 45, 141, 0.35)',
+          backgroundColor: 'rgba(255, 45, 141, 0.1)',
+          color: '#ffffff',
+          fontSize: '0.8125rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+        }}
       >
-        <span style={{ fontSize: '0.875rem' }}>⛵</span>
+        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ff2d8d' }} />
         <span>OpenSea Verified</span>
       </button>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setShowModal(false)} style={{ backgroundColor: 'rgba(8, 4, 12, 0.85)', backdropFilter: 'blur(8px)' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#111726', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#ffffff' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>⛵</span>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700 }}>OpenSea Digital Provenance</h3>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ff2d8d' }} />
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#ffffff' }}>OpenSea Digital Provenance</h3>
               </div>
-              <button onClick={() => setShowModal(false)} className="btn-logout" style={{ fontSize: '1rem' }}>
+              <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.1rem', cursor: 'pointer' }}>
                 ✕
               </button>
             </div>
 
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '1rem' }}>
               On-chain verifiable trademark licensing mark recorded on Ethereum Mainnet.
             </p>
 
-            <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', marginBottom: '1.25rem' }}>
+            <div style={{ backgroundColor: '#0d121c', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1rem', borderRadius: '8px', fontSize: '0.8125rem', marginBottom: '1.25rem', color: '#e2e8f0' }}>
               <div style={{ marginBottom: '0.375rem' }}>
-                <strong>Contract Address:</strong> <code>0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code>
+                <strong style={{ color: '#ffffff' }}>Contract Address:</strong> <code>0x71C7656EC7ab88b098defB751B7401B5f6d8976F</code>
               </div>
               <div style={{ marginBottom: '0.375rem' }}>
-                <strong>Token Standard:</strong> ERC-721 (Verified Trademark Mark)
+                <strong style={{ color: '#ffffff' }}>Token Standard:</strong> ERC-721 (Verified Trademark Mark)
               </div>
               <div style={{ marginBottom: '0.375rem' }}>
-                <strong>Token ID:</strong> <code>#{tokenId}</code>
+                <strong style={{ color: '#ffffff' }}>Token ID:</strong> <code>#{tokenId}</code>
               </div>
               <div>
-                <strong>Transaction Ref:</strong> <code>{transactionId}</code>
+                <strong style={{ color: '#ffffff' }}>Transaction Ref:</strong> <code>{transactionId}</code>
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button onClick={() => setShowModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+              <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#0d121c', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#ffffff', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
                 Close
               </button>
               <a
                 href={openSeaUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-opensea"
-                style={{ flex: 1, textDecoration: 'none' }}
+                style={{ flex: 1, padding: '0.75rem', backgroundColor: '#ff2d8d', color: '#ffffff', borderRadius: '8px', fontWeight: 700, textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                View on OpenSea.io ↗
+                View on OpenSea.io
               </a>
             </div>
           </div>

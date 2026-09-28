@@ -1,30 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import { validateWorkEmail, isWorkEmail } from '../utils/emailValidation';
 
-const BLOCKED_FREE_DOMAINS = new Set([
-  'gmail.com',
-  'yahoo.com',
-  'hotmail.com',
-  'outlook.com',
-  'icloud.com',
-  'aol.com',
-  'mail.com',
-  'zoho.com',
-  'protonmail.com',
-  'proton.me',
-  'yandex.com',
-  'gmx.com',
-]);
-
-export function isCorporateEmail(email: string): boolean {
-  if (!email || typeof email !== 'string') return false;
-  const parts = email.trim().toLowerCase().split('@');
-  if (parts.length !== 2) return false;
-  const domain = parts[1];
-  if (!domain || !domain.includes('.')) return false;
-  return !BLOCKED_FREE_DOMAINS.has(domain);
-}
+export const isCorporateEmail = isWorkEmail;
 
 export function createDemoBookingRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -121,15 +100,10 @@ export function createDemoBookingRouter(prisma: PrismaClient): Router {
       }
 
       const cleanEmail = workEmail.trim().toLowerCase();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(cleanEmail)) {
-        return res.status(400).json({ error: 'Invalid email format.' });
-      }
-
-      if (!allowFreeMail && !isCorporateEmail(cleanEmail)) {
+      const validation = validateWorkEmail(cleanEmail);
+      if (!validation.isValid) {
         return res.status(400).json({
-          error:
-            'Please provide an official corporate or organizational work email address (e.g., name@company.com).',
+          error: validation.error || 'Please provide an official corporate or organizational work email address (personal providers like Gmail, Yahoo, and Outlook are not permitted).',
         });
       }
 

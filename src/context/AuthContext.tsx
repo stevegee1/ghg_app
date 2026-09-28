@@ -5,6 +5,8 @@ export interface User {
   email: string;
   role: 'ADMIN' | 'PARTNER';
   licenseeId: string | null;
+  companyName?: string;
+  emailVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -44,6 +46,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Failed to persist auth token', e);
     }
   };
+
+  React.useEffect(() => {
+    if (!token) return;
+    fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        return null;
+      })
+      .then((data) => {
+        if (data?.user) {
+          setUser((prev) => {
+            const updated = { ...prev, ...data.user };
+            try {
+              localStorage.setItem('ghg_auth_user', JSON.stringify(updated));
+            } catch {
+              // Ignore storage errors
+            }
+            return updated;
+          });
+        }
+      })
+      .catch(() => {
+        // Network resilience: keep existing cached user if offline
+      });
+  }, [token]);
 
   const logout = () => {
     setToken(null);

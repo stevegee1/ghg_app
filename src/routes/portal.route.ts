@@ -344,10 +344,10 @@ export function createPortalRouter(prisma: PrismaClient): Router {
         return dashboardService.getDashboardData(targetUserId, targetLicenseeId);
       });
 
-      return res.status(200).json({ dashboard: data });
+      return res.status(200).json({ success: true, dashboard: data });
     } catch (err: any) {
       console.error('[PORTAL DASHBOARD ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to retrieve client profile dashboard data.' });
+      return res.status(500).json({ success: false, error: err.message || 'Failed to retrieve client profile dashboard data.' });
     }
   });
 

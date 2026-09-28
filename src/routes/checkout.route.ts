@@ -1,8 +1,14 @@
 import { Router, Request, Response } from 'express';
-import { VerificationSource, DeliveryType } from '@prisma/client';
+import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType } from '@prisma/client';
+import Stripe from 'stripe';
 import { CheckoutService } from '../services/checkout.service';
+import { generateOrderNumber } from './orders.route';
 
-export function createCheckoutRouter(checkoutService: CheckoutService): Router {
+export function createCheckoutRouter(
+  checkoutService: CheckoutService,
+  prisma?: PrismaClient,
+  stripe?: Stripe
+): Router {
   const router = Router();
 
   router.post('/api/checkout', async (req: Request, res: Response) => {
@@ -77,6 +83,181 @@ export function createCheckoutRouter(checkoutService: CheckoutService): Router {
     } catch (err: any) {
       console.error('[CHECKOUT SESSION ROUTE ERROR]', err);
       return res.status(500).json({ error: err.message || 'Failed to create Stripe checkout session' });
+    }
+  });
+
+  /**
+   * GET /api/checkout/order-summary
+   * Returns verified transaction provenance, reconciled settlement status,
+   * 15% statutory charity split breakdown, and live parcel tracking reference.
+   */
+  router.get('/api/checkout/order-summary', async (req: Request, res: Response) => {
+    const { session_id, tx_id } = req.query as { session_id?: string; tx_id?: string };
+
+    if (!session_id && !tx_id) {
+      return res.status(400).json({ error: 'session_id or tx_id query parameter is required.' });
+    }
+
+    if (!prisma) {
+      return res.status(500).json({ error: 'Database service not available on checkout router.' });
+    }
+
+    try {
+      let transaction: any = null;
+
+      // 1. Find transaction by tx_id
+      if (tx_id) {
+        transaction = await prisma.transaction.findUnique({
+          where: { id: tx_id },
+          include: {
+            financialSplit: {
+              include: {
+                charityAllocations: { include: { charity: true } },
+              },
+            },
+            triggerEvent: true,
+            souvenirOrder: true,
+            customKeepsakeSpec: true,
+          },
+        });
+      }
+
+      // If not found by tx_id, check stripePaymentIntentId or session metadata
+      if (!transaction && session_id && stripe) {
+        try {
+          const session = await stripe.checkout.sessions.retrieve(session_id);
+          const metaTxId = session.metadata?.transactionId;
+          const piId = typeof session.payment_intent === 'string' ? session.payment_intent : null;
+
+          if (metaTxId) {
+            transaction = await prisma.transaction.findUnique({
+              where: { id: metaTxId },
+              include: {
+                financialSplit: {
+                  include: {
+                    charityAllocations: { include: { charity: true } },
+                  },
+                },
+                triggerEvent: true,
+                souvenirOrder: true,
+                customKeepsakeSpec: true,
+              },
+            });
+          }
+
+          if (!transaction && piId) {
+            transaction = await prisma.transaction.findFirst({
+              where: { stripePaymentIntentId: piId },
+              include: {
+                financialSplit: {
+                  include: {
+                    charityAllocations: { include: { charity: true } },
+                  },
+                },
+                triggerEvent: true,
+                souvenirOrder: true,
+                customKeepsakeSpec: true,
+              },
+            });
+          }
+
+          // Reconcile status to SETTLED if Stripe confirmed payment
+          if (transaction && session.payment_status === 'paid' && transaction.status !== TransactionStatus.SETTLED) {
+            transaction = await prisma.transaction.update({
+              where: { id: transaction.id },
+              data: {
+                status: TransactionStatus.SETTLED,
+                stripePaymentIntentId: piId || transaction.stripePaymentIntentId,
+              },
+              include: {
+                financialSplit: {
+                  include: {
+                    charityAllocations: { include: { charity: true } },
+                  },
+                },
+                triggerEvent: true,
+                souvenirOrder: true,
+                customKeepsakeSpec: true,
+              },
+            });
+
+            if (transaction.financialSplit && !transaction.financialSplit.settledAt) {
+              await prisma.financialSplit.update({
+                where: { transactionId: transaction.id },
+                data: { settledAt: new Date() },
+              });
+            }
+          }
+        } catch (sErr: any) {
+          console.warn('[STRIPE SESSION RETRIEVE WARN]', sErr?.message);
+        }
+      }
+
+      if (!transaction) {
+        return res.status(404).json({ error: 'Transaction record not found.' });
+      }
+
+      // 2. Ensure SouvenirOrder exists for this transaction (order tracking)
+      let souvenirOrder = transaction.souvenirOrder;
+      if (!souvenirOrder) {
+        const orderNumber = generateOrderNumber();
+        const rawPayload = (transaction.triggerEvent?.rawPayload as any) || {};
+        const keepsakeSpec = transaction.customKeepsakeSpec;
+
+        const customerEmail = rawPayload.customerEmail || keepsakeSpec?.customerEmail || 'orders@ghgemissionlogs.com';
+        const customerName = rawPayload.customerName || keepsakeSpec?.customerName || 'Verified Supporter';
+        const eventName = keepsakeSpec
+          ? `${keepsakeSpec.sportType || 'Official'} Keepsake: ${keepsakeSpec.frenzyClub || keepsakeSpec.garmentModel}`
+          : (rawPayload.itemTitle || 'NFTY LOGS® Climate Action Apparel');
+
+        const shippingAddress = rawPayload.shippingAddress || keepsakeSpec?.shippingAddress || null;
+
+        souvenirOrder = await prisma.souvenirOrder.create({
+          data: {
+            orderNumber,
+            customerEmail,
+            customerName,
+            eventCategory: 'SPORTS',
+            eventName,
+            logoDropCount: 1,
+            itemType: 'GHG_MERCH',
+            shippingAddress,
+            status: transaction.status === TransactionStatus.SETTLED ? 'SPLIT_DISBURSED' : 'ORDER_PLACED',
+            grossAmountCents: transaction.grossAmountCents,
+            licensorCents: transaction.financialSplit?.licensorRoyaltyCents || Math.round(transaction.grossAmountCents * 0.85),
+            charityCents: transaction.financialSplit?.charityGiftCents || Math.round(transaction.grossAmountCents * 0.15),
+            transactionId: transaction.id,
+            stripeSessionId: session_id || null,
+          },
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        orderNumber: souvenirOrder.orderNumber,
+        transactionId: transaction.id,
+        status: transaction.status,
+        orderStatus: souvenirOrder.status,
+        itemTitle: souvenirOrder.eventName,
+        grossAmountCents: transaction.grossAmountCents,
+        licensorRoyaltyCents: souvenirOrder.licensorCents,
+        charityGiftCents: souvenirOrder.charityCents,
+        currency: transaction.currency || 'GBP',
+        createdAt: transaction.createdAt,
+        shippingAddress: souvenirOrder.shippingAddress,
+        courierName: souvenirOrder.courierName || 'Royal Mail Tracked 48 / DHL Express',
+        trackingNumber: souvenirOrder.trackingNumber || null,
+        trackingUrl: `/track/${souvenirOrder.orderNumber}`,
+        invoicePdfUrl: `/api/orders/${souvenirOrder.orderNumber}/invoice-pdf`,
+        charityAllocations: transaction.financialSplit?.charityAllocations?.map((a: any) => ({
+          charityName: a.charity.name,
+          amountCents: a.amountCents,
+          transferred: !!a.stripeTransferId,
+        })) || [],
+      });
+    } catch (err: any) {
+      console.error('[ORDER SUMMARY ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve order summary.' });
     }
   });
 

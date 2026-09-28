@@ -22,7 +22,8 @@ export const Layout: React.FC = () => {
     !location.pathname.includes('/login')
   );
 
-  const userInitial = (user?.email?.[0] || 'U').toUpperCase();
+  const displayName = user?.companyName || (user?.email ? user.email.split('@')[0] : 'User');
+  const userInitial = (user?.companyName?.[0] || user?.email?.[0] || 'U').toUpperCase();
 
   const copyAccountId = () => {
     if (user?.licenseeId) {
@@ -30,6 +31,17 @@ export const Layout: React.FC = () => {
       setCopiedId(true);
       setTimeout(() => setCopiedId(false), 2000);
     }
+  };
+
+  // Solutions URLs lead to login if no active session, else user's dashboard
+  const getSolutionPath = (portalPath = '/portal') => {
+    if (!isAuthenticated) {
+      return '/portal/login';
+    }
+    if (isAdmin) {
+      return '/admin';
+    }
+    return portalPath;
   };
 
   // Close menus on route changes
@@ -162,11 +174,11 @@ export const Layout: React.FC = () => {
                   <div className="mobile-accordion-content mobile-only-solutions">
                     <div>
                       <div className="mobile-subheading">01 Software</div>
-                      <Link to="/portal?tab=telemetry" className="mobile-sublink" onClick={closeDropdowns}>
+                      <Link to={getSolutionPath('/portal?tab=telemetry')} className="mobile-sublink" onClick={closeDropdowns}>
                         <div className="mobile-sublink-title">Telemetry Ingestion</div>
                         <div className="mobile-sublink-desc">Real-time IoT & meter streams</div>
                       </Link>
-                      <Link to="/portal?tab=telemetry" className="mobile-sublink" onClick={closeDropdowns}>
+                      <Link to={getSolutionPath('/portal?tab=telemetry')} className="mobile-sublink" onClick={closeDropdowns}>
                         <div className="mobile-sublink-title">Calibration Gatekeeper</div>
                         <div className="mobile-sublink-desc">Tamper-resistant screening</div>
                       </Link>
@@ -174,11 +186,11 @@ export const Layout: React.FC = () => {
 
                     <div>
                       <div className="mobile-subheading">02 Assurance</div>
-                      <Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="mobile-sublink" onClick={closeDropdowns}>
+                      <Link to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')} className="mobile-sublink" onClick={closeDropdowns}>
                         <div className="mobile-sublink-title">ISO Diagnostic Scorecard</div>
                         <div className="mobile-sublink-desc">5-pillar readiness evaluation</div>
                       </Link>
-                      <Link to="/job-reporting" className="mobile-sublink" onClick={closeDropdowns}>
+                      <Link to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')} className="mobile-sublink" onClick={closeDropdowns}>
                         <div className="mobile-sublink-title">Section 106 Workforce</div>
                         <div className="mobile-sublink-desc">Council planning audit dossiers</div>
                       </Link>
@@ -186,11 +198,11 @@ export const Layout: React.FC = () => {
 
                     <div>
                       <div className="mobile-subheading">03 Provenance</div>
-                      <Link to="/portal?tab=nft" className="mobile-sublink" onClick={closeDropdowns}>
+                      <Link to={getSolutionPath('/portal?tab=nft')} className="mobile-sublink" onClick={closeDropdowns}>
                         <div className="mobile-sublink-title">Polygon ERC-1155 NFT</div>
                         <div className="mobile-sublink-desc">On-chain tamper-evident warranty</div>
                       </Link>
-                      <Link to="/portal?tab=studio" className="mobile-sublink" onClick={closeDropdowns}>
+                      <Link to={getSolutionPath('/portal?tab=studio')} className="mobile-sublink" onClick={closeDropdowns}>
                         <div className="mobile-sublink-title">Dual-Logo Studio</div>
                         <div className="mobile-sublink-desc">Co-brand statutory credentials</div>
                       </Link>
@@ -220,7 +232,7 @@ export const Layout: React.FC = () => {
 
                         <ul className="mega-link-list">
                           <li>
-                            <Link to="/portal?tab=telemetry" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Telemetry Ingestion</span>
                               </div>
@@ -228,7 +240,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/portal?tab=telemetry" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Calibration Gatekeeper</span>
                               </div>
@@ -236,7 +248,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/portal?tab=telemetry" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Anomaly Lock Engine</span>
                               </div>
@@ -244,7 +256,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/portal?tab=telemetry" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Telemetry Ingestion API</span>
                               </div>
@@ -270,7 +282,7 @@ export const Layout: React.FC = () => {
 
                         <ul className="mega-link-list">
                           <li>
-                            <Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>ISO 14001 / 50001 Diagnostic</span>
                               </div>
@@ -278,7 +290,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/job-reporting" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Section 106 Workforce</span>
                               </div>
@@ -286,7 +298,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/portal?tab=evidence" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=evidence')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Executive Audit Dossiers</span>
                               </div>
@@ -294,7 +306,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/licensing" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=studio')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Statutory Trademark Licensing</span>
                               </div>
@@ -302,8 +314,8 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/licensing" className="mega-item-link" onClick={closeDropdowns} style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
-                              <div className="mega-item-name" style={{ color: 'var(--accent-primary)' }}>
+                            <Link to={getSolutionPath('/portal')} className="mega-item-link" onClick={closeDropdowns} style={{ fontWeight: 600 }}>
+                              <div className="mega-item-name">
                                 <span>See all assurance →</span>
                               </div>
                             </Link>
@@ -326,7 +338,7 @@ export const Layout: React.FC = () => {
 
                         <ul className="mega-link-list">
                           <li>
-                            <Link to="/portal?tab=nft" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=nft')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Polygon ERC-1155 NFT</span>
                               </div>
@@ -334,7 +346,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/portal?tab=studio" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=studio')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Dual-Logo Studio</span>
                               </div>
@@ -342,7 +354,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/merch" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=transactions')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>15% Relief Endowment</span>
                               </div>
@@ -350,7 +362,7 @@ export const Layout: React.FC = () => {
                             </Link>
                           </li>
                           <li>
-                            <Link to="/transparency" className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=evidence')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
                                 <span>Transparency Ledger</span>
                               </div>
@@ -367,7 +379,7 @@ export const Layout: React.FC = () => {
                           <ul className="mega-intent-list">
                             <li>
                               <Link
-                                to="/portal?scope=CARBON_EMISSION&tab=diagnostic"
+                                to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')}
                                 className="mega-intent-item"
                                 onClick={closeDropdowns}
                               >
@@ -377,7 +389,7 @@ export const Layout: React.FC = () => {
                             </li>
                             <li>
                               <Link
-                                to="/portal?scope=JOB_REPORTING&tab=diagnostic"
+                                to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')}
                                 className="mega-intent-item"
                                 onClick={closeDropdowns}
                               >
@@ -387,7 +399,7 @@ export const Layout: React.FC = () => {
                             </li>
                             <li>
                               <Link
-                                to="/portal?tab=telemetry"
+                                to={getSolutionPath('/portal?tab=telemetry')}
                                 className="mega-intent-item"
                                 onClick={closeDropdowns}
                               >
@@ -397,7 +409,7 @@ export const Layout: React.FC = () => {
                             </li>
                             <li>
                               <Link
-                                to="/portal?tab=nft"
+                                to={getSolutionPath('/portal?tab=nft')}
                                 className="mega-intent-item"
                                 onClick={closeDropdowns}
                               >
@@ -418,19 +430,19 @@ export const Layout: React.FC = () => {
                     {/* Bottom Ribbon */}
                     <div className="mega-menu-ribbon">
                       <div className="mega-ribbon-title">
-                        BY REPORTING REQUIREMENT — CONTINUOUS CLIMATE TELEMETRY & SECTION 106 WORKFORCE COMBINED
+                        BY REPORTING REQUIREMENT - CONTINUOUS CLIMATE TELEMETRY & SECTION 106 WORKFORCE COMBINED
                       </div>
                       <div className="mega-ribbon-chips">
-                        <Link to="/licensing" className="mega-ribbon-chip" onClick={closeDropdowns}>
+                        <Link to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')} className="mega-ribbon-chip" onClick={closeDropdowns}>
                           ISO 14001 / 50001
                         </Link>
-                        <Link to="/portal?tab=telemetry" className="mega-ribbon-chip" onClick={closeDropdowns}>
+                        <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-ribbon-chip" onClick={closeDropdowns}>
                           Scope 1-3 GHG Protocol
                         </Link>
-                        <Link to="/job-reporting" className="mega-ribbon-chip" onClick={closeDropdowns}>
+                        <Link to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')} className="mega-ribbon-chip" onClick={closeDropdowns}>
                           Section 106 Planning Act
                         </Link>
-                        <Link to="/transparency" className="mega-ribbon-chip" onClick={closeDropdowns}>
+                        <Link to={getSolutionPath('/portal?tab=studio')} className="mega-ribbon-chip" onClick={closeDropdowns}>
                           Statutory Registered Trade Mark
                         </Link>
                       </div>
@@ -443,7 +455,7 @@ export const Layout: React.FC = () => {
               {/* Direct Nav Links Matching User Specification */}
               <li>
                 <NavLink
-                  to="/job-reporting"
+                  to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')}
                   className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
                   onClick={closeDropdowns}
                 >
@@ -452,7 +464,7 @@ export const Layout: React.FC = () => {
               </li>
               <li>
                 <NavLink
-                  to="/portal?scope=CARBON_EMISSION&tab=diagnostic"
+                  to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')}
                   className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
                   onClick={closeDropdowns}
                 >
@@ -486,15 +498,7 @@ export const Layout: React.FC = () => {
                   BLOGS
                 </NavLink>
               </li>
-              <li>
-                <NavLink
-                  to="/about"
-                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
-                  onClick={closeDropdowns}
-                >
-                  ABOUT
-                </NavLink>
-              </li>
+
 
               {/* Mobile Only: Auth Links */}
               <li className="mobile-only-auth">
@@ -506,11 +510,16 @@ export const Layout: React.FC = () => {
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {user?.companyName || (isAdmin ? 'GHG Platform Administration' : user?.email)}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {user?.email}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                          {user?.licenseeId}
-                        </div>
+                        {user?.licenseeId && (
+                          <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                            ID: {user.licenseeId}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
@@ -598,9 +607,9 @@ export const Layout: React.FC = () => {
                     type="button"
                     className={`google-avatar-btn ${accountMenuOpen ? 'active' : ''}`}
                     onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                    aria-label={`Google Account: ${user?.email}`}
+                    aria-label={`Account: ${user?.companyName || user?.email}`}
                     aria-expanded={accountMenuOpen}
-                    title={user?.email || 'Account Profile'}
+                    title={user?.companyName ? `${user.companyName} (${user.email})` : (user?.email || 'Account Profile')}
                   >
                     <div className="google-avatar-circle">{userInitial}</div>
                   </button>
@@ -610,7 +619,12 @@ export const Layout: React.FC = () => {
                       <div className="google-popover-header">
                         <div className="google-popover-avatar">{userInitial}</div>
                         <div className="google-popover-identity">
-                          <div className="google-popover-email">{user?.email}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: 1.3 }}>
+                            {user?.companyName || (isAdmin ? 'GHG Platform Administration' : user?.email)}
+                          </div>
+                          <div className="google-popover-email" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            {user?.email}
+                          </div>
                           {user?.licenseeId && (
                             <div className="google-popover-client-id">
                               <span>Client ID: </span>
@@ -621,12 +635,12 @@ export const Layout: React.FC = () => {
                                 className="google-copy-btn"
                                 title="Copy Client ID"
                               >
-                                {copiedId ? '✓' : '📋'}
+                                {copiedId ? '✓' : 'Copy'}
                               </button>
                             </div>
                           )}
                           <div className="google-popover-badge">
-                            {isAdmin ? '🛡️ Administrator' : '● Active Licensee'}
+                            {isAdmin ? 'Administrator' : 'Active Licensee'}
                           </div>
                         </div>
                       </div>
@@ -721,9 +735,9 @@ export const Layout: React.FC = () => {
                     type="button"
                     className={`google-avatar-btn ${accountMenuOpen ? 'active' : ''}`}
                     onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                    aria-label={`Google Account: ${user?.email}`}
+                    aria-label={`Account: ${user?.companyName || user?.email}`}
                     aria-expanded={accountMenuOpen}
-                    title={user?.email || 'Account Profile'}
+                    title={user?.companyName ? `${user.companyName} (${user.email})` : (user?.email || 'Account Profile')}
                   >
                     <div className="google-avatar-circle">{userInitial}</div>
                   </button>
@@ -733,7 +747,12 @@ export const Layout: React.FC = () => {
                       <div className="google-popover-header">
                         <div className="google-popover-avatar">{userInitial}</div>
                         <div className="google-popover-identity">
-                          <div className="google-popover-email">{user?.email}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: 1.3 }}>
+                            {user?.companyName || (isAdmin ? 'GHG Platform Administration' : user?.email)}
+                          </div>
+                          <div className="google-popover-email" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            {user?.email}
+                          </div>
                           {user?.licenseeId && (
                             <div className="google-popover-client-id">
                               <span>Client ID: </span>

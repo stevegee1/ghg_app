@@ -149,9 +149,10 @@ export class DashboardService {
       // Also count ISO legacy submissions if present
       const legacyIsoSubs = await this.prisma.isoReadinessSubmission.findMany({
         where: { licenseeId: effectiveLicenseeId },
+        include: { credential: true },
       });
       for (const iso of legacyIsoSubs) {
-        if (iso.status === 'APPROVED' || iso.paidAt) {
+        if (iso.credential && (iso.credential.status === CredentialStatus.COMPOSITED || iso.credential.status === CredentialStatus.MINTED)) {
           carbonBadges++;
         } else {
           carbonActive++;
@@ -180,7 +181,7 @@ export class DashboardService {
           title: `${s.workflowType === WorkflowType.CARBON ? 'Carbon Audit' : 'Job Reporting'}: ${s.framework.name}`,
           status: s.status,
           isDraftOrPending: isDraft,
-          link: `/portal/workflow/${s.id}`,
+          link: `/portal?tab=workflow&submissionId=${s.id}`,
         });
       }
 
@@ -201,7 +202,7 @@ export class DashboardService {
           currency: t.currency || 'GBP',
           status: t.status,
           isDraftOrPending: t.status === 'PENDING',
-          link: `/portal/transactions`,
+          link: `/portal?tab=transactions`,
         });
       }
     }
@@ -251,6 +252,13 @@ export class DashboardService {
       });
 
       for (const cred of credentialsList) {
+        // Resolve URL: If openSeaUrl is pointing to external domain but referencing metadata.json,
+        // normalize to relative endpoint /api/credentials/... so it is 100% reachable locally and in production.
+        let effectiveOpenSeaUrl = cred.openSeaUrl;
+        if (effectiveOpenSeaUrl && effectiveOpenSeaUrl.includes('/api/credentials/')) {
+          effectiveOpenSeaUrl = effectiveOpenSeaUrl.substring(effectiveOpenSeaUrl.indexOf('/api/credentials/'));
+        }
+
         credentials.push({
           id: cred.id,
           type: 'AUDIT_BADGE',
@@ -260,7 +268,7 @@ export class DashboardService {
           status: cred.status === CredentialStatus.MINTED ? 'MINTED_ON_CHAIN' : 'ISSUED',
           badgeImageUrl: cred.compositeBadgeUrl || `/api/credentials/${cred.id}/badge.svg`,
           tokenId: cred.tokenId,
-          openSeaUrl: cred.openSeaUrl,
+          openSeaUrl: effectiveOpenSeaUrl,
           pdfDownloadUrl: `/api/portal/iso/report/${cred.submissionId}`,
         });
       }

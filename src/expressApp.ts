@@ -24,6 +24,7 @@ import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { createDemoBookingRouter } from './routes/demo-booking.route';
 import { createWorkflowRouter } from './routes/workflow.route';
 import { createMerchEnquiryRouter } from './routes/merch-enquiry.route';
+import { createPartnerNetworkRouter } from './routes/partner-network.route';
 import { CheckoutService } from './services/checkout.service';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -121,7 +122,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createStripeWebhookRouter(prisma, stripe));
 
   // Mount checkout API router and B2B trigger router
-  app.use(createCheckoutRouter(checkoutService));
+  app.use(createCheckoutRouter(checkoutService, prisma, stripe));
   app.use(createB2bTriggerRouter(checkoutService, prisma));
 
   // Mount auth, portal, transparency, and admin split-config routers
@@ -144,6 +145,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createDemoBookingRouter(prisma));
   app.use(createWorkflowRouter(prisma, checkoutService));
   app.use(createMerchEnquiryRouter(prisma));
+  app.use(createPartnerNetworkRouter(prisma));
 
   // SPA Wildcard fallback: serve index.html for all non-API routes
   app.get('*', (req, res) => {

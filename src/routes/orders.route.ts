@@ -123,10 +123,11 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
         return res.status(404).json({ error: 'Order not found.' });
       }
 
+      const filename = `GHG-Invoice-${order.orderNumber}.pdf`;
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="GHG-Invoice-${order.orderNumber}.pdf"`
+        `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
       );
 
       const doc = new PDFDocument({ margin: 50, size: 'A4' });

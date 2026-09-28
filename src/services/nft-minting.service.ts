@@ -129,7 +129,7 @@ export async function mintAuditWarrantyToken(input: MintInput): Promise<MintResu
     transactionHash: txHash,
     openSeaUrl: contractAddress
       ? `${openSeaBase}/${contractAddress}/${tokenId}`
-      : `https://ghgapp-production.up.railway.app/api/credentials/${credentialId}/metadata.json`,
+      : `${process.env.APP_BASE_URL || ''}/api/credentials/${credentialId}/metadata.json`,
     isOnChain: false,
     preMintReceiptSeal: seal,
   };

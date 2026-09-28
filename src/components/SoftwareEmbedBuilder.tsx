@@ -4,17 +4,25 @@ import { api } from '../api/client';
 interface SoftwareEmbedBuilderProps {
   licenseeId: string;
   partnerName?: string;
+  clientLogoUrl?: string;
   allowedOrigins?: string[];
   token?: string;
+  isVerified?: boolean;
+  isPaid?: boolean;
   onSaveOrigins?: (origins: string[]) => Promise<void> | void;
+  onNavigateWorkflow?: (step: number) => void;
 }
 
 export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
   licenseeId,
   partnerName = 'Enterprise Partner',
+  clientLogoUrl,
   allowedOrigins = [],
   token,
+  isVerified = true,
+  isPaid = true,
   onSaveOrigins,
+  onNavigateWorkflow,
 }) => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [copiedCode, setCopiedCode] = useState(false);
@@ -53,10 +61,10 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
   }, [licenseeId]);
 
   const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ghgapp-production.up.railway.app';
-  const embedCode = `<!-- GHG Trust Seal Embed Start -->
+  const embedCode = `<!-- GHG Trust Seal Dual-Logo Embed Start -->
 <div id="ghg-trust-seal" data-licensee-id="${licenseeId}" data-theme="${theme}"></div>
 <script src="${originUrl}/embed/seal.js" async></script>
-<!-- GHG Trust Seal Embed End -->`;
+<!-- GHG Trust Seal Dual-Logo Embed End -->`;
 
   const copyEmbedCode = () => {
     navigator.clipboard.writeText(embedCode);
@@ -98,11 +106,162 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
     }
   };
 
+  const isGated = !isPaid || !isVerified;
+
+  // ── GATED CERTIFICATION LOCK SCREEN ──────────────────────────────────────────
+  // If the user hasn't achieved 80% audit readiness or paid, block all snippet generation.
+  if (isGated) {
+    return (
+      <div style={{ maxWidth: '840px', margin: '1.5rem auto 3rem auto' }}>
+        <div
+          style={{
+            backgroundColor: 'var(--bg-card, #ffffff)',
+            border: '1px solid var(--border-light, #e2e8f0)',
+            borderRadius: '16px',
+            padding: '2.5rem 2rem',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+          }}
+        >
+          {/* Header with SVG Icon */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1.25rem' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                color: '#d97706',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Certification Gate Required
+              </div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main, #0f172a)', margin: '0.2rem 0 0 0', letterSpacing: '-0.02em' }}>
+                Web Trust Seal &amp; Embed Generator Locked
+              </h2>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.925rem', color: 'var(--text-muted, #475569)', lineHeight: 1.6, margin: '0 0 2rem 0' }}>
+            Under ISO 14064-1 &amp; ISO 19011:2026 Annex A assurance standards, the live Web Trust Seal CDN component and anti-spoofing origin whitelist are provisioned exclusively to certified licensees. You cannot generate or deploy an embed snippet until your readiness diagnostic clears the 80% threshold and statutory assurance fees are settled in the Readiness Engine.
+          </p>
+
+          {/* Workflow Gate Progress Checklist */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2.25rem' }}>
+            {/* Gate 1 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', padding: '1rem 1.25rem', backgroundColor: 'var(--bg-subtle, #f8fafc)', borderRadius: '10px', border: '1px solid var(--border-light, #e2e8f0)' }}>
+              <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: isVerified ? '#16a34a' : 'rgba(245, 158, 11, 0.15)', color: isVerified ? '#ffffff' : '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '2px' }}>
+                {isVerified ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : '1'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+                    Gate 1: Statutory Evidence Ingestion &amp; 80% Conformance Threshold
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isVerified ? '#16a34a' : '#d97706', backgroundColor: isVerified ? 'rgba(22, 163, 74, 0.1)' : 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '9999px' }}>
+                    {isVerified ? 'Completed' : 'Audit Incomplete'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #64748b)', marginTop: '0.25rem' }}>
+                  Scope 1-3 activity files and ISO framework evidence must achieve a minimum 80% Lead Auditor conformance score.
+                </div>
+              </div>
+            </div>
+
+            {/* Gate 2 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', padding: '1rem 1.25rem', backgroundColor: 'var(--bg-subtle, #f8fafc)', borderRadius: '10px', border: '1px solid var(--border-light, #e2e8f0)' }}>
+              <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: isVerified ? '#16a34a' : '#e2e8f0', color: isVerified ? '#ffffff' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '2px' }}>
+                {isVerified ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : '2'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+                    Gate 2: ISO 19011:2026 Lead Auditor Verification
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isVerified ? '#16a34a' : '#64748b', backgroundColor: isVerified ? 'rgba(22, 163, 74, 0.1)' : 'rgba(100, 116, 139, 0.1)', padding: '2px 8px', borderRadius: '9999px' }}>
+                    {isVerified ? 'Cleared' : 'Pending Gate 1'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #64748b)', marginTop: '0.25rem' }}>
+                  SHA-256 evidence ledger validation and continuous assurance covenant sign-off.
+                </div>
+              </div>
+            </div>
+
+            {/* Gate 3 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', padding: '1rem 1.25rem', backgroundColor: 'var(--bg-subtle, #f8fafc)', borderRadius: '10px', border: '1px solid var(--border-light, #e2e8f0)' }}>
+              <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: isPaid ? '#16a34a' : (isVerified ? 'rgba(245, 158, 11, 0.15)' : '#e2e8f0'), color: isPaid ? '#ffffff' : (isVerified ? '#d97706' : '#64748b'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '2px' }}>
+                {isPaid ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : '3'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+                    Gate 3: Statutory Assurance Fee Settlement
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isPaid ? '#16a34a' : (isVerified ? '#d97706' : '#64748b'), backgroundColor: isPaid ? 'rgba(22, 163, 74, 0.1)' : (isVerified ? 'rgba(245, 158, 11, 0.1)' : 'rgba(100, 116, 139, 0.1)'), padding: '2px 8px', borderRadius: '9999px' }}>
+                    {isPaid ? 'Settled' : 'Payment Required'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #64748b)', marginTop: '0.25rem' }}>
+                  Contractual fee settlement (with statutory 15% disaster relief endowment split).
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action CTAs */}
+          <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => onNavigateWorkflow?.(!isVerified ? 1 : 3)}
+              style={{
+                backgroundColor: '#0f172a',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.65rem 1.45rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1e293b')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#0f172a')}
+            >
+              {!isVerified ? 'Launch Readiness Engine Diagnostic (Step 1) →' : 'Complete Statutory Settlement (Step 3) →'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── UNLOCKED PRODUCTION EMBED STUDIO (VERIFIED & PAID) ──────────────────────
   const displayName = liveStatus?.licenseeName || partnerName || licenseeId;
-  const displayFramework = liveStatus?.frameworkText || 'ISO 14064-1 & UK SECR Assured';
+  const displayFramework = liveStatus?.frameworkText || 'ISO 14064-1 & ISO 19011:2026 Assured';
   const isCompliant = liveStatus?.status === 'ACTIVE_COMPLIANT' || !liveStatus?.status;
   const isWarning = liveStatus?.status === 'CALIBRATION_WARNING';
-  const statusColor = isCompliant ? '#10b981' : (isWarning ? '#f59e0b' : '#ef4444');
+  const statusColor = isCompliant ? '#16a34a' : (isWarning ? '#f59e0b' : '#ef4444');
   const statusLabel = isCompliant ? 'VERIFIED AUDIT-READY' : (isWarning ? 'CALIBRATION NOTICE' : 'STATUS SUSPENDED');
 
   return (
@@ -111,20 +270,20 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.75rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></span>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Statutory Web Integration
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16a34a' }}></span>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Certified Statutory Integration
             </span>
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.35rem 0' }}>
-            Live Website &amp; Application Trust Seal Embed
+            Dual-Logo Website Trust Seal Embed
           </h2>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '680px' }}>
-            Deploy zero-dependency JavaScript snippets pointing to <code style={{ color: 'var(--color-sky)' }}>/embed/seal.js</code> to display verified ISO 19011:2026 audit assurance on your corporate sites.
+            Deploy zero-dependency JavaScript snippets pointing to <code style={{ color: 'var(--color-sky)' }}>/embed/seal.js</code> to display verified ISO 19011:2026 assurance on your corporate sites.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span className="badge badge-settled" style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 700 }}>
+          <span className="badge badge-settled" style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.25)' }}>
             CDN EDGE READY
           </span>
         </div>
@@ -187,6 +346,7 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
             type="text"
             className="input"
             value={originsInput}
+            disabled={isSavingOrigins}
             onChange={(e) => setOriginsInput(e.target.value)}
             placeholder="e.g. yourcompany.com, ir.yourcompany.com"
             style={{ flex: 1, minWidth: '240px', fontSize: '0.85rem' }}
@@ -330,11 +490,12 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
                 fontWeight: 700,
                 borderRadius: '6px',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
-                backgroundColor: copiedCode ? '#10b981' : 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: copiedCode ? '#16a34a' : 'rgba(255, 255, 255, 0.08)',
                 color: '#ffffff',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
+              title="Copy HTML embed code"
             >
               {copiedCode ? (
                 <>
@@ -375,14 +536,14 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.85rem' }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-              Live Widget Render Simulation
+              Live Dual-Logo Widget Render Simulation
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Exact interactive DOM component rendered by <code style={{ color: 'var(--color-sky)' }}>seal.js</code> on your live website.
+              Official dual-mark component rendered by <code style={{ color: 'var(--color-sky)' }}>seal.js</code> on your corporate website.
             </div>
           </div>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Interactive Preview
+            Live Production Component
           </span>
         </div>
 
@@ -423,31 +584,46 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
             }}
             title="Click to view public transparency audit ledger"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-              <div
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '50%',
-                  backgroundColor: '#0284c7',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '10px',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                GHG
+            {/* Dual-Logo Composite Container */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', borderRadius: '8px', backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : '#f1f5f9' }}>
+              <img
+                src="/images/nfty-logs-logo.png"
+                alt="GHG Official Mark"
+                style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+              />
+              <span style={{ fontSize: '11px', fontWeight: 700, color: theme === 'dark' ? '#94a3b8' : '#94a3b8' }}>×</span>
+              {clientLogoUrl ? (
+                <img
+                  src={clientLogoUrl}
+                  alt={displayName}
+                  style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '4px' }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '4px',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '9px',
+                  }}
+                >
+                  {displayName.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div style={{ fontWeight: 700, lineHeight: 1.25, fontSize: '0.85rem' }}>
+                {displayName}
               </div>
-              <div>
-                <div style={{ fontWeight: 700, lineHeight: 1.25, fontSize: '0.85rem' }}>
-                  {displayName}
-                </div>
-                <div style={{ fontSize: '0.72rem', color: theme === 'dark' ? '#94a3b8' : '#64748b' }}>
-                  {displayFramework}
-                </div>
+              <div style={{ fontSize: '0.72rem', color: theme === 'dark' ? '#94a3b8' : '#64748b' }}>
+                {displayFramework}
               </div>
             </div>
 

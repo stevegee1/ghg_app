@@ -5,6 +5,7 @@ interface FinancialSplitBarProps {
   licensorRoyaltyCents: number;
   charityGiftCents: number;
   showDetails?: boolean;
+  dark?: boolean;
 }
 
 export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
@@ -12,11 +13,18 @@ export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
   licensorRoyaltyCents,
   charityGiftCents,
   showDetails = true,
+  dark = false,
 }) => {
   if (!grossAmountCents || grossAmountCents <= 0) return null;
 
   const royaltyPercent = Number(((licensorRoyaltyCents / grossAmountCents) * 100).toFixed(1));
   const charityPercent = Number(((charityGiftCents / grossAmountCents) * 100).toFixed(1));
+
+  const royaltyColor = dark ? 'rgba(255, 255, 255, 0.7)' : '#1a73e8';
+  const charityColor = dark ? '#ff2d8d' : '#059669';
+  const trackBg = dark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0';
+  const mutedText = dark ? '#94a3b8' : 'var(--text-muted, #475569)';
+  const mainText = dark ? '#ffffff' : 'var(--text-main, #0f172a)';
 
   return (
     <div style={{ width: '100%' }}>
@@ -38,14 +46,14 @@ export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                backgroundColor: '#1a73e8',
+                backgroundColor: royaltyColor,
                 display: 'inline-block',
               }}
             />
-            <span style={{ color: 'var(--text-muted, #475569)', fontWeight: 500 }}>
+            <span style={{ color: mutedText, fontWeight: 500 }}>
               Licensor Royalty ({royaltyPercent}%):
             </span>
-            <strong style={{ color: 'var(--text-main, #0f172a)', fontWeight: 700 }}>
+            <strong style={{ color: mainText, fontWeight: 700 }}>
               £{(licensorRoyaltyCents / 100).toFixed(2)}
             </strong>
           </div>
@@ -55,14 +63,14 @@ export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                backgroundColor: '#059669',
+                backgroundColor: charityColor,
                 display: 'inline-block',
               }}
             />
-            <span style={{ color: 'var(--text-muted, #475569)', fontWeight: 500 }}>
+            <span style={{ color: mutedText, fontWeight: 500 }}>
               Statutory Charity Pool ({charityPercent}%):
             </span>
-            <strong style={{ color: '#059669', fontWeight: 700 }}>
+            <strong style={{ color: charityColor, fontWeight: 700 }}>
               £{(charityGiftCents / 100).toFixed(2)}
             </strong>
           </div>
@@ -72,7 +80,7 @@ export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
         style={{
           width: '100%',
           height: '10px',
-          backgroundColor: '#e2e8f0',
+          backgroundColor: trackBg,
           borderRadius: '9999px',
           overflow: 'hidden',
           display: 'flex',
@@ -84,7 +92,7 @@ export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
           style={{
             width: `${royaltyPercent}%`,
             height: '100%',
-            backgroundColor: '#1a73e8',
+            backgroundColor: royaltyColor,
             transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         />
@@ -92,7 +100,7 @@ export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
           style={{
             width: `${charityPercent}%`,
             height: '100%',
-            backgroundColor: '#059669',
+            backgroundColor: charityColor,
             transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         />

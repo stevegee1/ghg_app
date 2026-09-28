@@ -168,15 +168,19 @@ model PortalUser {
   licenseeId             String?
   licensee               Licensee?            @relation(fields: [licenseeId], references: [id])
   role                   PortalRole           @default(PARTNER)
-  passwordResetToken     String?              // SHA-256 hash of password reset token
-  passwordResetExpiresAt DateTime?            // Expiration timestamp for reset token
-  createdAt              DateTime             @default(now())
+  passwordResetToken         String?              // SHA-256 hash of password reset token
+  passwordResetExpiresAt     DateTime?            // Expiration timestamp for reset token
+  emailVerified              Boolean              @default(false)
+  emailVerificationToken     String?              // SHA-256 hash of email verification token
+  emailVerificationExpiresAt DateTime?            // Expiration timestamp for verification token
+  createdAt                  DateTime             @default(now())
 
   splitConfigs        SplitConfigHistory[]
   submittedJobReports JobCreationReport[]
 
   @@index([licenseeId])
   @@index([passwordResetToken])
+  @@index([emailVerificationToken])
 }
 
 enum PortalRole {
@@ -808,3 +812,69 @@ model MerchEnquiry {
   @@index([contactEmail])
   @@index([createdAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTNER NETWORK: Fulfillment studio applications and charity org applications
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FulfillmentPartnerApplication {
+  id                   String                   @id @default(cuid())
+  companyName          String
+  workEmail            String
+  countryCode          String
+  regionOfOperation    String
+  capabilities         String[]                 // EMBROIDERY, SCREEN_PRINT, CUT_SEW, WAREHOUSING
+  monthlyCapacityUnits String                   // UNDER_500 | 500_2000 | 2000_10000 | OVER_10000
+  certifications       String[]                 // GOTS, OEKO_TEX, B_CORP, ISO_14001, NONE
+  message              String?
+  status               FulfillmentPartnerStatus @default(PENDING)
+  reviewedAt           DateTime?
+  reviewNotes          String?
+  ipAddress            String?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  @@index([status])
+  @@index([countryCode])
+  @@index([createdAt])
+}
+
+enum FulfillmentPartnerStatus {
+  PENDING
+  UNDER_REVIEW
+  CALL_SCHEDULED
+  APPROVED
+  REJECTED
+}
+
+model CharityPartnerApplication {
+  id                 String                  @id @default(cuid())
+  orgName            String
+  workEmail          String
+  countryCode        String
+  registrationNumber String?
+  orgType            String                  // REGISTERED_CHARITY | NGO | TRUST | FOUNDATION | COMMUNITY_FUND
+  focusAreas         String[]                // REFORESTATION, EXTREME_WEATHER_RELIEF, OCEAN, BIODIVERSITY, COMMUNITY
+  annualReportUrl    String?
+  website            String?
+  message            String?
+  status             CharityPartnerStatus    @default(PENDING)
+  reviewedAt         DateTime?
+  reviewNotes        String?
+  ipAddress          String?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([status])
+  @@index([countryCode])
+  @@index([createdAt])
+}
+
+enum CharityPartnerStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED_PENDING_ONBOARDING
+  APPROVED_ACTIVE
+  REJECTED
+}
+

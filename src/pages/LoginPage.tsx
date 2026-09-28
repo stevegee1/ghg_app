@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { validateWorkEmail } from '../utils/emailValidation';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -18,8 +19,16 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // Client-side corporate work email check (blocks Gmail, Yahoo, etc.)
+    const emailValidation = validateWorkEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || 'Please provide an official corporate or organizational work email address.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await api.login(email.trim(), password);
@@ -40,7 +49,7 @@ export const LoginPage: React.FC = () => {
       }
       navigate(targetPath, { replace: true });
     } catch (err: any) {
-      setError('Invalid email address or password.');
+      setError(err.message || 'Invalid email address or password.');
     } finally {
       setLoading(false);
     }

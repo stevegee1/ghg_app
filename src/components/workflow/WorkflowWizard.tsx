@@ -1174,7 +1174,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
               </div>
 
               {/* AI Findings Docket Preview */}
-              {submission.reviewDecision && (
+              {submission?.reviewDecision && (
                 <div className="bg-slate-950/70 border border-blue-500/20 rounded-xl p-5 text-left space-y-4 max-w-2xl mx-auto">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                     <div>
@@ -1182,54 +1182,60 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
                       <div className="text-xs text-slate-500 mt-0.5">Per-Clause Conformity Findings</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-white">{submission.complianceScore ?? submission.reviewDecision.overallScore}%</div>
+                      <div className="text-2xl font-bold text-white">
+                        {submission.complianceScore ?? submission.reviewDecision?.overallScore ?? 0}%
+                      </div>
                       <div className="text-xs text-slate-400">Pre-Screen Score</div>
                     </div>
                   </div>
 
-                  <div className="space-y-2 max-h-56 overflow-y-auto">
-                    {(submission.reviewDecision.perQuestionDecisions as any[]).map((finding: any, idx: number) => {
-                      const questionObj = questions.find((q) => q.id === finding.questionId);
-                      const isConformant = finding.status === 'CONFORMANT' || finding.accepted === true;
-                      const status = finding.status || (finding.accepted ? 'CONFORMANT' : 'NON_CONFORMANT');
-                      return (
-                        <div
-                          key={finding.questionId || idx}
-                          className={`flex items-start space-x-3 p-3 rounded-lg border text-xs ${
-                            status === 'CONFORMANT'
-                              ? 'bg-emerald-950/20 border-emerald-700/30'
-                              : status === 'INSUFFICIENT_EVIDENCE'
-                              ? 'bg-amber-950/20 border-amber-700/30'
-                              : 'bg-rose-950/20 border-rose-700/30'
-                          }`}
-                        >
-                          <div className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                            status === 'CONFORMANT' ? 'bg-emerald-500 text-white' :
-                            status === 'INSUFFICIENT_EVIDENCE' ? 'bg-amber-500 text-white' :
-                            'bg-rose-500 text-white'
-                          }`}>
-                            {status === 'CONFORMANT' ? '✓' : status === 'INSUFFICIENT_EVIDENCE' ? '?' : '✗'}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-mono text-slate-400 text-[10px] mb-0.5">
-                              {finding.isoClause || questionObj?.isoClauseReference || `Clause ${idx + 1}`}
-                            </div>
-                            <div className={`font-medium truncate ${
-                              status === 'CONFORMANT' ? 'text-emerald-300' :
-                              status === 'INSUFFICIENT_EVIDENCE' ? 'text-amber-300' :
-                              'text-rose-300'
+                  {Array.isArray(submission.reviewDecision?.perQuestionDecisions) && submission.reviewDecision.perQuestionDecisions.length > 0 ? (
+                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                      {(submission.reviewDecision.perQuestionDecisions as any[]).map((finding: any, idx: number) => {
+                        const questionObj = questions.find((q) => q.id === finding.questionId);
+                        const isConformant = finding.status === 'CONFORMANT' || finding.accepted === true;
+                        const status = finding.status || (finding.accepted ? 'CONFORMANT' : 'NON_CONFORMANT');
+                        return (
+                          <div
+                            key={finding.questionId || idx}
+                            className={`flex items-start space-x-3 p-3 rounded-lg border text-xs ${
+                              status === 'CONFORMANT'
+                                ? 'bg-emerald-950/20 border-emerald-700/30'
+                                : status === 'INSUFFICIENT_EVIDENCE'
+                                ? 'bg-amber-950/20 border-amber-700/30'
+                                : 'bg-rose-950/20 border-rose-700/30'
+                            }`}
+                          >
+                            <div className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                              status === 'CONFORMANT' ? 'bg-emerald-500 text-white' :
+                              status === 'INSUFFICIENT_EVIDENCE' ? 'bg-amber-500 text-white' :
+                              'bg-rose-500 text-white'
                             }`}>
-                              {finding.findings || finding.reasonIfRejected || questionObj?.text || `Finding ${idx + 1}`}
+                              {status === 'CONFORMANT' ? '✓' : status === 'INSUFFICIENT_EVIDENCE' ? '?' : '✗'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-mono text-slate-400 text-[10px] mb-0.5">
+                                {finding.isoClause || questionObj?.isoClauseReference || `Clause ${idx + 1}`}
+                              </div>
+                              <div className={`font-medium truncate ${
+                                status === 'CONFORMANT' ? 'text-emerald-300' :
+                                status === 'INSUFFICIENT_EVIDENCE' ? 'text-amber-300' :
+                                'text-rose-300'
+                              }`}>
+                                {finding.findings || finding.reasonIfRejected || questionObj?.text || `Finding ${idx + 1}`}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
 
-                  <div className="pt-3 border-t border-slate-800 text-xs text-slate-500">
-                    {submission.reviewDecision.reviewerNotes?.split('\n')[0]}
-                  </div>
+                  {submission.reviewDecision.reviewerNotes && (
+                    <div className="pt-3 border-t border-slate-800 text-xs text-slate-500">
+                      {submission.reviewDecision.reviewerNotes.split('\n')[0]}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

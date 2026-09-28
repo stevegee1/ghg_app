@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { JWT_SECRET } from '../middleware/auth.middleware';
 import { emailService } from '../services/email.service';
+import { validateWorkEmail } from '../utils/emailValidation';
 
 export function createAuthRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -24,13 +25,10 @@ export function createAuthRouter(prisma: PrismaClient): Router {
     if (!lastName || typeof lastName !== 'string' || !lastName.trim()) {
       return res.status(400).json({ error: 'Last name is required' });
     }
-    if (!email || typeof email !== 'string' || !email.trim()) {
-      return res.status(400).json({ error: 'Valid work email address is required' });
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!emailRegex.test(normalizedEmail)) {
-      return res.status(400).json({ error: 'Please enter a valid email address' });
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const emailValidation = validateWorkEmail(normalizedEmail);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ error: emailValidation.error || 'Valid work email address is required' });
     }
     if (!password || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long' });
@@ -70,7 +68,12 @@ export function createAuthRouter(prisma: PrismaClient): Router {
         },
       });
 
-      // 5. Hash Password & Create User
+      // 5. Generate secure email verification token & hash
+      const rawVerificationToken = crypto.randomBytes(32).toString('hex');
+      const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
+      const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // 6. Hash Password & Create User
       const passwordHash = await bcrypt.hash(password, 10);
       const newUser = await prisma.portalUser.create({
         data: {
@@ -78,10 +81,24 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           passwordHash,
           licenseeId,
           role: 'PARTNER',
+          emailVerified: false,
+          emailVerificationToken: hashedVerificationToken,
+          emailVerificationExpiresAt: verificationExpiresAt,
         },
       });
 
-      // 6. Sign JWT Session Token
+      // 7. Dispatch Email Verification
+      const baseUrl = process.env.APP_BASE_URL || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
+      const verificationUrl = `${baseUrl}/verify-email?token=${rawVerificationToken}`;
+
+      emailService.sendVerificationEmail({
+        toEmail: normalizedEmail,
+        verificationUrl,
+        appName: 'GHGEmissionLogs Assurance Suite',
+        expiresInHours: 24,
+      }).catch((emailErr) => console.error('[EMAIL VERIFICATION DISPATCH WARN]', emailErr));
+
+      // 8. Sign JWT Session Token
       const token = jwt.sign(
         {
           userId: newUser.id,
@@ -93,13 +110,15 @@ export function createAuthRouter(prisma: PrismaClient): Router {
       );
 
       return res.status(201).json({
-        message: 'Account successfully registered',
+        message: 'Account successfully registered. A verification link has been sent to your work email.',
         token,
+        verificationSent: true,
         user: {
           id: newUser.id,
           email: newUser.email,
           role: newUser.role,
           licenseeId: newUser.licenseeId,
+          emailVerified: false,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           companyName: companyName.trim(),
@@ -125,9 +144,17 @@ export function createAuthRouter(prisma: PrismaClient): Router {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const emailValidation = validateWorkEmail(cleanEmail);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        error: emailValidation.error || 'Please provide an official corporate or organizational work email address (personal providers like Gmail, Yahoo, and Outlook are not permitted).',
+      });
+    }
+
     try {
       const user = await prisma.portalUser.findUnique({
-        where: { email: email.trim().toLowerCase() },
+        where: { email: cleanEmail },
         include: { licensee: true },
       });
 
@@ -157,6 +184,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           email: user.email,
           role: user.role,
           licenseeId: user.licenseeId,
+          emailVerified: user.emailVerified,
           companyName: user.licensee?.name || 'Authorized Entity',
         },
       });
@@ -176,11 +204,13 @@ export function createAuthRouter(prisma: PrismaClient): Router {
   const handleForgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body || {};
 
-    if (!email || typeof email !== 'string' || !email.trim()) {
-      return res.status(400).json({ error: 'Valid work email address is required' });
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const emailValidation = validateWorkEmail(normalizedEmail);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        error: emailValidation.error || 'Please provide an official corporate or organizational work email address.',
+      });
     }
-
-    const normalizedEmail = email.trim().toLowerCase();
 
     try {
       const user = await prisma.portalUser.findUnique({
@@ -283,6 +313,194 @@ export function createAuthRouter(prisma: PrismaClient): Router {
 
   router.post('/api/auth/reset-password', handleResetPassword);
   router.post('/api/v1/auth/reset-password', handleResetPassword);
+
+  /**
+   * GET /api/auth/me
+   * Resolves currently authenticated user with tenant organization name.
+   */
+  const handleMe = async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or malformed Authorization header' });
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const user = await prisma.portalUser.findUnique({
+        where: { id: decoded.userId },
+        include: { licensee: true },
+      });
+      if (!user) {
+        return res.status(401).json({ error: 'User no longer exists' });
+      }
+      return res.status(200).json({
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          licenseeId: user.licenseeId,
+          emailVerified: user.emailVerified,
+          companyName: user.licensee?.name || (user.role === 'ADMIN' ? 'GHG Platform Administration' : 'Authorized Entity'),
+        },
+      });
+    } catch {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+  };
+
+  router.get('/api/auth/me', handleMe);
+  router.get('/api/v1/auth/me', handleMe);
+
+  /**
+   * GET /api/auth/verify-email
+   * Validates email verification token and marks user as emailVerified = true.
+   */
+  const handleVerifyEmail = async (req: Request, res: Response) => {
+    const rawToken = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+    if (!rawToken) {
+      return res.status(400).json({ error: 'Verification token is required' });
+    }
+
+    try {
+      const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+      const user = await prisma.portalUser.findFirst({
+        where: {
+          emailVerificationToken: hashedToken,
+          emailVerificationExpiresAt: { gt: new Date() },
+        },
+        include: { licensee: true },
+      });
+
+      if (!user) {
+        return res.status(400).json({
+          error: 'Invalid or expired verification token. If your link has expired, please request a new verification email.',
+        });
+      }
+
+      // Mark verified and clear tokens
+      const updatedUser = await prisma.portalUser.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiresAt: null,
+        },
+        include: { licensee: true },
+      });
+
+      // Issue refreshed JWT token
+      const token = jwt.sign(
+        {
+          userId: updatedUser.id,
+          role: updatedUser.role,
+          licenseeId: updatedUser.licenseeId,
+        },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Your corporate work email address has been successfully verified.',
+        token,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          licenseeId: updatedUser.licenseeId,
+          emailVerified: true,
+          companyName: updatedUser.licensee?.name || 'Authorized Entity',
+        },
+      });
+    } catch (err) {
+      console.error('[VERIFY EMAIL ERROR]', err);
+      return res.status(500).json({ error: 'Failed to verify email address. Please try again.' });
+    }
+  };
+
+  router.get('/api/auth/verify-email', handleVerifyEmail);
+  router.get('/api/v1/auth/verify-email', handleVerifyEmail);
+
+  /**
+   * POST /api/auth/resend-verification
+   * Dispatches a fresh email verification link with anti-enumeration protection.
+   */
+  const handleResendVerification = async (req: Request, res: Response) => {
+    let emailToVerify: string | null = null;
+
+    // Check Authorization header first if logged in
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET) as any;
+        const loggedUser = await prisma.portalUser.findUnique({ where: { id: decoded.userId } });
+        if (loggedUser) {
+          emailToVerify = loggedUser.email;
+        }
+      } catch {
+        // Fall back to body email
+      }
+    }
+
+    if (!emailToVerify) {
+      const bodyEmail = req.body?.email;
+      if (typeof bodyEmail === 'string' && bodyEmail.trim()) {
+        emailToVerify = bodyEmail.trim().toLowerCase();
+      }
+    }
+
+    if (!emailToVerify) {
+      return res.status(400).json({ error: 'Work email address is required' });
+    }
+
+    const emailValidation = validateWorkEmail(emailToVerify);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ error: emailValidation.error || 'A valid corporate work email is required' });
+    }
+
+    try {
+      const user = await prisma.portalUser.findUnique({
+        where: { email: emailToVerify },
+      });
+
+      if (user && !user.emailVerified) {
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await prisma.portalUser.update({
+          where: { id: user.id },
+          data: {
+            emailVerificationToken: hashedToken,
+            emailVerificationExpiresAt: expiresAt,
+          },
+        });
+
+        const baseUrl = process.env.APP_BASE_URL || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
+        const verificationUrl = `${baseUrl}/verify-email?token=${rawToken}`;
+
+        await emailService.sendVerificationEmail({
+          toEmail: user.email,
+          verificationUrl,
+          appName: 'GHGEmissionLogs Assurance Suite',
+          expiresInHours: 24,
+        });
+      }
+
+      // Anti-enumeration: Always return 200
+      return res.status(200).json({
+        success: true,
+        message: 'If an unverified account exists for this corporate work email, a fresh verification link has been dispatched.',
+      });
+    } catch (err) {
+      console.error('[RESEND VERIFICATION ERROR]', err);
+      return res.status(500).json({ error: 'Failed to dispatch verification email.' });
+    }
+  };
+
+  router.post('/api/auth/resend-verification', handleResendVerification);
+  router.post('/api/v1/auth/resend-verification', handleResendVerification);
 
   /**
    * POST /api/auth/logout

@@ -144,7 +144,7 @@ export const Footer: React.FC = () => {
             <div className="cerebrium-footer-col-title">Use Cases</div>
             <ul className="cerebrium-footer-links">
               <li><Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="cerebrium-footer-link">Scope 1-3 GHG Protocol</Link></li>
-              <li><Link to="/job-reporting" className="cerebrium-footer-link">Section 106 Workforce Planning</Link></li>
+              <li><Link to={isAuthenticated ? (isAdmin ? '/admin' : '/portal?scope=JOB_REPORTING&tab=jobs') : '/portal/login'} className="cerebrium-footer-link">Section 106 Workforce Planning</Link></li>
               <li><Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="cerebrium-footer-link">ISO 14001 / 50001 Diagnostic</Link></li>
               <li><Link to="/portal?tab=telemetry" className="cerebrium-footer-link">Continuous IoT Telemetry</Link></li>
               <li><Link to="/portal?tab=studio" className="cerebrium-footer-link">Dual-Logo Studio</Link></li>
@@ -159,10 +159,11 @@ export const Footer: React.FC = () => {
               <li><Link to="/transparency" className="cerebrium-footer-link">Transparency Ledger</Link></li>
               <li><Link to="/portal?tab=telemetry" className="cerebrium-footer-link">Docs &amp; Telemetry API</Link></li>
               <li><Link to="/blog" className="cerebrium-footer-link">Blog &amp; Field Guides</Link></li>
-              <li><Link to="/about#security" className="cerebrium-footer-link">Security &amp; Architecture</Link></li>
+              <li><Link to="/transparency" className="cerebrium-footer-link">Security &amp; Architecture</Link></li>
+              <li><Link to="/partners" className="cerebrium-footer-link">Global Partner Network (Studios &amp; NGOs)</Link></li>
               <li><Link to="/charities/apply" className="cerebrium-footer-link">Apply for Charity Allocation (15% Split)</Link></li>
               <li><Link to="/transparency" className="cerebrium-footer-link">Status &amp; Telemetry Health</Link></li>
-              <li><Link to="/about" className="cerebrium-footer-link">UKIPO Registered Mark</Link></li>
+              <li><Link to="/transparency" className="cerebrium-footer-link">UKIPO Registered Mark</Link></li>
             </ul>
           </div>
         </div>
@@ -197,9 +198,9 @@ export const Footer: React.FC = () => {
             © 2026 GHGEmissionLogs (NFTY LOGS LABS LTD). UK Corporation No. 15230476. Registered UKIPO Trade Mark UK00003980004.
           </div>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-            <Link to="/about#compliance" className="cerebrium-footer-link" style={{ fontSize: '0.75rem' }}>Legal &amp; Compliance</Link>
-            <Link to="/about#security" className="cerebrium-footer-link" style={{ fontSize: '0.75rem' }}>Security</Link>
-            <Link to="/about#privacy" className="cerebrium-footer-link" style={{ fontSize: '0.75rem' }}>Privacy Policy</Link>
+            <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.75rem' }}>Legal &amp; Compliance</Link>
+            <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.75rem' }}>Security</Link>
+            <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.75rem' }}>Privacy Policy</Link>
             <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.75rem' }}>System Status</Link>
           </div>
         </div>

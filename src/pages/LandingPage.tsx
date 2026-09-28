@@ -1,27 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { RiskSpeedometer } from '../components/RiskSpeedometer';
-import { CmaClaimsLinter } from '../components/CmaClaimsLinter';
 import { CerebriumAnimatedHeroBackground } from '../components/CerebriumAnimatedHeroBackground';
 
 export const LandingPage: React.FC = () => {
   const { isAuthenticated, isAdmin } = useAuth();
-  const [activeDemoTab, setActiveDemoTab] = useState<'CALIBRATION' | 'ANOMALY' | 'SCORECARD' | 'CMA' | 'JOBS'>('CALIBRATION');
 
   // Cerebrium Feature Showcase States (Image 4)
   const [activeWhyItem, setActiveWhyItem] = useState<number>(0);
   const [activeWhyTab, setActiveWhyTab] = useState<'ISO' | 'JOBS'>('ISO');
-
-  // Simulator States
-  const [simulatedPue, setSimulatedPue] = useState<number>(1.14);
-  const [simulatedSensor, setSimulatedSensor] = useState<'PDU' | 'H2' | 'WATER'>('PDU');
-
-  // Section 106 Workforce Simulator States
-  const [simJobsWorkers, setSimJobsWorkers] = useState<number>(100);
-  const [simJobsLocal, setSimJobsLocal] = useState<number>(28);
-  const [simJobsApprentices, setSimJobsApprentices] = useState<number>(6);
-  const [simJobsLivingWage, setSimJobsLivingWage] = useState<boolean>(true);
 
   // Hero Station Demo Simulator States
   const [heroStationTab, setHeroStationTab] = useState<'SENSORS' | 'EFFICIENCY' | 'CERT'>('SENSORS');
@@ -39,9 +26,7 @@ export const LandingPage: React.FC = () => {
     }, 900);
   };
 
-  // Anomaly math for simulator (baseline = 1.14)
-  const pueVariance = Math.abs((simulatedPue - 1.14) / 1.14) * 100;
-  const isAnomalyLocked = pueVariance > 15.0;
+  const authDestination = isAuthenticated ? (isAdmin ? '/admin' : '/portal') : '/portal/login';
 
   return (
     <div style={{ backgroundColor: 'var(--bg-page)', minHeight: '100vh', color: 'var(--text-main)', transition: 'all 0.25s ease', width: '100%', overflowX: 'hidden' }}>
@@ -351,14 +336,14 @@ export const LandingPage: React.FC = () => {
         </div>
       </CerebriumAnimatedHeroBackground>
 
-      {/* 2. Statutory Standards Wall (Architectural 1px Cell Divider Standard) */}
-      <section style={{ backgroundColor: 'var(--bg-card)' }}>
-        <div className="container-x frame-bordered" style={{ padding: 0 }}>
-          <div style={{ padding: '0.85rem 1rem', textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-greyscale-8)', borderBottom: '1px solid var(--border-light)' }}>
-            STATUTORY COMPLIANCE FRAMEWORKS &amp; VERIFIED CALIBRATION STANDARDS
-          </div>
-          
-          <div className="logo-cell-grid">
+      {/* 2. Statutory Standards Wall (Continuous Horizontal Moving Stripes) */}
+      <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)' }}>
+        <div style={{ padding: '0.85rem 1rem', textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-greyscale-8)', borderBottom: '1px solid var(--border-light)' }}>
+          STATUTORY COMPLIANCE FRAMEWORKS &amp; VERIFIED CALIBRATION STANDARDS
+        </div>
+        
+        <div className="frameworks-marquee-container" aria-label="Statutory compliance frameworks ticker">
+          <div className="frameworks-marquee-track">
             {[
               { name: 'GHG Protocol', sub: 'Scopes 1, 2 & 3 Corporate Standard' },
               { name: 'ISO 14064-1', sub: 'GHG Quantification & Reporting' },
@@ -368,40 +353,28 @@ export const LandingPage: React.FC = () => {
               { name: 'ISO/IEC 17025', sub: 'Hardware Calibration Protocol' },
               { name: 'UK SECR', sub: 'Companies Act Mandated Disclosures' },
               { name: 'UK CMA Green Claims', sub: 'Substantiated Anti-Greenwashing' },
-            ].map((std) => (
-              <div key={std.name} className="logo-cell">
+              // Duplicate set for seamless continuous loop
+              { name: 'GHG Protocol', sub: 'Scopes 1, 2 & 3 Corporate Standard' },
+              { name: 'ISO 14064-1', sub: 'GHG Quantification & Reporting' },
+              { name: 'ISO 50001', sub: 'Energy Management & Efficiency' },
+              { name: 'ISO 19011:2018', sub: 'Audit-Readiness Framework' },
+              { name: 'UK Social Value & S106', sub: 'Workforce & Planning Covenants' },
+              { name: 'ISO/IEC 17025', sub: 'Hardware Calibration Protocol' },
+              { name: 'UK SECR', sub: 'Companies Act Mandated Disclosures' },
+              { name: 'UK CMA Green Claims', sub: 'Substantiated Anti-Greenwashing' },
+            ].map((std, idx) => (
+              <div key={`${std.name}-${idx}`} className="framework-marquee-cell">
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-main)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
                     {std.name}
                   </div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap' }}>
                     {std.sub}
                   </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Architectural Ticker Ribbon with Real Platform Guarantees */}
-          <div className="greenly-ticker">
-            <div className="greenly-ticker-item">
-              <span style={{ color: 'var(--color-sky)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>80% Remote Audits</strong> | ISO 19011:2018 Evidence Engine</span>
-            </div>
-            <div className="greenly-ticker-item">
-              <span style={{ color: 'var(--color-green)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>Zero Brokerage Conflict</strong> | Section X Software Firewall</span>
-            </div>
-            <div className="greenly-ticker-item">
-              <span style={{ color: 'var(--color-sky)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>100% Calibrated Hardware</strong> | ISO 17025 Gatekeeper</span>
-            </div>
-            <div className="greenly-ticker-item">
-              <span style={{ color: 'var(--color-green)', fontSize: '0.9rem' }}>●</span>
-              <span><strong>15% ESG Split</strong> | Automated Charity Disbursements</span>
-            </div>
-          </div>
-
         </div>
       </section>
 
@@ -507,7 +480,7 @@ export const LandingPage: React.FC = () => {
 
               <div style={{ marginTop: '2rem' }}>
                 <Link
-                  to="/partner-licensing"
+                  to={authDestination}
                   className="cerebrium-btn-ghost"
                   style={{
                     padding: '0.75rem 1.75rem',
@@ -697,193 +670,11 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Cerebrium Architectural 4-Card Value Grid: Key but Complex in Digital Landscape */}
-      <section style={{ backgroundColor: '#ffffff', borderBottom: '1px solid rgba(15, 23, 42, 0.08)', padding: '5rem 0' }}>
-        <div className="container-x">
-          <div style={{ textAlign: 'center', maxWidth: '820px', margin: '0 auto 3.5rem auto' }}>
-            <div className="cerebrium-section-eyebrow">
-              <span className="eyebrow-dot" />
-              ARCHITECTURAL CHALLENGES
-            </div>
-            <h2 className="h2" style={{ fontSize: '2.1rem', fontWeight: 800, color: '#090d1a', letterSpacing: '-0.03em', marginBottom: '1rem' }}>
-              Emission Measurement is Key but Complex in the Digital Landscape
-            </h2>
-            <p style={{ fontSize: '1.05rem', color: '#475569', lineHeight: 1.6 }}>
-              Enterprise technology environments involve multi-tenant cloud platforms, distributed hardware, and intricate Scope 3 supplier contracts.
-            </p>
-          </div>
 
-          <div className="cerebrium-arch-grid">
-            <div className="cerebrium-arch-card">
-              <div className="cerebrium-arch-card-top">
-                <div className="cerebrium-arch-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                </div>
-                <span className="cerebrium-arch-idx">01</span>
-              </div>
-              <h4 className="cerebrium-arch-title">Infrastructure Ambiguity</h4>
-              <p className="cerebrium-arch-desc">Difficulty to ascertain verifiable sustainability credentials and real PUE across hybrid cloud and data center estates.</p>
-            </div>
 
-            <div className="cerebrium-arch-card">
-              <div className="cerebrium-arch-card-top">
-                <div className="cerebrium-arch-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                </div>
-                <span className="cerebrium-arch-idx">02</span>
-              </div>
-              <h4 className="cerebrium-arch-title">Multi-Jurisdiction Filing</h4>
-              <p className="cerebrium-arch-desc">Complexities in reporting statutory metrics across the UK SECR, EU CSRD ESRS, California SB 253, and UAE ESG mandates.</p>
-            </div>
 
-            <div className="cerebrium-arch-card">
-              <div className="cerebrium-arch-card-top">
-                <div className="cerebrium-arch-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <span className="cerebrium-arch-idx">03</span>
-              </div>
-              <h4 className="cerebrium-arch-title">Supplier &amp; Workforce Scrutiny</h4>
-              <p className="cerebrium-arch-desc">Enterprise procurement teams and planning authorities now prioritize verified ESG and local workforce covenant compliance.</p>
-            </div>
 
-            <div className="cerebrium-arch-card">
-              <div className="cerebrium-arch-card-top">
-                <div className="cerebrium-arch-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                </div>
-                <span className="cerebrium-arch-idx">04</span>
-              </div>
-              <h4 className="cerebrium-arch-title">Auditable Competitive Edge</h4>
-              <p className="cerebrium-arch-desc">Maintaining ISO 14064/50001 compliance readiness under ISO 19011:2018 remote auditing protocols is fundamental to winning enterprise bids.</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* 4. Standards Compliance Grid (Balanced 8-Cell Architectural Layout) */}
-      <section style={{ backgroundColor: '#ffffff', borderBottom: '1px solid rgba(15, 23, 42, 0.08)' }}>
-        <div className="container-x" style={{ padding: 0 }}>
-          <div style={{ padding: '1rem', textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b', background: '#f8fafc', borderBottom: '1px solid rgba(15, 23, 42, 0.08)' }}>
-            COMPLY WITH THE WORLD&apos;S TOP STATUTORY STANDARDS
-          </div>
-
-          <div className="logo-cell-grid">
-            {[
-              { id: 'ISO 14064-1', sub: 'GHG Assurance' },
-              { id: 'ISO 50001', sub: 'Energy Management' },
-              { id: 'GHG Protocol', sub: 'Scope 1-3 Accounting' },
-              { id: 'UK SECR', sub: 'Companies Act' },
-              { id: 'EU CSRD', sub: 'ESRS Alignment' },
-              { id: 'TCFD / CDP', sub: 'Financial Governance' },
-              { id: 'ISO 19011:2018', sub: 'Remote ICT Audits' },
-              { id: 'UK CMA CODE', sub: 'Green Claims Provenance' },
-            ].map((std) => (
-              <div key={std.id} className="logo-cell" style={{ backgroundColor: '#ffffff', minHeight: '88px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#090d1a', letterSpacing: '0.01em' }}>
-                    {std.id}
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '3px' }}>
-                    {std.sub}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 2b. ISO 19011:2018 Remote Auditing & Evidence Ledger Architecture */}
-      <section style={{ borderBottom: '1px solid rgba(15, 23, 42, 0.08)', backgroundColor: '#f8fafc', padding: '4.5rem 1.5rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ maxWidth: '820px', marginBottom: '2.75rem' }}>
-            <div className="cerebrium-section-eyebrow">
-              STATUTORY REMOTE VERIFICATION PROTOCOL
-            </div>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#090d1a', margin: 0, letterSpacing: '-0.025em' }}>
-              Remote Audit Evidence Preparation via Digital Data Protocol
-            </h2>
-            <p style={{ fontSize: '0.95rem', color: '#475569', marginTop: '0.85rem', lineHeight: 1.65 }}>
-              Under ISO 19011:2018 guidelines, corporate operators can conduct remote audit evidence preparation through our ISO 19011-aligned digital data protocol, significantly reducing client on-site disruption, operational footprint, and corporate travel emissions.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem' }}>
-            
-            {/* Card 1: Evidence Ledger & Annex A Isolation */}
-            <div style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '14px', border: '1px solid rgba(15, 23, 42, 0.08)', boxShadow: '0 4px 20px -8px rgba(0, 0, 0, 0.05)' }}>
-              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
-                DEPLOYING THE EVIDENCE LEDGER
-              </div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 750, color: '#090d1a', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
-                Integrated Audit Report Matrix
-              </h3>
-              <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                When logging operational metrics, every entry is systematically stamped:
-              </p>
-              
-              {/* Sleek Cryptographic Ledger Stamp */}
-              <div className="cerebrium-ledger-stamp">
-                <div className="cerebrium-ledger-stamp-header">
-                  <span>IMMUTABLE EVIDENCE STAMP</span>
-                  <span style={{ color: '#10b981', fontWeight: 700 }}>
-                    ISO 19011:2018 ANNEX A CONFORMANT
-                  </span>
-                </div>
-                <div className="cerebrium-ledger-stamp-text">
-                  Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2018 Annex A.
-                </div>
-                <div className="cerebrium-ledger-stamp-footer">
-                  <span>SHA-256: 8f9b4c02...e38a9d10</span>
-                  <span>BLOCK #88192</span>
-                </div>
-              </div>
-
-              <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: '1rem', lineHeight: 1.55 }}>
-                This immutable ledger stamp isolates our continuous data protocol from risks of regulatory greenwashing and compliance pushback during external assurance reviews.
-              </p>
-            </div>
-
-            {/* Card 2: Multi-Jurisdiction Statutory Disclosures */}
-            <div style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '14px', border: '1px solid rgba(15, 23, 42, 0.08)', boxShadow: '0 4px 20px -8px rgba(0, 0, 0, 0.05)' }}>
-              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
-                GLOBAL REGULATORY MATRIX
-              </div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 750, color: '#090d1a', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
-                Unified International Filings
-              </h3>
-              <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                Single-source telemetry mapped directly to four statutory disclosure regimes:
-              </p>
-              
-              <div className="cerebrium-reg-grid">
-                <div className="cerebrium-reg-chip">
-                  <span>UK SECR / Companies Act</span>
-                  <span className="cerebrium-reg-chip-dot" />
-                </div>
-                <div className="cerebrium-reg-chip">
-                  <span>EU CSRD / ESRS E1</span>
-                  <span className="cerebrium-reg-chip-dot" />
-                </div>
-                <div className="cerebrium-reg-chip">
-                  <span>California SB 253 / 261</span>
-                  <span className="cerebrium-reg-chip-dot" />
-                </div>
-                <div className="cerebrium-reg-chip">
-                  <span>UAE SCA / ADX-DFM ESG</span>
-                  <span className="cerebrium-reg-chip-dot" />
-                </div>
-              </div>
-
-              <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: '1.15rem', lineHeight: 1.55 }}>
-                Full conformity with UAE Cabinet Resolution on the Green Agenda and UAE Net Zero 2050 framework.
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* 5. Feature Section 1: "Measure, Report, Decarbonize." */}
       <section style={{ backgroundColor: '#ffffff', borderBottom: '1px solid rgba(15, 23, 42, 0.08)', padding: '5rem 0' }}>
@@ -998,10 +789,6 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div>
-              <div className="cerebrium-section-eyebrow">
-                <span className="eyebrow-dot" />
-                REGULATORY REPORTING
-              </div>
               <h2 className="h2" style={{ fontSize: '2rem', fontWeight: 800, color: '#090d1a', letterSpacing: '-0.025em', marginBottom: '1rem' }}>
                 Assurance-grade GHG emissions reporting and verifiable nature-positive climate impact.
               </h2>
@@ -1011,11 +798,11 @@ export const LandingPage: React.FC = () => {
               </p>
 
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <Link to="/about#compliance" className="cerebrium-btn-pill-dark">
+                <Link to={authDestination} className="cerebrium-btn-pill-dark">
                   <span>Regulatory Reporting</span>
                   <span>→</span>
                 </Link>
-                <Link to="/transparency" className="cerebrium-btn-pill-outline">
+                <Link to={authDestination} className="cerebrium-btn-pill-outline">
                   <span>Investor Reporting</span>
                   <span>→</span>
                 </Link>
@@ -1032,10 +819,7 @@ export const LandingPage: React.FC = () => {
           <div className="hero-layout-grid" style={{ alignItems: 'center', gap: '3.5rem' }}>
             
             <div>
-              <div className="cerebrium-section-eyebrow">
-                <span className="eyebrow-dot" />
-                DECARBONISATION STRATEGY
-              </div>
+
               <h2 className="h2" style={{ fontSize: '2rem', fontWeight: 800, color: '#090d1a', letterSpacing: '-0.025em', marginBottom: '1rem' }}>
                 Net-zero target setting, reduction modeling, and supplier engagement.
               </h2>
@@ -1044,43 +828,19 @@ export const LandingPage: React.FC = () => {
                 Continuous sensor models tracking 15% anomaly variance limits and supplier compliance scorecards under ISO Clause 10.2.
               </p>
 
-              <Link to="/portal/login" className="cerebrium-btn-pill-dark">
+              <Link to={authDestination} className="cerebrium-btn-pill-dark">
                 <span>Decarbonization Management</span>
                 <span>→</span>
               </Link>
             </div>
 
-            {/* Reduction Ambition Card */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                border: '1px solid rgba(15, 23, 42, 0.08)',
-                padding: '2.25rem',
-                boxShadow: '0 12px 36px -12px rgba(15, 23, 42, 0.08)',
-              }}
-            >
-              <div style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '10px', border: '1px solid rgba(15, 23, 42, 0.06)', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Reduction Ambition</div>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>Annual reduction trajectory</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#090d1a', margin: '0.4rem 0 0 0', fontFamily: 'var(--font-mono)' }}>
-                  100 <span style={{ fontSize: '1.35rem', color: 'var(--cerebrium-magenta, #ff2d8d)' }}>%</span>
-                </div>
-              </div>
-
-              {/* Trajectory SVG Graph */}
-              <svg viewBox="0 0 320 80" style={{ width: '100%', height: '70px' }}>
-                <line x1="0" y1="20" x2="320" y2="20" stroke="rgba(15, 23, 42, 0.1)" strokeDasharray="4" />
-                <path d="M 0 20 Q 120 30, 320 70" fill="none" stroke="var(--cerebrium-magenta, #ff2d8d)" strokeWidth="3" />
-                <circle cx="0" cy="20" r="4" fill="var(--cerebrium-magenta, #ff2d8d)" />
-                <circle cx="320" cy="70" r="4" fill="var(--cerebrium-magenta, #ff2d8d)" />
-              </svg>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', fontFamily: 'var(--font-mono)' }}>
-                <span>2024</span>
-                <span>2027</span>
-                <span>2030</span>
-                <span>2035</span>
-              </div>
+            {/* Decarbonisation Strategy Image */}
+            <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(15, 23, 42, 0.08)', boxShadow: '0 12px 32px -10px rgba(0, 0, 0, 0.08)' }}>
+              <img
+                src="/images/eyestetix-studio-zvbPbSz5BFo-unsplash.jpg"
+                alt="Decarbonisation Strategy and Net-Zero Trajectory"
+                style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+              />
             </div>
 
           </div>
@@ -1113,7 +873,7 @@ export const LandingPage: React.FC = () => {
 
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <Link
-                  to="/job-reporting"
+                  to={authDestination}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -1131,12 +891,11 @@ export const LandingPage: React.FC = () => {
                   <span>EXPLORE WORKFORCE ASSURANCE</span>
                   <span>→</span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveDemoTab('JOBS');
-                    const el = document.getElementById('demonstrator-section');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                <Link
+                  to="/book-demo"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('open-book-demo-modal'));
                   }}
                   style={{
                     display: 'inline-flex',
@@ -1149,13 +908,13 @@ export const LandingPage: React.FC = () => {
                     borderRadius: '6px',
                     fontWeight: 700,
                     fontSize: '0.9rem',
-                    cursor: 'pointer',
                     letterSpacing: '0.04em',
+                    textDecoration: 'none',
                   }}
                 >
                   <span>TEST WORKFORCE AUDITOR</span>
                   <span>→</span>
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -1167,326 +926,6 @@ export const LandingPage: React.FC = () => {
               />
             </div>
 
-          </div>
-        </div>
-      </section>
-
-      {/* 10. Interactive System Demonstrator Tabs (Cerebrium Capsule Segmented Control) */}
-      <section id="demonstrator-section" style={{ backgroundColor: '#ffffff', padding: '5.5rem 0', borderBottom: '1px solid rgba(15, 23, 42, 0.08)' }}>
-        <div className="container-x">
-          <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
-            <div className="cerebrium-section-eyebrow">
-              <span className="eyebrow-dot" />
-              CONTINUOUS ASSURANCE ENGINES
-            </div>
-            <h2 className="h2" style={{ fontSize: '2.1rem', fontWeight: 800, color: '#090d1a', letterSpacing: '-0.03em', margin: 0 }}>
-              Test Our Continuous Assurance Engines Live
-            </h2>
-          </div>
-
-          {/* Floating Cerebrium Segmented Capsule Tab Control */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
-            <div className="cerebrium-engine-capsule">
-              {[
-                { key: 'CALIBRATION', label: '1. Calibration Gatekeeper' },
-                { key: 'ANOMALY', label: '2. 15% Anomaly Lock Simulator' },
-                { key: 'SCORECARD', label: '3. 5-Pillar Risk Speedometer' },
-                { key: 'CMA', label: '4. CMA Green Claims Linter' },
-                { key: 'JOBS', label: '5. Section 106 Job Creation Auditor' },
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setActiveDemoTab(tab.key as any)}
-                  className={`cerebrium-engine-tab-btn ${activeDemoTab === tab.key ? 'active' : ''}`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tab Content Box: Architectural Card */}
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '16px', padding: 'clamp(1.75rem, 4vw, 3rem)', boxShadow: '0 12px 36px -12px rgba(15, 23, 42, 0.08)' }}>
-          {activeDemoTab === 'CALIBRATION' && (
-            <div>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: '#090d1a', letterSpacing: '-0.02em' }}>
-                Milestone ISO-1: Mandatory Calibration Gatekeeper
-              </h3>
-              <p style={{ fontSize: '0.92rem', color: '#475569', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-                Under ISO 50001 Clause 6.6, uncalibrated sensor telemetry is rejected by the native PostgreSQL database trigger before reaching public ledgers.
-              </p>
-
-              <div className="meter-demo-grid" style={{ marginBottom: '1.75rem' }}>
-                {[
-                  { key: 'PDU', tag: 'PDU-METER-04A', type: 'ELECTRICITY_SUB_METER', expiry: 'Active: 284 Days Left', valid: true },
-                  { key: 'H2', tag: 'GAS-CHROM-01B', type: 'GAS_CHROMATOGRAPH', expiry: 'Active: 190 Days Left', valid: true },
-                  { key: 'WATER', tag: 'EVAP-WATER-02C', type: 'WATER_FLOW_METER', expiry: 'Expired: Certificate Missing', valid: false },
-                ].map((meter) => (
-                  <div
-                    key={meter.key}
-                    onClick={() => setSimulatedSensor(meter.key as any)}
-                    style={{
-                      backgroundColor: simulatedSensor === meter.key ? '#f8fafc' : '#ffffff',
-                      border: simulatedSensor === meter.key ? '2px solid #090d1a' : '1px solid rgba(15, 23, 42, 0.1)',
-                      padding: '1.35rem',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      boxShadow: simulatedSensor === meter.key ? '0 6px 16px rgba(9, 13, 26, 0.08)' : 'none',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#090d1a', fontFamily: 'var(--font-mono)' }}>{meter.tag}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b', margin: '0.35rem 0' }}>{meter.type}</div>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 750, color: meter.valid ? '#10b981' : '#ef4444' }}>
-                      {meter.expiry}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Developer Terminal Console Execution */}
-              <div className="cerebrium-dev-terminal">
-                <div className="cerebrium-dev-terminal-bar">
-                  <div className="cerebrium-dev-terminal-dots">
-                    <span style={{ backgroundColor: '#ff5f56' }} />
-                    <span style={{ backgroundColor: '#ffbd2e' }} />
-                    <span style={{ backgroundColor: '#27c93f' }} />
-                  </div>
-                  <span style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.08em', fontWeight: 700 }}>
-                    ASSURANCE GATEWAY EXECUTION LOG
-                  </span>
-                  <span style={{ fontSize: '0.68rem', color: '#64748b' }}>ISO 50001 CLAUSE 6.6</span>
-                </div>
-                {simulatedSensor === 'WATER' ? (
-                  <div style={{ color: '#ef4444', fontSize: '0.85rem', lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
-                    <strong>[INGESTION_REJECTED] HTTP 422:</strong> Telemetry rejected for asset &apos;EVAP-WATER-02C&apos;. No active Certificate of Calibration found. Blocked by PostgreSQL trigger under ISO 50001 rules.
-                  </div>
-                ) : (
-                  <div style={{ color: '#10b981', fontSize: '0.85rem', lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
-                    <strong>[INGESTION_VERIFIED] HTTP 201:</strong> Telemetry verified against active calibration certificate (SHA-256: 8f9b...a10c). Ingestion approved under statutory assurance rules.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeDemoTab === 'ANOMALY' && (
-            <div>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: '#090d1a', letterSpacing: '-0.02em' }}>
-                Milestone ISO-2: 15% Baseline Anomaly Lock Simulator
-              </h3>
-              <p style={{ fontSize: '0.92rem', color: '#475569', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-                Slide to adjust observed PUE against the calibrated 1.14 baseline. Shifts exceeding ±15% trigger an immediate export lock (HTTP 423) and open an ISO Clause 10.2 non-conformance event.
-              </p>
-
-              <div style={{ marginBottom: '1.75rem', backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(15, 23, 42, 0.08)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.92rem', color: '#090d1a', fontWeight: 700 }}>Simulate Observed PUE:</span>
-                  <span style={{ fontSize: '1.2rem', fontWeight: 800, color: isAnomalyLocked ? '#ef4444' : '#10b981', fontFamily: 'var(--font-mono)' }}>
-                    {simulatedPue.toFixed(2)} (Variance: {pueVariance.toFixed(1)}%)
-                  </span>
-                </div>
-
-                <input
-                  type="range"
-                  min="1.05"
-                  max="1.55"
-                  step="0.01"
-                  value={simulatedPue}
-                  onChange={(e) => setSimulatedPue(parseFloat(e.target.value))}
-                  style={{ width: '100%', accentColor: isAnomalyLocked ? '#ef4444' : '#10b981' }}
-                />
-              </div>
-
-              {/* Developer Terminal Console Execution */}
-              <div className="cerebrium-dev-terminal">
-                <div className="cerebrium-dev-terminal-bar">
-                  <div className="cerebrium-dev-terminal-dots">
-                    <span style={{ backgroundColor: '#ff5f56' }} />
-                    <span style={{ backgroundColor: '#ffbd2e' }} />
-                    <span style={{ backgroundColor: '#27c93f' }} />
-                  </div>
-                  <span style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.08em', fontWeight: 700 }}>
-                    ANOMALY DRIFT MONITOR
-                  </span>
-                  <span style={{ fontSize: '0.68rem', color: '#64748b' }}>ISO 14001 CLAUSE 10.2</span>
-                </div>
-                {isAnomalyLocked ? (
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ef4444', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }}>
-                      [EXPORT_LOCKED] HTTP 423: System Export Lock Active
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>
-                      Metric variance of +{pueVariance.toFixed(1)}% exceeds the 15% threshold. Public transparency exports and certificate downloads are locked until supervisor root-cause resolution under ISO Clause 10.2.
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#10b981', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }}>
-                      [NOMINAL_BASELINE] HTTP 200: Metric Within Calibrated Baseline
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>
-                      Observed PUE ({simulatedPue.toFixed(2)}) is within the nominal ±15% corridor. Public transparency ledger exports are active.
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeDemoTab === 'SCORECARD' && (
-            <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>
-                Milestone ISO-3: 5-Pillar Scorecard Speedometer Gauge
-              </h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Under ISO 14065 & UK CMA guidelines, questionnaires compute weighted assurance scores and flag critical greenwashing risks if any pillar lacks verifiable proof.
-              </p>
-              <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-                <RiskSpeedometer score={4.85} riskLevel="LOW_RISK_CONFORMANT" />
-              </div>
-            </div>
-          )}
-
-          {activeDemoTab === 'CMA' && (
-            <div>
-              <CmaClaimsLinter initialText="This is a 100% Green Derby Hoodie with Zero Emissions Steel from our Carbon Neutral Event." />
-            </div>
-          )}
-
-          {activeDemoTab === 'JOBS' && (
-            <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>
-                Section 106 & Social Value Job Creation Auditor
-              </h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Simulate your facility's workforce ratios against statutory Town and Country Planning Act 1990 covenants and Local Employment Charters.
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', alignItems: 'start' }}>
-                <div style={{ backgroundColor: '#f8fafc', padding: '1.75rem', borderRadius: '14px', border: '1px solid rgba(15, 23, 42, 0.08)', display: 'flex', flexDirection: 'column', gap: '1.35rem' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 750, color: '#090d1a' }}>Total Facility Workers:</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#090d1a' }}>{simJobsWorkers} FTEs</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="20"
-                      max="300"
-                      step="5"
-                      value={simJobsWorkers}
-                      onChange={(e) => setSimJobsWorkers(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#090d1a' }}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 750, color: '#090d1a' }}>Local Resident Hires (≤ 15 miles):</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#0284c7' }}>
-                        {simJobsLocal} ({((simJobsLocal / simJobsWorkers) * 100).toFixed(1)}%)
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max={simJobsWorkers}
-                      step="1"
-                      value={simJobsLocal}
-                      onChange={(e) => setSimJobsLocal(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#0284c7' }}
-                    />
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 750, color: '#090d1a' }}>Accredited Apprentices (NVQ Level 2/3):</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#10b981' }}>
-                        {simJobsApprentices} ({((simJobsApprentices / simJobsWorkers) * 100).toFixed(1)}%)
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="30"
-                      step="1"
-                      value={simJobsApprentices}
-                      onChange={(e) => setSimJobsApprentices(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#10b981' }}
-                    />
-                  </div>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 650, color: '#090d1a' }}>
-                    <input
-                      type="checkbox"
-                      checked={simJobsLivingWage}
-                      onChange={(e) => setSimJobsLivingWage(e.target.checked)}
-                      style={{ accentColor: '#10b981' }}
-                    />
-                    <span>100% Real Living Wage Compliance</span>
-                  </label>
-                </div>
-
-                <div style={{ backgroundColor: '#f8fafc', padding: '1.75rem', borderRadius: '14px', border: '1px solid rgba(15, 23, 42, 0.08)' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
-                    COUNCIL AUDIT READINESS SCORE
-                  </div>
-                  
-                  {(() => {
-                    const localPct = (simJobsLocal / simJobsWorkers) * 100;
-                    const apprenticePct = (simJobsApprentices / simJobsWorkers) * 100;
-                    const isPassing = localPct >= 20 && apprenticePct >= 5 && simJobsLivingWage;
-                    const score = Math.round((Math.min(localPct / 25, 1) * 40) + (Math.min(apprenticePct / 5, 1) * 30) + (simJobsLivingWage ? 30 : 0));
-
-                    return (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', marginBottom: '0.85rem' }}>
-                          <span style={{ fontSize: '2.2rem', fontWeight: 800, color: isPassing ? '#10b981' : '#ef4444', fontFamily: 'var(--font-mono)' }}>
-                            {score}/100
-                          </span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: isPassing ? '#10b981' : '#ef4444' }}>
-                            {isPassing ? 'CONFORMANT (AUDIT READY)' : 'PLANNING RISK DETECTED'}
-                          </span>
-                        </div>
-
-                        <div style={{ height: '8px', width: '100%', backgroundColor: 'rgba(15, 23, 42, 0.08)', borderRadius: '9999px', overflow: 'hidden', marginBottom: '1.25rem' }}>
-                          <div style={{ height: '100%', width: `${score}%`, backgroundColor: isPassing ? '#10b981' : '#ef4444', transition: 'width 0.3s ease' }} />
-                        </div>
-
-                        <ul style={{ paddingLeft: '1.1rem', margin: '0 0 1.25rem 0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.6, listStyle: 'none' }}>
-                          <li style={{ marginBottom: '0.35rem' }}>
-                            <span style={{ fontWeight: 700, color: localPct >= 20 ? '#10b981' : '#ef4444', fontFamily: 'var(--font-mono)', marginRight: '6px' }}>
-                              {localPct >= 20 ? '[CONFORMANT]' : '[DEFICIT]'}
-                            </span>
-                            Local Resident Hiring: {localPct.toFixed(1)}% ({localPct >= 20 ? 'Exceeds 20% covenant' : 'Below 20% quota'})
-                          </li>
-                          <li style={{ marginBottom: '0.35rem' }}>
-                            <span style={{ fontWeight: 700, color: apprenticePct >= 5 ? '#10b981' : '#ef4444', fontFamily: 'var(--font-mono)', marginRight: '6px' }}>
-                              {apprenticePct >= 5 ? '[CONFORMANT]' : '[DEFICIT]'}
-                            </span>
-                            Apprenticeship Ratio: {apprenticePct.toFixed(1)}% ({apprenticePct >= 5 ? 'Meets City & Guilds quota' : 'Below 5% threshold'})
-                          </li>
-                          <li style={{ marginBottom: '0.35rem' }}>
-                            <span style={{ fontWeight: 700, color: simJobsLivingWage ? '#10b981' : '#ef4444', fontFamily: 'var(--font-mono)', marginRight: '6px' }}>
-                              {simJobsLivingWage ? '[CONFORMANT]' : '[DEFICIT]'}
-                            </span>
-                            Living Wage Benchmark: {simJobsLivingWage ? '100% Real Living Wage' : 'Wage rate deficit'}
-                          </li>
-                        </ul>
-
-                        <Link to="/job-reporting" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--cerebrium-magenta, #ff2d8d)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                          <span>Open Standalone Workforce Suite</span>
-                          <span>→</span>
-                        </Link>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          )}
           </div>
         </div>
       </section>
@@ -1532,7 +971,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="cerebrium-blog-body">
                 <div className="cerebrium-blog-meta">
-                  <span>JULY 15, 2026</span>
+                  <span style={{ color: '#e06d53', fontWeight: 600 }}>TO BE PUBLISHED SOON</span>
                   <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>TUTORIAL</span>
                 </div>
                 <h3 className="cerebrium-blog-card-title">
@@ -1569,7 +1008,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="cerebrium-blog-body">
                 <div className="cerebrium-blog-meta">
-                  <span>JULY 13, 2026</span>
+                  <span style={{ color: '#e06d53', fontWeight: 600 }}>TO BE PUBLISHED SOON</span>
                   <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>ANNOUNCEMENT</span>
                 </div>
                 <h3 className="cerebrium-blog-card-title">
@@ -1612,8 +1051,8 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="cerebrium-blog-body">
                 <div className="cerebrium-blog-meta">
-                  <span>JULY 8, 2026</span>
-                  <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>PRODUCT UPDATE • ANNOUNCEMENT →</span>
+                  <span style={{ color: '#e06d53', fontWeight: 600 }}>TO BE PUBLISHED SOON</span>
+                  <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>PRODUCT UPDATE</span>
                 </div>
                 <h3 className="cerebrium-blog-card-title">
                   GHGEmissionLogs Deploys Real-Time Anomaly Lock: Enforcing 15% Baseline Drift Freeze
@@ -1649,7 +1088,6 @@ export const LandingPage: React.FC = () => {
             
             {/* Card 1: Carbon Emissions (ISO 14064-1 & ISO 14001) */}
             <div className="cerebrium-audit-matrix-card">
-              <span className="cerebrium-audit-card-badge">ISO 14064-1:2018 ASSURED</span>
               <h3 className="cerebrium-audit-card-title">Carbon Emissions Accounting</h3>
               <p className="cerebrium-audit-card-desc">
                 Continuous ingestion of Scope 1, 2, and 3 activities with real-time statutory emission factor calculation.
@@ -1668,15 +1106,10 @@ export const LandingPage: React.FC = () => {
                   <span>Aligned with UK CMA Green Claims Code for anti-greenwashing protection</span>
                 </li>
               </ul>
-              <div className="cerebrium-audit-card-status">
-                <span>READINESS STATUS</span>
-                <span>AUDIT-READY</span>
-              </div>
             </div>
 
             {/* Card 2: Section 106 Statutory Job Reporting */}
             <div className="cerebrium-audit-matrix-card">
-              <span className="cerebrium-audit-card-badge">TCPA 1990 § 106 COMPLIANT</span>
               <h3 className="cerebrium-audit-card-title">Statutory Job Reporting</h3>
               <p className="cerebrium-audit-card-desc">
                 Automated social value and municipal employment compliance under the Town and Country Planning Act 1990.
@@ -1695,15 +1128,10 @@ export const LandingPage: React.FC = () => {
                   <span>Instant statutory council return generation with verified provenance badges</span>
                 </li>
               </ul>
-              <div className="cerebrium-audit-card-status">
-                <span>COVENANT COMPLIANCE</span>
-                <span>VERIFIED AUDIT DOSSIER</span>
-              </div>
             </div>
 
             {/* Card 3: Energy Telemetry (ISO 50001:2018) */}
             <div className="cerebrium-audit-matrix-card">
-              <span className="cerebrium-audit-card-badge">ISO 50001:2018 TELEMETRY</span>
               <h3 className="cerebrium-audit-card-title">Industrial Energy Telemetry</h3>
               <p className="cerebrium-audit-card-desc">
                 Sub-second OT telemetry ingestion directly from calibrated physical meters with active warranty gatekeepers.
@@ -1722,15 +1150,10 @@ export const LandingPage: React.FC = () => {
                   <span>Automated ISO non-conformance event triggers and corrective action logs</span>
                 </li>
               </ul>
-              <div className="cerebrium-audit-card-status">
-                <span>OT SENSOR SYNC</span>
-                <span>SUB-SECOND ASSURANCE</span>
-              </div>
             </div>
 
             {/* Card 4: Remote Audit Verification (ISO 19011:2018) */}
             <div className="cerebrium-audit-matrix-card">
-              <span className="cerebrium-audit-card-badge">ISO 19011:2018 PROTOCOL</span>
               <h3 className="cerebrium-audit-card-title">Remote Auditor Portal</h3>
               <p className="cerebrium-audit-card-desc">
                 Purpose-built remote verification workflows for independent auditing bodies (BSI, TÜV Rheinland, DNV, SGS).
@@ -1749,10 +1172,6 @@ export const LandingPage: React.FC = () => {
                   <span>Multi-jurisdiction statutory disclosures (SECR, CSRD / ESRS, TCFD)</span>
                 </li>
               </ul>
-              <div className="cerebrium-audit-card-status">
-                <span>AUDIT DEFENSE</span>
-                <span>AUDIT READINESS VERIFIED</span>
-              </div>
             </div>
 
           </div>

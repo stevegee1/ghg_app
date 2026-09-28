@@ -6,9 +6,9 @@ import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { OpenSeaBadge } from '../components/OpenSeaBadge';
 import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
-import { InteractiveAuditStepper } from '../components/InteractiveAuditStepper';
-import { SharedDashboardShell } from '../components/SharedDashboardShell';
 import { WorkflowWizard } from '../components/workflow/WorkflowWizard';
+import { ReadinessEngineWorkflow } from '../components/ReadinessEngineWorkflow';
+import { SharedDashboardShell } from '../components/SharedDashboardShell';
 
 // ── Scope & Step definitions ────────────────────────────────────────────────
 type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
@@ -251,7 +251,7 @@ export const PortalPage: React.FC = () => {
   }
 
   // ── Dashboard Navigation View ─────────────────────────────────────────────
-  const [activeView, setActiveView] = useState<DashboardView>('workflow');
+  const [activeView, setActiveView] = useState<DashboardView>('overview');
   const [workflowWizardType, setWorkflowWizardType] = useState<'CARBON' | 'JOB'>('CARBON');
   const [workflowWizardSubmissionId, setWorkflowWizardSubmissionId] = useState<string | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
@@ -882,26 +882,38 @@ export const PortalPage: React.FC = () => {
 
   const handleProceedFromJobAudit = async () => {
     if (!token) return;
-    if (!submissionId) {
-      try {
-        const latest = jobReports[0];
-        const jobsCount = parseInt(jobsCreatedInput, 10);
-        const subRes = await api.submitIsoAnswers(token, {
-          answers: [
-            { questionId: 'S106-PERIOD-TYPE', answer: latest?.periodType || periodType },
-            { questionId: 'S106-PERIOD-START', answer: latest?.periodStart ? new Date(latest.periodStart).toISOString() : periodStart },
-            { questionId: 'S106-PERIOD-END', answer: latest?.periodEnd ? new Date(latest.periodEnd).toISOString() : periodEnd },
-            { questionId: 'S106-JOBS-CREATED', answer: String(latest?.jobsCreated || (!isNaN(jobsCount) ? jobsCount : 50)) },
-            { questionId: 'S106-ATTESTATION-NOTE', answer: latest?.attestationNote || customNoteInput.trim() || 'Verified Section 106 covenant' },
-          ],
-          tierSelected: selectedTier,
-        });
-        if (subRes?.submissionId) setSubmissionId(subRes.submissionId);
-      } catch (err) {
-        console.warn('[Job Readiness Submission Sync]', err);
-      }
+    if (jobReports.length === 0) {
+      setJobFormError('Mandatory Section 106 period filing required. Submit at least one verified workforce report before proceeding.');
+      return;
     }
-    setActiveStep(2);
+    setJobFormError(null);
+    setSubmittingJob(true);
+    try {
+      const latest = jobReports[0];
+      const subRes = await api.submitIsoAnswers(token, {
+        answers: [
+          { questionId: 'S106-PERIOD-TYPE', questionText: 'Period Type', answer: latest.periodType, isoClause: 'Section 106' },
+          { questionId: 'S106-PERIOD-START', questionText: 'Period Start Date', answer: new Date(latest.periodStart).toISOString(), isoClause: 'Section 106' },
+          { questionId: 'S106-PERIOD-END', questionText: 'Period End Date', answer: new Date(latest.periodEnd).toISOString(), isoClause: 'Section 106' },
+          { questionId: 'S106-JOBS-CREATED', questionText: 'Verified Jobs Created', answer: `Conforming: Statutory evidence document attached (${latest.jobsCreated} verified jobs created).`, isoClause: 'Section 106' },
+          { questionId: 'S106-ATTESTATION-NOTE', questionText: 'Local Authority Covenant', answer: latest.attestationNote || 'Verified Section 106 covenant', isoClause: 'Section 106' },
+        ],
+        tierSelected: selectedTier,
+        selectedFrameworks: ['SECTION_106'],
+        submissionId: submissionId || undefined,
+      });
+
+      if (!subRes || !subRes.submissionId) {
+        throw new Error('Workforce readiness assessment failed to register on the server.');
+      }
+      setSubmissionId(subRes.submissionId);
+      setActiveStep(2);
+    } catch (err: any) {
+      console.error('[Job Readiness Submission Error]', err);
+      setJobFormError(err.message || 'Workforce assurance transition failed. Please verify that your report is recorded and try again.');
+    } finally {
+      setSubmittingJob(false);
+    }
   };
 
   // ── Read URL params on mount (post-checkout redirect & deep links) ───────
@@ -922,8 +934,8 @@ export const PortalPage: React.FC = () => {
       setActiveView('overview');
     } else if (viewParam === 'credentials' || viewParam === 'nft') {
       setActiveView('credentials');
-    } else if (viewParam === 'jobs' || viewParam === 'job-reporting') {
-      setActiveView('jobs');
+    } else if (viewParam === 'jobs' || viewParam === 'job-reporting' || viewParam === 'section-106') {
+      setActiveView('workflow');
       setAuditScope('JOB_REPORTING');
     } else if (viewParam === 'transactions' || viewParam === 'settlement') {
       setActiveView('transactions');
@@ -955,8 +967,13 @@ export const PortalPage: React.FC = () => {
     setTimeout(() => setCopiedApiKey(false), 2000);
   };
 
-  // Corporate display name resolver (never shows raw licensee ID or generic email provider names)
+  // Corporate display name resolver (prioritizes registered corporate company name)
   const getDisplayName = (): string => {
+    // 1. Registered Company Name from authenticated tenant profile
+    if (user?.companyName && user.companyName.trim() && user.companyName !== 'Authorized Entity') {
+      return user.companyName.trim();
+    }
+
     if (user?.email) {
       const parts = user.email.split('@');
       const localPart = parts[0] || '';
@@ -978,7 +995,7 @@ export const PortalPage: React.FC = () => {
         'msn.com',
       ]);
 
-      // 1. Corporate custom domain (e.g. itm-power.com -> ITM Power)
+      // 2. Corporate custom domain fallback (e.g. itm-power.com -> ITM Power)
       if (domain && !PUBLIC_EMAIL_PROVIDERS.has(domain)) {
         const base = domain.split('.')[0] || '';
         return base
@@ -987,7 +1004,7 @@ export const PortalPage: React.FC = () => {
           .join(' ');
       }
 
-      // 2. Generic provider (e.g. bospec@gmail.com -> Bospec)
+      // 3. Cleaned local part fallback
       if (localPart) {
         const cleaned = localPart.replace(/[._-]+/g, ' ').trim();
         if (cleaned) {
@@ -1005,14 +1022,16 @@ export const PortalPage: React.FC = () => {
 
   const getViewTitle = () => {
     switch (activeView) {
-      case 'workflow':
-        return 'Assurance Workflow Studio';
       case 'overview':
-        return 'Executive Overview & KPIs';
+        return 'Executive KPI Overview';
+      case 'workflow':
+        return auditScope === 'JOB_REPORTING'
+          ? 'Workforce & Social Value Assurance'
+          : 'GHG & Carbon Emissions Assurance';
       case 'credentials':
         return 'Issued Audit Warranty Credentials';
       case 'jobs':
-        return 'Workforce & Social Impact Filings';
+        return 'Section 106 Filings & Local Labour Ledger';
       case 'embed':
         return 'Website Trust Seal & HTML Embed Generator';
       case 'transactions':
@@ -1124,19 +1143,23 @@ export const PortalPage: React.FC = () => {
   const isPaid = Boolean(isoStatus?.paidAt || currentSubmissionStatus === 'APPROVED');
 
   const totalVerifiedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
+  const settledTxs = Array.isArray(transactions) ? transactions.filter((t: any) => t.status === 'SETTLED') : [];
+  const settledCount = summary?.countByStatus?.SETTLED ?? summary?.totalSettledTransactions ?? settledTxs.length;
+  const settledGrossCents = summary?.totalGrossVolumeCents ?? settledTxs.reduce((acc: number, t: any) => acc + (t.grossAmountCents || 0), 0);
+  const settledCharityCents = summary?.totalCharityGiftCentsSettled ?? summary?.totalCharityGiftCents ?? settledTxs.reduce((acc: number, t: any) => acc + (t.financialSplit?.charityGiftCents || (t.grossAmountCents ? Math.round(t.grossAmountCents * 0.15) : 0)), 0);
 
   const kpis = auditScope === 'CARBON_EMISSION'
     ? [
-        { label: 'Settled Transactions', value: loading ? '...' : (summary?.totalSettledTransactions ?? 0).toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
-        { label: 'Settled Gross Volume', value: loading ? '...' : `\u00a3${((summary?.totalGrossVolumeCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
-        { label: '15% ESG Charity Split', value: loading ? '...' : `\u00a3${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: 'var(--color-sky)' },
-        { label: 'Active Credentials', value: credentials.length.toString(), sub: 'Polygon ERC-1155 Minted', accent: 'var(--google-amber)' },
+        { label: 'Settled Transactions', value: loading ? '...' : settledCount.toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
+        { label: 'Settled Gross Volume', value: loading ? '...' : `\u00a3${(settledGrossCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
+        { label: '15% ESG Charity Split', value: loading ? '...' : `\u00a3${(settledCharityCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: 'var(--color-sky)' },
+        { label: 'Active Credentials', value: loading ? '...' : credentials.length.toString(), sub: 'Polygon ERC-1155 Minted', accent: 'var(--google-amber)' },
       ]
     : [
         { label: 'Total Verified Jobs', value: loading ? '...' : totalVerifiedJobs.toLocaleString(), sub: 'Section 106 Local Impact', accent: 'var(--color-sky)' },
         { label: 'Active Filing Periods', value: loading ? '...' : jobReports.length.toString(), sub: 'Quarterly & Annual Covenants', accent: 'var(--color-green)' },
-        { label: '15% Social Endowment', value: loading ? '...' : `\u00a3${((summary?.totalCharityGiftCents ?? 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, sub: 'Direct Disaster Relief Endowment', accent: 'var(--color-sky)' },
-        { label: 'Audited Covenants', value: jobReports.length > 0 ? '100% Verified' : 'Filing Required', sub: 'ISO 19011:2026 Assured', accent: 'var(--google-amber)' },
+        { label: '15% Social Endowment', value: loading ? '...' : `\u00a3${(settledCharityCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Direct Disaster Relief Endowment', accent: 'var(--color-sky)' },
+        { label: 'Audited Covenants', value: loading ? '...' : (jobReports.length > 0 ? '100% Verified' : 'Filing Required'), sub: 'ISO 19011:2026 Assured', accent: 'var(--google-amber)' },
       ];
 
   // ── Sidebar nav items helper (shared desktop + mobile drawer) ───────────
@@ -1177,33 +1200,23 @@ export const PortalPage: React.FC = () => {
 
       {/* Modern Grouped Sidebar Nav Items */}
       <nav className="portal-sidebar-nav" aria-label="Dashboard Navigation">
-        {/* MAIN */}
-        <div className="portal-nav-section-title">MAIN</div>
+        {/* EXECUTIVE DASHBOARD */}
+        <div className="portal-nav-section-title">EXECUTIVE DASHBOARD</div>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'overview' ? 'active' : ''}`}
-          onClick={() => { setActiveView('overview'); onNav?.(); }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Overview /></span>
-          <span className="portal-nav-label">KPI Overview</span>
-        </button>
-
-        {/* COMPLIANCE */}
-        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>COMPLIANCE</div>
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'assurance-wizard' ? 'active' : ''}`}
           onClick={() => {
-            setWorkflowWizardType('CARBON');
-            setWorkflowWizardSubmissionId(null);
-            setActiveView('assurance-wizard');
+            setActiveView('overview');
             onNav?.();
           }}
         >
-          <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
-          <span className="portal-nav-label">Assurance Engine</span>
-          <span className="portal-nav-badge">Screens 1–11</span>
+          <span className="portal-nav-icon"><GoogleIcons.Overview /></span>
+          <span className="portal-nav-label">KPI Overview</span>
+          <span className="portal-nav-badge count">Live</span>
         </button>
+
+        {/* ASSURANCE WORKFLOWS */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>ASSURANCE WORKFLOWS</div>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
@@ -1214,61 +1227,42 @@ export const PortalPage: React.FC = () => {
           }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
-          <span className="portal-nav-label">ISO Carbon Audit</span>
-          <span className="portal-nav-badge">Step {activeStep}/5</span>
+          <span className="portal-nav-label">GHG &amp; Carbon Emissions</span>
+          {activeView === 'workflow' && auditScope === 'CARBON_EMISSION' && (
+            <span className="portal-nav-badge">Step {activeStep}/5</span>
+          )}
         </button>
 
         <button
           type="button"
-          className={`portal-nav-btn ${activeView === 'jobs' ? 'active' : ''}`}
+          className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
           onClick={() => {
-            setActiveView('jobs');
-            if (auditScope !== 'JOB_REPORTING') setAuditScope('JOB_REPORTING');
+            setActiveView('workflow');
+            setAuditScope('JOB_REPORTING');
             onNav?.();
           }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
-          <span className="portal-nav-label">Workforce &amp; S106</span>
-          {jobReports.length > 0 && <span className="portal-nav-badge count">{jobReports.length}</span>}
+          <span className="portal-nav-label">Workforce &amp; Social Value</span>
+          {activeView === 'workflow' && auditScope === 'JOB_REPORTING' && (
+            <span className="portal-nav-badge">Step {activeStep}/5</span>
+          )}
         </button>
 
-        {/* LICENSING & WEB */}
-        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>LICENSING &amp; WEB</div>
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'workflow' && activeStep === 4 ? 'active' : ''}`}
-          onClick={() => {
-            setActiveView('workflow');
-            setActiveStep(4);
-            onNav?.();
-          }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Credentials /></span>
-          <span className="portal-nav-label">Credential Studio</span>
-        </button>
-
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'embed' ? 'active' : ''}`}
-          onClick={() => { setActiveView('embed'); onNav?.(); }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Code /></span>
-          <span className="portal-nav-label">Web Trust Seal</span>
-          <span className="portal-nav-badge" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>CDN</span>
-        </button>
-
+        {/* VERIFICATION & GOVERNANCE */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>VERIFICATION &amp; GOVERNANCE</div>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'credentials' ? 'active' : ''}`}
           onClick={() => { setActiveView('credentials'); onNav?.(); }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Shield /></span>
-          <span className="portal-nav-label">Issued Credentials</span>
+          <span className="portal-nav-label">Verified Credentials</span>
           {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
         </button>
 
-        {/* FINANCE & LEGAL */}
-        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>FINANCE &amp; LEGAL</div>
+        {/* FINANCE & GOVERNANCE */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>FINANCE &amp; GOVERNANCE</div>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'transactions' ? 'active' : ''}`}
@@ -1372,35 +1366,32 @@ export const PortalPage: React.FC = () => {
       {/* ── Main Workspace ─────────────────────────────────────────────────── */}
       <main className="portal-main-workspace">
 
-        {/* Top Greeting Banner */}
+        {/* Top Greeting Banner - Clean Google/Normative Enterprise Typography */}
         <div className="portal-greeting-banner">
           <div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 500 }}>
-              {getFormattedDate()}
-            </div>
-            <div style={{ fontSize: '0.98rem', fontWeight: 500, color: 'var(--text-secondary)', margin: '0 0 0.35rem 0' }}>
-              {getGreeting()},{' '}
-              <strong style={{ fontWeight: 600, color: 'var(--text-main)' }}>{displayName}</strong>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
+              {getGreeting()}, {displayName}
+            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', fontSize: '0.84rem', color: '#4b5563' }}>
+              <span>{getFormattedDate()}</span>
+              <span>•</span>
+              <span className="badge badge-settled" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
                 ACTIVE LICENSEE
               </span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Contractual 85/15 Statutory Split Guaranteed: ISO 19011:2026 Remote Auditing
-              </span>
+              <span>•</span>
+              <span>ISO 19011:2026 Remote Auditing</span>
               {user?.licenseeId && (
                 <button
                   type="button"
                   onClick={copyClientId}
                   style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.72rem',
                     fontFamily: 'var(--font-mono)',
-                    color: 'var(--color-sky)',
-                    background: 'var(--accent-light)',
-                    border: '1px solid var(--color-sky)',
-                    borderRadius: 'var(--radius-xs)',
-                    padding: '2px 6px',
+                    color: '#334155',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
                     cursor: 'pointer',
                   }}
                   title="Click to copy License ID"
@@ -1412,7 +1403,7 @@ export const PortalPage: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {activeView === 'workflow' && activeStep === 1 ? (
+            {activeView === 'workflow' && (
               <span
                 className={
                   isAuditReady
@@ -1437,26 +1428,13 @@ export const PortalPage: React.FC = () => {
                 title={isSubmittedPendingReview || isAuditReady ? 'Click to inspect Lead Auditor review determination status' : undefined}
               >
                 {isAuditReady
-                  ? 'Step 1: Gate 1 Cleared (View Status)'
+                  ? 'Gate 1 Cleared (View Status)'
                   : isRevisionRequired
-                  ? 'Step 1: Revisions Requested (View Notice)'
+                  ? 'Revisions Requested (View Notice)'
                   : isSubmittedPendingReview
-                  ? 'Step 1: In Auditor Review (View Status)'
-                  : 'Step 1: Diagnostic In Progress'}
+                  ? 'In Auditor Review (View Status)'
+                  : `Stage ${activeStep} of 5 In Progress`}
               </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveView('workflow');
-                  if (activeView !== 'workflow') setActiveStep(1);
-                }}
-                className="btn btn-primary"
-              >
-                {activeView === 'workflow' && activeStep > 1
-                  ? `Resume Audit (Step ${activeStep} of 5)`
-                  : `+ Start ${auditScope === 'JOB_REPORTING' ? 'Job Filing Audit' : 'Carbon Audit'}`}
-              </button>
             )}
           </div>
         </div>
@@ -1483,54 +1461,47 @@ export const PortalPage: React.FC = () => {
             </h1>
           </div>
 
-          {/* Google Material 3 Dual-Scope Segmented Switcher */}
+          {/* Enterprise Header Status & Context Actions */}
           <div className="google-m3-scope-container">
+            {activeView === 'overview' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.95rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '9999px', fontSize: '0.78rem', color: '#1e293b', fontWeight: 600 }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0284c7', display: 'inline-block' }} />
+                <span>Executive Assurance Registry · FY 2025-2026</span>
+              </div>
+            )}
 
-            <div className="google-m3-segmented-control" role="tablist" aria-label="Audit-Ready Scope Selector">
-              <button
-                type="button"
-                role="tab"
-                id="scope-tab-carbon"
-                aria-selected={auditScope === 'CARBON_EMISSION'}
-                onClick={() => {
-                  setAuditScope('CARBON_EMISSION');
-                  setActiveStep(1);
-                }}
-                className={`google-m3-segment-btn ${auditScope === 'CARBON_EMISSION' ? 'active-carbon' : ''}`}
-              >
-                <span className="m3-segment-icon"><GoogleIcons.Leaf /></span>
-                <div className="m3-segment-text">
-                  <span className="m3-segment-title">Carbon Emission</span>
-                  <span className="m3-segment-subtitle">ISO 14001 / 50001</span>
-                </div>
-                {auditScope === 'CARBON_EMISSION' && <span className="m3-check-indicator">✓</span>}
-              </button>
+            {activeView === 'workflow' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.95rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '9999px', fontSize: '0.78rem', color: '#1e293b', fontWeight: 600 }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: auditScope === 'CARBON_EMISSION' ? '#16a34a' : '#2563eb', display: 'inline-block' }} />
+                <span>
+                  {auditScope === 'CARBON_EMISSION'
+                    ? 'ISO 14064-1 & GHG Protocol Assurance'
+                    : 'Section 106 & CSRD ESRS S1 Social Value Assurance'}
+                </span>
+              </div>
+            )}
 
-              <button
-                type="button"
-                role="tab"
-                id="scope-tab-jobs"
-                aria-selected={auditScope === 'JOB_REPORTING'}
-                onClick={() => {
-                  setAuditScope('JOB_REPORTING');
-                  setActiveStep(1);
-                }}
-                className={`google-m3-segment-btn ${auditScope === 'JOB_REPORTING' ? 'active-jobs' : ''}`}
-              >
-                <span className="m3-segment-icon"><GoogleIcons.Jobs /></span>
-                <div className="m3-segment-text">
-                  <span className="m3-segment-title">Job Creation</span>
-                  <span className="m3-segment-subtitle">Section 106 Social</span>
-                </div>
-                {auditScope === 'JOB_REPORTING' && <span className="m3-check-indicator">✓</span>}
-              </button>
-            </div>
-
-            {auditScope === 'JOB_REPORTING' && (
+            {activeView === 'jobs' && (
               <button
                 type="button"
                 onClick={() => setShowJobModal(true)}
-                className="btn btn-primary m3-job-submit-btn"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '0.55rem 1.25rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1e293b')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#0f172a')}
               >
                 + Submit Job Filing
               </button>
@@ -1544,1924 +1515,267 @@ export const PortalPage: React.FC = () => {
           </div>
         )}
 
-        {/* ── VIEW 1: Assurance Workflow (Step 1-5) ─────────────────────────── */}
-        {activeView === 'workflow' && (
-          <div className="persefoni-card no-padding" style={{ padding: '0', marginBottom: '2.5rem', overflow: 'hidden' }}>
-
-        {/* ── Google Cloud Connected Stepper Bar ──────────────────────────────── */}
-        <div className="portal-stepper-container">
-          {/* Mobile Stepper Header (visible <= 768px) */}
-          <div className="portal-stepper-mobile-bar">
-            <div className="portal-mobile-step-status">
-              <span className="portal-mobile-step-pill">Step {activeStep} of 5</span>
-              <span className="portal-mobile-step-title">{STEP_LABELS[auditScope][activeStep]}</span>
-            </div>
-            <div className="portal-mobile-step-nav">
-              <button
-                type="button"
-                className="portal-mobile-step-btn"
-                disabled={activeStep <= 1}
-                onClick={() => setActiveStep((prev) => Math.max(1, prev - 1) as WorkflowStep)}
-                aria-label="Previous step"
-              >
-                ← Prev
-              </button>
-              <button
-                type="button"
-                className="portal-mobile-step-btn primary"
-                disabled={activeStep >= 5}
-                onClick={() => setActiveStep((prev) => Math.min(5, prev + 1) as WorkflowStep)}
-                aria-label="Next step"
-              >
-                Next →
-              </button>
-            </div>
-          </div>
-
-          {/* Stepper Steps Track (Desktop + Mobile Horizontal Scroll Snap) */}
-          <div className="portal-stepper-bar">
-            {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step, idx) => {
-              const isActive = activeStep === step;
-
-              // Gate-truthful status resolver
-              const getStepStatus = (): 'completed' | 'action-required' | 'locked' | 'active' | 'pending' => {
-                if (isActive) return 'active';
-                if (auditScope === 'CARBON_EMISSION') {
-                  if (step === 1) return isAuditReady ? 'completed' : (activeStep > 1 ? 'action-required' : 'pending');
-                  if (step === 2) return isPaid ? 'completed' : (activeStep > 2 ? 'action-required' : 'pending');
-                  if (step === 3) return isPaid ? 'completed' : 'locked';
-                  if (step === 4) return credentials.length > 0 ? 'completed' : (!isPaid || !isAuditReady) ? 'locked' : 'pending';
-                  if (step === 5) return mintResult ? 'completed' : 'locked';
+        {/* ── VIEW: Executive Overview & KPI Dashboard (True Source of Truth) ── */}
+        {activeView === 'overview' && (
+          <div className="space-y-8" style={{ marginBottom: '2.5rem' }}>
+            <SharedDashboardShell
+              onNavigateWorkflow={(type) => {
+                if (type === 'JOB') {
+                  setAuditScope('JOB_REPORTING');
+                  setActiveView('workflow');
+                } else {
+                  setAuditScope('CARBON_EMISSION');
+                  setActiveView('workflow');
                 }
-                // JOB_REPORTING scope: positional only (no payment gate)
-                return step < activeStep ? 'completed' : 'pending';
-              };
+              }}
+            />
 
-              const stepStatus = getStepStatus();
-              const isCompleted = stepStatus === 'completed';
-              const isLocked = stepStatus === 'locked';
-              const isActionRequired = stepStatus === 'action-required';
-
-              const getBadgeContent = () => {
-                if (isCompleted) return '\u2713';
-                if (isActionRequired) return '!';
-                if (isLocked) return '\uD83D\uDD12';
-                return step;
-              };
-
-              const getConnectorClass = () => {
-                if (step >= activeStep) return '';
-                const nextStatus = (() => {
-                  const nextStep = (step + 1) as WorkflowStep;
-                  if (nextStep === activeStep) return 'active-step';
-                  if (auditScope === 'CARBON_EMISSION') {
-                    if (nextStep === 3 && !isPaid) return 'warning';
-                    if (nextStep === 4 && (!isPaid || !isAuditReady)) return 'warning';
-                    if (nextStep === 5 && !mintResult) return 'warning';
-                  }
-                  return 'active';
-                })();
-                return nextStatus === 'warning' ? 'warning' : 'active';
-              };
-
-              return (
-                <React.Fragment key={step}>
-                  <button
-                    type="button"
-                    onClick={() => !isLocked && setActiveStep(step)}
-                    disabled={isLocked}
-                    className={`portal-stepper-step-btn ${stepStatus}`}
-                    aria-label={`${STEP_LABELS[auditScope][step]}${isLocked ? ' (locked)' : isActionRequired ? ' (action required)' : ''}`}
-                  >
-                    <div className="portal-step-badge">
-                      {getBadgeContent()}
-                    </div>
-                    <div className="portal-step-label-box">
-                      <div className="portal-step-label">
-                        {STEP_LABELS[auditScope][step]}
-                      </div>
-                      {isActionRequired && (
-                        <div style={{ fontSize: '0.68rem', color: 'var(--google-amber)', fontWeight: 700 }}>Action Required</div>
-                      )}
-                      {isLocked && (
-                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Locked</div>
-                      )}
-                    </div>
-                  </button>
-
-                  {idx < 4 && (
-                    <div className={`portal-stepper-connector ${getConnectorClass()}`} />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Step content */}
-        <div className="portal-step-content portal-step-content-box">
-
-          {/* ── STEP 1: Audit Preparation (Scope Adaptive) ── */}
-          {activeStep === 1 && (
-            auditScope === 'CARBON_EMISSION' ? (
-              <div>
-              {/* Clean Google SaaS Assessment Header with Actions */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '1.5rem' }}>
+            {/* Sovereign Assurance Launchers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
+              <div
+                className="persefoni-card"
+                style={{
+                  padding: '1.5rem',
+                  border: '1px solid #bbf7d0',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                }}
+              >
                 <div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.45rem' }}>
-                    <span className="radar-pulse" style={{ width: '8px', height: '8px' }} />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                      ISO Audit-Readiness Diagnostic Studio
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Independent Assurance Flow
+                    </span>
+                    <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', backgroundColor: '#dcfce7', color: '#15803d', borderRadius: '9999px', fontWeight: 600 }}>
+                      ISO 14064-1
                     </span>
                   </div>
-                  <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.015em' }}>
-                    Statutory Conformance Diagnostic
-                  </h2>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '780px', lineHeight: 1.5 }}>
-                    Interactive multi-pillar diagnostic aligned with ISO 14001:2015, ISO 50001:2018, ISO 14064, and ISO 19011:2026 remote auditing protocols.
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
+                    GHG &amp; Carbon Emissions
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+                    Corporate carbon footprint audit across Scope 1 direct, Scope 2 electricity, and Scope 3 supply chain with dual-mark warranty attestation.
                   </p>
                 </div>
-
-                <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={handleStartNewAudit}
-                    className="btn btn-primary"
-                    style={{
-                      padding: '0.6rem 1.25rem',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.45rem',
-                    }}
-                  >
-                    <span>+</span>
-                    <span>Start New Carbon Audit</span>
-                  </button>
-                  {recentSubmissions.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowRecentAudits((prev) => !prev)}
-                      className="btn btn-secondary"
-                      style={{
-                        padding: '0.6rem 1.15rem',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {showRecentAudits ? 'Hide Recent Audits' : `View Recent Audits (${recentSubmissions.length})`}
-                    </button>
-                  )}
-                  {submissionId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const elem = document.getElementById('iso-audit-stepper-anchor');
-                        if (elem) elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className="btn btn-secondary"
-                      style={{
-                        padding: '0.6rem 1.15rem',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Resume Active Workflow
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Multi-Framework Harmonisation Selector Bar */}
-              <div style={{
-                backgroundColor: 'var(--bg-card)',
-                border: '1px solid var(--border-light)',
-                borderRadius: '12px',
-                padding: '1.25rem 1.5rem',
-                marginBottom: '1.5rem',
-                boxShadow: 'var(--shadow-xs)',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                  <div>
-                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                      Target Statutory &amp; Voluntary Frameworks (Multi-Standard Harmonisation)
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                      Select the international carbon reporting standards applicable to your operations. Questions dynamically deduplicate across all 5 core pillars.
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '3px 10px', borderRadius: '6px', border: '1px solid rgba(2, 132, 199, 0.2)' }}>
-                    {selectedFrameworks.length} Framework{selectedFrameworks.length === 1 ? '' : 's'} Selected · {totalQuestions} Questions Summed ({answeredQuestions} Answered)
-                  </span>
-                </div>
-
-                {/* Framework Chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem' }}>
-                  {(availableFrameworks.length > 0 ? availableFrameworks : [
-                    { id: 'ISO_14064_1', code: 'ISO 14064-1', name: 'Corporate GHG Inventories', jurisdiction: 'Global' },
-                    { id: 'ISO_50001', code: 'ISO 50001', name: 'Energy Management Systems', jurisdiction: 'Global' },
-                    { id: 'GHG_PROTOCOL', code: 'GHG Protocol', name: 'Scope 1, 2, 3 Corporate Standard', jurisdiction: 'Global' },
-                    { id: 'UK_SECR', code: 'UK SECR', name: 'Streamlined Energy & Carbon Reporting', jurisdiction: 'United Kingdom' },
-                    { id: 'EU_CSRD', code: 'EU CSRD', name: 'ESRS E1 Climate Standard', jurisdiction: 'European Union' },
-                    { id: 'US_CASB253', code: 'US CA-SB253', name: 'California Climate Data Accountability', jurisdiction: 'United States' },
-                    { id: 'UK_CMA', code: 'UK CMA', name: 'Green Claims Code', jurisdiction: 'United Kingdom' },
-                    { id: 'ISO_14067', code: 'ISO 14067', name: 'Product Carbon Footprint (LCA)', jurisdiction: 'Global' },
-                  ]).map((fw: any) => {
-                    const isSelected = selectedFrameworks.includes(fw.id);
-                    const code = fw.code || fw.shortTitle || fw.id;
-                    const name = fw.name || fw.title || '';
-                    return (
-                      <button
-                        key={fw.id}
-                        type="button"
-                        onClick={() => toggleFramework(fw.id)}
-                        title={`${code}: ${name} (${fw.jurisdiction || 'Global'})`}
-                        className={`portal-framework-chip ${isSelected ? 'selected' : ''}`}
-                      >
-                        <span className="chip-indicator">{isSelected ? '✓' : '+'}</span>
-                        <span className="chip-code">{code}</span>
-                        <span className="chip-jurisdiction">
-                          {fw.jurisdiction || 'Global'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ── 5 Recent Carbon Audits Hub (Collapsible) ─────────────────────────────────── */}
-              {showRecentAudits ? (
-                <div className="recent-audits-card" style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.85rem' }}>
-                    <div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span>Recent Carbon Audits</span>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Last 5 Engagements
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                        Review status, dates, and resume diagnostic workflows directly where you left off.
-                      </div>
-                    </div>
-                    {recentSubmissions.length > 0 && (
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-sky)' }}>
-                        {recentSubmissions.length} Record{recentSubmissions.length === 1 ? '' : 's'} Logged
-                      </span>
-                    )}
-                  </div>
-
-                  {recentSubmissions.length > 0 ? (
-                    <div className="table-container-responsive" style={{ margin: 0 }}>
-                      <table className="recent-audits-table">
-                        <thead>
-                          <tr>
-                            <th>Engagement Ref</th>
-                            <th>Date Initiated</th>
-                            <th>Frameworks</th>
-                            <th>Conformance</th>
-                            <th>Status</th>
-                            <th style={{ textAlign: 'right' }}>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {recentSubmissions.slice(0, 5).map((sub) => {
-                            const isCurrent = sub.id === submissionId;
-                            const createdDate = sub.createdAt
-                              ? new Date(sub.createdAt).toLocaleDateString('en-GB', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })
-                              : '-';
-                            const fws = sub.selectedFrameworks || ['ISO_14064_1'];
-
-                            let statusBadgeColor = 'var(--text-muted)';
-                            let statusBg = 'var(--bg-subtle)';
-                            let statusText = sub.status || 'DRAFT';
-
-                            if (sub.status === 'APPROVED' || sub.status === 'AUDIT_READY') {
-                              statusBadgeColor = 'var(--color-green-dark)';
-                              statusBg = 'rgba(16, 185, 129, 0.12)';
-                              statusText = sub.status === 'AUDIT_READY' ? 'AUDIT READY' : 'APPROVED';
-                            } else if (sub.status === 'UNDER_REVIEW' || sub.status === 'SUBMITTED') {
-                              statusBadgeColor = 'var(--color-sky-dark)';
-                              statusBg = 'rgba(2, 132, 199, 0.12)';
-                              statusText = sub.status === 'SUBMITTED' ? 'SUBMITTED (AWAITING REVIEW)' : 'UNDER REVIEW';
-                            } else if (sub.status === 'REVISION_REQUIRED') {
-                              statusBadgeColor = 'var(--google-amber)';
-                              statusBg = 'rgba(245, 158, 11, 0.12)';
-                              statusText = 'REVISION REQUIRED';
-                            }
-
-                            return (
-                              <tr key={sub.id} style={{ backgroundColor: isCurrent ? 'rgba(2, 132, 199, 0.04)' : undefined }}>
-                                <td>
-                                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.8rem', color: isCurrent ? 'var(--color-sky)' : 'var(--text-main)' }}>
-                                    GHG-SUB-{(sub.id || '').slice(0, 8).toUpperCase()}
-                                  </span>
-                                  {isCurrent && (
-                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '1px 6px', borderRadius: '4px' }}>
-                                      Active
-                                    </span>
-                                  )}
-                                </td>
-                                <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                                  {createdDate}
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                                    {fws.slice(0, 3).map((f: string) => (
-                                      <span key={f} style={{ fontSize: '0.68rem', padding: '1px 5px', borderRadius: '3px', backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)' }}>
-                                        {f.replace('_', ' ')}
-                                      </span>
-                                    ))}
-                                    {fws.length > 3 && (
-                                      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                                        +{fws.length - 3} more
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td>
-                                  <strong style={{ color: (sub.complianceScore ?? 0) >= 80 ? 'var(--color-green-dark)' : 'var(--text-main)' }}>
-                                    {sub.complianceScore ?? 0}%
-                                  </strong>
-                                </td>
-                                <td>
-                                  <span
-                                    style={{
-                                      fontSize: '0.7rem',
-                                      fontWeight: 700,
-                                      color: statusBadgeColor,
-                                      backgroundColor: statusBg,
-                                      padding: '3px 8px',
-                                      borderRadius: '4px',
-                                      letterSpacing: '0.03em',
-                                      display: 'inline-block',
-                                    }}
-                                  >
-                                    {statusText}
-                                  </span>
-                                </td>
-                                <td style={{ textAlign: 'right' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResumeWorkflow(sub)}
-                                    style={{
-                                      padding: '0.35rem 0.75rem',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 700,
-                                      color: isCurrent ? '#ffffff' : 'var(--color-sky)',
-                                      backgroundColor: isCurrent ? 'var(--color-sky)' : 'transparent',
-                                      border: isCurrent ? '1px solid var(--color-sky)' : '1px solid rgba(2, 132, 199, 0.3)',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      transition: 'all 0.15s ease',
-                                    }}
-                                  >
-                                    {isCurrent ? 'Current Active' : 'Resume Workflow'}
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div style={{ padding: '1.5rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', border: '1px dashed var(--border-light)' }}>
-                      <p style={{ margin: '0 0 0.65rem 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        No prior carbon audit submissions found for this organization.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleStartNewAudit}
-                        className="btn btn-primary"
-                        style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}
-                      >
-                        Start Your First Carbon Audit
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : recentSubmissions.length > 0 ? (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.75rem 1.25rem',
-                  backgroundColor: 'var(--bg-card)',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-light)',
-                  marginBottom: '1.5rem',
-                  fontSize: '0.82rem',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Recent Carbon Audits:</span>
-                    <span style={{ color: 'var(--text-muted)' }}>
-                      {recentSubmissions.length} prior engagement{recentSubmissions.length === 1 ? '' : 's'} logged
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--color-sky)', backgroundColor: 'var(--accent-light)', padding: '2px 6px', borderRadius: '4px' }}>
-                      Latest: GHG-SUB-{(recentSubmissions[0]?.id || '').slice(0, 8).toUpperCase()} ({recentSubmissions[0]?.complianceScore ?? 0}%)
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowRecentAudits(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--color-sky)',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                    }}
-                  >
-                    Expand Recent Audits List ↓
-                  </button>
-                </div>
-              ) : null}
-
-
-              {bundleLoading && (
-                <div className="dash-loading-state">
-                  <span className="dash-spinner" />
-                  Harmonising multi-framework requirements across pillars...
-                </div>
-              )}
-
-              {/* View Mode Switcher: Guided Animated Wizard vs Full Inspection Grid */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '1.25rem',
-                flexWrap: 'wrap',
-                gap: '0.75rem',
-                padding: '0.25rem 0',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                    Assessment Experience:
-                  </span>
-                  <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>
-                    {diagnosticViewMode === 'GUIDED' ? 'Guided Wizard' : 'Full Overview Grid'}
-                  </span>
-                </div>
-
-                <div style={{
-                  display: 'inline-flex',
-                  backgroundColor: 'var(--bg-subtle)',
-                  padding: '3px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--border-light)',
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => setDiagnosticViewMode('GUIDED')}
-                    style={{
-                      border: 'none',
-                      backgroundColor: diagnosticViewMode === 'GUIDED' ? 'var(--bg-card)' : 'transparent',
-                      color: diagnosticViewMode === 'GUIDED' ? 'var(--color-sky)' : 'var(--text-muted)',
-                      fontWeight: 700,
-                      fontSize: '0.8rem',
-                      padding: '5px 14px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      boxShadow: diagnosticViewMode === 'GUIDED' ? 'var(--shadow-xs)' : 'none',
-                      transition: 'all 0.18s ease',
-                    }}
-                  >
-                    Guided Mode
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDiagnosticViewMode('FULL_OVERVIEW')}
-                    style={{
-                      border: 'none',
-                      backgroundColor: diagnosticViewMode === 'FULL_OVERVIEW' ? 'var(--bg-card)' : 'transparent',
-                      color: diagnosticViewMode === 'FULL_OVERVIEW' ? 'var(--color-sky)' : 'var(--text-muted)',
-                      fontWeight: 700,
-                      fontSize: '0.8rem',
-                      padding: '5px 14px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      boxShadow: diagnosticViewMode === 'FULL_OVERVIEW' ? 'var(--shadow-xs)' : 'none',
-                      transition: 'all 0.18s ease',
-                    }}
-                  >
-                    Full Overview Grid
-                  </button>
-                </div>
-              </div>
-
-              {/* Anchor for seamless scroll */}
-              <div id="iso-audit-stepper-anchor" />
-
-              {/* Guided Mode: Interactive Audit Stepper with animated slides & next button */}
-              {!bundleLoading && diagnosticViewMode === 'GUIDED' && (
-                <InteractiveAuditStepper
-                  pillars={formattedPillars}
-                  answers={answers}
-                  onAnswerChange={handleAnswerChange}
-                  isAuditReady={isAuditReady}
-                  isSubmittedPendingReview={isSubmittedPendingReview}
-                  onProceedToCheckout={() => setActiveStep(2)}
-                  onSubmitForReview={handleSubmitForAuditorReview}
-                  estimatedScore={estimatedComplianceScore}
-                  submitting={auditorReviewLoading}
-                  submitError={submitError}
-                  onViewReviewStatus={() => setShowSubmissionSuccessModal(true)}
-                  onUploadEvidence={handleUploadEvidence}
-                  evidenceByQuestion={evidenceByQuestion}
-                />
-              )}
-
-              {/* Full Overview Mode: 5-Pillars Inspection Accordion */}
-              {!bundleLoading && diagnosticViewMode === 'FULL_OVERVIEW' && (
-                <div>
-                  {formattedPillars.map((pillar: any, pIdx: number) => {
-                    const isExpanded = expandedSections[pillar.pillarId] ?? (pIdx === 0);
-                    const pillarQuestions = pillar.questions || [];
-                    const answeredCount = pillarQuestions.filter((q: any) => Boolean(answers[q.id || q.questionId])).length;
-                    const isPillarComplete = pillarQuestions.length > 0 && answeredCount === pillarQuestions.length;
-
-                    return (
-                      <div
-                        key={pillar.pillarId}
-                        style={{
-                          border: '1px solid var(--border-light)',
-                          borderRadius: '12px',
-                          marginBottom: '1.25rem',
-                          overflow: 'hidden',
-                          backgroundColor: 'var(--bg-card)',
-                        }}
-                      >
-                        {/* Pillar Header */}
-                        <div
-                          onClick={() => setExpandedSections((prev) => ({ ...prev, [pillar.pillarId]: !isExpanded }))}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '1rem 1.25rem',
-                            cursor: 'pointer',
-                            backgroundColor: 'var(--bg-subtle)',
-                            borderBottom: isExpanded ? '1px solid var(--border-light)' : 'none',
-                            userSelect: 'none',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <span style={{
-                              width: '24px', height: '24px', borderRadius: '50%',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              backgroundColor: isPillarComplete ? 'var(--color-green)' : 'rgba(2,132,199,0.15)',
-                              color: isPillarComplete ? '#fff' : 'var(--color-sky)',
-                              fontSize: '0.72rem', fontWeight: 700,
-                            }}>
-                              {isPillarComplete ? '✓' : pIdx + 1}
-                            </span>
-                            <div>
-                              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                                {pillar.pillarTitle}
-                              </div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                {pillar.description}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <span style={{
-                              fontSize: '0.72rem', fontWeight: 600,
-                              color: isPillarComplete ? 'var(--color-green)' : 'var(--text-muted)',
-                              backgroundColor: isPillarComplete ? 'rgba(16,185,129,0.1)' : 'var(--bg-card)',
-                              padding: '2px 8px', borderRadius: '6px',
-                            }}>
-                              {answeredCount} of {pillarQuestions.length} answered
-                            </span>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                              {isExpanded ? '▲' : '▼'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Pillar Questions */}
-                        {isExpanded && (
-                          <div className="portal-section-questions-container" style={{ padding: '1.25rem' }}>
-                            {pillarQuestions.map((q: any, qIdx: number) => {
-                              const qId = q.id || q.questionId;
-                              const selectedAnswer = answers[qId];
-                              const isLast = qIdx === pillarQuestions.length - 1;
-                              const hasNote = Boolean(answers[`${qId}_notes`]);
-                              const isNoteExpanded = expandedNotes[qId] || hasNote;
-
-                              return (
-                                <div
-                                  key={qId}
-                                  style={{
-                                    paddingBottom: isLast ? '0.5rem' : '1.25rem',
-                                    marginBottom: isLast ? 0 : '1.25rem',
-                                    borderBottom: isLast ? 'none' : '1px solid var(--border-light)',
-                                  }}
-                                >
-                                  {/* Badges */}
-                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                                    <span style={{
-                                      fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-sky)',
-                                      backgroundColor: 'var(--accent-light)', padding: '2px 8px', borderRadius: '4px',
-                                      fontFamily: 'var(--font-mono)',
-                                    }}>
-                                      {qId}
-                                    </span>
-                                    {(q.applicableStandards || []).map((std: string, sIdx: number) => (
-                                      <span key={sIdx} style={{
-                                        fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-sky)',
-                                        backgroundColor: 'rgba(2,132,199,0.08)', padding: '2px 8px', borderRadius: '4px',
-                                      }}>
-                                        {std}
-                                      </span>
-                                    ))}
-                                    {q.statutoryMandate && (
-                                      <span style={{
-                                        fontSize: '0.7rem', fontWeight: 600, color: '#a855f7',
-                                        backgroundColor: 'rgba(168,85,247,0.08)', padding: '2px 8px', borderRadius: '4px',
-                                      }}>
-                                        {q.statutoryMandate}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Question Text */}
-                                  <label style={{ display: 'block', fontSize: '0.91rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem', lineHeight: 1.45 }}>
-                                    {q.text || q.questionText}
-                                  </label>
-
-                                  {/* Evidence Required */}
-                                  {q.evidenceRequired && (
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
-                                      <span style={{ fontWeight: 600 }}>Evidence required:</span> {q.evidenceRequired}
-                                    </div>
-                                  )}
-
-                                  {/* Answer Options */}
-                                  <div className="portal-answer-btn-group">
-                                    {(q.options || ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable']).map((opt: string) => {
-                                      const isSelected = selectedAnswer === opt;
-                                      return (
-                                        <button
-                                          key={opt}
-                                          type="button"
-                                          onClick={() => handleAnswerChange(qId, opt)}
-                                          className={`portal-answer-option-btn ${isSelected ? 'selected' : ''}`}
-                                        >
-                                          <span className="portal-answer-indicator">{isSelected ? '✓' : '○'}</span>
-                                          <span className="portal-answer-text">{opt}</span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-
-                                  {/* Evidence Notes */}
-                                  {!isNoteExpanded ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => setExpandedNotes((prev) => ({ ...prev, [qId]: true }))}
-                                      style={{
-                                        background: 'none', border: 'none', padding: 0,
-                                        fontSize: '0.75rem', color: 'var(--color-sky)',
-                                        cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                                        marginTop: '0.4rem',
-                                      }}
-                                    >
-                                      + Add evidence description or document reference (optional)
-                                    </button>
-                                  ) : (
-                                    <div style={{ marginTop: '0.5rem' }}>
-                                      <textarea
-                                        rows={2}
-                                        placeholder="Enter supporting evidence reference, document title, or internal control docket..."
-                                        value={typeof answers[`${qId}_notes`] === 'string' ? answers[`${qId}_notes`] : ''}
-                                        onChange={(e) => handleAnswerChange(`${qId}_notes`, e.target.value)}
-                                        className="form-input"
-                                        style={{ fontSize: '0.8rem', resize: 'vertical', width: '100%' }}
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Conformance Verification & Auditor Sign-Off Card */}
-                  <div
-                    id="conformance-verification-card"
-                    style={{
-                    backgroundColor: isAuditReady
-                      ? 'rgba(16, 185, 129, 0.08)'
-                      : isRevisionRequired
-                      ? 'rgba(239, 68, 68, 0.08)'
-                      : isSubmittedPendingReview
-                      ? 'rgba(245, 158, 11, 0.08)'
-                      : 'var(--bg-subtle)',
-                    border: `1px solid ${
-                      isAuditReady
-                        ? 'rgba(16, 185, 129, 0.3)'
-                        : isRevisionRequired
-                        ? 'rgba(239, 68, 68, 0.3)'
-                        : isSubmittedPendingReview
-                        ? 'rgba(245, 158, 11, 0.3)'
-                        : 'var(--border-light)'
-                    }`,
-                    borderRadius: '12px',
-                    padding: '1.25rem 1.5rem',
-                    marginTop: '1.5rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuditScope('CARBON_EMISSION');
+                    setActiveView('workflow');
+                  }}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.65rem 1.25rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '1rem',
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                          ISO 19011:2026 Conformance Verification (Gate 1)
-                        </span>
-                        <span className={
-                          isAuditReady
-                            ? 'badge badge-settled'
-                            : isRevisionRequired
-                            ? 'badge badge-failed'
-                            : isSubmittedPendingReview
-                            ? 'badge badge-pending'
-                            : 'badge'
-                        }>
-                          {isAuditReady
-                            ? 'AUDIT_READY APPROVED'
-                            : isRevisionRequired
-                            ? 'REVISION REQUIRED'
-                            : isSubmittedPendingReview
-                            ? 'AWAITING LEAD AUDITOR REVIEW'
-                            : 'DIAGNOSTIC IN PROGRESS'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: '620px' }}>
-                        {isAuditReady
-                          ? 'Lead Auditor has signed off on the diagnostic. Gate 1 is cleared: Proceed to Step 2 to initiate statutory checkout.'
-                          : isRevisionRequired
-                          ? `Lead Auditor Directive: ${isoStatus?.reviewerNotes || 'Corrections requested on submitted clauses. Please revise answers and resubmit.'}`
-                          : isSubmittedPendingReview
-                          ? 'Your diagnostic dossier has been submitted to the Lead Auditor Review Queue. Conformance verification under ISO 19011:2026 is underway.'
-                          : 'Under ISO 19011:2026 Annex A, audit readiness requires at least 80% conformance before licensing payment can be initiated.'}
-                      </div>
-                      {auditorReviewSuccess && (
-                        <div style={{ color: 'var(--color-green)', fontSize: '0.78rem', fontWeight: 700, marginTop: '0.35rem' }}>
-                          ✓ {auditorReviewSuccess}
-                        </div>
-                      )}
-                    </div>
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  Launch Carbon Assurance Engine &rarr;
+                </button>
+              </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      {!isAuditReady && !isSubmittedPendingReview && (
-                        <button
-                          type="button"
-                          onClick={handleSubmitForAuditorReview}
-                          disabled={auditorReviewLoading || estimatedComplianceScore < 80}
-                          className="btn btn-primary"
-                          style={{
-                            fontSize: '0.82rem', fontWeight: 700,
-                            opacity: estimatedComplianceScore < 80 ? 0.5 : 1,
-                            cursor: estimatedComplianceScore < 80 ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          {auditorReviewLoading
-                            ? 'Submitting Dossier...'
-                            : estimatedComplianceScore >= 80
-                            ? 'Submit Dossier for Lead Auditor Review'
-                            : 'Reach 80% Readiness for Submission'}
-                        </button>
-                      )}
-                      {isSubmittedPendingReview && (
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.82rem', color: 'var(--google-amber)', fontWeight: 600 }}>
-                            In Lead Auditor Queue
-                          </span>
-                          <button
-                            type="button"
-                            onClick={handleSubmitForAuditorReview}
-                            disabled={auditorReviewLoading}
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
-                          >
-                            Resubmit Updates
-                          </button>
-                        </div>
-                      )}
-                      {isRevisionRequired && (
-                        <button
-                          type="button"
-                          onClick={handleSubmitForAuditorReview}
-                          disabled={auditorReviewLoading}
-                          className="btn btn-primary"
-                          style={{ fontSize: '0.82rem', fontWeight: 700, backgroundColor: 'var(--google-amber)' }}
-                        >
-                          {auditorReviewLoading ? 'Resubmitting...' : 'Resubmit Revisions to Lead Auditor'}
-                        </button>
-                      )}
-                      {isAuditReady && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveStep(2)}
-                          className="btn btn-primary"
-                          style={{ fontSize: '0.82rem', fontWeight: 700 }}
-                        >
-                          Proceed to Checkout (Step 2) →
-                        </button>
-                      )}
-                    </div>
+              <div
+                className="persefoni-card"
+                style={{
+                  padding: '1.5rem',
+                  border: '1px solid #bfdbfe',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Independent Assurance Flow
+                    </span>
+                    <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', backgroundColor: '#dbeafe', color: '#1d4ed8', borderRadius: '9999px', fontWeight: 600 }}>
+                      Section 106 &amp; ESRS S1
+                    </span>
                   </div>
-
-                  {submitError && (
-                    <div style={{ color: 'var(--google-red)', fontSize: '0.85rem', margin: '1rem 0', fontWeight: 600 }}>
-                      {submitError}
-                    </div>
-                  )}
-
-                  {/* Bottom Action Bar */}
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '1.25rem 0 0.5rem 0', borderTop: '1px solid var(--border-light)',
-                    marginTop: '1.5rem', flexWrap: 'wrap', gap: '1rem',
-                  }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ color: 'var(--color-green)', fontWeight: 700 }}>✓</span>
-                      <span>Real-time multi-framework diagnostic autosave active</span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-
-                      <button
-                        type="button"
-                        onClick={handleIsoSubmit}
-                        disabled={submitting}
-                        className="btn btn-primary"
-                        style={{ minWidth: '220px', maxWidth: '100%', fontWeight: 700 }}
-                      >
-                        {submitting
-                          ? 'Saving Diagnostic...'
-                          : isAuditReady
-                          ? 'Save & Proceed to Checkout (Step 2) →'
-                          : 'Save Diagnostic Progress →'}
-                      </button>
-                    </div>
-                  </div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
+                    Workforce &amp; Social Value
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+                    Legally enforceable statutory Section 106 TCPA 1990 covenant audit, apprentice density verification, and CSRD workforce social compliance assurance.
+                  </p>
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuditScope('JOB_REPORTING');
+                    setActiveView('workflow');
+                  }}
+                  style={{
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.65rem 1.25rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  Launch Workforce Assurance Engine &rarr;
+                </button>
+              </div>
             </div>
-          ) : (
-            <div>
-              {/* ── Section 106 Job Creation Audit Preparation Studio ── */}
-              <div className="assessment-summary-card" style={{
-                backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-light)',
-                borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
-                  <div>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
-                      Section 106 Job Creation &amp; Workforce Audit Preparation
-                    </h2>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px', lineHeight: 1.5 }}>
-                      Statutory workforce verification under UK Section 106 planning covenants, Social Value Act guidelines, and ISO 19011:2026 remote auditing protocols.
-                    </p>
-                  </div>
 
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '0.6rem',
-                    padding: '0.5rem 1rem', borderRadius: '8px',
-                    backgroundColor: totalVerifiedJobs > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(2,132,199,0.1)',
-                    border: `1px solid ${totalVerifiedJobs > 0 ? 'rgba(16,185,129,0.3)' : 'rgba(2,132,199,0.3)'}`,
-                  }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      Verified Jobs:
-                    </span>
-                    <span style={{
-                      fontSize: '1.1rem', fontWeight: 800, fontFamily: 'var(--font-mono)',
-                      color: totalVerifiedJobs > 0 ? 'var(--color-green)' : 'var(--color-sky)',
-                    }}>
-                      {totalVerifiedJobs.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Summary metric pills */}
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.78rem' }}>
-                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '0.4rem 0.85rem', borderRadius: '6px' }}>
-                    Filings Docket: <strong style={{ color: 'var(--text-main)' }}>{jobReports.length} Period{jobReports.length === 1 ? '' : 's'} Recorded</strong>
-                  </div>
-                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '0.4rem 0.85rem', borderRadius: '6px' }}>
-                    Covenant Compliance: <strong style={{ color: 'var(--color-green)' }}>{jobReports.length > 0 ? 'Compliant ✓' : 'Filing Required'}</strong>
-                  </div>
-                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '0.4rem 0.85rem', borderRadius: '6px' }}>
-                    Assurance Standard: <strong style={{ color: 'var(--color-sky)' }}>Section 106 &amp; CSRD ESRS S1</strong>
-                  </div>
-                </div>
+            {/* Adaptive KPI Summary Cards with Scope Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                  Statutory Assurance Performance KPIs
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0.15rem 0 0 0' }}>
+                  Audited metrics verified against smart contract registry and regulatory filings
+                </p>
               </div>
-
-              {/* Inline Section 106 Filing Studio Card */}
-              <div style={{
-                backgroundColor: 'var(--bg-card)',
-                border: '1px solid var(--border-light)',
-                borderRadius: '12px',
-                padding: '1.75rem',
-                marginBottom: '2rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.2rem 0' }}>
-                      Record Section 106 Period Filing
-                    </h3>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                      Submit statutory workforce hours and job creation metrics for this accounting period
-                    </p>
-                  </div>
-                  <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', fontWeight: 700 }}>
-                    Client Account: {user?.licenseeId}
-                  </span>
-                </div>
-
-                {jobFormError && (
-                  <div style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>
-                    {jobFormError}
-                  </div>
-                )}
-
-                <form onSubmit={handleJobSubmit}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                        Period Type
-                      </label>
-                      <select
-                        value={periodType}
-                        onChange={(e) => setPeriodType(e.target.value)}
-                        className="form-input"
-                        style={{ width: '100%', fontSize: '0.85rem' }}
-                      >
-                        <option value="QUARTERLY">Quarterly (Section 106 Standard)</option>
-                        <option value="ANNUAL">Annual Corporate Filing</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                        Period Start Date
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={periodStart}
-                        onChange={(e) => setPeriodStart(e.target.value)}
-                        className="form-input"
-                        style={{ width: '100%', fontSize: '0.85rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                        Period End Date
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={periodEnd}
-                        onChange={(e) => setPeriodEnd(e.target.value)}
-                        className="form-input"
-                        style={{ width: '100%', fontSize: '0.85rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                        Verified Jobs Created
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min={1}
-                        value={jobsCreatedInput}
-                        onChange={(e) => setJobsCreatedInput(e.target.value)}
-                        className="form-input"
-                        style={{ width: '100%', fontSize: '0.85rem' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                      Local Authority Covenant &amp; Attestation Note
-                    </label>
-                    <input
-                      type="text"
-                      value={customNoteInput}
-                      onChange={(e) => setCustomNoteInput(e.target.value)}
-                      placeholder="e.g. Local authority Section 106 planning covenant for artisan embroidery workforce"
-                      className="form-input"
-                      style={{ width: '100%', fontSize: '0.85rem' }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                    <button
-                      type="submit"
-                      disabled={submittingJob}
-                      className="btn btn-primary"
-                      style={{
-                        backgroundColor: '#0284c7',
-                        color: '#ffffff',
-                        padding: '0.6rem 1.4rem',
-                        borderRadius: 'var(--radius-pill)',
-                        fontWeight: 700,
-                        fontSize: '0.875rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {submittingJob ? 'Submitting…' : '+ Submit Job Filing'}
-                    </button>
-                  </div>
-                </form>
+              <div style={{ display: 'inline-flex', padding: '3px', backgroundColor: '#f1f5f9', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  onClick={() => setAuditScope('CARBON_EMISSION')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: auditScope === 'CARBON_EMISSION' ? '#ffffff' : 'transparent',
+                    color: auditScope === 'CARBON_EMISSION' ? '#0f172a' : '#64748b',
+                    boxShadow: auditScope === 'CARBON_EMISSION' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                  }}
+                >
+                  Carbon KPIs
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuditScope('JOB_REPORTING')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: auditScope === 'JOB_REPORTING' ? '#ffffff' : 'transparent',
+                    color: auditScope === 'JOB_REPORTING' ? '#0f172a' : '#64748b',
+                    boxShadow: auditScope === 'JOB_REPORTING' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                  }}
+                >
+                  Workforce KPIs
+                </button>
               </div>
+            </div>
 
-              {/* Verified Filings Ledger Table */}
-              <div style={{
-                backgroundColor: 'var(--bg-card)',
-                border: '1px solid var(--border-light)',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                marginBottom: '2rem',
-              }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
+              {kpis.map((kpi) => (
+                <div key={kpi.label} className="persefoni-card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: kpi.accent }} />
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>{kpi.label}</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.3rem', fontFamily: 'var(--font-mono)' }}>{kpi.value}</div>
+                  <div style={{ fontSize: '0.72rem', color: kpi.accent, marginTop: '0.2rem', fontWeight: 600 }}>{kpi.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent Credentials and Settlements Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem' }}>
+              {/* Recent Credentials Preview */}
+              <div className="persefoni-card" style={{ padding: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                    Verified Period Filings Docket
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {jobReports.length} recorded filing{jobReports.length === 1 ? '' : 's'}
-                  </span>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Recent Credentials</h3>
+                  <button type="button" onClick={() => setActiveView('credentials')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>
+                    View All ({credentials.length}) &rarr;
+                  </button>
                 </div>
-
-                {jobReports.length === 0 ? (
-                  <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', color: 'var(--text-muted)' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, color: 'var(--text-main)' }}>No Section 106 job filings recorded yet</p>
-                    <p style={{ margin: 0, fontSize: '0.8rem' }}>Use the form above to record your first quarterly or annual workforce hours to establish audit readiness.</p>
+                {credentials.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No credentials issued yet.</p>
+                    <button type="button" onClick={() => { setActiveView('workflow'); setActiveStep(4); }} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
+                      Open Credential Studio
+                    </button>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                          <th style={{ padding: '0.65rem 0.75rem' }}>Period</th>
-                          <th style={{ padding: '0.65rem 0.75rem' }}>Dates</th>
-                          <th style={{ padding: '0.65rem 0.75rem' }}>Jobs Created</th>
-                          <th style={{ padding: '0.65rem 0.75rem' }}>Source</th>
-                          <th style={{ padding: '0.65rem 0.75rem' }}>Attestation Note</th>
-                          <th style={{ padding: '0.65rem 0.75rem' }}>Audit Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {jobReports.map((report) => (
-                          <tr key={report.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                            <td style={{ padding: '0.75rem' }}>
-                              <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--color-sky)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {report.periodType}
-                              </span>
-                            </td>
-                            <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                              {new Date(report.periodStart).toLocaleDateString('en-GB')} – {new Date(report.periodEnd).toLocaleDateString('en-GB')}
-                            </td>
-                            <td style={{ padding: '0.75rem', fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
-                              {report.jobsCreated}
-                            </td>
-                            <td style={{ padding: '0.75rem' }}>
-                              <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
-                                {report.reportSource === 'THIRD_PARTY_API' ? 'API Ingest' : 'Portal Self-Report'}
-                              </span>
-                            </td>
-                            <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '240px' }}>
-                              {report.attestationNote || 'Verified Section 106 covenant'}
-                            </td>
-                            <td style={{ padding: '0.75rem' }}>
-                              <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(16,185,129,0.1)', color: 'var(--color-green)', fontWeight: 700 }}>
-                                Audit Ready ✓
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div>
+                    {credentials.slice(0, 3).map((c: any) => (
+                      <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-light)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-main)' }}>{c.id.substring(0, 14)}...</span>
+                        <StatusBadge status={c.status} />
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Step 1 Footer Action */}
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                paddingTop: '1.25rem', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '1rem',
-              }}>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  {jobReports.length > 0
-                    ? `✓ ${jobReports.length} filing(s) recorded. Ready for statutory assurance settlement.`
-                    : 'Submit at least one period filing above, or proceed with existing corporate records.'}
+              {/* Recent Settlements Preview */}
+              <div className="persefoni-card" style={{ padding: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Recent Settlements</h3>
+                  <button type="button" onClick={() => setActiveView('transactions')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>
+                    View All ({transactions.length}) &rarr;
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleProceedFromJobAudit}
-                  className="btn btn-primary"
-                  style={{ minWidth: '220px', maxWidth: '100%', padding: '0.75rem 1.5rem', fontWeight: 700 }}
-                >
-                  Proceed to Assurance Checkout (Step 2) →
-                </button>
+                {transactions.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No transactions recorded yet.</p>
+                    <button type="button" onClick={() => { setActiveView('workflow'); setActiveStep(2); }} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
+                      Review Commercial Scope
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    {transactions.slice(0, 3).map((t: any) => (
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-light)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>£{(t.grossAmountCents / 100).toFixed(2)}</span>
+                        <StatusBadge status={t.status} />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          )
+          </div>
         )}
 
-          {/* ── STEP 2: Stripe Checkout (Google Cloud Billing Two-Column Pattern) ── */}
-          {activeStep === 2 && (
-            <div>
-              <div style={{ marginBottom: '2rem' }}>
-                <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
-                  Select Statutory Assurance Tier &amp; Checkout
-                </h2>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, maxWidth: '750px' }}>
-                  {auditScope === 'CARBON_EMISSION'
-                    ? 'Preparation service fees are administered under statutory data administration utility. All checkouts strictly enforce the 85% software licensing and 15% disaster relief endowment routing.'
-                    : 'Section 106 workforce assurance fees strictly enforce the statutory 85% software preparation base and 15% disaster relief endowment routing.'}
-                </p>
-              </div>
-
-              {/* Two-column layout */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
-                gap: '2rem',
-                alignItems: 'start',
-              }}>
-                {/* Left column: Tier Selection Cards */}
-                <div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem' }}>
-                    Available {auditScope === 'CARBON_EMISSION' ? 'Carbon' : 'Workforce'} Assurance Tiers
-                  </div>
-
-                  {activeTiers.map((tier) => {
-                    const isSelected = selectedTier === tier.id;
-                    return (
-                      <div
-                        key={tier.id}
-                        onClick={() => setSelectedTier(tier.id)}
-                        style={{
-                          padding: '1.5rem',
-                          borderRadius: '12px',
-                          border: isSelected ? '2px solid var(--color-sky)' : '1px solid var(--border-light)',
-                          backgroundColor: isSelected ? 'rgba(2,132,199,0.04)' : 'var(--bg-card)',
-                          cursor: 'pointer',
-                          marginBottom: '1rem',
-                          position: 'relative',
-                          boxShadow: isSelected ? '0 2px 8px rgba(2,132,199,0.12)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        {tier.recommended && (
-                          <span style={{
-                            position: 'absolute', top: '14px', right: '16px',
-                            backgroundColor: 'var(--color-sky)', color: '#fff',
-                            fontSize: '0.65rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px',
-                            letterSpacing: '0.04em',
-                          }}>
-                            RECOMMENDED
-                          </span>
-                        )}
-
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                          {/* Radio circle */}
-                          <div style={{
-                            width: '18px', height: '18px', borderRadius: '50%',
-                            border: isSelected ? '5px solid var(--color-sky)' : '2px solid var(--border-light)',
-                            backgroundColor: '#fff', marginTop: '3px', flexShrink: 0,
-                          }} />
-
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                                {tier.name}
-                              </div>
-                              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
-                                {tier.price}
-                              </div>
-                            </div>
-
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 0.85rem 0', lineHeight: 1.4 }}>
-                              {tier.description}
-                            </p>
-
-                            {/* Features list */}
-                            <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.78rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
-                              {tier.features.map((feat, fIdx) => (
-                                <li key={fIdx} style={{ marginBottom: '0.2rem' }}>{feat}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Right column: Sticky Order Summary Card */}
-                <div style={{
-                  backgroundColor: 'var(--bg-subtle)',
-                  border: '1px solid var(--border-light)',
-                  borderRadius: '12px',
-                  padding: '1.75rem',
-                  position: 'sticky',
-                  top: '2rem',
-                }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1.25rem' }}>
-                    {auditScope === 'CARBON_EMISSION' ? 'Carbon Assurance Order Summary' : 'Workforce Assurance Order Summary'}
-                  </div>
-
-                  {(() => {
-                    const activeTierData = activeTiers.find((t) => t.id === selectedTier) || activeTiers[0] || TIERS[0];
-                    return (
-                      <div>
-                        <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
-                          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.2rem' }}>
-                            {activeTierData.name}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            {activeTierData.turnaround} · {activeTierData.standards}
-                          </div>
-                        </div>
-
-                        {/* Statutory Split Breakdown */}
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span>Software &amp; {auditScope === 'CARBON_EMISSION' ? 'Assurance' : 'Workforce'} Base (85%)</span>
-                            <span style={{ fontWeight: 600, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
-                              £{(activeTierData.softwareCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span>Disaster Relief Charity Endowment (15%)</span>
-                            <span style={{ fontWeight: 600, color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
-                              £{(activeTierData.charityCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Total Due */}
-                        <div style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-                          paddingTop: '0.75rem', borderTop: '2px solid var(--border-light)', marginBottom: '1.5rem',
-                        }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>Total Investment</span>
-                          <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
-                            {activeTierData.price}
-                          </span>
-                        </div>
-
-                        {/* Metadata chips */}
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                          <div>Client Account: <strong style={{ color: 'var(--text-main)' }}>{user?.licenseeId}</strong></div>
-                          <div>
-                            Diagnostic State:{' '}
-                            <span style={{ color: 'var(--color-green)', fontWeight: 600 }}>
-                              {auditScope === 'CARBON_EMISSION'
-                                ? `${answeredQuestions} of ${totalQuestions} answered ✓`
-                                : `${jobReports.length} Period Filing(s) Recorded ✓`}
-                            </span>
-                          </div>
-                        </div>
-
-                        {checkoutError && (
-                          <div style={{ color: 'var(--google-red)', fontSize: '0.8rem', marginBottom: '1rem', fontWeight: 600 }}>
-                            {checkoutError}
-                          </div>
-                        )}
-
-                        {!isAuditReady && auditScope === 'CARBON_EMISSION' && (
-                          <div className="portal-gate-alert danger">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--google-red)', fontWeight: 700, fontSize: '0.82rem' }}>
-                              <GoogleIcons.Lock /> Gate 1: Lead Auditor Sign-Off Required
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', lineHeight: 1.5 }}>
-                              Commercial fee checkout is restricted until your diagnostic assessment achieves AUDIT_READY status. Return to Step 1 to review answers and request auditor review.
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setActiveStep(1)}
-                              className="btn btn-secondary"
-                              style={{ marginTop: '0.75rem', fontSize: '0.75rem' }}
-                            >
-                              Return to Step 1 for Sign-Off
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Action buttons */}
-                        <button
-                          type="button"
-                          onClick={handleCheckout}
-                          disabled={checkoutLoading || (!isAuditReady && auditScope === 'CARBON_EMISSION')}
-                          className="btn btn-primary"
-                          style={{
-                            width: '100%',
-                            padding: '0.85rem',
-                            fontSize: '0.95rem',
-                            fontWeight: 700,
-                            marginBottom: '0.75rem',
-                            opacity: (!isAuditReady && auditScope === 'CARBON_EMISSION') ? 0.6 : 1,
-                            cursor: (!isAuditReady && auditScope === 'CARBON_EMISSION') ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          {checkoutLoading
-                            ? 'Connecting to Stripe...'
-                            : (!isAuditReady && auditScope === 'CARBON_EMISSION')
-                              ? 'Sign-Off Required for Checkout (Gate 1)'
-                              : `Pay ${activeTierData.price} via Stripe Checkout →`}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setActiveStep(3)}
-                          className="btn btn-secondary"
-                          style={{ width: '100%', fontSize: '0.85rem', padding: '0.65rem', marginBottom: '0.5rem', fontWeight: 600 }}
-                        >
-                          Explore Ingestion API (Step 3) →
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setActiveStep(1)}
-                          className="btn btn-secondary"
-                          style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
-                        >
-                          {auditScope === 'CARBON_EMISSION' ? '← Review Diagnostic Answers' : '← Review Job Filings'}
-                        </button>
-
-                        {/* Security notice */}
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem', lineHeight: 1.4 }}>
-                          256-bit TLS encrypted · B2B telemetry API key provisioned instantly upon settlement
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 3: Ingestion API Access ──────────────────────────────── */}
-          {activeStep === 3 && (
-            <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-                {auditScope === 'CARBON_EMISSION' ? 'Telemetry Ingestion API Access' : 'Workforce & Job Telemetry API Access'}
-              </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                {auditScope === 'CARBON_EMISSION'
-                  ? 'Your API key is provisioned upon license settlement. Use it to submit automated emissions data or upload evidence documents manually.'
-                  : 'Your API key is provisioned upon license settlement. Ingest quarterly workforce telemetry and Section 106 compliance data directly via REST.'}
-              </p>
-
-              {!isPaid && (
-                <div className="portal-gate-alert">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--google-amber)', fontWeight: 700, fontSize: '0.88rem' }}>
-                    <GoogleIcons.Lock /> Gate 2 Notice: Commercial Fee Settlement Required
-                  </div>
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.5rem 0 0.85rem 0', lineHeight: 1.5 }}>
-                    Real-time B2B telemetry ingestion and live API feeds are activated once your commercial license is settled. In preview mode, API keys remain masked.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setActiveStep(2)}
-                    className="btn btn-primary"
-                  >
-                    Proceed to Step 2 Commercial Settlement →
-                  </button>
-                </div>
-              )}
-
-              {/* API Key */}
-              <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  {auditScope === 'CARBON_EMISSION' ? 'Telemetry Ingestion API Key' : 'Workforce Ingestion API Key'}
-                </div>
-                <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: '0.9rem', color: isPaid ? 'var(--color-sky)' : 'var(--text-muted)',
-                  backgroundColor: 'var(--bg-subtle)', padding: '0.75rem 1rem', borderRadius: '8px',
-                  wordBreak: 'break-all', letterSpacing: '0.04em',
-                }}>
-                  {isPaid ? telemetryApiKey : `${telemetryApiKey.substring(0, 8)}••••••••••••••••••••••••••••••••`}
-                </div>
-                <button
-                  type="button"
-                  disabled={!isPaid}
-                  className="btn btn-secondary"
-                  style={{
-                    marginTop: '0.75rem',
-                    fontSize: '0.8rem',
-                    padding: '0.4rem 1rem',
-                    opacity: isPaid ? 1 : 0.6,
-                    cursor: isPaid ? 'pointer' : 'not-allowed',
-                  }}
-                  onClick={() => { if (isPaid) navigator.clipboard.writeText(telemetryApiKey); }}
-                >
-                  {isPaid ? 'Copy Key' : 'Locked (Payment Required)'}
-                </button>
-              </div>
-
-              {/* cURL example */}
-              <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                  Automated Reporting: cURL Example
-                </div>
-                <pre style={{
-                  backgroundColor: '#0c1929', color: '#a5f3fc', padding: '1rem', borderRadius: '8px',
-                  fontSize: '0.78rem', overflowX: 'auto', margin: 0, lineHeight: 1.6,
-                }}>
-{auditScope === 'CARBON_EMISSION'
-  ? `curl -X POST https://ghgapp-production.up.railway.app/api/iso/telemetry/ingest \\
-  -H "Authorization: Bearer ${telemetryApiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "assetTag": "PDU-METER-04B",
-    "metricType": "MWH_LOAD",
-    "numericValue": 42.3,
-    "rawUnit": "kWh",
-    "assetCalibrationId": "<YOUR_CALIBRATION_ID>"
-  }'`
-  : `curl -X POST https://ghgapp-production.up.railway.app/api/portal/job-reports \\
-  -H "Authorization: Bearer ${telemetryApiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "periodType": "QUARTERLY",
-    "periodStart": "2026-04-01",
-    "periodEnd": "2026-06-30",
-    "jobsCreated": 65,
-    "attestationNote": "Section 106 Artisan Workforce Covenant"
-  }'`}
-                </pre>
-              </div>
-
-              {/* Evidence document upload instruction */}
-              <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  {auditScope === 'CARBON_EMISSION' ? 'Manual Evidence Document Upload' : 'Manual Social & Workforce Evidence Upload'}
-                </div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0' }}>
-                  {auditScope === 'CARBON_EMISSION'
-                    ? 'Upload utility bills, calibration certificates, GHG inventory reports, and ISO audit evidence directly to the Evidence Locker.'
-                    : 'Upload Section 106 council covenant agreements, artisan workforce payroll verifications, and guild certifications directly to the Evidence Locker.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('profile')}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.85rem' }}
-                >
-                  Open Evidence Locker
-                </button>
-              </div>
-
-              <div className="portal-action-row">
-                <button type="button" onClick={() => setActiveStep(2)} className="btn btn-secondary">
-                  Back to Commercial Scope (Step 2)
-                </button>
-                <button type="button" onClick={() => setActiveStep(4)} className="btn btn-primary">
-                  Proceed to Credential Studio (Step 4)
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 4: Credential Studio ─────────────────────────────────── */}
-          {activeStep === 4 && (
-            <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-                Dual-Logo {auditScope === 'CARBON_EMISSION' ? 'Carbon' : 'Social Impact'} Credential Studio
-              </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Upload your corporate logo and enter your attestation message. We composite it with the GHG Emissions Registered Trade Mark and mint a {auditScope === 'CARBON_EMISSION' ? 'Carbon Audit Warranty' : 'Section 106 Social Value'} ERC-1155 token on Polygon PoS.
-              </p>
-
-              {(!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) && (
-                <div className="portal-gate-alert">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--google-amber)', fontWeight: 700, fontSize: '0.88rem' }}>
-                    <GoogleIcons.Lock /> Gate 2 &amp; 3 Verification Requirements
-                  </div>
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.5rem 0 0.85rem 0', lineHeight: 1.5 }}>
-                    {!isPaid
-                      ? 'Payment settlement (Step 2) is required before compositing and minting on-chain credentials.'
-                      : 'Lead Auditor AUDIT_READY clearance (Step 1) is required before minting your tokenized warranty.'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setActiveStep(!isPaid ? 2 : 1)}
-                    className="btn btn-primary"
-                  >
-                    {!isPaid ? 'Go to Step 2 Settlement →' : 'Go to Step 1 Auditor Review →'}
-                  </button>
-                </div>
-              )}
-
-              <div className="portal-credential-studio-grid">
-                {/* Left: inputs */}
-                <div>
-                  {/* Logo dropzone */}
-                  <div
-                    ref={logoDropRef}
-                    onDrop={handleLogoDrop}
-                    onDragOver={(e) => e.preventDefault()}
-                    onClick={() => { const inp = document.getElementById('logo-file-input') as HTMLInputElement; inp?.click(); }}
-                    style={{
-                      border: '2px dashed var(--border-light)', borderRadius: '12px', padding: '2rem',
-                      textAlign: 'center', cursor: 'pointer', marginBottom: '1.25rem',
-                      backgroundColor: clientLogoPreview ? 'var(--bg-subtle)' : 'transparent',
-                      transition: 'border-color 0.2s',
-                    }}
-                  >
-                    <input
-                      id="logo-file-input"
-                      type="file"
-                      accept=".png,.jpg,.jpeg,.svg,.webp"
-                      style={{ display: 'none' }}
-                      onChange={(e) => { if (e.target.files?.[0]) handleLogoFile(e.target.files[0]); }}
-                    />
-                    {clientLogoPreview ? (
-                      <img src={clientLogoPreview} alt="Client logo preview" style={{ maxHeight: '100px', maxWidth: '100%', objectFit: 'contain' }} />
-                    ) : (
-                      <>
-                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.5 }}>+</div>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>Drag &amp; drop corporate logo</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>PNG, JPG, SVG or WebP (Max 5 MB)</div>
-                      </>
-                    )}
-                  </div>
-                  {clientLogoPreview && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ fontSize: '0.78rem', padding: '0.35rem 0.8rem', marginBottom: '1rem' }}
-                      onClick={() => { setClientLogoFile(null); setClientLogoPreview(null); setCompositePreview(null); }}
-                    >
-                      Remove Logo
-                    </button>
-                  )}
-
-                  {/* Attestation message */}
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.4rem' }}>
-                      Attestation Message (Max 200 Characters)
-                    </label>
-                    <textarea
-                      rows={3}
-                      maxLength={200}
-                      value={clientMessage}
-                      onChange={(e) => { setClientMessage(e.target.value); setCompositePreview(null); }}
-                      placeholder={auditScope === 'CARBON_EMISSION' ? 'e.g. ISO 14001 aligned: Net Zero pathway committed 2030' : 'e.g. Verified Section 106 Artisan Workforce & Local Employment Covenant'}
-                      className="form-input"
-                      style={{ resize: 'none' }}
-                    />
-                    <div style={{ fontSize: '0.72rem', color: clientMessage.length >= 190 ? 'var(--google-red)' : 'var(--text-muted)', textAlign: 'right', marginTop: '0.25rem' }}>
-                      {clientMessage.length}/200 characters
-                    </div>
-                  </div>
-
-                  {compositeError && (
-                    <div style={{ color: 'var(--google-red)', fontSize: '0.82rem', marginBottom: '0.75rem', fontWeight: 600 }}>{compositeError}</div>
-                  )}
-
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={handleCompose}
-                      disabled={compositeLoading || !clientLogoFile || !clientMessage.trim() || !isPaid}
-                      className="btn btn-secondary"
-                      style={{
-                        opacity: (!isPaid) ? 0.6 : 1,
-                        cursor: (!isPaid) ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {compositeLoading ? 'Generating...' : 'Preview Badge'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleMint}
-                      disabled={mintLoading || !clientLogoFile || !clientMessage.trim() || !submissionId || !isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')}
-                      className="btn btn-primary"
-                      style={{
-                        opacity: (!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) ? 0.6 : 1,
-                        cursor: (!isPaid || (!isAuditReady && auditScope === 'CARBON_EMISSION')) ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {mintLoading ? 'Minting on Polygon...' : 'Issue and Mint Credential →'}
-                    </button>
-                  </div>
-                  {mintError && (
-                    <div style={{ color: 'var(--google-red)', fontSize: '0.82rem', marginTop: '0.75rem', fontWeight: 600 }}>{mintError}</div>
-                  )}
-                  {(!submissionId || !isPaid) && (
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                      A settled statutory license (Steps 1 &amp; 2) is required to mint tokenized credentials.
-                    </p>
-                  )}
-                </div>
-
-                {/* Right -- badge preview */}
-                <div>
-                  <div className="portal-preview-canvas">
-                    {compositePreview ? (
-                      <img
-                        src={compositePreview}
-                        alt="Dual-logo composite badge preview"
-                      />
-                    ) : (
-                      <div className="portal-preview-placeholder">
-                        <div className="portal-preview-placeholder-title">
-                          Badge Preview
-                        </div>
-                        <div className="portal-preview-placeholder-sub">
-                          Upload logo and enter message, then click Preview Badge
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <strong style={{ color: 'var(--text-main)' }}>Includes:</strong> Client logo + GHG Emissions Registered Trade Mark + Attestation message + ISO 19011:2026 stamp + 1-year warranty date + Polygon ERC-1155 token
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 4 Navigation */}
-              <div className="portal-action-row">
-                <button type="button" onClick={() => setActiveStep(3)} className="btn btn-secondary">
-                  Back to Ingestion API (Step 3)
-                </button>
-                <button type="button" onClick={() => setActiveStep(5)} className="btn btn-secondary">
-                  Preview Asset Delivery (Step 5)
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 5: Digital Asset Delivery ───────────────────────────── */}
-          {activeStep === 5 && (
-            <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>
-                Digital Asset Delivery
-              </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Your audit warranty credential has been issued and recorded on Polygon PoS. Embed the badge on your corporate website using the code snippet below.
-              </p>
-
-              {(mintResult || credentials[0]) && (() => {
-                const cred = mintResult || credentials[0];
-                return (
-                  <div>
-                    {/* Token details */}
-                    <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                      <div className="portal-token-grid">
-                        {[
-                          { label: 'Token ID', value: cred.tokenId || 'pending', mono: true },
-                          { label: 'Contract', value: cred.contractAddress ? `${cred.contractAddress.substring(0, 10)}...` : 'Polygon PoS', mono: true },
-                          { label: 'Network', value: 'Polygon PoS', mono: false },
-                          { label: 'Standard', value: 'ERC-1155', mono: false },
-                        ].map((item) => (
-                          <div key={item.label}>
-                            <div className="portal-metadata-label">{item.label}</div>
-                            <div className={`portal-metadata-value${item.mono ? ' mono' : ''}`}>{item.value}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {cred.openSeaUrl && (
-                        <div style={{ marginTop: '1.25rem' }}>
-                          <a
-                            href={cred.openSeaUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-primary"
-                            style={{ fontSize: '0.85rem' }}
-                          >
-                            View on OpenSea (Polygon)
-                          </a>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Embed snippet */}
-                    {cred.embedSnippet && (
-                      <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                            Website Embed Snippet: Copy to your Developer
-                          </div>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.78rem', padding: '0.3rem 0.8rem' }}
-                            onClick={() => {
-                              navigator.clipboard.writeText(cred.embedSnippet);
-                              setCopiedSnippet(true);
-                              setTimeout(() => setCopiedSnippet(false), 2000);
-                            }}
-                          >
-                            {copiedSnippet ? 'Copied!' : 'Copy Snippet'}
-                          </button>
-                        </div>
-                        <pre style={{
-                          backgroundColor: '#0c1929', color: '#a5f3fc', padding: '1rem', borderRadius: '8px',
-                          fontSize: '0.78rem', overflowX: 'auto', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap',
-                        }}>
-                          {cred.embedSnippet}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* Warranty details */}
-                    <div className="persefoni-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderLeft: '3px solid var(--color-green)' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-green)', marginBottom: '0.35rem' }}>
-                        1-Year Statutory Warranty Issued
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                        Valid to:{' '}
-                        <strong style={{ color: 'var(--text-main)' }}>
-                          {cred.warrantyExpiresAt
-                            ? new Date(cred.warrantyExpiresAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
-                            : 'TBD'}
-                        </strong>
-                      </div>
-                      {cred.verificationSeal && (
-                        <div style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: '0.35rem', wordBreak: 'break-all' }}>
-                          SHA-256: {cred.verificationSeal}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Software Embed Builder */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <SoftwareEmbedBuilder
-                        licenseeId={user?.licenseeId || 'client-licensee'}
-                        allowedOrigins={cred.allowedOrigins || ['*']}
-                        token={token || undefined}
-                      />
-                    </div>
-
-                    <div className="portal-action-row">
-                      <button type="button" onClick={() => setActiveStep(4)} className="btn btn-secondary">
-                        Back to Credential Studio (Step 4)
-                      </button>
-                      <button type="button" onClick={() => setActiveStep(1)} className="btn btn-primary">
-                        Review Assessment (Step 1)
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {!mintResult && credentials.length === 0 && (
-                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}>No credential issued yet</div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                    Complete Step 4 (Credential Studio) to generate your tokenized audit warranty badge.
-                  </p>
-                  <div className="portal-action-row" style={{ justifyContent: 'center' }}>
-                    <button type="button" onClick={() => setActiveStep(4)} className="btn btn-primary">
-                      Go to Credential Studio (Step 4)
-                    </button>
-                    <button type="button" onClick={() => setActiveStep(1)} className="btn btn-secondary">
-                      Back to Assessment (Step 1)
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-      )}
-
-      {/* ── VIEW 2: Executive Overview & KPIs ────────────────────────────── */}
-      {activeView === 'overview' && (
-        <div className="space-y-8">
-          <SharedDashboardShell
-            onNavigateWorkflow={(type, draftId) => {
-              setWorkflowWizardType(type);
-              setWorkflowWizardSubmissionId(draftId || null);
-              setActiveView('assurance-wizard');
+        {/* ── Sovereign Assurance Workflows: GHG Carbon or Workforce Social Value ─────────── */}
+        {activeView === 'workflow' && (
+          <ReadinessEngineWorkflow
+            key={auditScope}
+            scope={auditScope}
+            user={user}
+            token={token}
+            initialStep={activeStep}
+            submissionId={submissionId}
+            onRefreshStatus={fetchIsoStatus}
+            onNavigateTab={(tab) => {
+              if (tab === 'overview') setActiveView('overview');
+              if (tab === 'embed') setActiveView('embed');
+              if (tab === 'credentials') setActiveView('credentials');
             }}
           />
-          {/* 4 Adaptive KPI Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
-            {kpis.map((kpi) => (
-              <div key={kpi.label} className="persefoni-card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: kpi.accent }} />
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>{kpi.label}</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.3rem', fontFamily: 'var(--font-mono)' }}>{kpi.value}</div>
-                <div style={{ fontSize: '0.72rem', color: kpi.accent, marginTop: '0.2rem', fontWeight: 600 }}>{kpi.sub}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Workflow Quick Action Card */}
-          <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-sky)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.04em' }}>
-                Active Assurance Workflow
-              </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                Step {activeStep} of 5: {STEP_LABELS[auditScope][activeStep]}
-              </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                Scope: {auditScope === 'CARBON_EMISSION' ? 'Carbon Emission (ISO 14001 / 50001)' : 'Job Creation (Section 106 Social)'} · Diagnostic: {progressPct}% complete
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveView('workflow')}
-              className="btn btn-primary"
-            >
-              Resume Workflow Studio →
-            </button>
-          </div>
-
-          {/* Recent Credentials and Settlements Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem' }}>
-            {/* Recent Credentials Preview */}
-            <div className="persefoni-card" style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Recent Credentials</h3>
-                <button type="button" onClick={() => setActiveView('credentials')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>
-                  View All ({credentials.length}) →
-                </button>
-              </div>
-              {credentials.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
-                  <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No credentials issued yet.</p>
-                  <button type="button" onClick={() => { setActiveView('workflow'); setActiveStep(4); }} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
-                    Open Credential Studio
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  {credentials.slice(0, 3).map((c: any) => (
-                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-light)' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-main)' }}>{c.id.substring(0, 14)}…</span>
-                      <StatusBadge status={c.status} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Recent Settlements Preview */}
-            <div className="persefoni-card" style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Recent Settlements</h3>
-                <button type="button" onClick={() => setActiveView('transactions')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>
-                  View All ({transactions.length}) →
-                </button>
-              </div>
-              {transactions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
-                  <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No transactions recorded yet.</p>
-                  <button type="button" onClick={() => { setActiveView('workflow'); setActiveStep(2); }} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
-                    Review Commercial Scope
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  {transactions.slice(0, 3).map((t: any) => (
-                    <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-light)' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>£{(t.grossAmountCents / 100).toFixed(2)}</span>
-                      <StatusBadge status={t.status} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+        )}
 
       {/* ── VIEW 3: Issued Credentials ───────────────────────────────────── */}
       {activeView === 'credentials' && (
@@ -3802,8 +2116,16 @@ export const PortalPage: React.FC = () => {
         <div>
           <SoftwareEmbedBuilder
             licenseeId={user?.licenseeId || 'client-licensee'}
+            partnerName={user?.companyName || user?.email}
+            clientLogoUrl={clientLogoPreview || undefined}
             allowedOrigins={['*']}
             token={token || undefined}
+            isVerified={isAuditReady}
+            isPaid={isPaid}
+            onNavigateWorkflow={(step) => {
+              setActiveView('workflow');
+              setActiveStep(step as any);
+            }}
           />
         </div>
       )}

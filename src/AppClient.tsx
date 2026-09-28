@@ -14,15 +14,15 @@ import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { JobReportingPage } from './pages/JobReportingPage';
 import { PortalPage } from './pages/PortalPage';
 import { AdminPage } from './pages/AdminPage';
 import { TransparencyPage } from './pages/TransparencyPage';
-import { AboutPage } from './pages/AboutPage';
 import { BlogPage } from './pages/BlogPage';
 import { BookDemoPage } from './pages/BookDemoPage';
 import { BookDemoModal } from './components/BookDemoModal';
 import { CharityApplicationPage } from './pages/CharityApplicationPage';
+import { PartnersPage } from './pages/PartnersPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -52,17 +52,29 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
+const SolutionsRedirect: React.FC = () => {
+  const { isAuthenticated, isAdmin } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/portal/login" replace />;
+  }
+  return <Navigate to={isAdmin ? '/admin' : '/portal'} replace />;
+};
+
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<LandingPage />} />
-        <Route path="about" element={<AboutPage />} />
+        <Route path="solutions" element={<SolutionsRedirect />} />
+        <Route path="job-reporting" element={<SolutionsRedirect />} />
+        <Route path="workforce-assurance" element={<SolutionsRedirect />} />
+        <Route path="jobs" element={<SolutionsRedirect />} />
+        <Route path="carbon-emission" element={<SolutionsRedirect />} />
+        <Route path="carbon" element={<SolutionsRedirect />} />
+        <Route path="about" element={<Navigate to="/" replace />} />
         <Route path="blog" element={<BlogPage />} />
         <Route path="licensing" element={<PartnerLicensingPage />} />
-        <Route path="job-reporting" element={<JobReportingPage />} />
-        <Route path="workforce-assurance" element={<JobReportingPage />} />
-        <Route path="jobs" element={<JobReportingPage />} />
+        <Route path="pricing" element={<PartnerLicensingPage />} />
         <Route path="souvenirs" element={<EventSouvenirPage />} />
         <Route path="public-tracker" element={<PublicTrackerPage />} />
         <Route path="track/:orderNumber" element={<PublicTrackerPage />} />
@@ -70,6 +82,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="merch" element={<MerchStorePage />} />
         <Route path="charities/apply" element={<CharityApplicationPage />} />
         <Route path="charity/apply" element={<CharityApplicationPage />} />
+        <Route path="partners" element={<PartnersPage />} />
+        <Route path="partnerships" element={<PartnersPage />} />
+        <Route path="partner" element={<PartnersPage />} />
         <Route path="partner/drop" element={<PartnerLogoDropPage />} />
         <Route path="certificate/:id" element={<CertificateViewPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
@@ -91,12 +106,46 @@ export const AppRoutes: React.FC = () => {
         <Route path="portal/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="portal/reset-password" element={<ResetPasswordPage />} />
+        <Route path="verify-email" element={<VerifyEmailPage />} />
+        <Route path="portal/verify-email" element={<VerifyEmailPage />} />
         
         <Route
           path="portal"
           element={
             <ProtectedRoute partnerOnly>
               <PortalPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="portal/transactions"
+          element={
+            <ProtectedRoute partnerOnly>
+              <Navigate to="/portal?tab=transactions" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="portal/credentials"
+          element={
+            <ProtectedRoute partnerOnly>
+              <Navigate to="/portal?tab=credentials" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="portal/workflow"
+          element={
+            <ProtectedRoute partnerOnly>
+              <Navigate to="/portal?tab=workflow" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="portal/workflow/:id"
+          element={
+            <ProtectedRoute partnerOnly>
+              <Navigate to="/portal?tab=workflow" replace />
             </ProtectedRoute>
           }
         />

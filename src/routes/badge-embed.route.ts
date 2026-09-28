@@ -27,7 +27,7 @@ export function createBadgeEmbedRouter(prisma: PrismaClient): Router {
 
     const script = `
 (function() {
-  var containers = document.querySelectorAll('[data-licensee]');
+  var containers = document.querySelectorAll('[data-licensee], [data-licensee-id], #ghg-trust-seal');
   if (!containers || containers.length === 0) return;
 
   var baseUrl = (function() {
@@ -66,12 +66,23 @@ export function createBadgeEmbedRouter(prisma: PrismaClient): Router {
         var badge = document.createElement('div');
         badge.style.cssText = 'display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;font-size:13px;background:' + bg + ';color:' + textMain + ';border:1px solid ' + border + ';box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;text-decoration:none;';
         
+        var ghgLogoUrl = baseUrl + '/images/nfty-logs-logo.png';
+        var nameText = data.licenseeName || licenseeId;
+        var clientInitials = nameText.substring(0, 2).toUpperCase();
+        var clientLogoHtml = data.logoUrl
+          ? '<img src="' + data.logoUrl + '" alt="' + nameText + '" style="width:20px;height:20px;object-fit:contain;border-radius:3px;" />'
+          : '<div style="width:20px;height:20px;border-radius:3px;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px;">' + clientInitials + '</div>';
+
         badge.innerHTML = 
-          '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<div style="width:24px;height:24px;border-radius:50%;background:#0284c7;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;">GHG</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:6px;background:' + (theme === 'dark' ? 'rgba(255,255,255,0.06)' : '#f1f5f9') + ';">' +
+              '<img src="' + ghgLogoUrl + '" alt="GHG" style="width:20px;height:20px;object-fit:contain;" />' +
+              '<span style="font-size:10px;font-weight:700;color:' + textMuted + ';">\u00d7</span>' +
+              clientLogoHtml +
+            '</div>' +
             '<div>' +
-              '<div style="font-weight:700;line-height:1.2;">' + (data.licenseeName || licenseeId) + '</div>' +
-              '<div style="font-size:11px;color:' + textMuted + ';">' + (data.frameworkText || 'ISO 14064-1 Audit-Ready') + '</div>' +
+              '<div style="font-weight:700;line-height:1.2;">' + nameText + '</div>' +
+              '<div style="font-size:11px;color:' + textMuted + ';">' + (data.frameworkText || 'ISO 14064-1 & ISO 19011:2026 Assured') + '</div>' +
             '</div>' +
           '</div>' +
           '<div style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:9999px;font-size:10px;font-weight:700;color:' + statusColor + ';background:' + statusColor + '15;border:1px solid ' + statusColor + '40;">' +
@@ -158,6 +169,7 @@ export function createBadgeEmbedRouter(prisma: PrismaClient): Router {
         validThrough: evaluation.statutoryExpiresAt,
         daysRemaining: evaluation.daysRemainingInEpoch,
         statusHeadline: evaluation.statusHeadline,
+        logoUrl: credential?.clientLogoUrl || null,
         verificationUrl: `${baseUrl}/transparency?licenseeId=${encodeURIComponent(evaluation.licenseeId)}`,
       });
     } catch (err: any) {

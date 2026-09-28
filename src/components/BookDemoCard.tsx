@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { validateWorkEmail } from '../utils/emailValidation';
 
 export interface BookDemoCardProps {
   onSuccess?: (booking: any) => void;
@@ -69,9 +70,10 @@ export const BookDemoCard: React.FC<BookDemoCardProps> = ({
     if (e) e.preventDefault();
     setErrorMsg(null);
 
-    // Client-side quick checks
-    if (!workEmail || !workEmail.includes('@')) {
-      setErrorMsg('Please provide a valid work email address.');
+    // Client-side corporate work email check (blocks Gmail, Yahoo, etc.)
+    const emailValidation = validateWorkEmail(workEmail);
+    if (!emailValidation.isValid) {
+      setErrorMsg(emailValidation.error || 'Please provide an official corporate or organizational work email address.');
       return;
     }
     if (!fullName || fullName.trim().length < 2) {
@@ -271,7 +273,7 @@ export const BookDemoCard: React.FC<BookDemoCardProps> = ({
             id="demo-work-email"
             type="email"
             className="book-demo-input"
-            placeholder="Work email address"
+            placeholder="Official work email (name@company.com)"
             value={workEmail}
             onChange={(e) => setWorkEmail(e.target.value)}
             required
@@ -318,7 +320,7 @@ export const BookDemoCard: React.FC<BookDemoCardProps> = ({
             {availableSlots.length > 0 ? (
               availableSlots.map((slot) => (
                 <option key={slot.iso} value={slot.iso} disabled={!slot.available}>
-                  {slot.formatted} {!slot.available ? '(Booked)' : '— Available'}
+                  {slot.formatted} {!slot.available ? '(Booked)' : '- Available'}
                 </option>
               ))
             ) : (

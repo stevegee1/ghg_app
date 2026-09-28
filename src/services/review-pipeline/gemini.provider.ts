@@ -12,7 +12,7 @@ import { ILlmProvider, LlmCompletionOptions, LlmCompletionResult, LlmMessage } f
 
 export class GeminiProvider implements ILlmProvider {
   readonly providerName = 'Google Gemini';
-  readonly defaultModel = 'gemini-1.5-pro-latest';
+  readonly defaultModel = 'gemini-3.8-flash';
 
   isConfigured(): boolean {
     return Boolean(process.env.GEMINI_API_KEY);
@@ -45,11 +45,20 @@ export class GeminiProvider implements ILlmProvider {
       },
     };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const err = await response.text();
@@ -57,7 +66,8 @@ export class GeminiProvider implements ILlmProvider {
     }
 
     const data: any = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const content = parts.map((p: any) => p.text || '').join('');
     const usage = data.usageMetadata;
 
     return {
