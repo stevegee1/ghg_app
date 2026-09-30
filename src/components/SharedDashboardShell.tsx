@@ -63,6 +63,7 @@ interface SharedDashboardShellProps {
   initialData?: ClientDashboardData | null;
   targetLicenseeId?: string;
   isAdminViewing?: boolean;
+  hideEmailBanner?: boolean;
   onNavigateWorkflow?: (type: 'CARBON' | 'JOB', draftId?: string | null) => void;
 }
 
@@ -70,6 +71,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   initialData,
   targetLicenseeId,
   isAdminViewing = false,
+  hideEmailBanner = false,
   onNavigateWorkflow,
 }) => {
   const { token, user } = useAuth();
@@ -210,7 +212,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   return (
     <div className="shared-dash-container">
       {/* Unverified Work Email Security Notice */}
-      {user && user.emailVerified === false && (
+      {!hideEmailBanner && user && user.emailVerified === false && (
         <div
           role="alert"
           style={{

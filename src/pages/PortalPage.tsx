@@ -244,7 +244,7 @@ const getFormattedDate = () => {
 };
 
 export const PortalPage: React.FC = () => {
-  const { token, user, logout, isAdmin } = useAuth();
+  const { token, user, logout, isAdmin, updateUser } = useAuth();
   const navigate = useNavigate();
 
   // Defense-in-depth: Administrators must never view client-facing licensee portals
@@ -259,6 +259,93 @@ export const PortalPage: React.FC = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
   const [copiedApiKey, setCopiedApiKey] = useState<boolean>(false);
   const [copiedClientId, setCopiedClientId] = useState<boolean>(false);
+
+  // ── Email verification state ──────────────────────────────────────────────
+  const [resendingEmail, setResendingEmail] = useState<boolean>(false);
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResendPortalVerification = async () => {
+    if (!token && !user?.email) return;
+    setResendingEmail(true);
+    setResendStatus(null);
+    setResendError(null);
+    try {
+      const res = await api.resendVerificationEmail(user?.email || undefined, token || undefined);
+      setResendStatus(res.message || 'Fresh verification link has been dispatched to your corporate email.');
+      setResendCooldown(30);
+    } catch (err: any) {
+      setResendError(err.message || 'Failed to dispatch verification email. Please try again.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
+  // ── Profile Settings Form State ───────────────────────────────────────────
+  const [profileFirstName, setProfileFirstName] = useState(user?.firstName || '');
+  const [profileLastName, setProfileLastName] = useState(user?.lastName || '');
+  const [profileCompanyName, setProfileCompanyName] = useState(user?.companyName || '');
+  const [profileJobTitle, setProfileJobTitle] = useState(user?.jobTitle || '');
+  const [profilePrimaryRole, setProfilePrimaryRole] = useState(user?.primaryRole || 'COMPLIANCE_OFFICER');
+  const [profileCountry, setProfileCountry] = useState(user?.organisationCountry || 'GB');
+  const [profileIndustry, setProfileIndustry] = useState(user?.industrySector || 'MANUFACTURING');
+  const [profileWebsiteUrl, setProfileWebsiteUrl] = useState(user?.websiteUrl || '');
+  const [profileRegNo, setProfileRegNo] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      if (user.firstName) setProfileFirstName(user.firstName);
+      if (user.lastName) setProfileLastName(user.lastName);
+      if (user.companyName) setProfileCompanyName(user.companyName);
+      if (user.jobTitle) setProfileJobTitle(user.jobTitle);
+      if (user.primaryRole) setProfilePrimaryRole(user.primaryRole);
+      if (user.organisationCountry) setProfileCountry(user.organisationCountry);
+      if (user.industrySector) setProfileIndustry(user.industrySector);
+      if (user.websiteUrl) setProfileWebsiteUrl(user.websiteUrl);
+    }
+  }, [user]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setProfileSaving(true);
+    setProfileSuccess(null);
+    setProfileError(null);
+    try {
+      const res = await api.updateProfile(token, {
+        firstName: profileFirstName.trim(),
+        lastName: profileLastName.trim(),
+        companyName: profileCompanyName.trim(),
+        jobTitle: profileJobTitle.trim() || undefined,
+        primaryRole: profilePrimaryRole,
+        organisationCountry: profileCountry,
+        industrySector: profileIndustry,
+        websiteUrl: profileWebsiteUrl.trim() || undefined,
+        companyRegistrationNo: profileRegNo.trim() || undefined,
+      });
+      if (res.user && updateUser) {
+        updateUser(res.user);
+      }
+      setProfileSuccess('Corporate profile and entity settings updated successfully.');
+      setTimeout(() => setProfileSuccess(null), 5000);
+    } catch (err: any) {
+      setProfileError(err.message || 'Failed to update profile settings.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   // ── Global portal data ────────────────────────────────────────────────────
   const [summary, setSummary] = useState<any | null>(null);
@@ -1040,6 +1127,8 @@ export const PortalPage: React.FC = () => {
     switch (activeView) {
       case 'overview':
         return 'Executive KPI Overview';
+      case 'checklist':
+        return 'Preparation & Evidence Gathering Console';
       case 'workflow':
         return auditScope === 'JOB_REPORTING'
           ? 'Workforce & Social Value Assurance'
@@ -1240,7 +1329,7 @@ export const PortalPage: React.FC = () => {
           }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
-          <span className="portal-nav-label">Preparation Checklist</span>
+          <span className="portal-nav-label">Preparation</span>
           <span className="portal-nav-badge count">Readiness</span>
         </button>
 
@@ -1394,6 +1483,107 @@ export const PortalPage: React.FC = () => {
 
       {/* ── Main Workspace ─────────────────────────────────────────────────── */}
       <main className="portal-main-workspace">
+
+        {/* Unverified Corporate Work Email Alert Banner */}
+        {user && user.emailVerified === false && (
+          <div
+            role="alert"
+            style={{
+              padding: '1rem 1.35rem',
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fcd34d',
+              borderRadius: '12px',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1.25rem',
+              flexWrap: 'wrap',
+              boxShadow: '0 1px 3px rgba(245, 158, 11, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', flex: 1, minWidth: '280px' }}>
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(245, 158, 11, 0.18)',
+                  color: '#b45309',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: '2px',
+                }}
+              >
+                <GoogleIcons.Lock />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#92400e', marginBottom: '0.2rem' }}>
+                  Action Required: Corporate Email Verification Pending
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#78350f', lineHeight: 1.45 }}>
+                  A verification link was dispatched to <strong>{user.email}</strong>. Corporate email verification is required to unlock statutory ISO 19011 warranty claims, S106 filings, and Polygon PoS credential issuance.
+                </div>
+                {resendStatus && (
+                  <div style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 600, marginTop: '0.35rem' }}>
+                    {resendStatus}
+                  </div>
+                )}
+                {resendError && (
+                  <div style={{ fontSize: '0.8rem', color: '#b91c1c', fontWeight: 600, marginTop: '0.35rem' }}>
+                    {resendError}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleResendPortalVerification}
+                disabled={resendingEmail || resendCooldown > 0}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  backgroundColor: '#d97706',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: resendingEmail || resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                  opacity: resendingEmail || resendCooldown > 0 ? 0.7 : 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                {resendingEmail
+                  ? 'Dispatching...'
+                  : resendCooldown > 0
+                  ? `Resend in ${resendCooldown}s`
+                  : 'Resend Verification Email'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('profile')}
+                style={{
+                  padding: '0.5rem 0.85rem',
+                  borderRadius: '6px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d1d5db',
+                  color: '#374151',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Settings
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Top Greeting Banner - Clean Google/Normative Enterprise Typography */}
         <div className="portal-greeting-banner">
@@ -1605,6 +1795,7 @@ export const PortalPage: React.FC = () => {
         {activeView === 'overview' && (
           <div className="space-y-8" style={{ marginBottom: '2.5rem' }}>
             <SharedDashboardShell
+              hideEmailBanner={true}
               onNavigateWorkflow={(type) => {
                 if (type === 'JOB') {
                   setAuditScope('JOB_REPORTING');
@@ -1921,7 +2112,7 @@ export const PortalPage: React.FC = () => {
                   {credentials.map((cred: any) => (
                     <tr key={cred.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                       <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {cred.id.substring(0, 18)}…
+                        {cred.id.substring(0, 18)}...
                       </td>
                       <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--color-sky)' }}>
                         {cred.tokenId || '-'}
@@ -2069,7 +2260,7 @@ export const PortalPage: React.FC = () => {
                   {filteredTransactions.map((tx) => (
                     <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                       <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 600 }}>
-                        {tx.id.substring(0, 16)}…
+                        {tx.id.substring(0, 16)}...
                       </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
                         <StatusBadge status={tx.status} />
@@ -2124,9 +2315,14 @@ export const PortalPage: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.82rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Registered Email:</span>
-                  <strong style={{ color: 'var(--text-main)' }}>{user?.email || 'N/A'}</strong>
+                  <div style={{ textAlign: 'right' }}>
+                    <strong style={{ color: 'var(--text-main)', display: 'block' }}>{user?.email || 'N/A'}</strong>
+                    <span style={{ fontSize: '0.72rem', color: user?.emailVerified ? '#16a34a' : '#d97706', fontWeight: 600 }}>
+                      {user?.emailVerified ? '● Verified Work Email' : '● Verification Pending'}
+                    </span>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Security Role:</span>
@@ -2171,6 +2367,182 @@ export const PortalPage: React.FC = () => {
                 Transmit via <code style={{ color: 'var(--color-sky)' }}>x-api-key</code> HTTP Header.
               </div>
             </div>
+          </div>
+
+          {/* Edit Organization Profile Form Card */}
+          <div className="persefoni-card" style={{ padding: '1.75rem', marginBottom: '1.75rem' }}>
+            <div style={{ marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.85rem' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>
+                Organization &amp; Compliance Officer Profile
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                Update your statutory entity information, regulatory role, and business registration numbers.
+              </p>
+            </div>
+
+            {profileSuccess && (
+              <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#16a34a', fontSize: '0.84rem', fontWeight: 600, marginBottom: '1.25rem' }}>
+                {profileSuccess}
+              </div>
+            )}
+
+            {profileError && (
+              <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#dc2626', fontSize: '0.84rem', fontWeight: 600, marginBottom: '1.25rem' }}>
+                {profileError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveProfile}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFirstName}
+                    onChange={(e) => setProfileFirstName(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileLastName}
+                    onChange={(e) => setProfileLastName(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    Company / Organization Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileCompanyName}
+                    onChange={(e) => setProfileCompanyName(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    Company Registration Number (e.g. Companies House)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 12345678"
+                    value={profileRegNo}
+                    onChange={(e) => setProfileRegNo(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    Job Title
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Head of Sustainability &amp; Assurance"
+                    value={profileJobTitle}
+                    onChange={(e) => setProfileJobTitle(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    Primary Assurance Role
+                  </label>
+                  <select
+                    value={profilePrimaryRole}
+                    onChange={(e) => setProfilePrimaryRole(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  >
+                    <option value="COMPLIANCE_OFFICER">Compliance / Legal Officer</option>
+                    <option value="SUSTAINABILITY_DIRECTOR">Sustainability Director / ESG Lead</option>
+                    <option value="MANAGING_DIRECTOR">Managing Director / C-Suite Executive</option>
+                    <option value="OPERATIONS_MANAGER">Operations / Facility Manager</option>
+                    <option value="AUDITOR">Internal / External Auditor</option>
+                    <option value="OTHER">Other Authorized Representative</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    Jurisdiction / Country
+                  </label>
+                  <select
+                    value={profileCountry}
+                    onChange={(e) => setProfileCountry(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  >
+                    <option value="GB">United Kingdom (GB)</option>
+                    <option value="US">United States (US)</option>
+                    <option value="DE">Germany (DE)</option>
+                    <option value="FR">France (FR)</option>
+                    <option value="NL">Netherlands (NL)</option>
+                    <option value="AE">United Arab Emirates (AE)</option>
+                    <option value="OTHER">Other International Jurisdiction</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                    Industry Sector
+                  </label>
+                  <select
+                    value={profileIndustry}
+                    onChange={(e) => setProfileIndustry(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                  >
+                    <option value="MANUFACTURING">Manufacturing &amp; Heavy Industry</option>
+                    <option value="ENERGY">Energy, Utilities &amp; Clean Tech</option>
+                    <option value="CONSTRUCTION">Construction &amp; Real Estate Development</option>
+                    <option value="TRANSPORT">Transport, Logistics &amp; Fleet</option>
+                    <option value="TECH">Technology, Software &amp; Data Centers</option>
+                    <option value="PROFESSIONAL_SERVICES">Professional Services &amp; Consultancy</option>
+                    <option value="PUBLIC_SECTOR">Public Sector &amp; Local Authorities</option>
+                    <option value="RETAIL">Retail &amp; Consumer Goods</option>
+                    <option value="AGRICULTURE">Agriculture, Food &amp; Land Use</option>
+                    <option value="OTHER">Other Specialized Sector</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                  Official Corporate Website
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://example.com"
+                  value={profileWebsiteUrl}
+                  onChange={(e) => setProfileWebsiteUrl(e.target.value)}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="submit"
+                  disabled={profileSaving}
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.85rem', padding: '0.6rem 1.5rem', fontWeight: 700 }}
+                >
+                  {profileSaving ? 'Saving Changes...' : 'Save Organization Profile'}
+                </button>
+              </div>
+            </form>
           </div>
 
           {/* Evidence Locker Shortcut Card */}
@@ -2361,7 +2733,7 @@ export const PortalPage: React.FC = () => {
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowJobModal(false)} className="btn btn-secondary">Cancel</button>
                 <button type="submit" disabled={submittingJob} className="btn btn-primary">
-                  {submittingJob ? 'Submitting…' : 'Confirm Filing'}
+                  {submittingJob ? 'Submitting...' : 'Confirm Filing'}
                 </button>
               </div>
             </form>

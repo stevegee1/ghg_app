@@ -305,10 +305,53 @@ export class PreparationChecklistService {
   }
 
   /**
+   * Helper to populate linked AuditEvidenceDocument data for checklist items.
+   */
+  private async attachEvidenceDocuments<T extends { items: any[] }>(checklist: T): Promise<T> {
+    const docIds = checklist.items
+      .map((i: any) => i.linkedEvidenceDocId)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    if (docIds.length === 0) return checklist;
+
+    const docs = await this.prisma.auditEvidenceDocument.findMany({
+      where: { id: { in: docIds } },
+      select: { id: true, fileName: true, fileUrl: true, fileSizeBytes: true, sha256Hash: true, createdAt: true },
+    });
+    const map = new Map(docs.map((d) => [d.id, d]));
+    return {
+      ...checklist,
+      items: checklist.items.map((i: any) => ({
+        ...i,
+        linkedEvidenceDoc: i.linkedEvidenceDocId ? map.get(i.linkedEvidenceDocId) || null : null,
+      })),
+    };
+  }
+
+  private async attachEvidenceDocumentsList<T extends { items: any[] }>(checklists: T[]): Promise<T[]> {
+    const docIds = checklists
+      .flatMap((c) => c.items.map((i: any) => i.linkedEvidenceDocId))
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    if (docIds.length === 0) return checklists;
+
+    const docs = await this.prisma.auditEvidenceDocument.findMany({
+      where: { id: { in: docIds } },
+      select: { id: true, fileName: true, fileUrl: true, fileSizeBytes: true, sha256Hash: true, createdAt: true },
+    });
+    const map = new Map(docs.map((d) => [d.id, d]));
+    return checklists.map((c) => ({
+      ...c,
+      items: c.items.map((i: any) => ({
+        ...i,
+        linkedEvidenceDoc: i.linkedEvidenceDocId ? map.get(i.linkedEvidenceDocId) || null : null,
+      })),
+    }));
+  }
+
+  /**
    * Retrieves all preparation checklists for a licensee with framework details.
    */
   async getChecklistsForLicensee(licenseeId: string) {
-    return this.prisma.preparationChecklist.findMany({
+    const lists = await this.prisma.preparationChecklist.findMany({
       where: { licenseeId },
       include: {
         recommendation: true,
@@ -318,6 +361,7 @@ export class PreparationChecklistService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return this.attachEvidenceDocumentsList(lists);
   }
 
   /**
@@ -329,7 +373,7 @@ export class PreparationChecklistService {
       whereClause.licenseeId = licenseeId;
     }
 
-    return this.prisma.preparationChecklist.findFirst({
+    const checklist = await this.prisma.preparationChecklist.findFirst({
       where: whereClause,
       include: {
         recommendation: true,
@@ -338,6 +382,9 @@ export class PreparationChecklistService {
         },
       },
     });
+
+    if (!checklist) return null;
+    return this.attachEvidenceDocuments(checklist);
   }
 
   /**
@@ -444,6 +491,6 @@ export class PreparationChecklistService {
       },
     });
 
-    return updated;
+    return this.attachEvidenceDocuments(updated);
   }
 }

@@ -87,18 +87,44 @@ const BLOCKED_DOMAINS = new Set([
   '126.com',
   'sina.com',
 
+  // RFC 2606 & RFC 6761 Reserved / Placeholder Domains
+  'example.com',
+  'example.org',
+  'example.net',
+  'example.edu',
+  'test.com',
+  'test.org',
+  'test.net',
+  'sample.com',
+  'sample.org',
+  'sample.net',
+  'invalid.com',
+  'localhost.com',
+  'dummy.com',
+  'fake.com',
+  'fakemail.com',
+  'demo.com',
+
   // Disposable Email Providers
   'mailinator.com',
   'tempmail.com',
   'temp-mail.org',
   'guerrillamail.com',
+  'guerrillamailblock.com',
   '10minutemail.com',
   'sharklasers.com',
   'throwawaymail.com',
   'getairmail.com',
   'dispostable.com',
   'trashmail.com',
+  'trashmail.net',
+  'yopmail.com',
+  'yopmail.fr',
+  'yopmail.net',
+  'tempmail.ninja',
 ]);
+
+const RESERVED_TLDS = new Set(['test', 'example', 'invalid', 'localhost']);
 
 export interface WorkEmailValidationResult {
   isValid: boolean;
@@ -107,7 +133,7 @@ export interface WorkEmailValidationResult {
 }
 
 export const WORK_EMAIL_ERROR_MESSAGE =
-  'Please provide an official corporate or organizational work email address (personal providers like Gmail, Yahoo, and Outlook are not permitted).';
+  'Please provide an official corporate or organizational work email address (personal webmail and placeholder domains like example.com are not permitted).';
 
 /**
  * Validates whether an email string is a legitimate corporate/work email.
@@ -140,20 +166,25 @@ export function validateWorkEmail(email: string): WorkEmailValidationResult {
     return { isValid: false, error: 'Invalid email domain: domain has an invalid top-level domain.' };
   }
 
+  // RFC 2606 / RFC 6761 reserved TLDs (.test, .example, .invalid, .localhost)
+  if (RESERVED_TLDS.has(tld)) {
+    return { isValid: false, error: WORK_EMAIL_ERROR_MESSAGE, domain };
+  }
+
   // Exact match in blocked list
   if (BLOCKED_DOMAINS.has(domain)) {
     return { isValid: false, error: WORK_EMAIL_ERROR_MESSAGE, domain };
   }
 
-  // Subdomain match (e.g. mail.gmail.com or xyz.yahoo.com)
+  // Subdomain match (e.g. mail.gmail.com, sub.example.com)
   for (const blocked of BLOCKED_DOMAINS) {
     if (domain.endsWith('.' + blocked)) {
       return { isValid: false, error: WORK_EMAIL_ERROR_MESSAGE, domain };
     }
   }
 
-  // Pattern match for regional variations (e.g., yahoo.*, hotmail.*, etc.)
-  if (/^(yahoo|hotmail|outlook|live|proton|gmx)\.[a-z.]+$/i.test(domain)) {
+  // Pattern match for regional variations (e.g., yahoo.*, hotmail.*, example.*, test.*)
+  if (/^(yahoo|hotmail|outlook|live|proton|gmx|example|test|sample)\.[a-z.]+$/i.test(domain)) {
     return { isValid: false, error: WORK_EMAIL_ERROR_MESSAGE, domain };
   }
 
