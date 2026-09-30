@@ -6373,9 +6373,266 @@ h4 {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
-  color: var(--text-main, #f8fafc);
+  gap: 1.5rem;
+  color: var(--text-main);
   animation: fadeInUpStagger 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.shared-dash-glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.shared-dash-glass-card:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Removed ambient-glow – not suitable for light enterprise theme */
+.shared-dash-ambient-glow {
+  display: none;
+}
+
+.shared-dash-profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  position: relative;
+  z-index: 2;
+}
+
+.shared-dash-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.shared-dash-roles-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.shared-dash-badge-client {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shared-dash-badge-charity {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shared-dash-badge-merch {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #faf5ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shared-dash-workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 1.25rem;
+}
+
+.shared-dash-workflow-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  box-shadow: var(--card-shadow);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.shared-dash-workflow-card:hover {
+  transform: translateY(-2px);
+  border-color: #a7f3d0;
+  box-shadow: var(--card-shadow-hover);
+}
+
+.shared-dash-workflow-card.job-scope:hover {
+  border-color: #99f6e4;
+  box-shadow: var(--card-shadow-hover);
+}
+
+.shared-dash-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.shared-dash-metric-num {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.shared-dash-metric-lbl {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+.shared-dash-cta-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 42px;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  letter-spacing: -0.01em;
+}
+
+.shared-dash-cta-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.shared-dash-cta-btn.job-btn {
+  background: #0f766e;
+  border-color: #0f766e;
+}
+
+.shared-dash-cta-btn.job-btn:hover {
+  background: #0d6460;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+}
+
+.shared-dash-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.shared-dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.shared-dash-table th {
+  padding: 0.65rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.shared-dash-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-muted);
+}
+
+.shared-dash-table tr:last-child td {
+  border-bottom: none;
+}
+
+.shared-dash-table tr:hover td {
+  background: var(--bg-card-hover);
+}
+
+.shared-dash-telemetry-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .shared-dash-glass-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+  }
+  .shared-dash-workflow-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+  }
+  .shared-dash-workflow-grid {
+    grid-template-columns: 1fr;
+  }
+  .shared-dash-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.1rem;
+  }
 }
 
 .shared-dash-glass-card {

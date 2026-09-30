@@ -23,7 +23,6 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
     if (!isOpen) return;
 
     setLoading(true);
-    // Fetch Addendum B & Roadmap concurrently
     Promise.all([
       fetch(`/api/iso/legal/addendum-b?licenseeId=${licenseeId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
@@ -51,7 +50,7 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.85)',
+        backgroundColor: 'rgba(15, 23, 42, 0.5)',
         backdropFilter: 'blur(6px)',
         zIndex: 9999,
         display: 'flex',
@@ -66,10 +65,10 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
           width: '100%',
           maxWidth: '780px',
           maxHeight: '90vh',
-          backgroundColor: '#0f172a',
-          border: '1px solid var(--border-medium)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
           borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9)',
+          boxShadow: '0 20px 60px rgba(15, 23, 42, 0.18)',
           padding: '2rem',
           display: 'flex',
           flexDirection: 'column',
@@ -77,13 +76,14 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
-              Statutory Legal Assurance & Onboarding Suite
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+              Statutory Legal Assurance &amp; Onboarding Suite
             </h2>
-            <p style={{ fontSize: '0.8125rem', color: '#38bdf8', margin: '0.25rem 0 0 0' }}>
-              Master Services Agreement Addendum B & 30-60-90 Day Consultant Roadmap
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', margin: '0.2rem 0 0 0' }}>
+              MSA Addendum B Contract &amp; 30-60-90 Day Consultant Roadmap &mdash; {clientLegalName}
             </p>
           </div>
 
@@ -92,10 +92,17 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
             onClick={onClose}
             style={{
               background: 'transparent',
-              border: 'none',
-              color: '#94a3b8',
-              fontSize: '1.5rem',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-light)',
+              fontSize: '1rem',
               cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              width: '32px',
+              height: '32px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
             ✕
@@ -103,46 +110,39 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-medium)', paddingBottom: '0.75rem' }}>
-          <button
-            type="button"
-            onClick={() => setActiveTab('ADDENDUM_B')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '0.8125rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              backgroundColor: activeTab === 'ADDENDUM_B' ? 'var(--accent-primary)' : 'transparent',
-              color: '#ffffff',
-            }}
-          >
-            MSA Addendum B Contract
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('ROADMAP_30_60_90')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '0.8125rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              backgroundColor: activeTab === 'ROADMAP_30_60_90' ? 'var(--accent-primary)' : 'transparent',
-              color: '#ffffff',
-            }}
-          >
-            30-60-90 Day Consultant Roadmap
-          </button>
+        <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+          {[
+            { key: 'ADDENDUM_B', label: 'MSA Addendum B Contract' },
+            { key: 'ROADMAP_30_60_90', label: '30-60-90 Day Roadmap' },
+          ].map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key as any)}
+                style={{
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: isActive ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                  background: isActive ? 'var(--accent-primary)' : 'transparent',
+                  color: isActive ? '#ffffff' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Content Body */}
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
           {loading ? (
-            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
               Loading legal documents...
             </div>
           ) : activeTab === 'ADDENDUM_B' ? (
@@ -154,59 +154,62 @@ export const AddendumBModal: React.FC<AddendumBModalProps> = ({
                   className="btn btn-secondary"
                   style={{ fontSize: '0.8125rem', padding: '0.4rem 0.85rem' }}
                 >
-                  {copied ? '✅ Copied to Clipboard!' : '📋 Copy Addendum B Markdown'}
+                  {copied ? 'Copied!' : 'Copy Addendum B Markdown'}
                 </button>
               </div>
 
               <pre
                 style={{
-                  backgroundColor: '#020617',
-                  border: '1px solid #334155',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-light)',
                   padding: '1.25rem',
-                  borderRadius: 'var(--radius-sm)',
+                  borderRadius: 'var(--radius-md)',
                   fontSize: '0.75rem',
-                  color: '#e2e8f0',
+                  color: 'var(--text-muted)',
                   whiteSpace: 'pre-wrap',
-                  fontFamily: 'monospace',
-                  lineHeight: 1.5,
+                  fontFamily: 'var(--font-mono, monospace)',
+                  lineHeight: 1.6,
                 }}
               >
                 {contractData}
               </pre>
             </div>
           ) : (
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {roadmapPhases.map((phase) => (
                 <div
                   key={phase.phaseNumber}
                   style={{
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '1.25rem',
-                    marginBottom: '1rem',
+                    background: 'var(--bg-subtle)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.1rem 1.25rem',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: '#38bdf8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
                       {phase.phaseName}
                     </h4>
-                    <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#0f172a', color: '#10b981', fontWeight: 700 }}>
+                    <span style={{
+                      fontSize: '0.7rem', padding: '2px 8px', borderRadius: 'var(--radius-xs)',
+                      background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0',
+                      fontWeight: 700,
+                    }}>
                       {phase.status}
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '0.8125rem', color: '#ffffff', fontWeight: 600, marginBottom: '0.5rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.4rem' }}>
                     Focus: {phase.focus}
                   </div>
 
-                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.25rem', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  <ul style={{ margin: '0.4rem 0', paddingLeft: '1.25rem', fontSize: '0.78rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
                     {phase.deliverables.map((item: string, i: number) => (
                       <li key={i}>{item}</li>
                     ))}
                   </ul>
 
-                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', marginTop: '0.4rem', fontFamily: 'var(--font-mono)' }}>
                     ISO Standard Alignment: {phase.isoClauses.join(', ')}
                   </div>
                 </div>

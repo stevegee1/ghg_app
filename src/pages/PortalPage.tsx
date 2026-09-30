@@ -1704,23 +1704,12 @@ export const PortalPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowJobModal(true)}
+                className="btn btn-primary"
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  backgroundColor: '#0f172a',
-                  color: '#ffffff',
-                  border: 'none',
                   borderRadius: '9999px',
-                  padding: '0.55rem 1.25rem',
+                  padding: '0.5rem 1.25rem',
                   fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                  transition: 'background-color 0.15s ease',
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1e293b')}
-                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#0f172a')}
               >
                 + Submit Job Filing
               </button>
@@ -1734,27 +1723,28 @@ export const PortalPage: React.FC = () => {
           </div>
         )}
 
-        {/* ── BABYSITTER INTAKE PROMPT (State A: ASSESSMENT_PENDING) ── */}
+        {/* ── STATUTORY INTAKE PROMPT (State A: ASSESSMENT_PENDING) ── */}
         {!user?.hasCompletedAssessment && (
           <div
             style={{
-              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)',
-              border: '1px solid #38bdf8',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
               borderRadius: '12px',
-              padding: '1.25rem 1.5rem',
+              padding: '1.35rem 1.75rem',
               marginBottom: '1.75rem',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
               gap: '1rem',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
             }}
           >
-            <div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc', marginBottom: '0.25rem' }}>
-                Complete your 3-Minute Intake Assessment
+            <div style={{ flex: 1, minWidth: '280px' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem' }}>
+                Complete your 3-Minute Statutory Intake Assessment
               </div>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.4 }}>
+              <div style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
                 Discover which statutory carbon and workforce frameworks apply to your business (SECR, PPN 06/21, ISO 14064-1, Green Claims) and generate your tailored preparation roadmap.
               </div>
             </div>
@@ -1762,19 +1752,10 @@ export const PortalPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/portal/onboarding')}
-              style={{
-                padding: '0.65rem 1.35rem',
-                borderRadius: '8px',
-                background: '#38bdf8',
-                color: '#080c14',
-                fontWeight: 700,
-                fontSize: '0.86rem',
-                border: 'none',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
+              className="btn btn-primary"
+              style={{ borderRadius: 'var(--radius-md)', padding: '0.7rem 1.6rem', fontSize: '0.88rem', whiteSpace: 'nowrap' }}
             >
-              Start Intake Assessment &rarr;
+              Start Intake Assessment
             </button>
           </div>
         )}

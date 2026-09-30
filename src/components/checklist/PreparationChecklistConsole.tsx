@@ -1,35 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api } from '../../api/client';
-import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { api } from '../../api/client';
 
-export interface PreparationChecklistConsoleProps {
-  onProceedToDiagnostic?: () => void;
-}
-
-/**
- * Maps raw compliance framework codes or names to plain-English operational titles.
- * Avoids exposing intimidating raw ISO clause jargon on client-facing screens.
- */
-export function getPlainEnglishFrameworkTitle(rawName: string): string {
-  if (!rawName) return 'Compliance Framework';
-  if (rawName.includes('50001')) return 'Energy Management & Metering';
-  if (rawName.includes('14064-1')) return 'Carbon Footprint & GHG';
-  if (rawName.includes('SECR') || rawName.includes('Streamlined Energy')) return 'Streamlined Energy & Carbon (SECR)';
-  if (rawName.includes('Social Value') || rawName.includes('Fair Work')) return 'Workforce & Fair Work Verification';
-  if (rawName.includes('Hydrogen') || rawName.includes('CertifHy') || rawName.includes('LCHS')) return 'Green Hydrogen & Clean Fuels';
-  if (rawName.includes('Green Claims') || rawName.includes('CMA')) return 'Green Claims & Marketing (CMA)';
-  if (rawName.includes('Section 106') || rawName.includes('106')) return 'Planning & Section 106 Obligations';
-  if (rawName.includes('PPN 06/21') || rawName.includes('Procurement')) return 'Public Procurement Carbon Plan (PPN 06/21)';
-  return rawName.replace(/ISO\s*[0-9]+(-[0-9]+)?(:[0-9]+)?/gi, '').trim() || rawName;
-}
-
-function formatBytes(bytes?: number): string {
-  if (!bytes || bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+interface PreparationChecklistConsoleProps {
+  onProceedToDiagnostic: () => void;
 }
 
 export const PreparationChecklistConsole: React.FC<PreparationChecklistConsoleProps> = ({
@@ -39,24 +14,27 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
   const navigate = useNavigate();
 
   const [checklists, setChecklists] = useState<any[]>([]);
+  const [selectedChecklistId, setSelectedChecklistId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [selectedChecklistId, setSelectedChecklistId] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
 
-  // Per-item local inputs
-  const [numericInputs, setNumericInputs] = useState<Record<string, string>>({});
-  const [textInputs, setTextInputs] = useState<Record<string, string>>({});
-  const [dateRangeInputs, setDateRangeInputs] = useState<Record<string, { start: string; end: string }>>({});
+  // Form states for item inline data entry
+  const [numericInputs, setNumericInputs] = useState<{ [itemId: string]: string }>({});
+  const [dateRangeInputs, setDateRangeInputs] = useState<{
+    [itemId: string]: { start: string; end: string };
+  }>({});
+  const [textInputs, setTextInputs] = useState<{ [itemId: string]: string }>({});
 
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const fileInputRefs = useRef<{ [itemId: string]: HTMLInputElement | null }>({});
 
-  const fetchChecklists = async () => {
+  const loadChecklists = async () => {
     if (!token) return;
     try {
       setLoading(true);
+      setError(null);
       const res = await api.getChecklists(token);
       setChecklists(res.checklists || []);
       if (res.checklists && res.checklists.length > 0 && !selectedChecklistId) {
@@ -70,19 +48,53 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
   };
 
   useEffect(() => {
-    fetchChecklists();
+    loadChecklists();
   }, [token]);
 
-  const handleUpdateItemStatus = async (itemId: string, newStatus: string, linkedDocId?: string) => {
+  // Update item status and optional payload
+  const handleUpdateItemStatus = async (
+    itemId: string,
+    newStatus: string,
+    linkedDocId?: string | null,
+    itemData?: any
+  ) => {
     if (!token) return;
     setUpdatingItemId(itemId);
     setError(null);
     try {
       await api.updateChecklistItem(token, itemId, {
         status: newStatus,
-        linkedEvidenceDocId: linkedDocId,
+        linkedEvidenceDocId: linkedDocId || undefined,
       });
-      await fetchChecklists();
+
+      // Update state locally
+      setChecklists((prevChecklists) =>
+        prevChecklists.map((c) => {
+          const updatedItems = c.items.map((i: any) =>
+            i.id === itemId
+              ? {
+                  ...i,
+                  status: newStatus,
+                  linkedEvidenceDocId: linkedDocId !== undefined ? linkedDocId : i.linkedEvidenceDocId,
+                  itemData: itemData !== undefined ? itemData : i.itemData,
+                }
+              : i
+          );
+          const completed = updatedItems.filter(
+            (i: any) => i.status === 'COMPLETE' || i.status === 'WAIVED'
+          ).length;
+          const mandatoryPending = updatedItems.filter(
+            (i: any) => i.isMandatory && i.status !== 'COMPLETE' && i.status !== 'WAIVED'
+          ).length;
+
+          return {
+            ...c,
+            items: updatedItems,
+            completedItems: completed,
+            isReadyToIngest: mandatoryPending === 0,
+          };
+        })
+      );
     } catch (err: any) {
       setError(err.message || 'Failed to update item status');
     } finally {
@@ -90,6 +102,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
     }
   };
 
+  // Upload proof file directly for a checklist item
   const handleFileUpload = async (item: any, file: File) => {
     if (!token) return;
     setUploadingItemId(item.id);
@@ -97,67 +110,122 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
     setSuccessMessage(null);
 
     try {
-      const uploadRes = await api.uploadEvidenceProofFile(token, {
+      // 1. Upload proof file to evidence vault
+      const docRes = await api.uploadEvidenceProofFile(token, {
         file,
-        category: 'UTILITY_BASELINE_DATA',
-        matrixRowId: item.itemCode,
+        category: 'UTILITY_BILL',
       });
+      const doc = docRes.document || docRes;
 
-      const docId = uploadRes?.document?.id || uploadRes?.evidenceDoc?.id || uploadRes?.id;
-
+      // 2. Link uploaded doc to checklist item and mark as ready/verified
       await api.updateChecklistItem(token, item.id, {
         status: 'COMPLETE',
-        linkedEvidenceDocId: docId,
+        linkedEvidenceDocId: doc.id,
       });
 
-      setSuccessMessage(`Document "${file.name}" uploaded with SHA-256 proof and verified.`);
-      setTimeout(() => setSuccessMessage(null), 5000);
-      await fetchChecklists();
+      // 3. Update local state
+      setChecklists((prevChecklists) =>
+        prevChecklists.map((c) => {
+          const updatedItems = c.items.map((i: any) =>
+            i.id === item.id
+              ? {
+                  ...i,
+                  status: 'COMPLETE',
+                  linkedEvidenceDocId: doc.id,
+                  linkedEvidenceDoc: doc,
+                }
+              : i
+          );
+          const completed = updatedItems.filter(
+            (i: any) => i.status === 'COMPLETE' || i.status === 'WAIVED'
+          ).length;
+          const mandatoryPending = updatedItems.filter(
+            (i: any) => i.isMandatory && i.status !== 'COMPLETE' && i.status !== 'WAIVED'
+          ).length;
+
+          return {
+            ...c,
+            items: updatedItems,
+            completedItems: completed,
+            isReadyToIngest: mandatoryPending === 0,
+          };
+        })
+      );
+
+      setSuccessMessage(`Document "${file.name}" uploaded and verified with SHA-256 integrity.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
-      setError(err.message || 'Failed to upload evidence file. Please try again.');
+      setError(err.message || 'Failed to upload evidence file');
     } finally {
       setUploadingItemId(null);
     }
   };
 
   const handleSaveNumeric = async (itemId: string) => {
-    const val = numericInputs[itemId];
-    if (!val || !val.trim()) {
-      setError('Please enter a reading value before saving.');
+    const rawVal = numericInputs[itemId];
+    if (!rawVal || isNaN(Number(rawVal.replace(/,/g, '')))) {
+      setError('Please provide a valid numeric value');
       return;
     }
-    await handleUpdateItemStatus(itemId, 'COMPLETE');
-    setSuccessMessage('Measurement reading recorded successfully.');
-    setTimeout(() => setSuccessMessage(null), 4000);
+    const num = Number(rawVal.replace(/,/g, ''));
+    await handleUpdateItemStatus(itemId, 'COMPLETE', undefined, { numericReading: num });
+    setSuccessMessage('Measured reading saved and requirement marked ready.');
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const handleSaveDateRange = async (itemId: string) => {
-    const range = dateRangeInputs[itemId];
-    if (!range?.start || !range?.end) {
-      setError('Please specify both start and end dates for the reporting period.');
+    const dates = dateRangeInputs[itemId];
+    if (!dates?.start || !dates?.end) {
+      setError('Please select both start and end dates');
       return;
     }
-    await handleUpdateItemStatus(itemId, 'COMPLETE');
-    setSuccessMessage('Reporting period recorded successfully.');
-    setTimeout(() => setSuccessMessage(null), 4000);
+    await handleUpdateItemStatus(itemId, 'COMPLETE', undefined, {
+      dateRange: { start: dates.start, end: dates.end },
+    });
+    setSuccessMessage('Statutory reporting period saved.');
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const handleSaveText = async (itemId: string) => {
     const txt = textInputs[itemId];
-    if (!txt || !txt.trim()) {
-      setError('Please enter a disclosure description before saving.');
+    if (!txt?.trim()) {
+      setError('Text entry cannot be blank');
       return;
     }
-    await handleUpdateItemStatus(itemId, 'COMPLETE');
-    setSuccessMessage('Information entry saved successfully.');
-    setTimeout(() => setSuccessMessage(null), 4000);
+    await handleUpdateItemStatus(itemId, 'COMPLETE', undefined, { declarationText: txt.trim() });
+    setSuccessMessage('Declaration and policy record saved.');
+    setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
+  const formatBytes = (bytes?: number) => {
+    if (!bytes) return '';
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(2)} MB`;
+  };
+
+  const getPlainEnglishFrameworkTitle = (rawName: string) => {
+    const map: { [key: string]: string } = {
+      'ISO 14064-1 / GHG Protocol': 'Carbon Footprint & GHG Protocol',
+      'ISO 50001': 'Energy Management & Metering',
+      'UK SECR': 'Streamlined Energy & Carbon (SECR)',
+      'ISO 14067': 'Product Carbon Footprint (LCA)',
+      'California SB 253': 'California Climate Accountability (SB 253)',
+      'EU CSRD / ESRS E1': 'Corporate Sustainability Reporting (CSRD)',
+      'ISO 22628': 'Vehicle & Fleet Recyclability',
+      'ISO 19880 / Clean Fuels': 'Green Hydrogen & Clean Fuels',
+      'Social Value Act & Fair Work Job Verification': 'Workforce & Fair Work Verification',
+      'UK Public Procurement Carbon Reduction Plan (PPN 06/21)': 'Public Procurement Carbon Plan (PPN 06/21)',
+      'CMA Green Claims Code & Anti-Greenwashing Compliance': 'Green Claims & Marketing (CMA)',
+    };
+    return map[rawName] || rawName;
   };
 
   if (loading) {
     return (
-      <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center', color: '#94a3b8' }}>
-        <div style={{ marginBottom: '1rem', fontSize: '1rem', color: '#cbd5e1', fontWeight: 600 }}>
-          Loading your compliance preparation roadmap...
+      <div style={{ textAlign: 'center', padding: '3.5rem 1rem' }}>
+        <div style={{ fontSize: '0.95rem', color: '#475569', fontWeight: 600 }}>
+          Loading compliance preparation roadmap...
         </div>
       </div>
     );
@@ -168,13 +236,14 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
     return (
       <div
         style={{
-          background: '#0d1424',
+          background: '#ffffff',
           borderRadius: '12px',
-          border: '1px solid #1e293b',
+          border: '1px solid #e2e8f0',
           padding: '3rem 2rem',
           textAlign: 'center',
           maxWidth: '680px',
           margin: '2rem auto',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
         }}
       >
         <div
@@ -182,8 +251,8 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            background: 'rgba(56, 189, 248, 0.12)',
-            color: '#38bdf8',
+            background: '#f1f5f9',
+            color: '#0f172a',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -195,10 +264,10 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
           </svg>
         </div>
 
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc', marginBottom: '0.5rem' }}>
+        <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
           No Compliance Assessment on File
         </h3>
-        <p style={{ fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '1.75rem' }}>
+        <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5, marginBottom: '2rem' }}>
           Complete our 3-minute intake assessment to calculate your exact statutory reporting obligations and unlock your customized data gathering checklist.
         </p>
 
@@ -206,17 +275,17 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
           type="button"
           onClick={() => navigate('/portal/onboarding')}
           style={{
-            padding: '0.8rem 1.75rem',
+            padding: '0.85rem 2rem',
             borderRadius: '8px',
-            background: '#38bdf8',
-            color: '#080c14',
+            background: '#0f172a',
+            color: '#ffffff',
             fontWeight: 700,
             fontSize: '0.92rem',
             border: 'none',
             cursor: 'pointer',
           }}
         >
-          Start 3-Minute Intake Assessment &rarr;
+          Start 3-Minute Intake Assessment
         </button>
       </div>
     );
@@ -237,42 +306,44 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       {/* Overview Banner */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #0d1424 0%, #111a33 100%)',
+          background: '#ffffff',
           borderRadius: '12px',
-          border: '1px solid #1e293b',
+          border: '1px solid #e2e8f0',
           padding: '1.75rem 2rem',
           marginBottom: '1.5rem',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>
                 Preparation &amp; Evidence Gathering Console
               </span>
               <span
                 style={{
-                  fontSize: '0.75rem',
-                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.72rem',
+                  padding: '0.2rem 0.55rem',
                   borderRadius: '4px',
-                  background: 'rgba(34, 197, 94, 0.15)',
-                  color: '#4ade80',
+                  background: '#f0fdf4',
+                  color: '#166534',
                   fontWeight: 700,
+                  border: '1px solid #bbf7d0',
                 }}
               >
-                Zero-to-100 Babysitter Engine
+                Statutory Readiness Engine
               </span>
             </div>
-            <p style={{ fontSize: '0.86rem', color: '#94a3b8', margin: 0, maxWidth: '640px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.9rem', color: '#475569', margin: 0, maxWidth: '640px', lineHeight: 1.5 }}>
               Prepare and organize your baseline utility bills, meters, and governance policies below. Once mandatory items are satisfied, your dossier unlocks automated ISO diagnostic screening.
             </p>
           </div>
 
           <div style={{ textAlign: 'right', minWidth: '140px' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#38bdf8' }}>
+            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f172a' }}>
               {overallPercentage}%
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
               {completedAllItems} of {totalAllItems} Total Tasks Done
             </div>
           </div>
@@ -282,9 +353,9 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
         <div
           style={{
             width: '100%',
-            height: '6px',
-            borderRadius: '3px',
-            background: '#1e293b',
+            height: '7px',
+            borderRadius: '4px',
+            background: '#e2e8f0',
             marginTop: '1.25rem',
             overflow: 'hidden',
           }}
@@ -293,7 +364,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
             style={{
               width: `${overallPercentage}%`,
               height: '100%',
-              background: overallPercentage === 100 ? '#22c55e' : 'linear-gradient(90deg, #38bdf8, #818cf8)',
+              background: '#16a34a',
               transition: 'width 0.4s ease',
             }}
           />
@@ -303,13 +374,14 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       {error && (
         <div
           style={{
-            padding: '0.75rem 1rem',
+            padding: '0.85rem 1.25rem',
             borderRadius: '8px',
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#fca5a5',
-            fontSize: '0.85rem',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#991b1b',
+            fontSize: '0.88rem',
             marginBottom: '1.5rem',
+            fontWeight: 500,
           }}
         >
           {error}
@@ -319,13 +391,14 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       {successMessage && (
         <div
           style={{
-            padding: '0.75rem 1rem',
+            padding: '0.85rem 1.25rem',
             borderRadius: '8px',
-            background: 'rgba(34, 197, 94, 0.12)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#86efac',
-            fontSize: '0.85rem',
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            color: '#166534',
+            fontSize: '0.88rem',
             marginBottom: '1.5rem',
+            fontWeight: 500,
           }}
         >
           {successMessage}
@@ -333,7 +406,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       )}
 
       {/* Framework Selector Tabs (Clean Plain-English Titles) */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {checklists.map((c) => {
           const isSelected = c.id === selectedChecklistId;
           const isReady = c.isReadyToIngest;
@@ -347,16 +420,17 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               style={{
                 padding: '0.65rem 1.15rem',
                 borderRadius: '8px',
-                background: isSelected ? 'rgba(56, 189, 248, 0.15)' : '#0d1424',
-                border: `1px solid ${isSelected ? '#38bdf8' : '#1e293b'}`,
-                color: isSelected ? '#38bdf8' : '#94a3b8',
+                background: isSelected ? '#0f172a' : '#ffffff',
+                border: `1px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`,
+                color: isSelected ? '#ffffff' : '#334155',
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                transition: 'all 0.2s',
+                transition: 'all 0.15s',
+                boxShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.02)',
               }}
             >
               <span>{cleanTitle}</span>
@@ -365,8 +439,8 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                   fontSize: '0.72rem',
                   padding: '0.15rem 0.45rem',
                   borderRadius: '10px',
-                  background: isReady ? 'rgba(34, 197, 94, 0.2)' : '#1e293b',
-                  color: isReady ? '#4ade80' : '#cbd5e1',
+                  background: isSelected ? 'rgba(255, 255, 255, 0.2)' : isReady ? '#dcfce7' : '#f1f5f9',
+                  color: isSelected ? '#ffffff' : isReady ? '#166534' : '#475569',
                   fontWeight: 700,
                 }}
               >
@@ -381,16 +455,17 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       {recommendation && (
         <div
           style={{
-            background: '#0d1424',
+            background: '#ffffff',
             borderRadius: '10px',
-            border: '1px solid #1e293b',
-            padding: '1.25rem 1.5rem',
+            border: '1px solid #e2e8f0',
+            padding: '1.35rem 1.5rem',
             marginBottom: '1.5rem',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
                 {getPlainEnglishFrameworkTitle(recommendation.frameworkName)}
               </span>
               <span
@@ -398,9 +473,10 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                   fontSize: '0.72rem',
                   padding: '0.15rem 0.5rem',
                   borderRadius: '4px',
-                  background: 'rgba(56, 189, 248, 0.12)',
-                  color: '#38bdf8',
+                  background: '#f1f5f9',
+                  color: '#334155',
                   fontWeight: 600,
+                  border: '1px solid #e2e8f0',
                 }}
               >
                 {recommendation.frameworkName}
@@ -409,11 +485,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                 <span
                   style={{
                     fontSize: '0.7rem',
-                    padding: '0.15rem 0.5rem',
+                    padding: '0.15rem 0.55rem',
                     borderRadius: '4px',
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    color: '#f87171',
+                    background: '#fef2f2',
+                    color: '#991b1b',
                     fontWeight: 700,
+                    border: '1px solid #fecaca',
                   }}
                 >
                   STATUTORY DUTY
@@ -425,32 +502,33 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               <span
                 style={{
                   fontSize: '0.78rem',
-                  padding: '0.3rem 0.75rem',
+                  padding: '0.35rem 0.75rem',
                   borderRadius: '6px',
-                  background: 'rgba(34, 197, 94, 0.15)',
-                  color: '#4ade80',
+                  background: '#f0fdf4',
+                  color: '#166534',
                   fontWeight: 700,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.35rem',
+                  border: '1px solid #bbf7d0',
                 }}
               >
                 Ready for Ingestion
               </span>
             ) : (
-              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
                 {activeChecklist.completedItems} of {activeChecklist.totalItems} requirements complete
               </span>
             )}
           </div>
 
-          <div style={{ fontSize: '0.84rem', color: '#94a3b8', lineHeight: 1.4 }}>
+          <div style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
             {recommendation.plainEnglishWhy}
           </div>
         </div>
       )}
 
-      {/* Checklist Items List with Data Inputs */}
+      {/* Checklist Items List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
         {items.map((item: any) => {
           const isComplete = item.status === 'COMPLETE';
@@ -463,10 +541,11 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
             <div
               key={item.id}
               style={{
-                background: isComplete ? 'rgba(15, 23, 42, 0.6)' : '#0d1424',
+                background: '#ffffff',
                 borderRadius: '10px',
-                border: `1px solid ${isComplete ? 'rgba(34, 197, 94, 0.3)' : item.isMandatory ? 'rgba(56, 189, 248, 0.2)' : '#1e293b'}`,
-                padding: '1.25rem 1.5rem',
+                border: isComplete ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+                padding: '1.35rem 1.5rem',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.85rem',
@@ -478,37 +557,37 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                     <span
                       style={{
-                        fontSize: '0.95rem',
-                        fontWeight: 600,
-                        color: isComplete ? '#4ade80' : '#f8fafc',
+                        fontSize: '0.96rem',
+                        fontWeight: 700,
+                        color: isComplete ? '#166534' : '#0f172a',
                       }}
                     >
                       {item.plainEnglishLabel}
                     </span>
 
                     {item.isMandatory ? (
-                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: '#fef2f2', color: '#991b1b', fontWeight: 700, border: '1px solid #fecaca' }}>
                         MANDATORY
                       </span>
                     ) : (
-                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: '#1e293b', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
                         OPTIONAL
                       </span>
                     )}
 
                     {isWaived && (
-                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: '#fefce8', color: '#854d0e', fontWeight: 600, border: '1px solid #fef08a' }}>
                         WAIVED BY AUDITOR
                       </span>
                     )}
                   </div>
 
-                  <div style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.45 }}>
+                  <div style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.45 }}>
                     {item.plainEnglishGuidance}
                   </div>
 
                   {isWaived && item.waivedReason && (
-                    <div style={{ fontSize: '0.76rem', color: '#facc15', background: 'rgba(234, 179, 8, 0.08)', padding: '0.35rem 0.65rem', borderRadius: '4px', marginTop: '0.5rem', display: 'inline-block' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#854d0e', background: '#fefce8', padding: '0.35rem 0.65rem', borderRadius: '4px', marginTop: '0.5rem', display: 'inline-block', border: '1px solid #fef08a' }}>
                       Auditor Note: {item.waivedReason}
                     </div>
                   )}
@@ -523,10 +602,10 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                     style={{
                       padding: '0.45rem 0.75rem',
                       borderRadius: '6px',
-                      background: isComplete ? 'rgba(34, 197, 94, 0.15)' : '#080c14',
-                      border: `1px solid ${isComplete ? '#22c55e' : '#334155'}`,
-                      color: isComplete ? '#4ade80' : '#cbd5e1',
-                      fontSize: '0.8rem',
+                      background: isComplete ? '#f0fdf4' : '#ffffff',
+                      border: `1px solid ${isComplete ? '#86efac' : '#cbd5e1'}`,
+                      color: isComplete ? '#166534' : '#0f172a',
+                      fontSize: '0.82rem',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
@@ -543,8 +622,8 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               {!isWaived && (
                 <div
                   style={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px dashed #334155',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
                     borderRadius: '8px',
                     padding: '0.85rem 1rem',
                     marginTop: '0.35rem',
@@ -567,22 +646,22 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                       {linkedDoc ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
                               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                               <polyline points="14 2 14 8 20 8" />
                             </svg>
                             <div>
-                              <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f8fafc' }}>
+                              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#0f172a' }}>
                                 {linkedDoc.fileName}
                               </div>
-                              <div style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
+                              <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
                                 <span>{formatBytes(linkedDoc.fileSizeBytes)}</span>
                                 <span>•</span>
-                                <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>
+                                <span style={{ fontFamily: 'monospace', color: '#0369a1' }}>
                                   SHA-256: {linkedDoc.sha256Hash?.substring(0, 12)}...
                                 </span>
                                 <span>•</span>
-                                <span style={{ color: '#4ade80', fontWeight: 600 }}>Verified Proof</span>
+                                <span style={{ color: '#166534', fontWeight: 700 }}>Verified Proof</span>
                               </div>
                             </div>
                           </div>
@@ -592,12 +671,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                             disabled={isUploading}
                             onClick={() => fileInputRefs.current[item.id]?.click()}
                             style={{
-                              padding: '0.4rem 0.85rem',
+                              padding: '0.45rem 0.95rem',
                               borderRadius: '6px',
-                              background: '#1e293b',
-                              border: '1px solid #334155',
-                              color: '#cbd5e1',
-                              fontSize: '0.76rem',
+                              background: '#ffffff',
+                              border: '1px solid #cbd5e1',
+                              color: '#334155',
+                              fontSize: '0.78rem',
                               fontWeight: 600,
                               cursor: 'pointer',
                             }}
@@ -607,7 +686,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                         </div>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                          <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                          <div style={{ fontSize: '0.84rem', color: '#475569' }}>
                             Upload utility bill, meter log, or policy document (PDF, Excel, CSV, PNG, Max 25MB)
                           </div>
                           <button
@@ -615,12 +694,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                             disabled={isUploading}
                             onClick={() => fileInputRefs.current[item.id]?.click()}
                             style={{
-                              padding: '0.45rem 1rem',
+                              padding: '0.5rem 1.15rem',
                               borderRadius: '6px',
-                              background: '#38bdf8',
-                              color: '#080c14',
+                              background: '#0f172a',
+                              color: '#ffffff',
                               fontWeight: 700,
-                              fontSize: '0.8rem',
+                              fontSize: '0.82rem',
                               border: 'none',
                               cursor: 'pointer',
                               display: 'inline-flex',
@@ -651,12 +730,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                         style={{
                           flex: 1,
                           minWidth: '220px',
-                          padding: '0.45rem 0.75rem',
+                          padding: '0.5rem 0.85rem',
                           borderRadius: '6px',
-                          background: '#080c14',
-                          border: '1px solid #334155',
-                          color: '#f8fafc',
-                          fontSize: '0.82rem',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          color: '#0f172a',
+                          fontSize: '0.84rem',
                         }}
                       />
                       <button
@@ -664,12 +743,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                         onClick={() => handleSaveNumeric(item.id)}
                         disabled={isUpdating}
                         style={{
-                          padding: '0.45rem 1rem',
+                          padding: '0.5rem 1.15rem',
                           borderRadius: '6px',
-                          background: '#38bdf8',
-                          color: '#080c14',
+                          background: '#0f172a',
+                          color: '#ffffff',
                           fontWeight: 700,
-                          fontSize: '0.8rem',
+                          fontSize: '0.82rem',
                           border: 'none',
                           cursor: 'pointer',
                         }}
@@ -682,7 +761,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                   {/* 3. DATE RANGE */}
                   {item.dataType === 'DATE_RANGE' && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#475569' }}>
                         <span>From:</span>
                         <input
                           type="date"
@@ -697,17 +776,17 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                             })
                           }
                           style={{
-                            padding: '0.4rem 0.65rem',
+                            padding: '0.45rem 0.75rem',
                             borderRadius: '6px',
-                            background: '#080c14',
-                            border: '1px solid #334155',
-                            color: '#f8fafc',
-                            fontSize: '0.8rem',
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            color: '#0f172a',
+                            fontSize: '0.82rem',
                           }}
                         />
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#475569' }}>
                         <span>To:</span>
                         <input
                           type="date"
@@ -722,12 +801,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                             })
                           }
                           style={{
-                            padding: '0.4rem 0.65rem',
+                            padding: '0.45rem 0.75rem',
                             borderRadius: '6px',
-                            background: '#080c14',
-                            border: '1px solid #334155',
-                            color: '#f8fafc',
-                            fontSize: '0.8rem',
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            color: '#0f172a',
+                            fontSize: '0.82rem',
                           }}
                         />
                       </div>
@@ -737,12 +816,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                         onClick={() => handleSaveDateRange(item.id)}
                         disabled={isUpdating}
                         style={{
-                          padding: '0.45rem 1rem',
+                          padding: '0.5rem 1.15rem',
                           borderRadius: '6px',
-                          background: '#38bdf8',
-                          color: '#080c14',
+                          background: '#0f172a',
+                          color: '#ffffff',
                           fontWeight: 700,
-                          fontSize: '0.8rem',
+                          fontSize: '0.82rem',
                           border: 'none',
                           cursor: 'pointer',
                         }}
@@ -761,11 +840,11 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                         style={{
                           padding: '0.45rem 1.15rem',
                           borderRadius: '6px',
-                          background: isComplete ? '#22c55e' : '#1e293b',
-                          color: isComplete ? '#080c14' : '#cbd5e1',
+                          background: isComplete ? '#f0fdf4' : '#ffffff',
+                          color: isComplete ? '#166534' : '#334155',
                           fontWeight: 700,
-                          fontSize: '0.8rem',
-                          border: 'none',
+                          fontSize: '0.82rem',
+                          border: `1px solid ${isComplete ? '#86efac' : '#cbd5e1'}`,
                           cursor: 'pointer',
                         }}
                       >
@@ -777,11 +856,11 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                         style={{
                           padding: '0.45rem 1.15rem',
                           borderRadius: '6px',
-                          background: !isComplete ? '#1e293b' : '#080c14',
-                          color: '#94a3b8',
+                          background: !isComplete ? '#f1f5f9' : '#ffffff',
+                          color: '#64748b',
                           fontWeight: 600,
-                          fontSize: '0.8rem',
-                          border: '1px solid #334155',
+                          fontSize: '0.82rem',
+                          border: '1px solid #cbd5e1',
                           cursor: 'pointer',
                         }}
                       >
@@ -800,13 +879,14 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                         onChange={(e) => setTextInputs({ ...textInputs, [item.id]: e.target.value })}
                         style={{
                           width: '100%',
-                          padding: '0.5rem 0.75rem',
+                          padding: '0.65rem 0.85rem',
                           borderRadius: '6px',
-                          background: '#080c14',
-                          border: '1px solid #334155',
-                          color: '#f8fafc',
-                          fontSize: '0.82rem',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          color: '#0f172a',
+                          fontSize: '0.84rem',
                           resize: 'vertical',
+                          boxSizing: 'border-box',
                         }}
                       />
                       <div style={{ textAlign: 'right' }}>
@@ -815,12 +895,12 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                           onClick={() => handleSaveText(item.id)}
                           disabled={isUpdating}
                           style={{
-                            padding: '0.45rem 1rem',
+                            padding: '0.5rem 1.15rem',
                             borderRadius: '6px',
-                            background: '#38bdf8',
-                            color: '#080c14',
+                            background: '#0f172a',
+                            color: '#ffffff',
                             fontWeight: 700,
-                            fontSize: '0.8rem',
+                            fontSize: '0.82rem',
                             border: 'none',
                             cursor: 'pointer',
                           }}
@@ -841,8 +921,8 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       {activeChecklist.isReadyToIngest && (
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%)',
-            border: '1px solid #22c55e',
+            background: '#f0fdf4',
+            border: '1px solid #86efac',
             borderRadius: '12px',
             padding: '1.75rem 2rem',
             display: 'flex',
@@ -850,13 +930,14 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: '1rem',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
           }}
         >
           <div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc', marginBottom: '0.35rem' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#14532d', marginBottom: '0.35rem' }}>
               Preparation Dossier Complete
             </div>
-            <div style={{ fontSize: '0.86rem', color: '#cbd5e1', maxWidth: '600px', lineHeight: 1.4 }}>
+            <div style={{ fontSize: '0.88rem', color: '#166534', maxWidth: '600px', lineHeight: 1.5 }}>
               All statutory items for {getPlainEnglishFrameworkTitle(recommendation?.frameworkName || 'this framework')} are complete. You can now launch automated ISO telemetry ingestion and AI audit screening.
             </div>
           </div>
@@ -865,18 +946,19 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
             type="button"
             onClick={onProceedToDiagnostic}
             style={{
-              padding: '0.85rem 1.75rem',
+              padding: '0.85rem 1.85rem',
               borderRadius: '8px',
-              background: '#22c55e',
-              color: '#080c14',
+              background: '#16a34a',
+              color: '#ffffff',
               fontWeight: 800,
-              fontSize: '0.92rem',
+              fontSize: '0.94rem',
               border: 'none',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
             }}
           >
-            Launch Ingestion &amp; AI Verification &rarr;
+            Launch Ingestion &amp; AI Verification
           </button>
         </div>
       )}
