@@ -11,6 +11,10 @@ export const SignUpPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [companyName, setCompanyName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [primaryRole, setPrimaryRole] = useState('COMPLIANCE_OFFICER');
+  const [organisationCountry, setOrganisationCountry] = useState('GB');
+  const [industrySector, setIndustrySector] = useState('MANUFACTURING');
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +50,15 @@ export const SignUpPage: React.FC = () => {
         email: email.trim(),
         password,
         companyName: companyName.trim(),
+        jobTitle: jobTitle.trim() || undefined,
+        primaryRole,
+        organisationCountry,
+        industrySector,
       });
 
       if (res.token && res.user) {
         login(res.token, res.user);
-        navigate('/portal');
+        navigate('/portal/onboarding');
       } else {
         navigate('/portal/login');
       }
@@ -199,7 +207,7 @@ export const SignUpPage: React.FC = () => {
 
           <div className="cerebrium-auth-field">
             <label className="cerebrium-auth-label" htmlFor="companyName">
-              Company Name
+              Company or Organization Name
             </label>
             <input
               id="companyName"
@@ -211,6 +219,93 @@ export const SignUpPage: React.FC = () => {
               className="cerebrium-auth-input"
               autoComplete="organization"
             />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1.15rem' }}>
+            <div>
+              <label className="cerebrium-auth-label" htmlFor="jobTitle">
+                Your Job Title
+              </label>
+              <input
+                id="jobTitle"
+                type="text"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                placeholder="e.g. Head of Sustainability"
+                className="cerebrium-auth-input"
+              />
+            </div>
+
+            <div>
+              <label className="cerebrium-auth-label" htmlFor="primaryRole">
+                Your Primary Role
+              </label>
+              <select
+                id="primaryRole"
+                value={primaryRole}
+                onChange={(e) => setPrimaryRole(e.target.value)}
+                className="cerebrium-auth-input"
+                style={{ background: '#0a0f1d', color: '#f8fafc' }}
+              >
+                <option value="COMPLIANCE_OFFICER">CSO / Sustainability Lead</option>
+                <option value="FINANCE_DIRECTOR">CFO / Finance Director</option>
+                <option value="OPERATIONS_DIRECTOR">COO / Operations Director</option>
+                <option value="LEGAL_OFFICER">General Counsel / Legal Officer</option>
+                <option value="SUSTAINABILITY_CONSULTANT">ESG Consultant / Advisor</option>
+                <option value="IT_DATA_MANAGER">IT & Data Systems Lead</option>
+                <option value="OTHER">Other Leadership Role</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1.15rem' }}>
+            <div>
+              <label className="cerebrium-auth-label" htmlFor="organisationCountry">
+                Headquarters Country
+              </label>
+              <select
+                id="organisationCountry"
+                value={organisationCountry}
+                onChange={(e) => setOrganisationCountry(e.target.value)}
+                className="cerebrium-auth-input"
+                style={{ background: '#0a0f1d', color: '#f8fafc' }}
+              >
+                <option value="GB">United Kingdom (GB)</option>
+                <option value="DE">Germany (DE)</option>
+                <option value="FR">France (FR)</option>
+                <option value="NL">Netherlands (NL)</option>
+                <option value="IE">Ireland (IE)</option>
+                <option value="US">United States (US)</option>
+                <option value="AU">Australia (AU)</option>
+                <option value="CA">Canada (CA)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="cerebrium-auth-label" htmlFor="industrySector">
+                Primary Industry Sector
+              </label>
+              <select
+                id="industrySector"
+                value={industrySector}
+                onChange={(e) => setIndustrySector(e.target.value)}
+                className="cerebrium-auth-input"
+                style={{ background: '#0a0f1d', color: '#f8fafc' }}
+              >
+                <option value="MANUFACTURING">Manufacturing</option>
+                <option value="DATA_CENTRE">Data Centres & HPC</option>
+                <option value="CONSTRUCTION">Construction & Built Env</option>
+                <option value="LOGISTICS_TRANSPORT">Logistics & Fleet</option>
+                <option value="GREEN_HYDROGEN">Green Hydrogen / Clean Fuels</option>
+                <option value="RETAIL_CONSUMER_GOODS">Consumer Goods & Retail</option>
+                <option value="FINANCIAL_SERVICES">Financial Services</option>
+                <option value="PUBLIC_SECTOR">Public Sector / Health</option>
+                <option value="EVENTS_HOSPITALITY">Events & Hospitality</option>
+                <option value="REAL_ESTATE_PROPERTY">Property & Real Estate</option>
+                <option value="AGRICULTURE">Agriculture</option>
+                <option value="OTHER">Other Sector</option>
+              </select>
+            </div>
           </div>
 
           <div style={{ margin: '1.25rem 0 1.5rem' }}>

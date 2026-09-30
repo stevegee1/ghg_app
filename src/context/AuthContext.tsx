@@ -6,7 +6,17 @@ export interface User {
   role: 'ADMIN' | 'PARTNER';
   licenseeId: string | null;
   companyName?: string;
+  firstName?: string;
+  lastName?: string;
+  jobTitle?: string;
+  primaryRole?: string;
+  organisationCountry?: string;
+  industrySector?: string;
+  hasCompletedAssessment?: boolean;
+  isOnboardingComplete?: boolean;
   emailVerified?: boolean;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
 }
 
 interface AuthContextType {
@@ -14,6 +24,7 @@ interface AuthContextType {
   user: User | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  updateUser: (updatedUser: Partial<User>) => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -45,6 +56,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Failed to persist auth token', e);
     }
+  };
+
+  const updateUser = (updatedFields: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updatedFields };
+      try {
+        localStorage.setItem('ghg_auth_user', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to persist updated user', e);
+      }
+      return updated;
+    });
   };
 
   React.useEffect(() => {
@@ -92,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         login,
         logout,
+        updateUser,
         isAuthenticated: !!token && !!user,
         isAdmin: user?.role === 'ADMIN',
       }}

@@ -121,23 +121,23 @@ export function validateWorkEmail(email: string): WorkEmailValidationResult {
   const parts = cleanEmail.split('@');
 
   if (parts.length !== 2) {
-    return { isValid: false, error: 'Please enter a valid email address with a single @ symbol.' };
+    return { isValid: false, error: 'Invalid email address syntax: please enter a valid email address with a single @ symbol.' };
   }
 
   const [localPart, domain] = parts;
 
   if (!localPart || localPart.length === 0) {
-    return { isValid: false, error: 'Email username cannot be empty.' };
+    return { isValid: false, error: 'Invalid email username: username cannot be empty.' };
   }
 
   if (!domain || !domain.includes('.')) {
-    return { isValid: false, error: 'Email must contain a valid domain name.' };
+    return { isValid: false, error: 'Invalid email domain: email must contain a valid domain name.' };
   }
 
   const domainParts = domain.split('.');
   const tld = domainParts[domainParts.length - 1];
   if (!tld || tld.length < 2) {
-    return { isValid: false, error: 'Email domain has an invalid top-level domain.' };
+    return { isValid: false, error: 'Invalid email domain: domain has an invalid top-level domain.' };
   }
 
   // Exact match in blocked list

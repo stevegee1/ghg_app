@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useSearchParams, Navigate } from 'react-router-dom';
+import { useSearchParams, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
@@ -9,6 +9,7 @@ import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
 import { WorkflowWizard } from '../components/workflow/WorkflowWizard';
 import { ReadinessEngineWorkflow } from '../components/ReadinessEngineWorkflow';
 import { SharedDashboardShell } from '../components/SharedDashboardShell';
+import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
 
 // ── Scope & Step definitions ────────────────────────────────────────────────
 type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
@@ -224,7 +225,7 @@ const JOB_TIERS = [
   },
 ];
 
-export type DashboardView = 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'assurance-wizard';
+export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'assurance-wizard';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -244,6 +245,7 @@ const getFormattedDate = () => {
 
 export const PortalPage: React.FC = () => {
   const { token, user, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   // Defense-in-depth: Administrators must never view client-facing licensee portals
   if (isAdmin || user?.role === 'ADMIN') {
@@ -508,6 +510,20 @@ export const PortalPage: React.FC = () => {
 
   // Read URL query parameters on mount (e.g. returning from Stripe checkout /portal?step=3&submission_id=...)
   useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'checklist') {
+      setActiveView('checklist');
+    } else if (tabParam === 'workflow') {
+      setActiveView('workflow');
+    } else if (tabParam === 'overview') {
+      setActiveView('overview');
+    } else if (tabParam === 'credentials') {
+      setActiveView('credentials');
+    } else if (tabParam === 'jobs') {
+      setActiveView('jobs');
+    } else if (tabParam === 'transactions') {
+      setActiveView('transactions');
+    }
     const stepParam = searchParams.get('step');
     if (stepParam) {
       const parsedStep = parseInt(stepParam, 10);
@@ -1215,6 +1231,19 @@ export const PortalPage: React.FC = () => {
           <span className="portal-nav-badge count">Live</span>
         </button>
 
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'checklist' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveView('checklist');
+            onNav?.();
+          }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
+          <span className="portal-nav-label">Preparation Checklist</span>
+          <span className="portal-nav-badge count">Readiness</span>
+        </button>
+
         {/* ASSURANCE WORKFLOWS */}
         <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>ASSURANCE WORKFLOWS</div>
         <button
@@ -1512,6 +1541,63 @@ export const PortalPage: React.FC = () => {
         {error && (
           <div style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid var(--google-red)', color: 'var(--google-red)', padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem', fontWeight: 600 }}>
             {error}
+          </div>
+        )}
+
+        {/* ── BABYSITTER INTAKE PROMPT (State A: ASSESSMENT_PENDING) ── */}
+        {!user?.hasCompletedAssessment && (
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)',
+              border: '1px solid #38bdf8',
+              borderRadius: '12px',
+              padding: '1.25rem 1.5rem',
+              marginBottom: '1.75rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc', marginBottom: '0.25rem' }}>
+                Complete your 3-Minute Intake Assessment
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                Discover which statutory carbon and workforce frameworks apply to your business (SECR, PPN 06/21, ISO 14064-1, Green Claims) and generate your tailored preparation roadmap.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/portal/onboarding')}
+              style={{
+                padding: '0.65rem 1.35rem',
+                borderRadius: '8px',
+                background: '#38bdf8',
+                color: '#080c14',
+                fontWeight: 700,
+                fontSize: '0.86rem',
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Start Intake Assessment &rarr;
+            </button>
+          </div>
+        )}
+
+        {/* ── VIEW: Preparation Checklist Console (State B: PREPARATION) ── */}
+        {activeView === 'checklist' && (
+          <div style={{ marginBottom: '2.5rem' }}>
+            <PreparationChecklistConsole
+              onProceedToDiagnostic={() => {
+                setAuditScope('CARBON_EMISSION');
+                setActiveView('workflow');
+              }}
+            />
           </div>
         )}
 

@@ -70,7 +70,19 @@ export const api = {
     return res.json();
   },
 
-  async register(params: { firstName: string; lastName: string; email: string; password: string; companyName: string }) {
+  async register(params: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    companyName: string;
+    jobTitle?: string;
+    primaryRole?: string;
+    organisationCountry?: string;
+    industrySector?: string;
+    websiteUrl?: string;
+    companyRegistrationNo?: string;
+  }) {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -891,6 +903,160 @@ export const api = {
     if (params.sessionId) query.set('session_id', params.sessionId);
     if (params.txId) query.set('tx_id', params.txId);
     const res = await fetch(`/api/checkout/order-summary?${query.toString()}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  // ── Profile & Onboarding ───────────────────────────────────────────────────
+  async updateProfile(token: string, params: {
+    firstName?: string;
+    lastName?: string;
+    jobTitle?: string;
+    primaryRole?: string;
+    companyName?: string;
+    organisationCountry?: string;
+    industrySector?: string;
+    websiteUrl?: string;
+    companyRegistrationNo?: string;
+  }): Promise<{ message: string; user: any }> {
+    const res = await fetch('/api/auth/profile', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  // ── Assessment Layer ──────────────────────────────────────────────────────
+  async submitAssessment(token: string, params: {
+    organisationCountry: string;
+    organisationSize: string;
+    annualRevenueBand: string;
+    industrySector: string;
+    hasPhysicalSites: boolean;
+    hasProductionProcess: boolean;
+    hasFleet: boolean;
+    hasIoTMeters: boolean;
+    isUKPublicContractor: boolean;
+    hasPlanningConsent: boolean;
+    makesPublicGreenClaims: boolean;
+    hasGreenHydrogen: boolean;
+  }): Promise<{ message: string; assessment: any; recommendations: any[] }> {
+    const res = await fetch('/api/assessment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAssessment(token: string): Promise<{ assessment: any }> {
+    const res = await fetch('/api/assessment', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getRecommendations(token: string): Promise<{ recommendations: any[] }> {
+    const res = await fetch('/api/assessment/recommendations', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async decideRecommendation(
+    token: string,
+    id: string,
+    clientAccepted: boolean,
+    deferredReason?: string
+  ): Promise<{ message: string; recommendation: any }> {
+    const res = await fetch(`/api/assessment/recommendations/${id}/decide`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ clientAccepted, deferredReason }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getAdminReadinessTracker(token: string): Promise<{ licensees: any[] }> {
+    const res = await fetch('/api/admin/readiness-tracker', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  // ── Preparation Checklists ────────────────────────────────────────────────
+  async getChecklists(token: string): Promise<{ checklists: any[] }> {
+    const res = await fetch('/api/checklists', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async getChecklist(token: string, id: string): Promise<{ checklist: any }> {
+    const res = await fetch(`/api/checklists/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async updateChecklistItem(
+    token: string,
+    itemId: string,
+    params: { status: string; linkedEvidenceDocId?: string }
+  ): Promise<{ message: string; checklist: any }> {
+    const res = await fetch(`/api/checklists/items/${itemId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async adminWaiveChecklistItem(
+    token: string,
+    itemId: string,
+    reason: string
+  ): Promise<{ message: string; checklist: any }> {
+    const res = await fetch(`/api/admin/checklists/items/${itemId}/waive`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reason }),
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;

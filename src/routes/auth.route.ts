@@ -16,7 +16,19 @@ export function createAuthRouter(prisma: PrismaClient): Router {
    * Creates a Licensee tenant boundary and a PortalUser, issuing a signed JWT session.
    */
   const handleRegister = async (req: Request, res: Response) => {
-    const { firstName, lastName, email, password, companyName } = req.body || {};
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      companyName,
+      jobTitle,
+      primaryRole,
+      organisationCountry,
+      industrySector,
+      websiteUrl,
+      companyRegistrationNo,
+    } = req.body || {};
 
     // 1. Validation
     if (!firstName || typeof firstName !== 'string' || !firstName.trim()) {
@@ -65,6 +77,11 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           royaltyBps: 1500, // 15% statutory ESG split
           isPubliclyVisible: true,
           stripeConnectedAccountId: process.env.STRIPE_PLATFORM_ACCOUNT_ID || 'acct_platform_default_001',
+          organisationCountry: (organisationCountry?.trim() || 'GB').toUpperCase().slice(0, 2),
+          industrySector: industrySector || null,
+          websiteUrl: websiteUrl?.trim() || null,
+          companyRegistrationNo: companyRegistrationNo?.trim() || null,
+          hasCompletedAssessment: false,
         },
       });
 
@@ -81,6 +98,11 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           passwordHash,
           licenseeId,
           role: 'PARTNER',
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          jobTitle: jobTitle?.trim() || null,
+          primaryRole: primaryRole || 'OTHER',
+          isOnboardingComplete: false,
           emailVerified: false,
           emailVerificationToken: hashedVerificationToken,
           emailVerificationExpiresAt: verificationExpiresAt,
@@ -119,9 +141,15 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           role: newUser.role,
           licenseeId: newUser.licenseeId,
           emailVerified: false,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          jobTitle: newUser.jobTitle,
+          primaryRole: newUser.primaryRole,
+          isOnboardingComplete: false,
+          hasCompletedAssessment: false,
           companyName: companyName.trim(),
+          organisationCountry: organisationCountry || 'GB',
+          industrySector: industrySector || null,
         },
       });
     } catch (err) {
@@ -185,7 +213,17 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           role: user.role,
           licenseeId: user.licenseeId,
           emailVerified: user.emailVerified,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          jobTitle: user.jobTitle,
+          primaryRole: user.primaryRole,
+          isOnboardingComplete: user.isOnboardingComplete,
+          hasCompletedAssessment: user.licensee?.hasCompletedAssessment ?? false,
           companyName: user.licensee?.name || 'Authorized Entity',
+          organisationCountry: user.licensee?.organisationCountry || 'GB',
+          industrySector: user.licensee?.industrySector || null,
+          logoUrl: user.licensee?.logoUrl || null,
+          websiteUrl: user.licensee?.websiteUrl || null,
         },
       });
     } catch (err) {
@@ -203,12 +241,15 @@ export function createAuthRouter(prisma: PrismaClient): Router {
    */
   const handleForgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body || {};
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ error: 'Valid work email address is required' });
+    }
 
-    const normalizedEmail = (email || '').trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
     const emailValidation = validateWorkEmail(normalizedEmail);
     if (!emailValidation.isValid) {
       return res.status(400).json({
-        error: emailValidation.error || 'Please provide an official corporate or organizational work email address.',
+        error: emailValidation.error || 'Valid work email address is required',
       });
     }
 
@@ -340,7 +381,17 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           role: user.role,
           licenseeId: user.licenseeId,
           emailVerified: user.emailVerified,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          jobTitle: user.jobTitle,
+          primaryRole: user.primaryRole,
+          isOnboardingComplete: user.isOnboardingComplete,
+          hasCompletedAssessment: user.licensee?.hasCompletedAssessment ?? false,
           companyName: user.licensee?.name || (user.role === 'ADMIN' ? 'GHG Platform Administration' : 'Authorized Entity'),
+          organisationCountry: user.licensee?.organisationCountry || 'GB',
+          industrySector: user.licensee?.industrySector || null,
+          logoUrl: user.licensee?.logoUrl || null,
+          websiteUrl: user.licensee?.websiteUrl || null,
         },
       });
     } catch {
@@ -350,6 +401,101 @@ export function createAuthRouter(prisma: PrismaClient): Router {
 
   router.get('/api/auth/me', handleMe);
   router.get('/api/v1/auth/me', handleMe);
+
+  /**
+   * PATCH /api/auth/profile
+   * Updates user and licensee onboarding and profile settings.
+   */
+  const handleUpdateProfile = async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing Authorization header' });
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const {
+        firstName,
+        lastName,
+        jobTitle,
+        primaryRole,
+        companyName,
+        organisationCountry,
+        industrySector,
+        websiteUrl,
+        companyRegistrationNo,
+      } = req.body || {};
+
+      const user = await prisma.portalUser.findUnique({
+        where: { id: decoded.userId },
+        include: { licensee: true },
+      });
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      await prisma.portalUser.update({
+        where: { id: user.id },
+        data: {
+          firstName: firstName !== undefined ? firstName?.trim() : user.firstName,
+          lastName: lastName !== undefined ? lastName?.trim() : user.lastName,
+          jobTitle: jobTitle !== undefined ? jobTitle?.trim() : user.jobTitle,
+          primaryRole: primaryRole !== undefined ? primaryRole : user.primaryRole,
+        },
+      });
+
+      if (user.licenseeId) {
+        await prisma.licensee.update({
+          where: { id: user.licenseeId },
+          data: {
+            name: companyName !== undefined ? companyName?.trim() : user.licensee?.name,
+            organisationCountry:
+              organisationCountry !== undefined
+                ? organisationCountry?.trim().toUpperCase().slice(0, 2)
+                : user.licensee?.organisationCountry,
+            industrySector: industrySector !== undefined ? industrySector : user.licensee?.industrySector,
+            websiteUrl: websiteUrl !== undefined ? websiteUrl?.trim() : user.licensee?.websiteUrl,
+            companyRegistrationNo:
+              companyRegistrationNo !== undefined
+                ? companyRegistrationNo?.trim()
+                : user.licensee?.companyRegistrationNo,
+          },
+        });
+      }
+
+      const updatedUser = await prisma.portalUser.findUnique({
+        where: { id: user.id },
+        include: { licensee: true },
+      });
+
+      return res.status(200).json({
+        message: 'Profile updated successfully',
+        user: {
+          id: updatedUser!.id,
+          email: updatedUser!.email,
+          role: updatedUser!.role,
+          licenseeId: updatedUser!.licenseeId,
+          emailVerified: updatedUser!.emailVerified,
+          firstName: updatedUser!.firstName,
+          lastName: updatedUser!.lastName,
+          jobTitle: updatedUser!.jobTitle,
+          primaryRole: updatedUser!.primaryRole,
+          isOnboardingComplete: updatedUser!.isOnboardingComplete,
+          hasCompletedAssessment: updatedUser!.licensee?.hasCompletedAssessment ?? false,
+          companyName: updatedUser!.licensee?.name || 'Authorized Entity',
+          organisationCountry: updatedUser!.licensee?.organisationCountry || 'GB',
+          industrySector: updatedUser!.licensee?.industrySector || null,
+          websiteUrl: updatedUser!.licensee?.websiteUrl || null,
+        },
+      });
+    } catch (err: any) {
+      console.error('[PROFILE UPDATE ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to update profile' });
+    }
+  };
+
+  router.patch('/api/auth/profile', handleUpdateProfile);
+  router.patch('/api/v1/auth/profile', handleUpdateProfile);
 
   /**
    * GET /api/auth/verify-email

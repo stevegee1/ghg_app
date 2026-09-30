@@ -23,6 +23,7 @@ import { BookDemoModal } from './components/BookDemoModal';
 import { CharityApplicationPage } from './pages/CharityApplicationPage';
 import { PartnersPage } from './pages/PartnersPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -108,6 +109,22 @@ export const AppRoutes: React.FC = () => {
         <Route path="portal/reset-password" element={<ResetPasswordPage />} />
         <Route path="verify-email" element={<VerifyEmailPage />} />
         <Route path="portal/verify-email" element={<VerifyEmailPage />} />
+        <Route
+          path="portal/onboarding"
+          element={
+            <ProtectedRoute partnerOnly>
+              <OnboardingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="onboarding"
+          element={
+            <ProtectedRoute partnerOnly>
+              <OnboardingPage />
+            </ProtectedRoute>
+          }
+        />
         
         <Route
           path="portal"

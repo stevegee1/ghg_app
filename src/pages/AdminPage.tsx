@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
+import { AdminReadinessTracker } from '../components/admin/AdminReadinessTracker';
 
 // Google SaaS Standard SVG Icons (Zero Emojis)
 const SvgClipboard = () => (
@@ -89,7 +90,7 @@ export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES'>('SUBMISSIONS');
+  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES'>('READINESS_TRACKER');
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -786,6 +787,7 @@ export const AdminPage: React.FC = () => {
           }}
         >
           {([
+            { key: 'READINESS_TRACKER', label: 'Readiness Tracker', badge: null },
             { key: 'SUBMISSIONS', label: 'Audit Queue', badge: submissions.filter((s) => s.status === 'SUBMITTED').length || submissions.length },
             { key: 'DEMOS', label: 'Demo Leads', badge: demoBookings.length },
             { key: 'MERCH_ENQUIRIES', label: 'Merch Enquiries', badge: merchEnquiries.filter((e) => e.status === 'PENDING').length },
@@ -841,6 +843,12 @@ export const AdminPage: React.FC = () => {
         </div>
       </div>
 
+      {/* TAB: READINESS TRACKER (CLIENT ONBOARDING & PREPARATION MIRROR) */}
+      {activeAdminTab === 'READINESS_TRACKER' && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <AdminReadinessTracker />
+        </div>
+      )}
 
       {/* TAB: AUDIT REVIEW QUEUE (LEAD AUDITOR CONSOLE) */}
       {activeAdminTab === 'SUBMISSIONS' && (

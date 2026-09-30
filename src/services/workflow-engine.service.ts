@@ -50,6 +50,8 @@ export interface ReviewDecisionInput {
 }
 
 export const VALID_TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
+  [WorkflowStatus.ASSESSMENT_PENDING]: [WorkflowStatus.PREPARATION],
+  [WorkflowStatus.PREPARATION]: [WorkflowStatus.DRAFT],
   [WorkflowStatus.DRAFT]: [WorkflowStatus.SUBMITTED],
   [WorkflowStatus.SUBMITTED]: [WorkflowStatus.AI_SCREENED, WorkflowStatus.UNDER_REVIEW],
   [WorkflowStatus.AI_SCREENED]: [WorkflowStatus.UNDER_REVIEW, WorkflowStatus.APPROVED, WorkflowStatus.REJECTED],

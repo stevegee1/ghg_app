@@ -8,16 +8,23 @@ generator client {
 }
 
 model Licensee {
-  id                       String               @id @default(cuid())
+  id                       String          @id @default(cuid())
   name                     String
   vertical                 Vertical
   stripeConnectedAccountId String?
-  royaltyBps               Int                  @default(1500)
+  royaltyBps               Int             @default(1500)
   pricePerDropCents        Int?
   b2bApiKeyHash            String?
-  isPubliclyVisible        Boolean              @default(false)
-  createdAt                DateTime             @default(now())
-  updatedAt                DateTime             @updatedAt
+  isPubliclyVisible        Boolean         @default(false)
+  // Onboarding & Assessment Fields
+  logoUrl                  String? // Client company logo URL
+  websiteUrl               String? // Client company website
+  companyRegistrationNo    String? // UK Companies House number or equivalent
+  organisationCountry      String? // ISO 3166-1 alpha-2 e.g. "GB", "DE", "US"
+  industrySector           IndustrySector? // Set during onboarding
+  hasCompletedAssessment   Boolean         @default(false)
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
 
   transactions             Transaction[]
   portalUsers              PortalUser[]
@@ -32,6 +39,7 @@ model Licensee {
   auditWarrantyCredentials AuditWarrantyCredential[]
   workflowSubmissions      WorkflowSubmission[]
   workflowApiKeys          WorkflowApiKey[]
+  clientAssessments        ClientAssessment[]
 }
 
 enum Vertical {
@@ -52,11 +60,11 @@ model Transaction {
   stripePaymentIntentId String?
   createdAt             DateTime          @default(now())
 
-  triggerEvent          TriggerEvent?
-  financialSplit        FinancialSplit?
-  telemetryLog          TelemetryLog?
-  customKeepsakeSpec    CustomKeepsakeSpec?
-  souvenirOrder         SouvenirOrder?
+  triggerEvent       TriggerEvent?
+  financialSplit     FinancialSplit?
+  telemetryLog       TelemetryLog?
+  customKeepsakeSpec CustomKeepsakeSpec?
+  souvenirOrder      SouvenirOrder?
 
   @@index([licenseeId])
 }
@@ -114,35 +122,35 @@ enum CharityStatus {
 }
 
 model Charity {
-  id                       String              @id @default(cuid())
+  id                       String        @id @default(cuid())
   name                     String
   stripeConnectedAccountId String?
-  status                   CharityStatus       @default(ACTIVE)
+  status                   CharityStatus @default(ACTIVE)
   contractStartDate        DateTime?
   contractEndDate          DateTime?
   walletAddress            String?
   registeredCharityNumber  String?
   contactEmail             String?
   statement                String?
-  createdAt                DateTime            @default(now())
-  updatedAt                DateTime            @default(now()) @updatedAt
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @default(now()) @updatedAt
 
-  allocations              CharityAllocation[]
+  allocations CharityAllocation[]
 }
 
 model FinancialSplit {
-  id                     String              @id @default(cuid())
-  transactionId          String              @unique
-  transaction            Transaction         @relation(fields: [transactionId], references: [id])
+  id                     String      @id @default(cuid())
+  transactionId          String      @unique
+  transaction            Transaction @relation(fields: [transactionId], references: [id])
   licensorRoyaltyCents   Int
   charityGiftCents       Int
   stripeTransferId       String?
   charityStripeAccountId String?
-  allocationsFinalized   Boolean             @default(false)
+  allocationsFinalized   Boolean     @default(false)
   settledAt              DateTime?
-  createdAt              DateTime            @default(now())
+  createdAt              DateTime    @default(now())
 
-  charityAllocations     CharityAllocation[]
+  charityAllocations CharityAllocation[]
 }
 
 model CharityAllocation {
@@ -162,18 +170,27 @@ model CharityAllocation {
 }
 
 model PortalUser {
-  id                     String               @id @default(cuid())
-  email                  String               @unique
-  passwordHash           String
-  licenseeId             String?
-  licensee               Licensee?            @relation(fields: [licenseeId], references: [id])
-  role                   PortalRole           @default(PARTNER)
-  passwordResetToken         String?              // SHA-256 hash of password reset token
-  passwordResetExpiresAt     DateTime?            // Expiration timestamp for reset token
-  emailVerified              Boolean              @default(false)
-  emailVerificationToken     String?              // SHA-256 hash of email verification token
-  emailVerificationExpiresAt DateTime?            // Expiration timestamp for verification token
-  createdAt                  DateTime             @default(now())
+  id                         String      @id @default(cuid())
+  email                      String      @unique
+  passwordHash               String
+  licenseeId                 String?
+  licensee                   Licensee?   @relation(fields: [licenseeId], references: [id])
+  role                       PortalRole  @default(PARTNER)
+  // Profile fields captured at signup
+  firstName                  String?
+  lastName                   String?
+  jobTitle                   String?
+  primaryRole                PrimaryRole @default(OTHER)
+  // Onboarding state machine
+  isOnboardingComplete       Boolean     @default(false)
+  onboardingCompletedAt      DateTime?
+  // Auth fields
+  passwordResetToken         String? // SHA-256 hash of password reset token
+  passwordResetExpiresAt     DateTime? // Expiration timestamp for reset token
+  emailVerified              Boolean     @default(false)
+  emailVerificationToken     String? // SHA-256 hash of email verification token
+  emailVerificationExpiresAt DateTime? // Expiration timestamp for verification token
+  createdAt                  DateTime    @default(now())
 
   splitConfigs        SplitConfigHistory[]
   submittedJobReports JobCreationReport[]
@@ -186,6 +203,73 @@ model PortalUser {
 enum PortalRole {
   PARTNER
   ADMIN
+}
+
+// Who the user is in the compliance process
+enum PrimaryRole {
+  COMPLIANCE_OFFICER // CSO, ESG Director, Sustainability Manager
+  FINANCE_DIRECTOR // CFO, Finance Director (emphasise directors' liability)
+  OPERATIONS_DIRECTOR // Operations, Facilities, Engineering
+  LEGAL_OFFICER // Legal, Compliance & Risk
+  SUSTAINABILITY_CONSULTANT // Advising on behalf of a client
+  IT_DATA_MANAGER // IT, Data, Digital
+  OTHER
+}
+
+// Client's industry sector: drives assessment engine framework selection
+enum IndustrySector {
+  MANUFACTURING
+  DATA_CENTRE
+  CONSTRUCTION
+  LOGISTICS_TRANSPORT
+  GREEN_HYDROGEN
+  RETAIL_CONSUMER_GOODS
+  FINANCIAL_SERVICES
+  PUBLIC_SECTOR
+  EVENTS_HOSPITALITY
+  REAL_ESTATE_PROPERTY
+  AGRICULTURE
+  OTHER
+}
+
+// Organisation headcount band (for SECR / CSRD threshold determination)
+enum OrganisationSize {
+  MICRO_UNDER_10
+  SMALL_10_49
+  MEDIUM_50_249
+  LARGE_250_PLUS
+}
+
+// Revenue band (for SECR / CSRD threshold determination)
+enum RevenueBand {
+  UNDER_2M
+  BAND_2M_10M
+  BAND_10M_36M
+  BAND_36M_PLUS
+}
+
+// Effort estimate shown to client on the compliance recommendation card
+enum ComplianceEffort {
+  LOW // < 1 week of data gathering
+  MEDIUM // 1-4 weeks of data gathering
+  HIGH // > 4 weeks, likely requires external support
+}
+
+// Per-item status in the preparation checklist
+enum ChecklistItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  WAIVED // Admin can waive non-mandatory items with a reason
+}
+
+// Data type of the checklist item: drives the UI input component
+enum ChecklistItemDataType {
+  NUMERIC_READING // Enter a number (e.g. kWh, litres, m2)
+  DOCUMENT_UPLOAD // Upload a file (PDF, CSV, image)
+  DATE_RANGE // Select a from/to date range
+  YES_NO // Boolean confirmation
+  FREE_TEXT // Short text input
 }
 
 model SplitConfigHistory {
@@ -259,46 +343,46 @@ enum GhgScope {
 }
 
 model AssetCalibrationRecord {
-  id                String         @id @default(cuid())
+  id                String     @id @default(cuid())
   licenseeId        String
-  licensee          Licensee       @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  assetTag          String         // e.g. "PDU-METER-04B", "ELECTROLYSER-SENS-01"
+  licensee          Licensee   @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetTag          String // e.g. "PDU-METER-04B", "ELECTROLYSER-SENS-01"
   sensorType        SensorType
   calibrationDate   DateTime
   expiryDate        DateTime
-  certDocumentUrl   String         // URL/Path to certificate PDF
-  certIntegrityHash String         // SHA-256 hash of certificate file
-  isCurrentlyValid  Boolean        @default(true)
+  certDocumentUrl   String // URL/Path to certificate PDF
+  certIntegrityHash String // SHA-256 hash of certificate file
+  isCurrentlyValid  Boolean    @default(true)
   verifiedBy        String?
-  createdAt         DateTime       @default(now())
+  createdAt         DateTime   @default(now())
 
-  telemetryLogs     TelemetryLog[]
+  telemetryLogs TelemetryLog[]
 
   @@index([licenseeId, assetTag])
   @@index([expiryDate, isCurrentlyValid])
 }
 
 model TelemetryLog {
-  id                       String                 @id @default(cuid())
-  licenseeId               String
-  licensee                 Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  assetCalibrationId       String
-  assetCalibration         AssetCalibrationRecord @relation(fields: [assetCalibrationId], references: [id])
-  assetTag                 String
-  metricType               MetricType
-  numericValue             Float
-  rawUnit                  String                 // e.g. "kW/h", "m3/h", "%", "ppm"
-  ghgScope                 GhgScope?              // GHG Protocol Scope 1/2/3 classification
-  activityAmount           Float?                 // Activity data quantity (fuel litres, kWh, km etc)
-  unitOfMeasure            String?                // Activity data unit e.g. "litres", "kWh"
-  emissionFactorKgCo2PerUnit Float?               // DEFRA/IPCC emission factor applied
-  calculatedKgCo2e         Float?                 // Computed: activityAmount * emissionFactorKgCo2PerUnit
-  isWithinBaseline         Boolean                @default(true)
-  requiresSupervisor       Boolean                @default(false)
-  rawTelemetryJson         Json?
-  transactionId            String?                @unique
-  transaction              Transaction?           @relation(fields: [transactionId], references: [id])
-  createdAt                DateTime               @default(now())
+  id                         String                 @id @default(cuid())
+  licenseeId                 String
+  licensee                   Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetCalibrationId         String
+  assetCalibration           AssetCalibrationRecord @relation(fields: [assetCalibrationId], references: [id])
+  assetTag                   String
+  metricType                 MetricType
+  numericValue               Float
+  rawUnit                    String // e.g. "kW/h", "m3/h", "%", "ppm"
+  ghgScope                   GhgScope? // GHG Protocol Scope 1/2/3 classification
+  activityAmount             Float? // Activity data quantity (fuel litres, kWh, km etc)
+  unitOfMeasure              String? // Activity data unit e.g. "litres", "kWh"
+  emissionFactorKgCo2PerUnit Float? // DEFRA/IPCC emission factor applied
+  calculatedKgCo2e           Float? // Computed: activityAmount * emissionFactorKgCo2PerUnit
+  isWithinBaseline           Boolean                @default(true)
+  requiresSupervisor         Boolean                @default(false)
+  rawTelemetryJson           Json?
+  transactionId              String?                @unique
+  transaction                Transaction?           @relation(fields: [transactionId], references: [id])
+  createdAt                  DateTime               @default(now())
 
   @@index([licenseeId, metricType])
   @@index([licenseeId, ghgScope])
@@ -316,9 +400,9 @@ model NonConformanceEvent {
   id                 String           @id @default(cuid())
   licenseeId         String
   licensee           Licensee         @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  isoClause          String           // e.g. "ISO 50001:2018 Clause 9.1.1", "ISO 14001:2015 Clause 10.2"
+  isoClause          String // e.g. "ISO 50001:2018 Clause 9.1.1", "ISO 14001:2015 Clause 10.2"
   assetTag           String
-  metricName         String           // "PUE", "WUE", "H2_PURITY_PCT"
+  metricName         String // "PUE", "WUE", "H2_PURITY_PCT"
   baselineValue      Float
   observedValue      Float
   percentageVariance Float
@@ -343,77 +427,77 @@ enum RiskLevel {
 }
 
 model AuditInspectionReport {
-  id                    String            @id @default(cuid())
+  id                    String           @id @default(cuid())
   licenseeId            String
-  licensee              Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  auditRefId            String            @unique // e.g. "AR-2026-DH-01", "SC-2026-AUTO-01"
-  facilityType          String            // "DATA_CENTRE", "GREEN_HYDROGEN_DRI", "COMMERCIAL_FLEET", "CLEANTECH_HARDWARE", "EVENT_MILESTONE"
-  leadAuditorName       String            // e.g. "Lead Assurance Officer, GMC, LL.B."
+  licensee              Licensee         @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  auditRefId            String           @unique // e.g. "AR-2026-DH-01", "SC-2026-AUTO-01"
+  facilityType          String // "DATA_CENTRE", "GREEN_HYDROGEN_DRI", "COMMERCIAL_FLEET", "CLEANTECH_HARDWARE", "EVENT_MILESTONE"
+  leadAuditorName       String // e.g. "Lead Assurance Officer, GMC, LL.B."
   evaluationDate        DateTime
-  weightedScore         Float             // 0.0 to 5.0
+  weightedScore         Float // 0.0 to 5.0
   overallGrade          ConformanceGrade
   greenwashingRiskLevel RiskLevel
   summaryNotes          String?
-  createdAt             DateTime          @default(now())
+  createdAt             DateTime         @default(now())
 
-  matrixRows            AuditMatrixRow[]
-  evidenceDocuments     AuditEvidenceDocument[]
+  matrixRows        AuditMatrixRow[]
+  evidenceDocuments AuditEvidenceDocument[]
 
   @@index([licenseeId, facilityType])
 }
 
 model AuditMatrixRow {
-  id                       String            @id @default(cuid())
-  reportId                 String
-  report                   AuditInspectionReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  pillarIndex              Int               // 1 to 5
-  pillarName               String            // e.g. "Power Usage Effectiveness", "Lithium-Ion Battery Integrity"
-  isoClauseLink            String            // e.g. "ISO 50001:2018 Clause 9.1.1", "ISO 6469-1/-3"
-  legalMandate             String            // e.g. "UK SECR / Companies Regs 2018", "EU Battery Regulation"
-  targetDepartment         String            // e.g. "IT Infrastructure", "High-Voltage Engineering"
-  questionText             String
-  objectiveEvidenceTypes   String            // e.g. "SCADA Logs, Sub-Meter Calibration Certs"
-  auditorFindings          String?
-  scorePoints              Float             // 0.0 to 5.0 points
-  complianceGrading        ConformanceGrade
-  weight                   Float             // e.g. 0.25, 0.20, 0.15
-  rootCause                String?
+  id                        String                @id @default(cuid())
+  reportId                  String
+  report                    AuditInspectionReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  pillarIndex               Int // 1 to 5
+  pillarName                String // e.g. "Power Usage Effectiveness", "Lithium-Ion Battery Integrity"
+  isoClauseLink             String // e.g. "ISO 50001:2018 Clause 9.1.1", "ISO 6469-1/-3"
+  legalMandate              String // e.g. "UK SECR / Companies Regs 2018", "EU Battery Regulation"
+  targetDepartment          String // e.g. "IT Infrastructure", "High-Voltage Engineering"
+  questionText              String
+  objectiveEvidenceTypes    String // e.g. "SCADA Logs, Sub-Meter Calibration Certs"
+  auditorFindings           String?
+  scorePoints               Float // 0.0 to 5.0 points
+  complianceGrading         ConformanceGrade
+  weight                    Float // e.g. 0.25, 0.20, 0.15
+  rootCause                 String?
   mandatoryCorrectiveAction String?
-  assignedOwner            String?
-  targetClosureDate        DateTime?
-  verifiedBy               String?
-  verificationDate         DateTime?
-  createdAt                DateTime          @default(now())
+  assignedOwner             String?
+  targetClosureDate         DateTime?
+  verifiedBy                String?
+  verificationDate          DateTime?
+  createdAt                 DateTime              @default(now())
 
   @@index([reportId, pillarIndex])
 }
 
 model CustomKeepsakeSpec {
-  id                String       @id @default(cuid())
-  transactionId     String       @unique
-  transaction       Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  garmentModel      String       // "HEAVYWEIGHT_HOODIE", "STRUCTURED_CAP", "SOFTSHELL_VEST"
-  inscribedText     String       // e.g. "Bukayo Saka 89' Top-Corner Derby Winner"
-  threadColor       String       // "GOLD_METALLIC", "STERLING_SILVER", "EMERALD_GREEN"
-  placement         String       // "LEFT_CHEST", "RIGHT_SLEEVE", "BACK_COLLAR"
-  artisanLaborHours Float        @default(1.5)
-  lcaCarbonGrams    Int          @default(450)
+  id                String      @id @default(cuid())
+  transactionId     String      @unique
+  transaction       Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  garmentModel      String // "HEAVYWEIGHT_HOODIE", "STRUCTURED_CAP", "SOFTSHELL_VEST"
+  inscribedText     String // e.g. "Bukayo Saka 89' Top-Corner Derby Winner"
+  threadColor       String // "GOLD_METALLIC", "STERLING_SILVER", "EMERALD_GREEN"
+  placement         String // "LEFT_CHEST", "RIGHT_SLEEVE", "BACK_COLLAR"
+  artisanLaborHours Float       @default(1.5)
+  lcaCarbonGrams    Int         @default(450)
   openSeaTokenUri   String?
   // Sports milestone customizer fields
-  isGoalFrenzy      Boolean      @default(false)
-  sportType         String?      // e.g. "Football", "Basketball", "Rugby", "Tennis", "Athletics", "Running", "Motorsport"
-  frenzyClub        String?      // e.g. "Arsenal FC", "Los Angeles Lakers"
-  frenzyOpponent    String?      // e.g. "Tottenham Hotspur", "Boston Celtics"
-  frenzyMinute      String?      // e.g. "89'", "Q4 0.2s"
-  frenzyMoment      String?      // e.g. "Last-minute top-corner winner"
-  frenzyQuote       String?      // e.g. "Absolute limbs in the North Bank!"
-  garmentSize       String?      // "S", "M", "L", "XL", "XXL"
-  shippingAddress   Json?        // { recipientName, street, city, state, postalCode, country, phone }
+  isGoalFrenzy      Boolean     @default(false)
+  sportType         String? // e.g. "Football", "Basketball", "Rugby", "Tennis", "Athletics", "Running", "Motorsport"
+  frenzyClub        String? // e.g. "Arsenal FC", "Los Angeles Lakers"
+  frenzyOpponent    String? // e.g. "Tottenham Hotspur", "Boston Celtics"
+  frenzyMinute      String? // e.g. "89'", "Q4 0.2s"
+  frenzyMoment      String? // e.g. "Last-minute top-corner winner"
+  frenzyQuote       String? // e.g. "Absolute limbs in the North Bank!"
+  garmentSize       String? // "S", "M", "L", "XL", "XXL"
+  shippingAddress   Json? // { recipientName, street, city, state, postalCode, country, phone }
   customerEmail     String?
   customerName      String?
-  fulfillmentStatus String       @default("PENDING") // "PENDING", "IN_PRODUCTION", "DISPATCHED"
+  fulfillmentStatus String      @default("PENDING") // "PENDING", "IN_PRODUCTION", "DISPATCHED"
   trackingNumber    String?
-  createdAt         DateTime     @default(now())
+  createdAt         DateTime    @default(now())
 }
 
 enum EvidenceCategory {
@@ -426,9 +510,9 @@ enum EvidenceCategory {
 }
 
 model AuditEvidenceDocument {
-  id            String            @id @default(cuid())
+  id            String                 @id @default(cuid())
   licenseeId    String
-  licensee      Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  licensee      Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
   reportId      String?
   report        AuditInspectionReport? @relation(fields: [reportId], references: [id], onDelete: Cascade)
   matrixRowId   String?
@@ -439,7 +523,7 @@ model AuditEvidenceDocument {
   mimeType      String
   sha256Hash    String
   uploadedBy    String
-  createdAt     DateTime          @default(now())
+  createdAt     DateTime               @default(now())
 
   workflowAnswers WorkflowAnswer[]
 
@@ -475,19 +559,19 @@ model SouvenirOrder {
   customerEmail     String
   customerName      String?
   eventCategory     SouvenirEventCategory
-  eventName         String                // e.g. "Arsenal FC Community Day 2026"
-  logoDropCount     Int                   // 10, 25, 50, 100, 250, 500
+  eventName         String // e.g. "Arsenal FC Community Day 2026"
+  logoDropCount     Int // 10, 25, 50, 100, 250, 500
   itemType          String                @default("GHG_LOGO_DROP") // always GHG verified mark
-  shippingAddress   Json?                 // { street, city, country, postalCode }
+  shippingAddress   Json? // { street, city, country, postalCode }
   status            SouvenirOrderStatus   @default(ORDER_PLACED)
-  courierName       String?               // "DHL Express", "FedEx"
+  courierName       String? // "DHL Express", "FedEx"
   trackingNumber    String?
   trackingUrl       String?
   estimatedDelivery DateTime?
   stripeSessionId   String?
   grossAmountCents  Int
-  licensorCents     Int                   // 85%
-  charityCents      Int                   // 15%
+  licensorCents     Int // 85%
+  charityCents      Int // 15%
   transactionId     String?               @unique
   transaction       Transaction?          @relation(fields: [transactionId], references: [id])
   createdAt         DateTime              @default(now())
@@ -515,24 +599,24 @@ enum CharityApplicationStatus {
 }
 
 model CharityApplication {
-  id                        String                   @id @default(cuid())
-  legalEntityName           String
-  registrationNumber        String                   // e.g. UK Charity Commission No., US EIN
-  registrationJurisdiction  String                   // e.g. "England & Wales", "United States"
-  headquartersAddress       String
-  focusPillar               CharityFocusPillar
-  primaryContactName        String
-  primaryContactEmail       String
-  stripeConnectedAccountId  String?                  // For direct Stripe disbursements
-  annualFinancialStatementUrl String?                // PDF upload URL
-  impactMetricDescription   String                   // e.g. "12,000 trees planted per £10,000"
-  authorizedSignatoryName   String
-  authorizedSignatoryTitle  String
-  agreedToTerms             Boolean                  @default(false)
-  applicationStatus         CharityApplicationStatus @default(PENDING_REVIEW)
-  reviewNotes               String?
-  reviewedAt                DateTime?
-  createdAt                 DateTime                 @default(now())
+  id                          String                   @id @default(cuid())
+  legalEntityName             String
+  registrationNumber          String // e.g. UK Charity Commission No., US EIN
+  registrationJurisdiction    String // e.g. "England & Wales", "United States"
+  headquartersAddress         String
+  focusPillar                 CharityFocusPillar
+  primaryContactName          String
+  primaryContactEmail         String
+  stripeConnectedAccountId    String? // For direct Stripe disbursements
+  annualFinancialStatementUrl String? // PDF upload URL
+  impactMetricDescription     String // e.g. "12,000 trees planted per £10,000"
+  authorizedSignatoryName     String
+  authorizedSignatoryTitle    String
+  agreedToTerms               Boolean                  @default(false)
+  applicationStatus           CharityApplicationStatus @default(PENDING_REVIEW)
+  reviewNotes                 String?
+  reviewedAt                  DateTime?
+  createdAt                   DateTime                 @default(now())
 
   @@index([applicationStatus])
   @@index([primaryContactEmail])
@@ -551,25 +635,25 @@ enum IsoReadinessStatus {
 }
 
 model IsoReadinessSubmission {
-  id                 String               @id @default(cuid())
+  id                 String             @id @default(cuid())
   licenseeId         String
-  licensee           Licensee             @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  standardFramework  String               @default("ISO_14001_50001_19011_2026")
-  selectedFrameworks String[]             @default([])
+  licensee           Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  standardFramework  String             @default("ISO_14001_50001_19011_2026")
+  selectedFrameworks String[]           @default([])
   /// Structured JSON array of { questionId, questionText, answer, isoClause }
   answers            Json
   /// 0–100 calculated conformance score; set by admin reviewer or AI on review
   complianceScore    Int?
-  status             IsoReadinessStatus   @default(SUBMITTED)
+  status             IsoReadinessStatus @default(SUBMITTED)
   reviewerNotes      String?
   paidAt             DateTime?
   auditReadyAt       DateTime?
   stripeSessionId    String?
-  tierSelected       String?              // "TIER_1_READINESS" | "TIER_2_CONTINUOUS"
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  tierSelected       String? // "TIER_1_READINESS" | "TIER_2_CONTINUOUS"
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  credential         AuditWarrantyCredential?
+  credential AuditWarrantyCredential?
 
   @@index([licenseeId, status])
 }
@@ -586,30 +670,30 @@ enum CredentialStatus {
 }
 
 model AuditWarrantyCredential {
-  id                  String             @id @default(cuid())
-  licenseeId          String
-  licensee            Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  submissionId        String             @unique
-  submission          IsoReadinessSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  id                 String                 @id @default(cuid())
+  licenseeId         String
+  licensee           Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  submissionId       String                 @unique
+  submission         IsoReadinessSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   /// Client's attestation message, up to 200 characters, embedded in the badge
-  clientMessage       String
-  clientLogoUrl       String
-  compositeBadgeUrl   String?
-  selectedFrameworks  String[]           @default([])
-  operationalHealth   String             @default("ACTIVE")
-  allowedOrigins      String[]           @default([])
+  clientMessage      String
+  clientLogoUrl      String
+  compositeBadgeUrl  String?
+  selectedFrameworks String[]               @default([])
+  operationalHealth  String                 @default("ACTIVE")
+  allowedOrigins     String[]               @default([])
   /// Polygon PoS ERC-1155 token ID (numeric string)
-  tokenId             String?
-  contractAddress     String?
-  transactionHash     String?
-  openSeaUrl          String?
+  tokenId            String?
+  contractAddress    String?
+  transactionHash    String?
+  openSeaUrl         String?
   /// 1 year from issuance
-  warrantyExpiresAt   DateTime?
+  warrantyExpiresAt  DateTime?
   /// SHA-256 of (licenseeId + clientMessage + compositeBadgeUrl + issuedAt)
-  verificationSeal    String?
-  status              CredentialStatus   @default(PENDING)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  verificationSeal   String?
+  status             CredentialStatus       @default(PENDING)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
 
   @@index([licenseeId, status])
 }
@@ -645,9 +729,11 @@ enum WorkflowType {
 }
 
 enum WorkflowStatus {
+  ASSESSMENT_PENDING // Client has not completed the intake assessment yet
+  PREPARATION // Client is gathering data per their PreparationChecklist
   DRAFT
   SUBMITTED
-  AI_SCREENED  // AI Assurance Agent has evaluated and produced clause findings; awaiting Lead Auditor
+  AI_SCREENED // AI Assurance Agent has evaluated and produced clause findings; awaiting Lead Auditor
   UNDER_REVIEW // Lead Auditor is conducting manual review of AI findings
   APPROVED
   REJECTED
@@ -669,67 +755,68 @@ enum ReviewOverallDecision {
 }
 
 model WorkflowFramework {
-  id            String              @id
+  id            String       @id
   workflowType  WorkflowType
-  code          String              @unique
+  code          String       @unique
   name          String
   governingBody String?
   jurisdiction  String?
   description   String?
-  createdAt     DateTime            @default(now())
+  createdAt     DateTime     @default(now())
 
-  questions     WorkflowQuestion[]
-  submissions   WorkflowSubmission[]
+  questions   WorkflowQuestion[]
+  submissions WorkflowSubmission[]
 
   @@index([workflowType])
 }
 
 model WorkflowQuestion {
-  id                 String              @id @default(cuid())
+  id                 String             @id @default(cuid())
   frameworkId        String
-  framework          WorkflowFramework   @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  framework          WorkflowFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
   orderIndex         Int
   text               String
-  answerType         WorkflowAnswerType  @default(TEXT)
-  options            String[]            @default([])
-  evidenceRequired   Boolean             @default(false)
+  answerType         WorkflowAnswerType @default(TEXT)
+  options            String[]           @default([])
+  evidenceRequired   Boolean            @default(false)
   isoClauseReference String
   guidanceNotes      String?
-  createdAt          DateTime            @default(now())
+  createdAt          DateTime           @default(now())
 
-  answers            WorkflowAnswer[]
+  answers WorkflowAnswer[]
 
   @@index([frameworkId, orderIndex])
 }
 
 model WorkflowSubmission {
-  id              String                  @id @default(cuid())
-  licenseeId      String
-  licensee        Licensee                @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  workflowType    WorkflowType
-  frameworkId     String
-  framework       WorkflowFramework       @relation(fields: [frameworkId], references: [id])
-  status          WorkflowStatus          @default(DRAFT)
-  submittedAt     DateTime?
-  reviewedAt      DateTime?
-  reviewerId      String?
-  complianceScore Int?
-  paidAt          DateTime?
-  stripeSessionId String?
-  clientMessage   String?
-  clientLogoUrl   String?
+  id                String            @id @default(cuid())
+  licenseeId        String
+  licensee          Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  workflowType      WorkflowType
+  frameworkId       String
+  framework         WorkflowFramework @relation(fields: [frameworkId], references: [id])
+  status            WorkflowStatus    @default(DRAFT)
+  submittedAt       DateTime?
+  reviewedAt        DateTime?
+  reviewerId        String?
+  complianceScore   Int?
+  paidAt            DateTime?
+  stripeSessionId   String?
+  clientMessage     String?
+  clientLogoUrl     String?
   compositeBadgeUrl String?
-  tokenId         String?
-  contractAddress String?
-  transactionHash String?
-  openSeaUrl      String?
-  mintedAt        DateTime?
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  tokenId           String?
+  contractAddress   String?
+  transactionHash   String?
+  openSeaUrl        String?
+  mintedAt          DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
-  answers         WorkflowAnswer[]
-  reviewDecision  WorkflowReviewDecision?
-  transitions     WorkflowTransitionLog[]
+  answers                  WorkflowAnswer[]
+  reviewDecision           WorkflowReviewDecision?
+  transitions              WorkflowTransitionLog[]
+  complianceRecommendation ComplianceRecommendation?
 
   @@index([licenseeId, status])
   @@index([workflowType, status])
@@ -752,15 +839,15 @@ model WorkflowAnswer {
 }
 
 model WorkflowReviewDecision {
-  id                   String                 @id @default(cuid())
-  submissionId         String                 @unique
-  submission           WorkflowSubmission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  id                   String                @id @default(cuid())
+  submissionId         String                @unique
+  submission           WorkflowSubmission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   reviewerId           String?
   overallDecision      ReviewOverallDecision
   overallScore         Int
   perQuestionDecisions Json
   reviewerNotes        String?
-  createdAt            DateTime               @default(now())
+  createdAt            DateTime              @default(now())
 }
 
 model WorkflowTransitionLog {
@@ -775,7 +862,6 @@ model WorkflowTransitionLog {
 
   @@index([submissionId, timestamp])
 }
-
 
 model WorkflowApiKey {
   id           String       @id @default(cuid())
@@ -796,17 +882,17 @@ model WorkflowApiKey {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model MerchEnquiry {
-  id            String   @id @default(cuid())
-  itemId        String   // e.g. "item_nfty_volcano_hoodie"
-  itemTitle     String
-  contactName   String
-  contactEmail  String
-  message       String?
-  status        String   @default("PENDING") // PENDING | RESPONDED | CLOSED
-  adminNotes    String?
-  ipAddress     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  itemId       String // e.g. "item_nfty_volcano_hoodie"
+  itemTitle    String
+  contactName  String
+  contactEmail String
+  message      String?
+  status       String   @default("PENDING") // PENDING | RESPONDED | CLOSED
+  adminNotes   String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([status])
   @@index([contactEmail])
@@ -823,9 +909,9 @@ model FulfillmentPartnerApplication {
   workEmail            String
   countryCode          String
   regionOfOperation    String
-  capabilities         String[]                 // EMBROIDERY, SCREEN_PRINT, CUT_SEW, WAREHOUSING
-  monthlyCapacityUnits String                   // UNDER_500 | 500_2000 | 2000_10000 | OVER_10000
-  certifications       String[]                 // GOTS, OEKO_TEX, B_CORP, ISO_14001, NONE
+  capabilities         String[] // EMBROIDERY, SCREEN_PRINT, CUT_SEW, WAREHOUSING
+  monthlyCapacityUnits String // UNDER_500 | 500_2000 | 2000_10000 | OVER_10000
+  certifications       String[] // GOTS, OEKO_TEX, B_CORP, ISO_14001, NONE
   message              String?
   status               FulfillmentPartnerStatus @default(PENDING)
   reviewedAt           DateTime?
@@ -848,22 +934,22 @@ enum FulfillmentPartnerStatus {
 }
 
 model CharityPartnerApplication {
-  id                 String                  @id @default(cuid())
+  id                 String               @id @default(cuid())
   orgName            String
   workEmail          String
   countryCode        String
   registrationNumber String?
-  orgType            String                  // REGISTERED_CHARITY | NGO | TRUST | FOUNDATION | COMMUNITY_FUND
-  focusAreas         String[]                // REFORESTATION, EXTREME_WEATHER_RELIEF, OCEAN, BIODIVERSITY, COMMUNITY
+  orgType            String // REGISTERED_CHARITY | NGO | TRUST | FOUNDATION | COMMUNITY_FUND
+  focusAreas         String[] // REFORESTATION, EXTREME_WEATHER_RELIEF, OCEAN, BIODIVERSITY, COMMUNITY
   annualReportUrl    String?
   website            String?
   message            String?
-  status             CharityPartnerStatus    @default(PENDING)
+  status             CharityPartnerStatus @default(PENDING)
   reviewedAt         DateTime?
   reviewNotes        String?
   ipAddress          String?
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
   @@index([status])
   @@index([countryCode])
@@ -878,3 +964,128 @@ enum CharityPartnerStatus {
   REJECTED
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ASSESSMENT LAYER: The Babysitter Model: hold client hands from zero to 100
+// No WorkflowSubmission can be created without a completed ClientAssessment.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Structured intake questionnaire answered at onboarding.
+/// 12 plain-English questions that drive the AssessmentDecisionEngine.
+/// The client never sees ISO codes or regulation names during this step.
+model ClientAssessment {
+  id         String   @id @default(cuid())
+  licenseeId String
+  licensee   Licensee @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+
+  // Block A: Who They Are
+  organisationCountry String // ISO 3166-1 alpha-2: "GB", "DE", "US"
+  organisationSize    OrganisationSize
+  annualRevenueBand   RevenueBand
+  industrySector      IndustrySector
+
+  // Block B: What They Do
+  hasPhysicalSites     Boolean // Own/operate physical buildings or facilities?
+  hasProductionProcess Boolean // Manufacture or produce physical goods?
+  hasFleet             Boolean // Operate a vehicle fleet?
+  hasIoTMeters         Boolean // Smart meters or SCADA systems installed?
+
+  // Block C: Legal Context
+  isUKPublicContractor   Boolean // Hold or bid for UK government contracts?
+  hasPlanningConsent     Boolean // Planning permission with S106 obligations?
+  makesPublicGreenClaims Boolean // Make any environmental claims publicly?
+  hasGreenHydrogen       Boolean @default(false) // Produce or operate green hydrogen?
+
+  // Metadata
+  assessmentVersion String    @default("v1.0")
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  recommendations ComplianceRecommendation[]
+
+  @@index([licenseeId])
+}
+
+/// Platform-generated compliance framework recommendation.
+/// One record per applicable framework per assessment.
+/// Written in plain English: client sees why it applies and what happens if skipped.
+model ComplianceRecommendation {
+  id           String           @id @default(cuid())
+  assessmentId String
+  assessment   ClientAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  licenseeId   String
+
+  // Framework identification
+  frameworkCode String // e.g. "UK_SECR", "ISO_14064_1", "UK_SECTION_106"
+  frameworkName String // Plain English: "Streamlined Energy & Carbon Reporting"
+  workflowType  WorkflowType // CARBON or JOB
+
+  // Why it applies: shown to client in plain English, no ISO codes
+  isLegallyMandatory   Boolean // true = statute requires it; false = recommended
+  plainEnglishWhy      String // e.g. "You employ more than 250 people in the UK..."
+  consequenceIfSkipped String? // e.g. "Directors personally liable; Companies House rejection"
+  enforcementBody      String? // e.g. "Financial Reporting Council (FRC)"
+  estimatedEffort      ComplianceEffort
+
+  // Client decision
+  clientAccepted   Boolean   @default(true) // Locked true for mandatory frameworks
+  deferredReason   String?
+  clientReviewedAt DateTime?
+
+  displayOrder Int // Order shown to client (mandatory first)
+  createdAt    DateTime @default(now())
+
+  checklist            PreparationChecklist?
+  workflowSubmission   WorkflowSubmission?   @relation(fields: [workflowSubmissionId], references: [id])
+  workflowSubmissionId String?               @unique
+
+  @@index([licenseeId, frameworkCode])
+  @@index([assessmentId])
+}
+
+/// Per-framework, per-client preparation checklist.
+/// Created by PreparationChecklistService when client accepts a recommendation.
+/// isReadyToIngest is set true by the platform when all mandatory items are complete.
+model PreparationChecklist {
+  id               String                   @id @default(cuid())
+  recommendationId String                   @unique
+  recommendation   ComplianceRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  licenseeId       String
+
+  totalItems      Int      @default(0)
+  completedItems  Int      @default(0)
+  isReadyToIngest Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items PreparationChecklistItem[]
+
+  @@index([licenseeId])
+}
+
+/// Individual item in a preparation checklist.
+/// isoClauseReference is stored in DB and visible in admin view only: never shown to client.
+/// plainEnglishLabel and plainEnglishGuidance are what the client sees.
+model PreparationChecklistItem {
+  id          String               @id @default(cuid())
+  checklistId String
+  checklist   PreparationChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  itemCode             String // e.g. "ELECTRICITY_BILLS_12M", "PAYROLL_REGISTER"
+  plainEnglishLabel    String // e.g. "Electricity bills for the last 12 months"
+  plainEnglishGuidance String // e.g. "Ask your energy supplier for an annual usage report..."
+  isoClauseReference   String? // ADMIN-ONLY. e.g. "ISO 14064-1:2018 Cl 5.4.3": never shown to client
+  dataType             ChecklistItemDataType
+  isMandatory          Boolean               @default(true)
+  status               ChecklistItemStatus   @default(NOT_STARTED)
+  completedAt          DateTime?
+  waivedReason         String? // Set by admin when status = WAIVED
+
+  // Links to actual ingested data once the client enters it
+  linkedEvidenceDocId String? // FK to AuditEvidenceDocument once uploaded
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([checklistId, status])
+  @@index([itemCode])
+}

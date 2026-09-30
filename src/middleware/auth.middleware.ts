@@ -42,3 +42,14 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
     return res.status(401).json({ error: 'Invalid or expired authentication token' });
   }
 }
+
+export const requireAuth = authenticateToken;
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  authenticateToken(req, res, () => {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Administrative privileges required' });
+    }
+    next();
+  });
+}
