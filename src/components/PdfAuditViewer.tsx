@@ -42,10 +42,10 @@ export const PdfAuditViewer: React.FC<PdfAuditViewerProps> = ({
         style={{
           width: '100%',
           maxWidth: '680px',
-          backgroundColor: '#0f172a',
+          backgroundColor: 'var(--bg-card)',
           border: '1px solid var(--border-medium)',
           borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+          boxShadow: 'var(--shadow-xl)',
           padding: '2rem',
           display: 'flex',
           flexDirection: 'column',
@@ -54,10 +54,10 @@ export const PdfAuditViewer: React.FC<PdfAuditViewerProps> = ({
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
               Boardroom PDF Audit Report Generator
             </h2>
-            <p style={{ fontSize: '0.8125rem', color: '#38bdf8', margin: '0.25rem 0 0 0' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--accent-primary)', margin: '0.25rem 0 0 0' }}>
               ISO 14001 / 50001 Integrated Audit Log Matrix ({auditRefId})
             </p>
           </div>
@@ -68,7 +68,7 @@ export const PdfAuditViewer: React.FC<PdfAuditViewerProps> = ({
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#94a3b8',
+              color: 'var(--text-light)',
               fontSize: '1.5rem',
               cursor: 'pointer',
             }}
@@ -78,11 +78,11 @@ export const PdfAuditViewer: React.FC<PdfAuditViewerProps> = ({
         </div>
 
         {/* Executive Summary Card */}
-        <div style={{ backgroundColor: '#1e293b', padding: '1.25rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid #334155' }}>
+        <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid var(--border-light)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Organization</div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>{licenseeName}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>{licenseeName}</div>
             </div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Weighted Score</div>
@@ -92,7 +92,7 @@ export const PdfAuditViewer: React.FC<PdfAuditViewerProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card)', padding: '0.75rem', borderRadius: '4px' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Risk Status:</span>
             <span
               style={{

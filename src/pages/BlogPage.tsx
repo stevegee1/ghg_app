@@ -321,7 +321,7 @@ export const BlogPage: React.FC = () => {
                 transition: 'background-color 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1e293b';
+                e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = '#090d1a';

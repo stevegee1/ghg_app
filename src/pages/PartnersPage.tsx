@@ -234,7 +234,7 @@ export const PartnersPage: React.FC = () => {
       style={{
         backgroundColor: '#08040c',
         minHeight: '100vh',
-        color: '#ffffff',
+        color: 'var(--text-main)',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         position: 'relative',
         overflow: 'hidden',
@@ -278,11 +278,11 @@ export const PartnersPage: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-            <Link to="/" style={{ color: '#94a3b8', textDecoration: 'none', fontWeight: 500 }}>
+            <Link to="/" style={{ color: 'var(--text-light)', textDecoration: 'none', fontWeight: 500 }}>
               GHGEmissionLogs
             </Link>
             <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>/</span>
-            <span style={{ color: '#ffffff', fontWeight: 600 }}>Global Partner Network</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>Global Partner Network</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -290,7 +290,7 @@ export const PartnersPage: React.FC = () => {
               to="/merch"
               style={{
                 fontSize: '0.8125rem',
-                color: '#94a3b8',
+                color: 'var(--text-light)',
                 textDecoration: 'none',
                 fontWeight: 500,
                 transition: 'color 0.15s ease',
@@ -302,9 +302,9 @@ export const PartnersPage: React.FC = () => {
               to="/portal"
               style={{
                 fontSize: '0.8125rem',
-                color: '#ffffff',
-                backgroundColor: '#111726',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: 'var(--text-main)',
+                backgroundColor: 'var(--bg-page)',
+                border: '1px solid var(--border-light)',
                 padding: '0.45rem 0.85rem',
                 borderRadius: '6px',
                 textDecoration: 'none',
@@ -354,7 +354,7 @@ export const PartnersPage: React.FC = () => {
               fontSize: 'clamp(2rem, 4vw, 3.25rem)',
               fontWeight: 800,
               lineHeight: 1.15,
-              color: '#ffffff',
+              color: 'var(--text-main)',
               letterSpacing: '-0.025em',
               marginBottom: '1.25rem',
             }}
@@ -366,7 +366,7 @@ export const PartnersPage: React.FC = () => {
             style={{
               fontSize: '1.0625rem',
               lineHeight: 1.6,
-              color: '#94a3b8',
+              color: 'var(--text-light)',
               margin: '0 auto 2.25rem auto',
               maxWidth: '740px',
             }}
@@ -381,7 +381,7 @@ export const PartnersPage: React.FC = () => {
             style={{
               display: 'inline-flex',
               padding: '0.35rem',
-              backgroundColor: '#111726',
+              backgroundColor: 'var(--bg-page)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
               gap: '0.35rem',
@@ -434,7 +434,7 @@ export const PartnersPage: React.FC = () => {
             {/* Left Column: Why Partner as a Studio */}
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '14px',
                 padding: '2.25rem',
@@ -456,7 +456,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '1.625rem',
                   fontWeight: 700,
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   lineHeight: 1.25,
                   marginBottom: '1rem',
                 }}
@@ -466,7 +466,7 @@ export const PartnersPage: React.FC = () => {
               <p
                 style={{
                   fontSize: '0.9375rem',
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   lineHeight: 1.6,
                   marginBottom: '2rem',
                 }}
@@ -495,10 +495,10 @@ export const PartnersPage: React.FC = () => {
                     1
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       Cut Freight Emissions by Up to 80%
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.45, marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.45, marginTop: '0.2rem' }}>
                       Produce within national or regional boundaries, avoiding high-emission air freight while delivering faster to corporate buyers and event attendees.
                     </div>
                   </div>
@@ -524,10 +524,10 @@ export const PartnersPage: React.FC = () => {
                     2
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       Automated Batch Payouts via Stripe Connect
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.45, marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.45, marginTop: '0.2rem' }}>
                       No 60-day invoice delays. Production fees and material allowances are credited automatically to your studio corporate bank account upon dispatch scan.
                     </div>
                   </div>
@@ -553,10 +553,10 @@ export const PartnersPage: React.FC = () => {
                     3
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       ISO 14064 Telemetry Integration
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.45, marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.45, marginTop: '0.2rem' }}>
                       Our dispatch platform logs energy usage, stitch counts, and eco-packaging data into verifiable audit packs, elevating your studio ESG profile.
                     </div>
                   </div>
@@ -572,10 +572,10 @@ export const PartnersPage: React.FC = () => {
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               >
-                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.25rem' }}>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                   Minimum Partner Eligibility
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', lineHeight: 1.5 }}>
                   Active industrial embroidery or DTG equipment, minimum monthly production capacity of 250 units, registered corporate tax entity, and commitment to zero plastic single-use packaging.
                 </div>
               </div>
@@ -584,7 +584,7 @@ export const PartnersPage: React.FC = () => {
             {/* Right Column: Application Form */}
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '14px',
                 padding: '2.25rem',
@@ -594,7 +594,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '1.375rem',
                   fontWeight: 700,
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   marginBottom: '0.5rem',
                 }}
               >
@@ -603,7 +603,7 @@ export const PartnersPage: React.FC = () => {
               <p
                 style={{
                   fontSize: '0.875rem',
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   lineHeight: 1.5,
                   marginBottom: '1.75rem',
                 }}
@@ -639,13 +639,13 @@ export const PartnersPage: React.FC = () => {
                   >
                     ✓
                   </div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.75rem' }}>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
                     Partner Application Submitted
                   </h4>
                   <div
                     style={{
                       fontSize: '0.8125rem',
-                      color: '#94a3b8',
+                      color: 'var(--text-light)',
                       marginBottom: '1.25rem',
                       fontFamily: 'monospace',
                       backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -671,9 +671,9 @@ export const PartnersPage: React.FC = () => {
                     style={{
                       padding: '0.65rem 1.25rem',
                       borderRadius: '6px',
-                      backgroundColor: '#111726',
+                      backgroundColor: 'var(--bg-page)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#ffffff',
+                      color: 'var(--text-main)',
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -723,8 +723,8 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
@@ -752,14 +752,14 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
                         }}
                       />
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem', display: 'block' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', marginTop: '0.25rem', display: 'block' }}>
                         Must be a corporate domain. Free consumer addresses (Gmail, Yahoo, Outlook) are rejected.
                       </span>
                     </div>
@@ -782,15 +782,15 @@ export const PartnersPage: React.FC = () => {
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
                             backgroundColor: '#0d121c',
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            color: '#ffffff',
+                            border: '1px solid var(--border-light)',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             outline: 'none',
                             boxSizing: 'border-box',
                           }}
                         >
                           {COUNTRY_OPTIONS.map((c) => (
-                            <option key={c.code} value={c.code} style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                            <option key={c.code} value={c.code} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                               {c.name}
                             </option>
                           ))}
@@ -816,8 +816,8 @@ export const PartnersPage: React.FC = () => {
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
                             backgroundColor: '#0d121c',
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            color: '#ffffff',
+                            border: '1px solid var(--border-light)',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             outline: 'none',
                             boxSizing: 'border-box',
@@ -880,23 +880,23 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
                         }}
                       >
-                        <option value="UNDER_500" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option value="UNDER_500" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           Under 500 units / month (Boutique Artisan Studio)
                         </option>
-                        <option value="500_2000" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option value="500_2000" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           500 – 2,000 units / month (Mid-tier Production Hub)
                         </option>
-                        <option value="2000_10000" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option value="2000_10000" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           2,000 – 10,000 units / month (High-volume Commercial Facility)
                         </option>
-                        <option value="OVER_10000" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option value="OVER_10000" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           Over 10,000 units / month (Industrial Scaled Operation)
                         </option>
                       </select>
@@ -958,8 +958,8 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
@@ -977,7 +977,7 @@ export const PartnersPage: React.FC = () => {
                         borderRadius: '8px',
                         backgroundColor: '#ff2d8d',
                         border: 'none',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.9375rem',
                         fontWeight: 700,
                         cursor: fLoading ? 'not-allowed' : 'pointer',
@@ -1001,7 +1001,7 @@ export const PartnersPage: React.FC = () => {
             {/* Left Column: Why Partner as a Charity */}
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '14px',
                 padding: '2.25rem',
@@ -1023,7 +1023,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '1.625rem',
                   fontWeight: 700,
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   lineHeight: 1.25,
                   marginBottom: '1rem',
                 }}
@@ -1033,7 +1033,7 @@ export const PartnersPage: React.FC = () => {
               <p
                 style={{
                   fontSize: '0.9375rem',
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   lineHeight: 1.6,
                   marginBottom: '2rem',
                 }}
@@ -1062,10 +1062,10 @@ export const PartnersPage: React.FC = () => {
                     1
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       Programmatic Stripe Split Transfers
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.45, marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.45, marginTop: '0.2rem' }}>
                       Donations are split atomically at checkout and wired directly into your registered non-profit merchant account, bypassing third-party pledge aggregators and platform deductions.
                     </div>
                   </div>
@@ -1091,10 +1091,10 @@ export const PartnersPage: React.FC = () => {
                     2
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       Public Provenance Audit Ledger
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.45, marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.45, marginTop: '0.2rem' }}>
                       Every disbursement is accompanied by an open cryptographic receipt showing the transaction ID, order identifier, and verifiable allocation for your board and donors.
                     </div>
                   </div>
@@ -1120,10 +1120,10 @@ export const PartnersPage: React.FC = () => {
                     3
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       Featured Global Partner Status
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.45, marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.45, marginTop: '0.2rem' }}>
                       Approved charity partners receive dedicated attribution badges in our merchandise store and during checkout so customers know precisely which climate mission they are championing.
                     </div>
                   </div>
@@ -1139,10 +1139,10 @@ export const PartnersPage: React.FC = () => {
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               >
-                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.25rem' }}>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                   Governance & Compliance Standard
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', lineHeight: 1.5 }}>
                   Applications are accepted from officially registered charities, NGOs, and environmental community funds. Annual accounts and public reporting verification are required before allocation activation.
                 </div>
               </div>
@@ -1151,7 +1151,7 @@ export const PartnersPage: React.FC = () => {
             {/* Right Column: Charity Application Form */}
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '14px',
                 padding: '2.25rem',
@@ -1161,7 +1161,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '1.375rem',
                   fontWeight: 700,
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   marginBottom: '0.5rem',
                 }}
               >
@@ -1170,7 +1170,7 @@ export const PartnersPage: React.FC = () => {
               <p
                 style={{
                   fontSize: '0.875rem',
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   lineHeight: 1.5,
                   marginBottom: '1.75rem',
                 }}
@@ -1206,13 +1206,13 @@ export const PartnersPage: React.FC = () => {
                   >
                     ✓
                   </div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.75rem' }}>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
                     Organization Dossier Submitted
                   </h4>
                   <div
                     style={{
                       fontSize: '0.8125rem',
-                      color: '#94a3b8',
+                      color: 'var(--text-light)',
                       marginBottom: '1.25rem',
                       fontFamily: 'monospace',
                       backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -1240,9 +1240,9 @@ export const PartnersPage: React.FC = () => {
                     style={{
                       padding: '0.65rem 1.25rem',
                       borderRadius: '6px',
-                      backgroundColor: '#111726',
+                      backgroundColor: 'var(--bg-page)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#ffffff',
+                      color: 'var(--text-main)',
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -1292,8 +1292,8 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
@@ -1321,14 +1321,14 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
                         }}
                       />
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem', display: 'block' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', marginTop: '0.25rem', display: 'block' }}>
                         Must belong to the official non-profit organizational domain.
                       </span>
                     </div>
@@ -1351,15 +1351,15 @@ export const PartnersPage: React.FC = () => {
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
                             backgroundColor: '#0d121c',
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            color: '#ffffff',
+                            border: '1px solid var(--border-light)',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             outline: 'none',
                             boxSizing: 'border-box',
                           }}
                         >
                           {COUNTRY_OPTIONS.map((c) => (
-                            <option key={c.code} value={c.code} style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                            <option key={c.code} value={c.code} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                               {c.name}
                             </option>
                           ))}
@@ -1382,26 +1382,26 @@ export const PartnersPage: React.FC = () => {
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
                             backgroundColor: '#0d121c',
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            color: '#ffffff',
+                            border: '1px solid var(--border-light)',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             outline: 'none',
                             boxSizing: 'border-box',
                           }}
                         >
-                          <option value="REGISTERED_CHARITY" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                          <option value="REGISTERED_CHARITY" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                             Registered Charity
                           </option>
-                          <option value="NGO" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                          <option value="NGO" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                             Non-Governmental Org (NGO)
                           </option>
-                          <option value="TRUST" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                          <option value="TRUST" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                             Charitable Trust
                           </option>
-                          <option value="FOUNDATION" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                          <option value="FOUNDATION" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                             Environmental Foundation
                           </option>
-                          <option value="COMMUNITY_FUND" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                          <option value="COMMUNITY_FUND" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                             Community Climate Fund
                           </option>
                         </select>
@@ -1427,8 +1427,8 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
@@ -1493,8 +1493,8 @@ export const PartnersPage: React.FC = () => {
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
                             backgroundColor: '#0d121c',
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            color: '#ffffff',
+                            border: '1px solid var(--border-light)',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             outline: 'none',
                             boxSizing: 'border-box',
@@ -1520,8 +1520,8 @@ export const PartnersPage: React.FC = () => {
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
                             backgroundColor: '#0d121c',
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            color: '#ffffff',
+                            border: '1px solid var(--border-light)',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             outline: 'none',
                             boxSizing: 'border-box',
@@ -1549,8 +1549,8 @@ export const PartnersPage: React.FC = () => {
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
                           backgroundColor: '#0d121c',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: '#ffffff',
+                          border: '1px solid var(--border-light)',
+                          color: 'var(--text-main)',
                           fontSize: '0.875rem',
                           outline: 'none',
                           boxSizing: 'border-box',
@@ -1568,7 +1568,7 @@ export const PartnersPage: React.FC = () => {
                         borderRadius: '8px',
                         backgroundColor: '#ff2d8d',
                         border: 'none',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.9375rem',
                         fontWeight: 700,
                         cursor: cLoading ? 'not-allowed' : 'pointer',
@@ -1601,10 +1601,10 @@ export const PartnersPage: React.FC = () => {
             >
               Enterprise Provenance Architecture
             </div>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
               How the Sustainable Fulfillment Network Works
             </h2>
-            <p style={{ fontSize: '0.9375rem', color: '#94a3b8', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
               A closed-loop system connecting customers, regional artisanal manufacturers, and verified climate non-profits with end-to-end telemetry.
             </p>
           </div>
@@ -1618,7 +1618,7 @@ export const PartnersPage: React.FC = () => {
           >
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '12px',
                 padding: '1.75rem',
@@ -1636,17 +1636,17 @@ export const PartnersPage: React.FC = () => {
               >
                 Track 01
               </div>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
                 Algorithmic Geo-Routing
               </h3>
-              <p style={{ fontSize: '0.875rem', color: '#94a3b8', lineHeight: 1.55 }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', lineHeight: 1.55 }}>
                 Incoming customer orders are programmatically assigned to certified studios located closest to the destination address, minimizing transit kilometers and avoiding intercontinental air freight.
               </p>
             </div>
 
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '12px',
                 padding: '1.75rem',
@@ -1664,17 +1664,17 @@ export const PartnersPage: React.FC = () => {
               >
                 Track 02
               </div>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
                 Production Telemetry Logging
               </h3>
-              <p style={{ fontSize: '0.875rem', color: '#94a3b8', lineHeight: 1.55 }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', lineHeight: 1.55 }}>
                 Studios verify garment origin, organic thread weight, packaging materials, and machine power usage. Data is compiled into ISO 14064 Scope 1, 2, and 3 emission certificates.
               </p>
             </div>
 
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: '12px',
                 padding: '1.75rem',
@@ -1692,10 +1692,10 @@ export const PartnersPage: React.FC = () => {
               >
                 Track 03
               </div>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
                 Statutory Direct Split Settlement
               </h3>
-              <p style={{ fontSize: '0.875rem', color: '#94a3b8', lineHeight: 1.55 }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', lineHeight: 1.55 }}>
                 Stripe payment split mechanisms instantly execute the 15% charity allocation alongside the studio fulfillment compensation, generating a verifiable public transaction ledger.
               </p>
             </div>
@@ -1717,10 +1717,10 @@ export const PartnersPage: React.FC = () => {
             >
               Network Guidance & Operations
             </div>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
               Frequently Asked Questions
             </h2>
-            <p style={{ fontSize: '0.9375rem', color: '#94a3b8', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
               Key technical and commercial answers regarding partner onboarding, qualification criteria, and settlement.
             </p>
           </div>
@@ -1732,7 +1732,7 @@ export const PartnersPage: React.FC = () => {
                 <div
                   key={index}
                   style={{
-                    backgroundColor: '#111726',
+                    backgroundColor: 'var(--bg-page)',
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderRadius: '10px',
                     overflow: 'hidden',
@@ -1749,7 +1749,7 @@ export const PartnersPage: React.FC = () => {
                       justifyContent: 'space-between',
                       backgroundColor: 'transparent',
                       border: 'none',
-                      color: '#ffffff',
+                      color: 'var(--text-main)',
                       fontSize: '0.9375rem',
                       fontWeight: 600,
                       textAlign: 'left',
@@ -1775,7 +1775,7 @@ export const PartnersPage: React.FC = () => {
                       style={{
                         padding: '0 1.5rem 1.25rem 1.5rem',
                         fontSize: '0.875rem',
-                        color: '#94a3b8',
+                        color: 'var(--text-light)',
                         lineHeight: 1.6,
                         borderTop: '1px solid rgba(255, 255, 255, 0.04)',
                         paddingTop: '0.85rem',
@@ -1794,7 +1794,7 @@ export const PartnersPage: React.FC = () => {
         <section
           style={{
             marginTop: '5rem',
-            backgroundColor: '#111726',
+            backgroundColor: 'var(--bg-page)',
             border: '1px solid rgba(255, 45, 141, 0.3)',
             borderRadius: '14px',
             padding: '3rem 2rem',
@@ -1815,10 +1815,10 @@ export const PartnersPage: React.FC = () => {
               pointerEvents: 'none',
             }}
           />
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.75rem', position: 'relative' }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem', position: 'relative' }}>
             Ready to Verify Your Impact With Enterprise Provenance?
           </h2>
-          <p style={{ fontSize: '0.9375rem', color: '#94a3b8', maxWidth: '600px', margin: '0 auto 1.75rem auto', lineHeight: 1.6, position: 'relative' }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--text-light)', maxWidth: '600px', margin: '0 auto 1.75rem auto', lineHeight: 1.6, position: 'relative' }}>
             Explore our live merchandise collection or access the institutional portal to view real-time cryptographic transaction telemetry.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', position: 'relative' }}>
@@ -1828,7 +1828,7 @@ export const PartnersPage: React.FC = () => {
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
                 backgroundColor: '#ff2d8d',
-                color: '#ffffff',
+                color: 'var(--text-main)',
                 fontSize: '0.875rem',
                 fontWeight: 700,
                 textDecoration: 'none',
@@ -1844,7 +1844,7 @@ export const PartnersPage: React.FC = () => {
                 borderRadius: '8px',
                 backgroundColor: '#0d121c',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#ffffff',
+                color: 'var(--text-main)',
                 fontSize: '0.875rem',
                 fontWeight: 600,
                 textDecoration: 'none',

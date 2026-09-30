@@ -94,7 +94,7 @@ export const VerifyEmailPage: React.FC = () => {
       style={{
         backgroundColor: '#08040c',
         minHeight: '100vh',
-        color: '#ffffff',
+        color: 'var(--text-main)',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         display: 'flex',
         flexDirection: 'column',
@@ -124,7 +124,7 @@ export const VerifyEmailPage: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '520px',
-          backgroundColor: '#111726',
+          backgroundColor: 'var(--bg-page)',
           border: '1px solid rgba(255, 255, 255, 0.09)',
           borderRadius: '16px',
           padding: '2.5rem 2rem',
@@ -154,10 +154,10 @@ export const VerifyEmailPage: React.FC = () => {
           >
             Sovereign Identity Protocol
           </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
             Work Email Verification
           </h1>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.5rem', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.5rem', lineHeight: 1.5 }}>
             Cryptographic domain ownership assurance under ISO statutory guidelines.
           </p>
         </div>
@@ -177,10 +177,10 @@ export const VerifyEmailPage: React.FC = () => {
               }}
             />
             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
               Validating Security Token...
             </div>
-            <div style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-light)' }}>
               Authenticating domain ownership and issuing updated tenant credentials.
             </div>
           </div>
@@ -207,11 +207,11 @@ export const VerifyEmailPage: React.FC = () => {
             >
               ✓
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
               Email Address Verified
             </h2>
-            <p style={{ fontSize: '0.875rem', color: '#94a3b8', lineHeight: 1.55, marginBottom: '1.75rem' }}>
-              Corporate email ownership for <strong style={{ color: '#ffffff' }}>{verifiedEmail || 'your account'}</strong> has been confirmed. You now hold full evidence-signing and audit authority.
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', lineHeight: 1.55, marginBottom: '1.75rem' }}>
+              Corporate email ownership for <strong style={{ color: 'var(--text-main)' }}>{verifiedEmail || 'your account'}</strong> has been confirmed. You now hold full evidence-signing and audit authority.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -224,7 +224,7 @@ export const VerifyEmailPage: React.FC = () => {
                   borderRadius: '8px',
                   backgroundColor: '#ff2d8d',
                   border: 'none',
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   fontSize: '0.9375rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -237,7 +237,7 @@ export const VerifyEmailPage: React.FC = () => {
                 to="/"
                 style={{
                   fontSize: '0.8125rem',
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   textDecoration: 'none',
                   padding: '0.5rem',
                   fontWeight: 500,
@@ -269,10 +269,10 @@ export const VerifyEmailPage: React.FC = () => {
             </div>
 
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.35rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
                 Request a New Verification Link
               </h3>
-              <p style={{ fontSize: '0.8125rem', color: '#94a3b8', marginBottom: '1.25rem', lineHeight: 1.45 }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-light)', marginBottom: '1.25rem', lineHeight: 1.45 }}>
                 Enter your official corporate work email to receive a fresh secure verification email.
               </p>
 
@@ -329,7 +329,7 @@ export const VerifyEmailPage: React.FC = () => {
                       borderRadius: '8px',
                       backgroundColor: '#0d121c',
                       border: '1px solid rgba(255, 255, 255, 0.12)',
-                      color: '#ffffff',
+                      color: 'var(--text-main)',
                       fontSize: '0.875rem',
                       outline: 'none',
                       boxSizing: 'border-box',
@@ -346,7 +346,7 @@ export const VerifyEmailPage: React.FC = () => {
                     borderRadius: '8px',
                     backgroundColor: '#ff2d8d',
                     border: 'none',
-                    color: '#ffffff',
+                    color: 'var(--text-main)',
                     fontSize: '0.875rem',
                     fontWeight: 700,
                     cursor: resending ? 'not-allowed' : 'pointer',
@@ -363,7 +363,7 @@ export const VerifyEmailPage: React.FC = () => {
         {/* State 4: Direct Idle Visit (No Token in URL) */}
         {state === 'IDLE' && (
           <div>
-            <p style={{ fontSize: '0.875rem', color: '#94a3b8', lineHeight: 1.55, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', lineHeight: 1.55, marginBottom: '1.5rem' }}>
               To verify your corporate email or dispatch a fresh verification link, provide the official work email associated with your tenant organization.
             </p>
 
@@ -420,7 +420,7 @@ export const VerifyEmailPage: React.FC = () => {
                     borderRadius: '8px',
                     backgroundColor: '#0d121c',
                     border: '1px solid rgba(255, 255, 255, 0.12)',
-                    color: '#ffffff',
+                    color: 'var(--text-main)',
                     fontSize: '0.875rem',
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -437,7 +437,7 @@ export const VerifyEmailPage: React.FC = () => {
                   borderRadius: '8px',
                   backgroundColor: '#ff2d8d',
                   border: 'none',
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   fontSize: '0.875rem',
                   fontWeight: 700,
                   cursor: resending ? 'not-allowed' : 'pointer',
@@ -450,7 +450,7 @@ export const VerifyEmailPage: React.FC = () => {
             </form>
 
             <div style={{ textAlign: 'center', marginTop: '1.75rem' }}>
-              <Link to="/portal/login" style={{ fontSize: '0.8125rem', color: '#94a3b8', textDecoration: 'none' }}>
+              <Link to="/portal/login" style={{ fontSize: '0.8125rem', color: 'var(--text-light)', textDecoration: 'none' }}>
                 Back to Portal Login
               </Link>
             </div>

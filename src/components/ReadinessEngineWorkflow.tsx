@@ -573,7 +573,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
           >
             {scope === 'JOB_REPORTING' ? 'Workforce & Section 106 Assurance' : 'GHG & Carbon Emissions Assurance'}
           </span>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>•</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-light)' }}>•</span>
           <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>
             Stage {activeStep} of 5: {STEP_LABELS_BY_SCOPE[scope][activeStep]}
           </span>
@@ -616,7 +616,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              backgroundColor: '#0f172a',
+              backgroundColor: 'var(--bg-subtle)',
               border: 'none',
               color: '#ffffff',
               borderRadius: '6px',
@@ -1004,7 +1004,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                               style={{
                                 fontSize: '0.7rem',
                                 fontWeight: 700,
-                                backgroundColor: '#0f172a',
+                                backgroundColor: 'var(--bg-subtle)',
                                 color: '#ffffff',
                                 padding: '2.5px 8px',
                                 borderRadius: '4px',
@@ -1775,7 +1775,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   type="button"
                   onClick={() => goToStep(3)}
                   style={{
-                    backgroundColor: '#0f172a',
+                    backgroundColor: 'var(--bg-subtle)',
                     color: '#ffffff',
                     padding: '0.65rem 1.4rem',
                     borderRadius: '8px',
@@ -2015,7 +2015,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   type="button"
                   onClick={() => goToStep(3)}
                   style={{
-                    backgroundColor: '#0f172a',
+                    backgroundColor: 'var(--bg-subtle)',
                     color: '#ffffff',
                     padding: '0.65rem 1.4rem',
                     borderRadius: '8px',
@@ -2069,7 +2069,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Live Telemetry Ingestion Key (Bearer Scoped)
                   </span>
                 </div>
@@ -2136,7 +2136,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   padding: '0.75rem 1rem',
                   fontFamily: 'monospace',
                   fontSize: '0.92rem',
-                  color: '#38bdf8',
+                  color: 'var(--accent-primary)',
                   wordBreak: 'break-all',
                   display: 'flex',
                   alignItems: 'center',
@@ -2152,11 +2152,11 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
               </div>
 
               {/* API Endpoints Row */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.85rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.85rem', fontSize: '0.75rem', color: 'var(--text-light)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                  <span>Ingest: <code style={{ color: '#f8fafc', backgroundColor: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px' }}>POST /api/iso/telemetry/ingest</code></span>
+                  <span>Ingest: <code style={{ color: 'var(--text-main)', backgroundColor: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px' }}>POST /api/iso/telemetry/ingest</code></span>
                   <span>•</span>
-                  <span>Stream: <code style={{ color: '#f8fafc', backgroundColor: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px' }}>GET /api/iso/telemetry/stream</code></span>
+                  <span>Stream: <code style={{ color: 'var(--text-main)', backgroundColor: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px' }}>GET /api/iso/telemetry/stream</code></span>
                 </div>
                 <span style={{ color: '#64748b' }}>ISO 19011:2026 Remote Audit Telemetry</span>
               </div>
@@ -2309,7 +2309,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
             <div style={{ marginBottom: '2.5rem' }}>
               <div
                 style={{
-                  backgroundColor: '#0f172a',
+                  backgroundColor: 'var(--bg-subtle)',
                   border: '1px solid #1e293b',
                   borderRadius: '12px',
                   overflow: 'hidden',
@@ -2323,7 +2323,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '0.65rem 1rem',
-                    backgroundColor: '#090d16',
+                    backgroundColor: 'var(--bg-page)',
                     borderBottom: '1px solid #1e293b',
                     flexWrap: 'wrap',
                     gap: '0.5rem',
@@ -2368,11 +2368,11 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                       onClick={() => setCodeExpanded(!codeExpanded)}
                       style={{
                         backgroundColor: 'transparent',
-                        border: '1px solid #334155',
+                        border: '1px solid var(--border-light)',
                         borderRadius: '6px',
                         padding: '3px 8px',
                         fontSize: '0.72rem',
-                        color: '#94a3b8',
+                        color: 'var(--text-light)',
                         cursor: 'pointer',
                       }}
                     >
@@ -2424,8 +2424,8 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                 {/* Code Body */}
                 <pre
                   style={{
-                    backgroundColor: '#090d16',
-                    color: '#f8fafc',
+                    backgroundColor: 'var(--bg-page)',
+                    color: 'var(--text-main)',
                     padding: '1.25rem',
                     fontSize: '0.8rem',
                     lineHeight: 1.6,
@@ -2534,7 +2534,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   alignItems: 'center',
                   gap: '0.5rem',
                   padding: '0.65rem 1.5rem',
-                  backgroundColor: '#0f172a',
+                  backgroundColor: 'var(--bg-subtle)',
                   color: '#ffffff',
                   fontSize: '0.875rem',
                   fontWeight: 600,

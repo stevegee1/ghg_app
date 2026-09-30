@@ -85,7 +85,7 @@ export const AboutPage: React.FC = () => {
       </section>
 
       {/* Trademark Logo Visual Symbol Explanation */}
-      <section className="persefoni-card" style={{ marginBottom: '2.5rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '2.5rem' }}>
+      <section className="persefoni-card" style={{ marginBottom: '2.5rem', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', border: 'none', padding: '2.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
             <img
@@ -97,7 +97,7 @@ export const AboutPage: React.FC = () => {
           <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
             TRADEMARK IDENTITY
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
             The Story Behind Our Trademark Logo
           </h2>
           <p style={{ fontSize: '0.9rem', color: '#94a3b8', marginTop: '0.35rem' }}>

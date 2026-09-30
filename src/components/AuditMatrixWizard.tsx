@@ -92,7 +92,7 @@ export const AuditMatrixWizard: React.FC<AuditMatrixWizardProps> = ({
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '1.5rem' }}>
       {/* Left Column: Interrogation Steps */}
-      <div style={{ backgroundColor: '#1e293b', borderRadius: 'var(--radius-md)', padding: '1.5rem', border: '1px solid var(--border-medium)' }}>
+      <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-md)', padding: '1.5rem', border: '1px solid var(--border-medium)' }}>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
           {rows.map((r) => (
             <button
@@ -105,8 +105,8 @@ export const AuditMatrixWizard: React.FC<AuditMatrixWizardProps> = ({
                 fontSize: '0.8125rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                backgroundColor: r.pillarIndex === activePillarIndex ? 'var(--accent-primary)' : '#0f172a',
-                color: '#ffffff',
+                backgroundColor: r.pillarIndex === activePillarIndex ? 'var(--accent-primary)' : 'var(--bg-subtle)',
+                color: 'var(--text-main)',
                 border: '1px solid var(--border-medium)',
                 whiteSpace: 'nowrap',
               }}
@@ -120,33 +120,33 @@ export const AuditMatrixWizard: React.FC<AuditMatrixWizardProps> = ({
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: '#ffffff' }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
                   {activeRow.pillarName}
                 </h3>
-                <div style={{ fontSize: '0.8125rem', color: '#38bdf8', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--accent-primary)', marginTop: '0.25rem' }}>
                   {activeRow.isoClauseLink}
                 </div>
               </div>
-              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px', backgroundColor: '#334155', color: '#94a3b8' }}>
+              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-light)' }}>
                 Weight: {(activeRow.weight * 100).toFixed(0)}%
               </span>
             </div>
 
-            <div style={{ backgroundColor: '#0f172a', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem', border: '1px solid #334155' }}>
+            <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                 Legal Mandate: {activeRow.legalMandate}
               </div>
-              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.5 }}>
+              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.5 }}>
                 {activeRow.questionText}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#a7f3d0', marginTop: '0.5rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.5rem' }}>
                 🔍 Required Evidence: {activeRow.objectiveEvidenceTypes}
               </div>
             </div>
 
             {/* Score Selector */}
             <div style={{ marginBottom: '1.25rem' }}>
-              <label className="form-label" style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+              <label className="form-label" style={{ fontSize: '0.8125rem', color: 'var(--text-main)' }}>
                 Compliance Grading & Score Points
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
@@ -167,7 +167,7 @@ export const AuditMatrixWizard: React.FC<AuditMatrixWizardProps> = ({
                       fontWeight: 700,
                       cursor: 'pointer',
                       border: activeRow.scorePoints === option.score ? `2px solid ${option.color}` : '1px solid #334155',
-                      backgroundColor: activeRow.scorePoints === option.score ? `${option.color}22` : '#0f172a',
+                      backgroundColor: activeRow.scorePoints === option.score ? `${option.color}22` : 'var(--bg-card)',
                       color: activeRow.scorePoints === option.score ? option.color : '#94a3b8',
                       textAlign: 'center',
                     }}
@@ -180,7 +180,7 @@ export const AuditMatrixWizard: React.FC<AuditMatrixWizardProps> = ({
 
             {/* Auditor Findings */}
             <div style={{ marginBottom: '1.5rem' }}>
-              <label className="form-label" style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+              <label className="form-label" style={{ fontSize: '0.8125rem', color: 'var(--text-main)' }}>
                 Auditor Observations & Evidence Verification Findings
               </label>
               <textarea
@@ -189,7 +189,7 @@ export const AuditMatrixWizard: React.FC<AuditMatrixWizardProps> = ({
                 onChange={(e) => handleFindingsChange(e.target.value)}
                 placeholder="Log physical verification notes, certificate hash references, or root-cause citations..."
                 className="form-input"
-                style={{ backgroundColor: '#0f172a', fontSize: '0.8125rem' }}
+                style={{ backgroundColor: 'var(--bg-subtle)', fontSize: '0.8125rem' }}
               />
             </div>
 
@@ -233,8 +233,8 @@ export const AuditMatrixWizard: React.FC<AuditMatrixWizardProps> = ({
       <div>
         <RiskSpeedometer score={currentScore} riskLevel={currentRisk} />
 
-        <div style={{ backgroundColor: '#1e293b', borderRadius: 'var(--radius-md)', padding: '1.25rem', marginTop: '1rem', border: '1px solid var(--border-medium)' }}>
-          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
+        <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-md)', padding: '1.25rem', marginTop: '1rem', border: '1px solid var(--border-medium)' }}>
+          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
             Audit Integrity Covenant
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>

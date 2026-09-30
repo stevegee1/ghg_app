@@ -413,10 +413,10 @@ const CharityAllocationCallout: React.FC = () => (
     }}
   >
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#ffffff', lineHeight: 1.25 }}>
+      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.25 }}>
         Registered Charity or Trust?
       </div>
-      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px', lineHeight: 1.3 }}>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '2px', lineHeight: 1.3 }}>
         Apply for 15% statutory checkout allocation
       </div>
     </div>
@@ -429,8 +429,8 @@ const CharityAllocationCallout: React.FC = () => (
         padding: '0.45rem 0.75rem',
         fontSize: '0.78rem',
         fontWeight: 600,
-        color: '#ffffff',
-        backgroundColor: '#111726',
+        color: 'var(--text-main)',
+        backgroundColor: 'var(--bg-page)',
         border: '1px solid rgba(255, 255, 255, 0.15)',
         borderRadius: '6px',
         textDecoration: 'none',
@@ -460,10 +460,10 @@ const PartnerNetworkCallout: React.FC = () => (
     }}
   >
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#ffffff', lineHeight: 1.25 }}>
+      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.25 }}>
         Fulfillment Studio or NGO?
       </div>
-      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px', lineHeight: 1.3 }}>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '2px', lineHeight: 1.3 }}>
         Join local production guild or apply for grants
       </div>
     </div>
@@ -476,7 +476,7 @@ const PartnerNetworkCallout: React.FC = () => (
         padding: '0.45rem 0.75rem',
         fontSize: '0.78rem',
         fontWeight: 600,
-        color: '#ffffff',
+        color: 'var(--text-main)',
         backgroundColor: '#ff2d8d',
         border: 'none',
         borderRadius: '6px',
@@ -666,7 +666,7 @@ export const MerchStorePage: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--cerebrium-obsidian, #08040c)', minHeight: '100vh', color: '#ffffff', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ backgroundColor: 'var(--cerebrium-obsidian, #08040c)', minHeight: '100vh', color: 'var(--text-main)', position: 'relative', overflow: 'hidden' }}>
       {/* Background ambient neon glow matching portal/login */}
       <div className="book-demo-ambient-glow" aria-hidden="true" />
 
@@ -680,16 +680,16 @@ export const MerchStorePage: React.FC = () => {
           alignItems: 'center',
           gap: '0.5rem',
           fontSize: '0.8rem',
-          color: '#94a3b8',
+          color: 'var(--text-light)',
           position: 'relative',
           zIndex: 1,
         }}
       >
-        <Link to="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>
+        <Link to="/" style={{ color: 'var(--text-light)', textDecoration: 'none' }}>
           GHGEmissionLogs
         </Link>
         <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
-        <span style={{ color: '#ffffff', fontWeight: 600 }}>Support Extreme Weather</span>
+        <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>Support Extreme Weather</span>
       </div>
 
       <div className="container-x frame-bordered" style={{ maxWidth: '1280px', margin: '0 auto', padding: '3.5rem 1.5rem 5rem 1.5rem', position: 'relative', zIndex: 1 }}>
@@ -713,7 +713,7 @@ export const MerchStorePage: React.FC = () => {
             style={{
               fontSize: 'clamp(2.25rem, 4vw, 3rem)',
               fontWeight: 800,
-              color: '#ffffff',
+              color: 'var(--text-main)',
               margin: '0 0 0.85rem 0',
               letterSpacing: '-0.03em',
               lineHeight: 1.15,
@@ -725,7 +725,7 @@ export const MerchStorePage: React.FC = () => {
           <p
             style={{
               fontSize: '1.05rem',
-              color: '#94a3b8',
+              color: 'var(--text-light)',
               lineHeight: 1.65,
               maxWidth: '820px',
               margin: 0,
@@ -871,9 +871,9 @@ export const MerchStorePage: React.FC = () => {
                   position: 'relative',
                   maxWidth: '720px',
                   width: '100%',
-                  backgroundColor: '#111726',
+                  backgroundColor: 'var(--bg-page)',
                   borderRadius: '16px',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  border: '1px solid var(--border-light)',
                   overflow: 'hidden',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
                 }}
@@ -893,7 +893,7 @@ export const MerchStorePage: React.FC = () => {
                       top: '12px',
                       right: '12px',
                       background: 'rgba(13, 18, 28, 0.85)',
-                      color: '#ffffff',
+                      color: 'var(--text-main)',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       borderRadius: '50%',
                       width: '36px',
@@ -908,12 +908,12 @@ export const MerchStorePage: React.FC = () => {
                     ✕
                   </button>
                 </div>
-                <div style={{ padding: '1.5rem', backgroundColor: '#111726' }}>
+                <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-page)' }}>
                   <div style={{ fontSize: '0.75rem', color: '#ff2d8d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     {lightboxImage.category}
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0.25rem 0' }}>{lightboxImage.title}</h3>
-                  <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>{lightboxImage.description}</p>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.25rem 0' }}>{lightboxImage.title}</h3>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>{lightboxImage.description}</p>
                 </div>
               </div>
             </div>
@@ -928,7 +928,7 @@ export const MerchStorePage: React.FC = () => {
                 <div
                   key={item.id}
                   style={{
-                    backgroundColor: '#111726',
+                    backgroundColor: 'var(--bg-page)',
                     border: selectedItem.id === item.id ? '2px solid #ff2d8d' : '1px solid rgba(255, 255, 255, 0.09)',
                     borderRadius: '16px',
                     boxShadow: selectedItem.id === item.id ? '0 15px 35px rgba(255, 45, 141, 0.25)' : '0 20px 40px -15px rgba(0, 0, 0, 0.7)',
@@ -976,7 +976,7 @@ export const MerchStorePage: React.FC = () => {
                         left: '8px',
                         background: 'rgba(13, 18, 28, 0.85)',
                         backdropFilter: 'blur(4px)',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         padding: '3px 8px',
                         borderRadius: '4px',
                         fontSize: '0.7rem',
@@ -991,7 +991,7 @@ export const MerchStorePage: React.FC = () => {
                         top: '8px',
                         right: '8px',
                         background: 'rgba(13, 18, 28, 0.75)',
-                        color: '#94a3b8',
+                        color: 'var(--text-light)',
                         padding: '3px 8px',
                         borderRadius: '4px',
                         fontSize: '0.7rem',
@@ -1007,8 +1007,8 @@ export const MerchStorePage: React.FC = () => {
                       <div style={{ fontSize: '0.72rem', color: '#ff2d8d', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
                         {item.category}
                       </div>
-                      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff', margin: '0.35rem 0', letterSpacing: '-0.01em' }}>{item.title}</h3>
-                      <p style={{ fontSize: '0.825rem', color: '#94a3b8', marginBottom: '1rem', lineHeight: 1.5 }}>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', margin: '0.35rem 0', letterSpacing: '-0.01em' }}>{item.title}</h3>
+                      <p style={{ fontSize: '0.825rem', color: 'var(--text-light)', marginBottom: '1rem', lineHeight: 1.5 }}>
                         {item.description}
                       </p>
                     </div>
@@ -1016,7 +1016,7 @@ export const MerchStorePage: React.FC = () => {
                     {/* Price / Contact badge */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '0.85rem', gap: '0.5rem', flexWrap: 'wrap' }}>
                       {item.priceCents !== null ? (
-                        <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                        <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
                           £{(item.priceCents / 100).toFixed(2)}
                         </span>
                       ) : (
@@ -1045,7 +1045,7 @@ export const MerchStorePage: React.FC = () => {
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                           backgroundColor: selectedItem.id === item.id ? '#ff2d8d' : '#0d121c',
-                          color: '#ffffff',
+                          color: 'var(--text-main)',
                           border: selectedItem.id === item.id ? 'none' : '1px solid rgba(255, 255, 255, 0.12)',
                           boxShadow: selectedItem.id === item.id ? '0 4px 14px rgba(255, 45, 141, 0.45)' : 'none',
                         }}
@@ -1061,7 +1061,7 @@ export const MerchStorePage: React.FC = () => {
             {/* Right Column: Checkout Panel */}
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.09)',
                 borderRadius: '16px',
                 boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
@@ -1071,10 +1071,10 @@ export const MerchStorePage: React.FC = () => {
               }}
             >
               <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.09)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0 0 0.25rem 0', letterSpacing: '-0.02em' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0', letterSpacing: '-0.02em' }}>
                   Order &amp; ESG Routing
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>
                   Complete purchase with automated 15% charity split
                 </p>
               </div>
@@ -1082,14 +1082,14 @@ export const MerchStorePage: React.FC = () => {
               {successResult ? (
                 <div>
                   <div style={{ backgroundColor: 'rgba(255, 45, 141, 0.1)', border: '1px solid #ff2d8d', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
-                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '1rem' }}>Order Placed & Payment Settled</div>
-                    <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                      Transaction: <code style={{ color: '#ffffff', backgroundColor: '#0d121c', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1rem' }}>Order Placed & Payment Settled</div>
+                    <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', color: 'var(--text-light)', fontFamily: 'monospace' }}>
+                      Transaction: <code style={{ color: 'var(--text-main)', backgroundColor: '#0d121c', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Status:</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Status:</span>
                     <StatusBadge status="SETTLED" />
                   </div>
 
@@ -1113,8 +1113,8 @@ export const MerchStorePage: React.FC = () => {
                       minHeight: '48px',
                       marginTop: '1.25rem',
                       backgroundColor: '#0d121c',
-                      color: '#ffffff',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: 'var(--text-main)',
+                      border: '1px solid var(--border-light)',
                       borderRadius: '8px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -1127,9 +1127,9 @@ export const MerchStorePage: React.FC = () => {
                 /* PRICED ITEM: CAP AT £35.00 */
                 <div>
                   <div style={{ padding: '1rem', backgroundColor: '#0d121c', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>{selectedItem.title}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>{selectedItem.partnerName}</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginTop: '0.5rem', fontFamily: 'monospace' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>{selectedItem.title}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', marginTop: '2px' }}>{selectedItem.partnerName}</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.5rem', fontFamily: 'monospace' }}>
                       £{(selectedItem.priceCents / 100).toFixed(2)}
                     </div>
                   </div>
@@ -1138,8 +1138,8 @@ export const MerchStorePage: React.FC = () => {
                     <div style={{ fontSize: '0.72rem', color: '#ff2d8d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
                       Compulsory Statutory Routing
                     </div>
-                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.85rem' }}>Verified GHG Accountability Mark</div>
-                    <div style={{ color: '#94a3b8', marginTop: '0.25rem', lineHeight: 1.4, fontSize: '0.8rem' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.85rem' }}>Verified GHG Accountability Mark</div>
+                    <div style={{ color: 'var(--text-light)', marginTop: '0.25rem', lineHeight: 1.4, fontSize: '0.8rem' }}>
                       Exact 15% of purchase is automatically routed to verified local environmental restoration and extreme weather relief funds.
                     </div>
                   </div>
@@ -1150,7 +1150,7 @@ export const MerchStorePage: React.FC = () => {
                       <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#e2e8f0' }}>
                         Payment Method
                       </span>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 600 }}>
                         256-Bit SSL Encrypted
                       </span>
                     </div>
@@ -1164,7 +1164,7 @@ export const MerchStorePage: React.FC = () => {
                         minHeight: '48px',
                         padding: '0.85rem 1.25rem',
                         backgroundColor: loading ? '#222938' : '#ff2d8d',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontWeight: 700,
                         fontSize: '0.95rem',
                         borderRadius: '8px',
@@ -1187,7 +1187,7 @@ export const MerchStorePage: React.FC = () => {
                       <span>{loading ? 'Connecting to Stripe...' : `Pay £${(selectedItem.priceCents / 100).toFixed(2)} with Stripe Checkout`}</span>
                     </button>
 
-                    <div style={{ marginTop: '0.65rem', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                    <div style={{ marginTop: '0.65rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-light)', lineHeight: 1.4 }}>
                       256-Bit SSL Encrypted via Stripe Checkout. Supports Credit/Debit Cards, Apple Pay, and Google Pay.
                     </div>
                   </div>
@@ -1200,23 +1200,23 @@ export const MerchStorePage: React.FC = () => {
                 /* UNPRICED ITEM: CONTACT ON ORDER */
                 <div>
                   <div style={{ padding: '1rem', backgroundColor: '#0d121c', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>{selectedItem.title}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>{selectedItem.partnerName}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>{selectedItem.title}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', marginTop: '2px' }}>{selectedItem.partnerName}</div>
                     <div style={{ marginTop: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.85rem', backgroundColor: 'rgba(255, 45, 141, 0.12)', border: '1px solid rgba(255, 45, 141, 0.3)', borderRadius: '20px', color: '#ff2d8d', fontWeight: 700, fontSize: '0.85rem' }}>
                       <span>Price on Request • Contact on Order</span>
                     </div>
                   </div>
 
-                  <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
                     Submit your contact details below to register an order enquiry
                   </p>
 
                   {enquirySuccess ? (
                     <div style={{ backgroundColor: 'rgba(255, 45, 141, 0.1)', border: '1px solid #ff2d8d', borderRadius: '10px', padding: '1.25rem', textAlign: 'center' }}>
-                      <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
+                      <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
                         Inquiry Registered Successfully
                       </div>
-                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 1rem 0' }}>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', margin: '0 0 1rem 0' }}>
                         {enquirySuccess}
                       </p>
                       <button
@@ -1230,8 +1230,8 @@ export const MerchStorePage: React.FC = () => {
                           minHeight: '48px',
                           fontSize: '0.85rem',
                           backgroundColor: '#0d121c',
-                          color: '#ffffff',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          color: 'var(--text-main)',
+                          border: '1px solid var(--border-light)',
                           borderRadius: '8px',
                           cursor: 'pointer',
                         }}
@@ -1270,7 +1270,7 @@ export const MerchStorePage: React.FC = () => {
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             backgroundColor: '#0d121c',
-                            color: '#ffffff',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             boxSizing: 'border-box',
                           }}
@@ -1294,7 +1294,7 @@ export const MerchStorePage: React.FC = () => {
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             backgroundColor: '#0d121c',
-                            color: '#ffffff',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             boxSizing: 'border-box',
                           }}
@@ -1303,7 +1303,7 @@ export const MerchStorePage: React.FC = () => {
 
                       <div>
                         <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.3rem' }}>
-                          Order Notes / Quantity / Sizing <span style={{ color: '#94a3b8', fontWeight: 400 }}>(Optional)</span>
+                          Order Notes / Quantity / Sizing <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(Optional)</span>
                         </label>
                         <textarea
                           rows={3}
@@ -1316,7 +1316,7 @@ export const MerchStorePage: React.FC = () => {
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             backgroundColor: '#0d121c',
-                            color: '#ffffff',
+                            color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             resize: 'vertical',
                             boxSizing: 'border-box',
@@ -1332,7 +1332,7 @@ export const MerchStorePage: React.FC = () => {
                           minHeight: '48px',
                           padding: '0.85rem 1.25rem',
                           backgroundColor: enquiryLoading ? '#222938' : '#ff2d8d',
-                          color: '#ffffff',
+                          color: 'var(--text-main)',
                           fontWeight: 700,
                           fontSize: '0.92rem',
                           borderRadius: '8px',
@@ -1373,7 +1373,7 @@ export const MerchStorePage: React.FC = () => {
           {/* Goal Frenzy Banner */}
           <div
             style={{
-              backgroundColor: '#111726',
+              backgroundColor: 'var(--bg-page)',
               borderRadius: '16px',
               padding: '1.75rem 2rem',
               marginBottom: '2rem',
@@ -1393,10 +1393,10 @@ export const MerchStorePage: React.FC = () => {
             >
               Custom Commemorations
             </div>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.5rem 0', letterSpacing: '-0.02em', color: '#ffffff' }}>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.5rem 0', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
               Sports Milestone Commemoration Studio
             </h2>
-            <p style={{ fontSize: '0.925rem', color: '#94a3b8', maxWidth: '780px', lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: '0.925rem', color: 'var(--text-light)', maxWidth: '780px', lineHeight: 1.6, margin: 0 }}>
               Configure bespoke commemorative club apparel celebrating milestone matches and defining moments. Every garment is crafted from certified organic textiles with automated 15% statutory ESG charitable routing.
             </p>
           </div>
@@ -1409,7 +1409,7 @@ export const MerchStorePage: React.FC = () => {
               {/* Card 1: Sports Moment Definition */}
               <div
                 style={{
-                  backgroundColor: '#111726',
+                  backgroundColor: 'var(--bg-page)',
                   border: '1px solid rgba(255, 255, 255, 0.09)',
                   borderRadius: '16px',
                   boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
@@ -1417,10 +1417,10 @@ export const MerchStorePage: React.FC = () => {
                   marginBottom: '1.5rem',
                 }}
               >
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: '0 0 0.25rem 0' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
                   1. Match &amp; moment details
                 </h3>
-                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 1.25rem 0' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-light)', margin: '0 0 1.25rem 0' }}>
                   Select your sport discipline, team, opponent, and decisive moment or clock.
                 </p>
 
@@ -1440,9 +1440,9 @@ export const MerchStorePage: React.FC = () => {
                         WebkitAppearance: 'none',
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -1451,7 +1451,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {MAJOR_SPORTS.map((sport) => (
-                        <option key={sport.id} value={sport.id} style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option key={sport.id} value={sport.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           {sport.name}
                         </option>
                       ))}
@@ -1486,9 +1486,9 @@ export const MerchStorePage: React.FC = () => {
                         WebkitAppearance: 'none',
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -1496,11 +1496,11 @@ export const MerchStorePage: React.FC = () => {
                         fontFamily: 'inherit',
                       }}
                     >
-                      <option value="" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>-- Choose {activeSport.teamLabel.toLowerCase()} --</option>
+                      <option value="" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>-- Choose {activeSport.teamLabel.toLowerCase()} --</option>
                       {activeSport.presetClubs.map((c) => (
-                        <option key={c} value={c} style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>{c}</option>
+                        <option key={c} value={c} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>{c}</option>
                       ))}
-                      <option value="__custom__" style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>Other / Custom {activeSport.teamLabel.toLowerCase()}...</option>
+                      <option value="__custom__" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>Other / Custom {activeSport.teamLabel.toLowerCase()}...</option>
                     </select>
                     <span style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#ff2d8d', fontSize: '0.75rem' }}>
                       ▼
@@ -1520,9 +1520,9 @@ export const MerchStorePage: React.FC = () => {
                         width: '100%',
                         padding: '0.75rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.85rem',
                         boxSizing: 'border-box',
                       }}
@@ -1546,9 +1546,9 @@ export const MerchStorePage: React.FC = () => {
                         width: '100%',
                         padding: '0.75rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         boxSizing: 'border-box',
                       }}
@@ -1567,9 +1567,9 @@ export const MerchStorePage: React.FC = () => {
                         width: '100%',
                         padding: '0.75rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         boxSizing: 'border-box',
                       }}
@@ -1591,9 +1591,9 @@ export const MerchStorePage: React.FC = () => {
                       width: '100%',
                       padding: '0.75rem',
                       borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      border: '1px solid var(--border-light)',
                       backgroundColor: '#0d121c',
-                      color: '#ffffff',
+                      color: 'var(--text-main)',
                       fontSize: '0.875rem',
                       boxSizing: 'border-box',
                     }}
@@ -1620,9 +1620,9 @@ export const MerchStorePage: React.FC = () => {
                       width: '100%',
                       padding: '0.75rem',
                       borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      border: '1px solid var(--border-light)',
                       backgroundColor: '#0d121c',
-                      color: '#ffffff',
+                      color: 'var(--text-main)',
                       fontSize: '0.875rem',
                       fontWeight: 600,
                       boxSizing: 'border-box',
@@ -1634,7 +1634,7 @@ export const MerchStorePage: React.FC = () => {
               {/* Card 2: Garment Model & Specs */}
               <div
                 style={{
-                  backgroundColor: '#111726',
+                  backgroundColor: 'var(--bg-page)',
                   border: '1px solid rgba(255, 255, 255, 0.09)',
                   borderRadius: '16px',
                   boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
@@ -1642,10 +1642,10 @@ export const MerchStorePage: React.FC = () => {
                   marginBottom: '1.5rem',
                 }}
               >
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: '0 0 0.25rem 0' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
                   2. Eco-Garment &amp; Embroidery Specs
                 </h3>
-                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 1.25rem 0' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-light)', margin: '0 0 1.25rem 0' }}>
                   Select silhouette, organic thread color, and embroidery placement.
                 </p>
 
@@ -1665,9 +1665,9 @@ export const MerchStorePage: React.FC = () => {
                         WebkitAppearance: 'none',
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -1676,7 +1676,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {GARMENT_OPTIONS.map((g) => (
-                        <option key={g.id} value={g.id} style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option key={g.id} value={g.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           {g.label} - £{(g.priceCents / 100).toFixed(2)}
                         </option>
                       ))}
@@ -1714,9 +1714,9 @@ export const MerchStorePage: React.FC = () => {
                         WebkitAppearance: 'none',
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -1725,7 +1725,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {THREAD_COLORS.map((t) => (
-                        <option key={t.id} value={t.id} style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option key={t.id} value={t.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           {t.label}
                         </option>
                       ))}
@@ -1740,7 +1740,7 @@ export const MerchStorePage: React.FC = () => {
                     return t ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                         <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: t.hex, border: '1px solid rgba(255,255,255,0.3)', flexShrink: 0, boxShadow: `0 0 6px ${t.hex}66` }} />
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>{t.label} selected</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 600 }}>{t.label} selected</span>
                       </div>
                     ) : null;
                   })()}
@@ -1762,9 +1762,9 @@ export const MerchStorePage: React.FC = () => {
                         WebkitAppearance: 'none',
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid var(--border-light)',
                         backgroundColor: '#0d121c',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -1773,7 +1773,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {PLACEMENT_OPTIONS.map((p) => (
-                        <option key={p.id} value={p.id} style={{ backgroundColor: '#0d121c', color: '#ffffff' }}>
+                        <option key={p.id} value={p.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
                           {p.label}
                         </option>
                       ))}
@@ -1790,7 +1790,7 @@ export const MerchStorePage: React.FC = () => {
             {/* Right Column: Goal Frenzy Checkout Panel */}
             <div
               style={{
-                backgroundColor: '#111726',
+                backgroundColor: 'var(--bg-page)',
                 border: '1px solid rgba(255, 255, 255, 0.09)',
                 borderRadius: '16px',
                 boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
@@ -1803,10 +1803,10 @@ export const MerchStorePage: React.FC = () => {
                 <div style={{ fontSize: '0.72rem', color: '#ff2d8d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Frenzy Custom Studio Milestone Order
                 </div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0.2rem 0 0.25rem 0' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.2rem 0 0.25rem 0' }}>
                   Bespoke Commemoration
                 </h2>
-                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>
                   Custom embroidery with verified 15% ESG charitable routing
                 </p>
               </div>
@@ -1814,14 +1814,14 @@ export const MerchStorePage: React.FC = () => {
               {successResult ? (
                 <div>
                   <div style={{ backgroundColor: 'rgba(255, 45, 141, 0.1)', border: '1px solid #ff2d8d', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
-                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '1rem' }}>Frenzy Custom Order Initiated!</div>
-                    <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                      Transaction: <code style={{ color: '#ffffff', backgroundColor: '#0d121c', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1rem' }}>Frenzy Custom Order Initiated!</div>
+                    <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', color: 'var(--text-light)', fontFamily: 'monospace' }}>
+                      Transaction: <code style={{ color: 'var(--text-main)', backgroundColor: '#0d121c', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Status:</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Status:</span>
                     <StatusBadge status="SETTLED" />
                   </div>
 
@@ -1845,8 +1845,8 @@ export const MerchStorePage: React.FC = () => {
                       minHeight: '48px',
                       marginTop: '1.25rem',
                       backgroundColor: '#0d121c',
-                      color: '#ffffff',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: 'var(--text-main)',
+                      border: '1px solid var(--border-light)',
                       borderRadius: '8px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -1859,40 +1859,40 @@ export const MerchStorePage: React.FC = () => {
                 <div>
                   {/* Order Summary Box */}
                   <div style={{ padding: '1rem', backgroundColor: '#0d121c', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
                       {activeClubName} - {activeGarment.label}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', marginTop: '2px' }}>
                       Thread: {activeThread.label} • Placement: {placement}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8' }}>Quantity:</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-light)' }}>Quantity:</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <button
                           type="button"
                           onClick={() => setFrenzyQuantity(Math.max(1, frenzyQuantity - 1))}
-                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.12)', background: '#111726', color: '#ffffff', cursor: 'pointer', fontWeight: 700 }}
+                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border-light)', background: '#111726', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700 }}
                         >
                           -
                         </button>
-                        <span style={{ fontWeight: 800, fontFamily: 'monospace', color: '#ffffff' }}>{frenzyQuantity}</span>
+                        <span style={{ fontWeight: 800, fontFamily: 'monospace', color: 'var(--text-main)' }}>{frenzyQuantity}</span>
                         <button
                           type="button"
                           onClick={() => setFrenzyQuantity(frenzyQuantity + 1)}
-                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.12)', background: '#111726', color: '#ffffff', cursor: 'pointer', fontWeight: 700 }}
+                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border-light)', background: '#111726', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700 }}
                         >
                           +
                         </button>
                       </div>
                     </div>
-                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#ffffff', marginTop: '0.75rem', fontFamily: 'monospace' }}>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.75rem', fontFamily: 'monospace' }}>
                       £{(frenzyGrossCents / 100).toFixed(2)}
                     </div>
                   </div>
 
                   {/* 85/15 Financial Split Preview */}
                   <div style={{ marginBottom: '1.25rem' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
                       Financial Routing (85/15 Mandate)
                     </div>
                     <FinancialSplitBar
@@ -1908,8 +1908,8 @@ export const MerchStorePage: React.FC = () => {
                     <div style={{ fontSize: '0.72rem', color: '#ff2d8d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
                       Compulsory Statutory Routing
                     </div>
-                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.85rem' }}>Verified GHG Accountability Mark</div>
-                    <div style={{ color: '#94a3b8', marginTop: '0.25rem', lineHeight: 1.4, fontSize: '0.8rem' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.85rem' }}>Verified GHG Accountability Mark</div>
+                    <div style={{ color: 'var(--text-light)', marginTop: '0.25rem', lineHeight: 1.4, fontSize: '0.8rem' }}>
                       Exact £{(frenzyCharityCents / 100).toFixed(2)} (15%) automatically routed to verified community and reforestation partners.
                     </div>
                   </div>
@@ -1920,7 +1920,7 @@ export const MerchStorePage: React.FC = () => {
                       <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#e2e8f0' }}>
                         Payment Method
                       </span>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 600 }}>
                         256-Bit SSL Encrypted
                       </span>
                     </div>
@@ -1934,7 +1934,7 @@ export const MerchStorePage: React.FC = () => {
                         minHeight: '48px',
                         padding: '0.85rem 1.25rem',
                         backgroundColor: loading ? '#222938' : '#ff2d8d',
-                        color: '#ffffff',
+                        color: 'var(--text-main)',
                         fontWeight: 700,
                         fontSize: '0.95rem',
                         borderRadius: '8px',
@@ -1957,7 +1957,7 @@ export const MerchStorePage: React.FC = () => {
                       <span>{loading ? 'Connecting to Stripe...' : `Pay £${(frenzyGrossCents / 100).toFixed(2)} with Stripe Checkout`}</span>
                     </button>
 
-                    <div style={{ marginTop: '0.65rem', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                    <div style={{ marginTop: '0.65rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-light)', lineHeight: 1.4 }}>
                       256-Bit SSL Encrypted via Stripe Checkout. Supports Credit/Debit Cards, Apple Pay, and Google Pay.
                     </div>
                   </div>

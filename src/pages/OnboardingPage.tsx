@@ -149,7 +149,7 @@ export const OnboardingPage: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#0f172a', padding: '2.5rem 1rem' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', color: 'var(--text-main)', padding: '2.5rem 1rem' }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         {/* Navigation Breadcrumb & Brand */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
@@ -159,7 +159,7 @@ export const OnboardingPage: React.FC = () => {
               alt="GHGEmissionLogs"
               style={{ width: '32px', height: '32px', objectFit: 'contain' }}
             />
-            <span style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#0f172a' }}>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
               GHGEmissionLogs
             </span>
             <span
@@ -208,7 +208,7 @@ export const OnboardingPage: React.FC = () => {
                   justifyContent: 'center',
                   fontSize: '0.85rem',
                   fontWeight: 800,
-                  background: step >= 1 ? '#0f172a' : '#f1f5f9',
+                  background: step >= 1 ? 'var(--accent-primary)' : 'var(--bg-subtle)',
                   color: step >= 1 ? '#ffffff' : '#64748b',
                   border: `1px solid ${step >= 1 ? '#0f172a' : '#cbd5e1'}`,
                 }}
@@ -234,7 +234,7 @@ export const OnboardingPage: React.FC = () => {
                   justifyContent: 'center',
                   fontSize: '0.85rem',
                   fontWeight: 800,
-                  background: step >= 2 ? '#0f172a' : '#f1f5f9',
+                  background: step >= 2 ? 'var(--accent-primary)' : 'var(--bg-subtle)',
                   color: step >= 2 ? '#ffffff' : '#64748b',
                   border: `1px solid ${step >= 2 ? '#0f172a' : '#cbd5e1'}`,
                 }}
@@ -313,7 +313,7 @@ export const OnboardingPage: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
             }}
           >
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem', color: 'var(--text-main)' }}>
               Confirm Organization &amp; Contact Context
             </h2>
             <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '2rem', lineHeight: 1.5 }}>
@@ -323,7 +323,7 @@ export const OnboardingPage: React.FC = () => {
             <form onSubmit={handleStep1Next}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                     Company or Organization Name
                   </label>
                   <input
@@ -337,7 +337,7 @@ export const OnboardingPage: React.FC = () => {
                       background: '#ffffff',
                       border: '1px solid #cbd5e1',
                       borderRadius: '8px',
-                      color: '#0f172a',
+                      color: 'var(--text-main)',
                       fontSize: '0.9rem',
                       boxSizing: 'border-box',
                     }}
@@ -347,7 +347,7 @@ export const OnboardingPage: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Your Job Title
                     </label>
                     <input
@@ -360,7 +360,7 @@ export const OnboardingPage: React.FC = () => {
                         background: '#ffffff',
                         border: '1px solid #cbd5e1',
                         borderRadius: '8px',
-                        color: '#0f172a',
+                        color: 'var(--text-main)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
                       }}
@@ -369,7 +369,7 @@ export const OnboardingPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Executive Responsibility Area
                     </label>
                     <select
@@ -381,7 +381,7 @@ export const OnboardingPage: React.FC = () => {
                         background: '#ffffff',
                         border: '1px solid #cbd5e1',
                         borderRadius: '8px',
-                        color: '#0f172a',
+                        color: 'var(--text-main)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
                       }}
@@ -399,7 +399,7 @@ export const OnboardingPage: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Headquarters Country
                     </label>
                     <select
@@ -411,7 +411,7 @@ export const OnboardingPage: React.FC = () => {
                         background: '#ffffff',
                         border: '1px solid #cbd5e1',
                         borderRadius: '8px',
-                        color: '#0f172a',
+                        color: 'var(--text-main)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
                       }}
@@ -428,7 +428,7 @@ export const OnboardingPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Primary Industry Sector
                     </label>
                     <select
@@ -440,7 +440,7 @@ export const OnboardingPage: React.FC = () => {
                         background: '#ffffff',
                         border: '1px solid #cbd5e1',
                         borderRadius: '8px',
-                        color: '#0f172a',
+                        color: 'var(--text-main)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
                       }}
@@ -469,7 +469,7 @@ export const OnboardingPage: React.FC = () => {
                   style={{
                     padding: '0.75rem 1.75rem',
                     borderRadius: '8px',
-                    background: '#0f172a',
+                    background: 'var(--accent-primary)',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '0.92rem',
@@ -497,7 +497,7 @@ export const OnboardingPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                 12-Question Intake Assessment
               </h2>
               <span
@@ -521,7 +521,7 @@ export const OnboardingPage: React.FC = () => {
             <form onSubmit={handleAssessmentSubmit}>
               {/* Block A: Scale & Thresholds */}
               <div style={{ marginBottom: '2rem' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span>Section A</span>
                   <span style={{ color: '#cbd5e1' }}>•</span>
                   <span style={{ color: '#475569' }}>Organizational Scale</span>
@@ -529,7 +529,7 @@ export const OnboardingPage: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Headcount Size Band
                     </label>
                     <select
@@ -541,7 +541,7 @@ export const OnboardingPage: React.FC = () => {
                         background: '#ffffff',
                         border: '1px solid #cbd5e1',
                         borderRadius: '8px',
-                        color: '#0f172a',
+                        color: 'var(--text-main)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
                       }}
@@ -554,7 +554,7 @@ export const OnboardingPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Annual Revenue Band
                     </label>
                     <select
@@ -566,7 +566,7 @@ export const OnboardingPage: React.FC = () => {
                         background: '#ffffff',
                         border: '1px solid #cbd5e1',
                         borderRadius: '8px',
-                        color: '#0f172a',
+                        color: 'var(--text-main)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
                       }}
@@ -582,7 +582,7 @@ export const OnboardingPage: React.FC = () => {
 
               {/* Block B: Operations & Assets */}
               <div style={{ marginBottom: '2rem' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span>Section B</span>
                   <span style={{ color: '#cbd5e1' }}>•</span>
                   <span style={{ color: '#475569' }}>Operations &amp; Energy Footprint</span>
@@ -601,7 +601,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Physical Buildings or Facilities</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Physical Buildings or Facilities</span>
                       <input type="checkbox" checked={hasPhysicalSites} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -621,7 +621,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Manufacturing or Assembly</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Manufacturing or Assembly</span>
                       <input type="checkbox" checked={hasProductionProcess} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -641,7 +641,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Company Commercial Fleet</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Company Commercial Fleet</span>
                       <input type="checkbox" checked={hasFleet} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -661,7 +661,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Smart Meters / SCADA / BMS</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Smart Meters / SCADA / BMS</span>
                       <input type="checkbox" checked={hasIoTMeters} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -673,7 +673,7 @@ export const OnboardingPage: React.FC = () => {
 
               {/* Block C: Commercial & Legal Obligations */}
               <div style={{ marginBottom: '2rem' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span>Section C</span>
                   <span style={{ color: '#cbd5e1' }}>•</span>
                   <span style={{ color: '#475569' }}>Regulatory &amp; Contractual Obligations</span>
@@ -692,7 +692,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Public Sector Contractor (UK)</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Public Sector Contractor (UK)</span>
                       <input type="checkbox" checked={isUKPublicContractor} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -712,7 +712,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Section 106 Planning Permission</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Section 106 Planning Permission</span>
                       <input type="checkbox" checked={hasPlanningConsent} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -732,7 +732,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Public ESG or Green Claims</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Public ESG or Green Claims</span>
                       <input type="checkbox" checked={makesPublicGreenClaims} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -752,7 +752,7 @@ export const OnboardingPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Green Hydrogen Generation</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Green Hydrogen Generation</span>
                       <input type="checkbox" checked={hasGreenHydrogen} readOnly style={{ accentColor: '#16a34a' }} />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
@@ -786,7 +786,7 @@ export const OnboardingPage: React.FC = () => {
                   style={{
                     padding: '0.85rem 2rem',
                     borderRadius: '8px',
-                    background: '#0f172a',
+                    background: 'var(--accent-primary)',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '0.94rem',
@@ -817,7 +817,7 @@ export const OnboardingPage: React.FC = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.4rem', margin: 0 }}>
+                  <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.4rem', margin: 0 }}>
                     Statutory Compliance Roadmap
                   </h2>
                   <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
@@ -830,7 +830,7 @@ export const OnboardingPage: React.FC = () => {
                   style={{
                     padding: '0.75rem 1.5rem',
                     borderRadius: '8px',
-                    background: '#0f172a',
+                    background: 'var(--accent-primary)',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '0.9rem',
@@ -864,7 +864,7 @@ export const OnboardingPage: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                         <div style={{ flex: 1, minWidth: '280px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                               {rec.frameworkName}
                             </span>
                             {isMandatory ? (
@@ -975,7 +975,7 @@ export const OnboardingPage: React.FC = () => {
                           <span style={{ color: '#475569' }}>{rec.consequenceIfSkipped}</span>
                         </div>
                         <div>
-                          <span style={{ color: '#0f172a', fontWeight: 700 }}>Enforcement body: </span>
+                          <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>Enforcement body: </span>
                           <span style={{ color: '#475569' }}>{rec.enforcementBody}</span>
                         </div>
                       </div>

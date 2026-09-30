@@ -479,7 +479,7 @@ export const AdminReadinessTracker: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleWaiveItem(waivingItemId)}
-                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', background: '#d97706', color: '#ffffff', border: 'none', borderRadius: '4px', fontWeight: 600, cursor: 'pointer' }}
+                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', background: '#d97706', color: 'var(--text-main)', border: 'none', borderRadius: '4px', fontWeight: 600, cursor: 'pointer' }}
                   >
                     Confirm Waiver
                   </button>
@@ -494,8 +494,8 @@ export const AdminReadinessTracker: React.FC = () => {
                 style={{
                   padding: '0.6rem 1.25rem',
                   borderRadius: '6px',
-                  background: '#0f172a',
-                  color: '#ffffff',
+                  background: 'var(--bg-subtle)',
+                  color: 'var(--text-main)',
                   fontWeight: 600,
                   fontSize: '0.85rem',
                   border: 'none',

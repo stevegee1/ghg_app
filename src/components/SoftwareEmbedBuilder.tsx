@@ -231,7 +231,7 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
               type="button"
               onClick={() => onNavigateWorkflow?.(!isVerified ? 1 : 3)}
               style={{
-                backgroundColor: '#0f172a',
+                backgroundColor: 'var(--bg-subtle)',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '8px',
@@ -245,8 +245,8 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                 transition: 'background-color 0.15s ease',
               }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1e293b')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#0f172a')}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-subtle)')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-card)')}
             >
               {!isVerified ? 'Launch Readiness Engine Diagnostic (Step 1) →' : 'Complete Statutory Settlement (Step 3) →'}
             </button>
@@ -604,7 +604,7 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
                     width: '22px',
                     height: '22px',
                     borderRadius: '4px',
-                    backgroundColor: '#0f172a',
+                    backgroundColor: 'var(--bg-subtle)',
                     color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
