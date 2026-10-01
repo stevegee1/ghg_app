@@ -790,7 +790,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
             <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Audit Readiness Onboarding</h2>
             <p className="text-base text-slate-300 leading-relaxed font-normal">
               You'll answer a short set of compliance questions and attach supporting evidence for each. This helps
-              us assess your readiness — it does not replace formal ISO certification.
+              us assess your readiness: it does not replace formal ISO certification.
             </p>
           </div>
 

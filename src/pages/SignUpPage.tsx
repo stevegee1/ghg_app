@@ -309,7 +309,7 @@ export const SignUpPage: React.FC = () => {
           </div>
 
           <div style={{ margin: '1.25rem 0 1.5rem' }}>
-            <label style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', cursor: 'pointer', fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.4 }}>
+            <label style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', cursor: 'pointer', fontSize: '0.82rem', color: '#475569', lineHeight: 1.4 }}>
               <input
                 type="checkbox"
                 required

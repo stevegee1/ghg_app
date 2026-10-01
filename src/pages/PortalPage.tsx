@@ -1728,34 +1728,62 @@ export const PortalPage: React.FC = () => {
           <div
             style={{
               background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '1.35rem 1.75rem',
-              marginBottom: '1.75rem',
+              border: '1px solid rgba(15, 23, 42, 0.08)',
+              borderLeft: '4px solid var(--color-blue)',
+              borderRadius: '14px',
+              padding: '1.75rem 2rem',
+              marginBottom: '2rem',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
-              gap: '1rem',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+              gap: '1.5rem',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 10px 24px -4px rgba(15, 23, 42, 0.05)',
             }}
           >
-            <div style={{ flex: 1, minWidth: '280px' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem' }}>
+            <div style={{ flex: 1, minWidth: '300px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(2, 132, 199, 0.2)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-blue)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
+                <span className="pe-live-beacon" style={{ width: '6px', height: '6px' }} />
+                <span>ASSESSMENT PENDING &bull; MANDATORY STATUTORY INTAKE</span>
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.45rem', lineHeight: 1.25 }}>
                 Complete your 3-Minute Statutory Intake Assessment
               </div>
-              <div style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
-                Discover which statutory carbon and workforce frameworks apply to your business (SECR, PPN 06/21, ISO 14064-1, Green Claims) and generate your tailored preparation roadmap.
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '680px' }}>
+                Determine which statutory carbon and workforce frameworks apply to your operating boundary (SECR, PPN 06/21, ISO 14064-1, Green Claims) and generate your tailored preparation roadmap.
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => navigate('/portal/onboarding')}
-              className="btn btn-primary"
-              style={{ borderRadius: 'var(--radius-md)', padding: '0.7rem 1.6rem', fontSize: '0.88rem', whiteSpace: 'nowrap' }}
+              style={{
+                background: 'var(--color-blue)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.8rem 1.65rem',
+                fontSize: '0.92rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#0270a6';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-blue)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              Start Intake Assessment
+              <span>Start Intake Assessment</span>
+              <span>&rarr;</span>
             </button>
           </div>
         )}

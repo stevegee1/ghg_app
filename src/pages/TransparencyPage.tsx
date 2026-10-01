@@ -93,7 +93,7 @@ export const TransparencyPage: React.FC = () => {
       setShowForm(false);
     } catch (err: any) {
       if (err.status === 423) {
-        setFormError(err.body?.message || 'Registration is currently closed — at capacity (3/3).');
+        setFormError(err.body?.message || 'Registration is currently closed: at capacity (3/3).');
       } else {
         setFormError(err.message || 'Failed to submit application.');
       }
@@ -181,7 +181,7 @@ export const TransparencyPage: React.FC = () => {
       <div className="persefoni-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '0.875rem', marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
-            Statutory ESG Charities — 1-Year Audit Warranty
+            Statutory ESG Charities: 1-Year Audit Warranty
           </h2>
           <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0 }}>
             Exactly 15% of every transaction is automatically disbursed to the 3 registered statutory charities below. Each charity holds a 1-year audited warranty.
@@ -353,7 +353,7 @@ export const TransparencyPage: React.FC = () => {
                 }} />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-                    Registration Currently Closed — At Capacity (3/3)
+                    Registration Currently Closed: At Capacity (3/3)
                   </div>
                   {nextIntakeDate && (
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>

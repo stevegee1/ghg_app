@@ -74,7 +74,7 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ documents, onUpl
             Audit Evidence Locker
           </h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', margin: '0.2rem 0 0 0' }}>
-            ISO 14065 Objective Evidence Repository — SHA-256 Chain of Custody
+            ISO 14065 Objective Evidence Repository: SHA-256 Chain of Custody
           </p>
         </div>
         <span style={{

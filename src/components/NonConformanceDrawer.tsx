@@ -96,7 +96,7 @@ export const NonConformanceDrawer: React.FC<NonConformanceDrawerProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
           <div>
             <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
-              ISO Clause 10.2 — Non-Conformance Tracker
+              ISO Clause 10.2: Non-Conformance Tracker
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', margin: '0.2rem 0 0 0' }}>
               Root-Cause Remediation &amp; Export Lock Release

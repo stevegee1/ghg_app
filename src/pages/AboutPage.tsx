@@ -130,7 +130,7 @@ export const AboutPage: React.FC = () => {
       <section style={{ marginBottom: '3rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-            What We Offer — Continuous Climate Actions
+            What We Offer: Continuous Climate Actions
           </h2>
           <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
             Auditing and authenticating greenhouse gas reductions across four core sectors:
@@ -303,7 +303,7 @@ export const AboutPage: React.FC = () => {
           CONTRACTUAL TERMS
         </div>
         <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
-          Addendum B — Statutory Assurance Master Licensing Terms
+          Addendum B: Statutory Assurance Master Licensing Terms
         </h2>
         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '1.25rem' }}>
           Enterprise licensee contracts incorporate standard Addendum B statutory provisions establishing non-brokerage separation, ISO calibration integrity requirements, and automated 15% disaster relief routing.

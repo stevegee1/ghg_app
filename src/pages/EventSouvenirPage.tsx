@@ -256,7 +256,7 @@ export const EventSouvenirPage: React.FC = () => {
             {/* Live 85/15 Split Preview */}
             <div style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: '10px', padding: '1.25rem', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>{logoDropCount} units — {CATEGORY_META[eventCategory].label}</span>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>{logoDropCount} units • {CATEGORY_META[eventCategory].label}</span>
                 <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-sky)', fontFamily: 'var(--font-mono)' }}>
                   £{(grossCents / 100).toFixed(2)}
                 </span>

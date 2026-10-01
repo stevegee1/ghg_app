@@ -33,11 +33,11 @@ export const RiskSpeedometer: React.FC<RiskSpeedometerProps> = ({ score, riskLev
   const getRiskLabel = () => {
     switch (riskLevel) {
       case 'LOW_RISK_CONFORMANT':
-        return 'LOW RISK — CONFORMANT (ISO 14065 VERIFIED)';
+        return 'LOW RISK - CONFORMANT (ISO 14065 VERIFIED)';
       case 'MEDIUM_RISK_OFI':
-        return 'MEDIUM RISK — OPPORTUNITY FOR IMPROVEMENT';
+        return 'MEDIUM RISK - OPPORTUNITY FOR IMPROVEMENT';
       case 'HIGH_RISK_GREENWASHING_EXPOSURE':
-        return 'HIGH RISK — GREENWASHING EXPOSURE DETECTED';
+        return 'HIGH RISK - GREENWASHING EXPOSURE DETECTED';
     }
   };
 

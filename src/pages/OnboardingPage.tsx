@@ -193,56 +193,68 @@ export const OnboardingPage: React.FC = () => {
             border: '1px solid #e2e8f0',
             padding: '1.25rem 1.5rem',
             marginBottom: '2rem',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
           }}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div
                 style={{
-                  width: '30px',
-                  height: '30px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   fontWeight: 800,
-                  background: step >= 1 ? 'var(--accent-primary)' : 'var(--bg-subtle)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  background: step > 1 ? '#059669' : step === 1 ? '#0284c7' : '#f1f5f9',
                   color: step >= 1 ? '#ffffff' : '#64748b',
-                  border: `1px solid ${step >= 1 ? '#0f172a' : '#cbd5e1'}`,
+                  border: `1.5px solid ${step > 1 ? '#059669' : step === 1 ? '#0284c7' : '#cbd5e1'}`,
+                  boxShadow: step === 1 ? '0 0 0 3px rgba(2, 132, 199, 0.15)' : 'none',
                 }}
               >
-                1
+                {step > 1 ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : '01'}
               </div>
               <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 1 ? '#0f172a' : '#64748b' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 1 ? '#090d1a' : '#64748b', fontFamily: 'var(--font-heading)' }}>
                   Organization Profile
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Entity details &amp; role</div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Entity details &amp; jurisdiction</div>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div
                 style={{
-                  width: '30px',
-                  height: '30px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   fontWeight: 800,
-                  background: step >= 2 ? 'var(--accent-primary)' : 'var(--bg-subtle)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  background: step > 2 ? '#059669' : step === 2 ? '#0284c7' : '#f1f5f9',
                   color: step >= 2 ? '#ffffff' : '#64748b',
-                  border: `1px solid ${step >= 2 ? '#0f172a' : '#cbd5e1'}`,
+                  border: `1.5px solid ${step > 2 ? '#059669' : step === 2 ? '#0284c7' : '#cbd5e1'}`,
+                  boxShadow: step === 2 ? '0 0 0 3px rgba(2, 132, 199, 0.15)' : 'none',
                 }}
               >
-                2
+                {step > 2 ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : '02'}
               </div>
               <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 2 ? '#0f172a' : '#64748b' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 2 ? '#090d1a' : '#64748b', fontFamily: 'var(--font-heading)' }}>
                   Intake Assessment
                 </div>
                 <div style={{ fontSize: '0.72rem', color: '#64748b' }}>12 operational parameters</div>
@@ -252,23 +264,25 @@ export const OnboardingPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div
                 style={{
-                  width: '30px',
-                  height: '30px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   fontWeight: 800,
-                  background: step >= 3 ? '#16a34a' : '#f1f5f9',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  background: step >= 3 ? '#059669' : '#f1f5f9',
                   color: step >= 3 ? '#ffffff' : '#64748b',
-                  border: `1px solid ${step >= 3 ? '#16a34a' : '#cbd5e1'}`,
+                  border: `1.5px solid ${step >= 3 ? '#059669' : '#cbd5e1'}`,
+                  boxShadow: step === 3 ? '0 0 0 3px rgba(5, 150, 105, 0.15)' : 'none',
                 }}
               >
-                3
+                03
               </div>
               <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 3 ? '#0f172a' : '#64748b' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 3 ? '#090d1a' : '#64748b', fontFamily: 'var(--font-heading)' }}>
                   Compliance Roadmap
                 </div>
                 <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Frameworks &amp; preparation</div>
@@ -467,15 +481,16 @@ export const OnboardingPage: React.FC = () => {
                   type="submit"
                   disabled={loading}
                   style={{
-                    padding: '0.75rem 1.75rem',
+                    padding: '0.8rem 1.85rem',
                     borderRadius: '8px',
-                    background: 'var(--accent-primary)',
+                    background: '#0284c7',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '0.92rem',
                     border: 'none',
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)',
+                    transition: 'all 0.18s ease',
                   }}
                 >
                   Continue to Intake Assessment
@@ -588,23 +603,46 @@ export const OnboardingPage: React.FC = () => {
                   <span style={{ color: '#475569' }}>Operations &amp; Energy Footprint</span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
                   <div
                     onClick={() => setHasPhysicalSites(!hasPhysicalSites)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: hasPhysicalSites ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${hasPhysicalSites ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${hasPhysicalSites ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: hasPhysicalSites ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Physical Buildings or Facilities</span>
-                      <input type="checkbox" checked={hasPhysicalSites} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Physical Buildings or Facilities
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: hasPhysicalSites ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${hasPhysicalSites ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {hasPhysicalSites && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Own, lease, or occupy office buildings, warehouses, retail shops, or operational sites.
                     </div>
                   </div>
@@ -612,19 +650,42 @@ export const OnboardingPage: React.FC = () => {
                   <div
                     onClick={() => setHasProductionProcess(!hasProductionProcess)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: hasProductionProcess ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${hasProductionProcess ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${hasProductionProcess ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: hasProductionProcess ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Manufacturing or Assembly</span>
-                      <input type="checkbox" checked={hasProductionProcess} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Manufacturing or Assembly
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: hasProductionProcess ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${hasProductionProcess ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {hasProductionProcess && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Fabricate, refine, assemble, or process physical goods or industrial materials.
                     </div>
                   </div>
@@ -632,19 +693,42 @@ export const OnboardingPage: React.FC = () => {
                   <div
                     onClick={() => setHasFleet(!hasFleet)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: hasFleet ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${hasFleet ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${hasFleet ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: hasFleet ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Company Commercial Fleet</span>
-                      <input type="checkbox" checked={hasFleet} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Company Commercial Fleet
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: hasFleet ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${hasFleet ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {hasFleet && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Operate company-owned or leased delivery vans, trucks, forklifts, or service cars.
                     </div>
                   </div>
@@ -652,19 +736,42 @@ export const OnboardingPage: React.FC = () => {
                   <div
                     onClick={() => setHasIoTMeters(!hasIoTMeters)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: hasIoTMeters ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${hasIoTMeters ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${hasIoTMeters ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: hasIoTMeters ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Smart Meters / SCADA / BMS</span>
-                      <input type="checkbox" checked={hasIoTMeters} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Smart Meters / SCADA / BMS
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: hasIoTMeters ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${hasIoTMeters ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {hasIoTMeters && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Automated energy sub-metering, Building Management Systems, or telemetry loggers.
                     </div>
                   </div>
@@ -679,23 +786,46 @@ export const OnboardingPage: React.FC = () => {
                   <span style={{ color: '#475569' }}>Regulatory &amp; Contractual Obligations</span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
                   <div
                     onClick={() => setIsUKPublicContractor(!isUKPublicContractor)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: isUKPublicContractor ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${isUKPublicContractor ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${isUKPublicContractor ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: isUKPublicContractor ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Public Sector Contractor (UK)</span>
-                      <input type="checkbox" checked={isUKPublicContractor} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Public Sector Contractor (UK)
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: isUKPublicContractor ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${isUKPublicContractor ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isUKPublicContractor && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Hold or bid for UK Central Government tenders subject to PPN 06/21 carbon reduction plans.
                     </div>
                   </div>
@@ -703,19 +833,42 @@ export const OnboardingPage: React.FC = () => {
                   <div
                     onClick={() => setHasPlanningConsent(!hasPlanningConsent)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: hasPlanningConsent ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${hasPlanningConsent ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${hasPlanningConsent ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: hasPlanningConsent ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Section 106 Planning Permission</span>
-                      <input type="checkbox" checked={hasPlanningConsent} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Section 106 Planning Permission
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: hasPlanningConsent ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${hasPlanningConsent ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {hasPlanningConsent && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Property development or building projects subject to Section 106 carbon offset or job creation quotas.
                     </div>
                   </div>
@@ -723,19 +876,42 @@ export const OnboardingPage: React.FC = () => {
                   <div
                     onClick={() => setMakesPublicGreenClaims(!makesPublicGreenClaims)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: makesPublicGreenClaims ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${makesPublicGreenClaims ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${makesPublicGreenClaims ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: makesPublicGreenClaims ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Public ESG or Green Claims</span>
-                      <input type="checkbox" checked={makesPublicGreenClaims} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Public ESG or Green Claims
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: makesPublicGreenClaims ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${makesPublicGreenClaims ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {makesPublicGreenClaims && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Publish sustainability claims, net-zero badges, or carbon-neutral assertions subject to CMA Green Claims rules.
                     </div>
                   </div>
@@ -743,19 +919,42 @@ export const OnboardingPage: React.FC = () => {
                   <div
                     onClick={() => setHasGreenHydrogen(!hasGreenHydrogen)}
                     style={{
-                      padding: '1.1rem',
-                      borderRadius: '8px',
-                      background: hasGreenHydrogen ? '#f0fdf4' : '#ffffff',
-                      border: `1px solid ${hasGreenHydrogen ? '#86efac' : '#e2e8f0'}`,
+                      padding: '1.2rem',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      border: `1.5px solid ${hasGreenHydrogen ? '#0284c7' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: hasGreenHydrogen ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Green Hydrogen Generation</span>
-                      <input type="checkbox" checked={hasGreenHydrogen} readOnly style={{ accentColor: '#16a34a' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
+                        Green Hydrogen Generation
+                      </span>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          background: hasGreenHydrogen ? '#0284c7' : '#f8fafc',
+                          border: `1.5px solid ${hasGreenHydrogen ? '#0284c7' : '#cbd5e1'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {hasGreenHydrogen && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                    <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
                       Produce, compress, or distribute electrolytic hydrogen requiring guarantee of origin and LCHS certification.
                     </div>
                   </div>
@@ -784,15 +983,16 @@ export const OnboardingPage: React.FC = () => {
                   type="submit"
                   disabled={loading}
                   style={{
-                    padding: '0.85rem 2rem',
+                    padding: '0.85rem 2.2rem',
                     borderRadius: '8px',
-                    background: 'var(--accent-primary)',
+                    background: '#0284c7',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '0.94rem',
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+                    transition: 'all 0.18s ease',
                   }}
                 >
                   {loading ? 'Evaluating Statutory Obligations...' : 'Generate Statutory Compliance Roadmap'}
@@ -830,13 +1030,15 @@ export const OnboardingPage: React.FC = () => {
                   style={{
                     padding: '0.75rem 1.5rem',
                     borderRadius: '8px',
-                    background: 'var(--accent-primary)',
+                    background: '#0284c7',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '0.9rem',
                     border: 'none',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)',
+                    transition: 'all 0.18s ease',
                   }}
                 >
                   Go to Preparation Console
@@ -857,25 +1059,27 @@ export const OnboardingPage: React.FC = () => {
                         borderRadius: '10px',
                         background: '#ffffff',
                         border: isMandatory ? '1px solid #cbd5e1' : '1px solid #e2e8f0',
-                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+                        borderLeft: isMandatory ? '4px solid #090d1a' : '4px solid #0284c7',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
                         position: 'relative',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                         <div style={{ flex: 1, minWidth: '280px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
                               {rec.frameworkName}
                             </span>
                             {isMandatory ? (
                               <span
                                 style={{
-                                  fontSize: '0.72rem',
+                                  fontSize: '0.7rem',
                                   padding: '0.2rem 0.6rem',
                                   borderRadius: '4px',
                                   background: '#fef2f2',
                                   color: '#991b1b',
                                   fontWeight: 700,
+                                  fontFamily: 'var(--font-mono, monospace)',
                                   border: '1px solid #fecaca',
                                 }}
                               >
@@ -884,12 +1088,13 @@ export const OnboardingPage: React.FC = () => {
                             ) : (
                               <span
                                 style={{
-                                  fontSize: '0.72rem',
+                                  fontSize: '0.7rem',
                                   padding: '0.2rem 0.6rem',
                                   borderRadius: '4px',
                                   background: '#f0f9ff',
                                   color: '#0369a1',
                                   fontWeight: 600,
+                                  fontFamily: 'var(--font-mono, monospace)',
                                   border: '1px solid #bae6fd',
                                 }}
                               >
@@ -898,16 +1103,17 @@ export const OnboardingPage: React.FC = () => {
                             )}
                             <span
                               style={{
-                                fontSize: '0.72rem',
+                                fontSize: '0.7rem',
                                 padding: '0.2rem 0.6rem',
                                 borderRadius: '4px',
                                 background: '#f1f5f9',
                                 color: '#475569',
                                 border: '1px solid #e2e8f0',
-                                fontWeight: 500,
+                                fontWeight: 600,
+                                fontFamily: 'var(--font-mono, monospace)',
                               }}
                             >
-                              Effort: {rec.estimatedEffort}
+                              EFFORT: {rec.estimatedEffort?.toUpperCase()}
                             </span>
                           </div>
 
@@ -960,7 +1166,7 @@ export const OnboardingPage: React.FC = () => {
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '2fr 1fr',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
                           gap: '1rem',
                           padding: '0.75rem 1rem',
                           background: '#f8fafc',
@@ -976,7 +1182,7 @@ export const OnboardingPage: React.FC = () => {
                         </div>
                         <div>
                           <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>Enforcement body: </span>
-                          <span style={{ color: '#475569' }}>{rec.enforcementBody}</span>
+                          <span style={{ color: '#475569', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.76rem' }}>{rec.enforcementBody}</span>
                         </div>
                       </div>
                     </div>
@@ -1008,13 +1214,14 @@ export const OnboardingPage: React.FC = () => {
                   style={{
                     padding: '0.85rem 2.25rem',
                     borderRadius: '8px',
-                    background: '#16a34a',
+                    background: '#059669',
                     color: '#ffffff',
                     fontWeight: 800,
                     fontSize: '0.96rem',
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                    transition: 'all 0.18s ease',
                   }}
                 >
                   Launch Preparation Checklist

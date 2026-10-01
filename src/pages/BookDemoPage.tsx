@@ -4,7 +4,7 @@ import { BookDemoCard } from '../components/BookDemoCard';
 
 export const BookDemoPage: React.FC = () => {
   useEffect(() => {
-    document.title = 'Book a Demo — GHGEmissionLogs Continuous Statutory Assurance';
+    document.title = 'Schedule an Enterprise Assurance Demo - GHGEmissionLogs';
     window.scrollTo(0, 0);
   }, []);
 
@@ -17,30 +17,34 @@ export const BookDemoPage: React.FC = () => {
         {/* Navigation Breadcrumb */}
         <div className="book-demo-breadcrumb">
           <Link to="/" className="breadcrumb-link">
-            ← Back to Overview
+            &larr; Back to Overview
           </Link>
           <span className="breadcrumb-sep">/</span>
-          <span className="breadcrumb-current">Book Architecture Demo</span>
+          <span className="breadcrumb-current">Schedule Enterprise Demo</span>
         </div>
 
-        {/* Centered Dark Card matching screenshot */}
+        {/* Persefoni-style Split Bento Layout */}
         <div className="book-demo-standalone-wrapper">
           <BookDemoCard isModal={false} />
         </div>
 
-        {/* Enterprise trust badges below */}
+        {/* Enterprise statutory assurance trust footer */}
         <div className="book-demo-trust-footer">
           <div className="trust-item">
-            <span className="trust-dot">●</span>
+            <span className="trust-dot">&bull;</span>
             <span>UK CMA Green Claims Code Conforming</span>
           </div>
           <div className="trust-item">
-            <span className="trust-dot">●</span>
-            <span>ISO 14064 & 50001 Verified Ledger</span>
+            <span className="trust-dot">&bull;</span>
+            <span>ISO 14064-3 &amp; ISO 50001 Verified Ledger</span>
           </div>
           <div className="trust-item">
-            <span className="trust-dot">●</span>
+            <span className="trust-dot">&bull;</span>
             <span>Strict Pre-Audit Mutual NDA Protection</span>
+          </div>
+          <div className="trust-item">
+            <span className="trust-dot">&bull;</span>
+            <span>Polygon PoS ERC-1155 Digital Twin Seals</span>
           </div>
         </div>
       </div>

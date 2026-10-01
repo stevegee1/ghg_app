@@ -142,9 +142,9 @@ export const VerifyEmailPage: React.FC = () => {
               gap: '0.4rem',
               padding: '0.3rem 0.75rem',
               borderRadius: '999px',
-              backgroundColor: 'rgba(255, 45, 141, 0.12)',
-              border: '1px solid rgba(255, 45, 141, 0.3)',
-              color: '#ff2d8d',
+              backgroundColor: 'rgba(2, 132, 199, 0.08)',
+              border: '1px solid rgba(2, 132, 199, 0.25)',
+              color: 'var(--color-sky)',
               fontSize: '0.72rem',
               fontWeight: 700,
               letterSpacing: '0.06em',
@@ -170,8 +170,8 @@ export const VerifyEmailPage: React.FC = () => {
                 width: '54px',
                 height: '54px',
                 borderRadius: '50%',
-                border: '3px solid rgba(255, 45, 141, 0.2)',
-                borderTopColor: '#ff2d8d',
+                border: '3px solid rgba(2, 132, 199, 0.2)',
+                borderTopColor: 'var(--color-sky)',
                 margin: '0 auto 1.5rem auto',
                 animation: 'spin 0.8s linear infinite',
               }}
@@ -222,13 +222,13 @@ export const VerifyEmailPage: React.FC = () => {
                   width: '100%',
                   padding: '0.85rem 1.25rem',
                   borderRadius: '8px',
-                  backgroundColor: '#ff2d8d',
+                  backgroundColor: 'var(--accent-primary)',
                   border: 'none',
-                  color: 'var(--text-main)',
+                  color: '#ffffff',
                   fontSize: '0.9375rem',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(255, 45, 141, 0.35)',
+                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.15)',
                 }}
               >
                 Access Sovereign Portal →
@@ -344,9 +344,9 @@ export const VerifyEmailPage: React.FC = () => {
                     width: '100%',
                     padding: '0.8rem 1.25rem',
                     borderRadius: '8px',
-                    backgroundColor: '#ff2d8d',
+                    backgroundColor: 'var(--accent-primary)',
                     border: 'none',
-                    color: 'var(--text-main)',
+                    color: '#ffffff',
                     fontSize: '0.875rem',
                     fontWeight: 700,
                     cursor: resending ? 'not-allowed' : 'pointer',
@@ -403,7 +403,7 @@ export const VerifyEmailPage: React.FC = () => {
               <div style={{ marginBottom: '1.25rem' }}>
                 <label
                   htmlFor="idle_resend_email"
-                  style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                  style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}
                 >
                   Corporate Work Email
                 </label>
@@ -435,14 +435,14 @@ export const VerifyEmailPage: React.FC = () => {
                   width: '100%',
                   padding: '0.8rem 1.25rem',
                   borderRadius: '8px',
-                  backgroundColor: '#ff2d8d',
+                  backgroundColor: 'var(--accent-primary)',
                   border: 'none',
-                  color: 'var(--text-main)',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   fontWeight: 700,
                   cursor: resending ? 'not-allowed' : 'pointer',
                   opacity: resending ? 0.7 : 1,
-                  boxShadow: '0 4px 14px rgba(255, 45, 141, 0.35)',
+                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.15)',
                 }}
               >
                 {resending ? 'Dispatching Verification Email...' : 'Send Verification Email'}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CerebriumAnimatedHeroBackground } from '../components/CerebriumAnimatedHeroBackground';
+import { ContinuousAssuranceFlow } from '../components/ContinuousAssuranceFlow';
 
 export const LandingPage: React.FC = () => {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -58,7 +59,7 @@ export const LandingPage: React.FC = () => {
                   letterSpacing: '-0.03em',
                 }}
               >
-                Continuous Environmental &amp; Workforce Assurance that <span style={{ color: 'var(--cerebrium-magenta)', textShadow: '0 0 28px rgba(255, 45, 141, 0.6)' }}>scales</span> with you
+                Continuous Environmental &amp; Workforce Assurance that <span style={{ color: 'var(--color-sky)' }}>scales</span> with you
               </h1>
 
               <p
@@ -127,7 +128,7 @@ export const LandingPage: React.FC = () => {
                   <span style={{ opacity: 0.3 }}>•</span>
                   <span>ISO 19011:2018 Remote Auditing</span>
                   <span style={{ opacity: 0.3 }}>•</span>
-                  <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 700 }}>15% Direct Environmental Relief</span>
+                  <span style={{ color: 'var(--color-sky)', fontWeight: 700 }}>15% Direct Environmental Relief</span>
                 </div>
               </div>
             </div>
@@ -169,13 +170,13 @@ export const LandingPage: React.FC = () => {
               {/* Card Header: Station ID and Clean Status */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', gap: '0.5rem' }}>
                 <div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--cerebrium-magenta)', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: '0.2rem' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--color-sky)', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: '0.2rem' }}>
                     CONTINUOUS TELEMETRY NODE
                   </div>
                   <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.2 }}>
                     Industrial Telemetry Station UK-01
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'var(--font-mono)', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginTop: '0.25rem' }}>
                     Thames Estuary Node • 51.5074° N, 0.1278° W
                   </div>
                 </div>
@@ -311,9 +312,9 @@ export const LandingPage: React.FC = () => {
                     letterSpacing: '0.06em',
                     padding: '6px 14px',
                     borderRadius: '5px',
-                    border: '1px solid rgba(255, 45, 141, 0.4)',
-                    backgroundColor: isSimulatingSweep ? 'rgba(255, 45, 141, 0.06)' : 'rgba(255, 45, 141, 0.14)',
-                    color: isSimulatingSweep ? '#94a3b8' : 'var(--cerebrium-magenta)',
+                    border: '1px solid rgba(2, 132, 199, 0.35)',
+                    backgroundColor: isSimulatingSweep ? 'rgba(2, 132, 199, 0.05)' : 'rgba(2, 132, 199, 0.1)',
+                    color: isSimulatingSweep ? '#94a3b8' : 'var(--color-sky)',
                     cursor: isSimulatingSweep ? 'not-allowed' : 'pointer',
                     transition: 'all 0.15s ease',
                   }}
@@ -375,6 +376,9 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+      
+      {/* 2.1 Interactive UI Flow: Continuous Assurance Pipeline (SpydySense Standard) */}
+      <ContinuousAssuranceFlow />
 
       {/* 2.2 Physical-to-Digital Provenance & Authentic Brand Assets */}
       <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '4.5rem 0' }}>
@@ -396,7 +400,7 @@ export const LandingPage: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--cerebrium-magenta)', fontWeight: 800, letterSpacing: '0.08em' }}>
+                <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--color-sky)', fontWeight: 800, letterSpacing: '0.08em' }}>
                   IMMUTABLE PROVENANCE ASSETS
                 </span>
                 <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
@@ -420,7 +424,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Right: Technical Explanation */}
             <div>
-              <div style={{ color: 'var(--cerebrium-magenta)', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>
+              <div style={{ color: 'var(--color-sky)', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>
                 PHYSICAL-TO-DIGITAL PROVENANCE
               </div>
 
@@ -434,7 +438,7 @@ export const LandingPage: React.FC = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(255, 45, 141, 0.12)', border: '1px solid rgba(255, 45, 141, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cerebrium-magenta)', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(2, 132, 199, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-sky)', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>
                     01
                   </div>
                   <div>
@@ -506,7 +510,7 @@ export const LandingPage: React.FC = () => {
           
           {/* Left Column: Big Typography Vertical Selector */}
           <div>
-            <div style={{ color: 'var(--cerebrium-magenta)', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.25rem' }}>
+            <div style={{ color: 'var(--color-sky)', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.25rem' }}>
               WHY CONTINUOUS ASSURANCE
             </div>
 
@@ -566,8 +570,8 @@ export const LandingPage: React.FC = () => {
                 {/* Benchmark 1: GHG App Automated */}
                 <div className="cerebrium-benchmark-row">
                   <div className="cerebrium-benchmark-row-header active">
-                    <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>GHGEmissionLogs (Automated OT)</span>
-                    <span style={{ color: '#ffffff', fontSize: '1.25rem', fontWeight: 800 }}>3.8s</span>
+                    <span style={{ color: 'var(--color-sky)', fontWeight: 800 }}>GHGEmissionLogs (Automated OT)</span>
+                    <span style={{ color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: 800 }}>3.8s</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill magenta" style={{ width: '96%' }} />
@@ -578,7 +582,7 @@ export const LandingPage: React.FC = () => {
                 <div className="cerebrium-benchmark-row">
                   <div className="cerebrium-benchmark-row-header">
                     <span>Periodic Annual Audit Engagement</span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>42 days</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>42 days</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill plum" style={{ width: '48%' }} />
@@ -589,7 +593,7 @@ export const LandingPage: React.FC = () => {
                 <div className="cerebrium-benchmark-row">
                   <div className="cerebrium-benchmark-row-header">
                     <span>Big-4 Advisory Manual Reconciliation</span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>71 days</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>71 days</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill slate" style={{ width: '28%' }} />
@@ -600,7 +604,7 @@ export const LandingPage: React.FC = () => {
                 <div className="cerebrium-benchmark-row" style={{ marginBottom: 0 }}>
                   <div className="cerebrium-benchmark-row-header">
                     <span>Legacy Spreadsheets (Statutory Risk)</span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>156 days</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>156 days</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill muted" style={{ width: '12%' }} />
@@ -612,8 +616,8 @@ export const LandingPage: React.FC = () => {
                 {/* Benchmark 1: Jobs Automated */}
                 <div className="cerebrium-benchmark-row">
                   <div className="cerebrium-benchmark-row-header active">
-                    <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>GHGEmissionLogs (Real-Time Dossier)</span>
-                    <span style={{ color: '#ffffff', fontSize: '1.25rem', fontWeight: 800 }}>2.4s</span>
+                    <span style={{ color: 'var(--color-sky)', fontWeight: 800 }}>GHGEmissionLogs (Real-Time Dossier)</span>
+                    <span style={{ color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: 800 }}>2.4s</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill magenta" style={{ width: '98%' }} />
@@ -624,7 +628,7 @@ export const LandingPage: React.FC = () => {
                 <div className="cerebrium-benchmark-row">
                   <div className="cerebrium-benchmark-row-header">
                     <span>Quarterly Planning Authority Return</span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>28 days</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>28 days</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill plum" style={{ width: '52%' }} />
@@ -635,7 +639,7 @@ export const LandingPage: React.FC = () => {
                 <div className="cerebrium-benchmark-row">
                   <div className="cerebrium-benchmark-row-header">
                     <span>External Planning Consultant Sampling</span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>60 days</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>60 days</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill slate" style={{ width: '32%' }} />
@@ -646,7 +650,7 @@ export const LandingPage: React.FC = () => {
                 <div className="cerebrium-benchmark-row" style={{ marginBottom: 0 }}>
                   <div className="cerebrium-benchmark-row-header">
                     <span>Ad-hoc Contractor Self-Reporting</span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>120 days</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>120 days</span>
                   </div>
                   <div className="cerebrium-bar-track">
                     <div className="cerebrium-bar-fill muted" style={{ width: '15%' }} />
@@ -655,11 +659,11 @@ export const LandingPage: React.FC = () => {
               </div>
             )}
 
-            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.4rem' }}>
+            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                 Audit-readiness from the first telemetry ping.
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.6 }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 Launch continuous audit pipelines in seconds with calibrated IoT ingestion and automated statutory checks. GHG App handles sudden bursts and scale-outs automatically, without compromising evidentiary integrity.
               </div>
             </div>
@@ -970,7 +974,7 @@ export const LandingPage: React.FC = () => {
               <div className="cerebrium-blog-body">
                 <div className="cerebrium-blog-meta">
                   <span style={{ color: '#e06d53', fontWeight: 600 }}>TO BE PUBLISHED SOON</span>
-                  <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>TUTORIAL</span>
+                  <span style={{ color: 'var(--color-sky)', fontWeight: 800 }}>TUTORIAL</span>
                 </div>
                 <h3 className="cerebrium-blog-card-title">
                   A Low-Latency Architecture for Continuous OT Telemetry with Real-Time ISO Audit Verification
@@ -993,21 +997,21 @@ export const LandingPage: React.FC = () => {
                     </linearGradient>
                   </defs>
                   <path d="M 0 240 C 130 190, 250 110, 400 40 L 400 240 Z" fill="url(#blogRibbon2)" />
-                  <path d="M 20 220 C 160 170, 280 100, 390 20" stroke="#ff2d8d" strokeWidth="4" strokeLinecap="round" opacity="0.6" />
+                  <path d="M 20 220 C 160 170, 280 100, 390 20" stroke="#0284c7" strokeWidth="4" strokeLinecap="round" opacity="0.6" />
                   
                   {/* Central Statutory Book Emblem "2026 £" (Image 3) */}
                   <g transform="translate(170, 72)">
                     <rect x="0" y="0" width="60" height="85" rx="5" fill="#0e0714" stroke="#ffffff" strokeWidth="2.2" />
                     <line x1="10" y1="0" x2="10" y2="85" stroke="#ffffff" strokeWidth="1.5" strokeDasharray="3 3" />
                     <text x="35" y="28" fill="#ffffff" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="sans-serif">2026</text>
-                    <text x="35" y="62" fill="#ff2d8d" fontSize="24" fontWeight="900" textAnchor="middle" fontFamily="sans-serif">£</text>
+                    <text x="35" y="62" fill="#0284c7" fontSize="24" fontWeight="900" textAnchor="middle" fontFamily="sans-serif">£</text>
                   </g>
                 </svg>
               </div>
               <div className="cerebrium-blog-body">
                 <div className="cerebrium-blog-meta">
                   <span style={{ color: '#e06d53', fontWeight: 600 }}>TO BE PUBLISHED SOON</span>
-                  <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>ANNOUNCEMENT</span>
+                  <span style={{ color: 'var(--color-sky)', fontWeight: 800 }}>ANNOUNCEMENT</span>
                 </div>
                 <h3 className="cerebrium-blog-card-title">
                   2026 Section 106 Statutory Workforce Covenant &amp; Local Wage Compliance Guide
@@ -1050,7 +1054,7 @@ export const LandingPage: React.FC = () => {
               <div className="cerebrium-blog-body">
                 <div className="cerebrium-blog-meta">
                   <span style={{ color: '#e06d53', fontWeight: 600 }}>TO BE PUBLISHED SOON</span>
-                  <span style={{ color: 'var(--cerebrium-magenta)', fontWeight: 800 }}>PRODUCT UPDATE</span>
+                  <span style={{ color: 'var(--color-sky)', fontWeight: 800 }}>PRODUCT UPDATE</span>
                 </div>
                 <h3 className="cerebrium-blog-card-title">
                   GHGEmissionLogs Deploys Real-Time Anomaly Lock: Enforcing 15% Baseline Drift Freeze
@@ -1071,7 +1075,7 @@ export const LandingPage: React.FC = () => {
         <div className="cerebrium-audit-matrix-container">
           
           <div className="cerebrium-audit-matrix-header">
-            <div style={{ color: 'var(--cerebrium-magenta)', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
+            <div style={{ color: 'var(--color-sky)', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
               STATUTORY AUDIT ASSURANCE
             </div>
             <h2 className="cerebrium-audit-matrix-title">

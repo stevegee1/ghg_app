@@ -93,6 +93,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="transparency" element={<TransparencyPage />} />
         <Route path="book-demo" element={<BookDemoPage />} />
         <Route path="demo" element={<BookDemoPage />} />
+        <Route path="schedule-demo" element={<BookDemoPage />} />
         
         {/* Production Authentication & Self-Service Account Provisioning */}
         <Route path="create-account" element={<SignUpPage />} />
