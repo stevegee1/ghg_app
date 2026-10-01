@@ -27,29 +27,29 @@ export const CerebriumAnimatedHeroBackground: React.FC<CerebriumAnimatedHeroBack
           style={{ width: '100%', height: '100%' }}
         >
           <defs>
-            {/* Ribbon 1: Deep Plum to Royal Magenta Gradient */}
+            {/* Ribbon 1: Luminous Sky to Indigo Enterprise Gradient */}
             <linearGradient id="plumGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#1B071A" />
-              <stop offset="35%" stopColor="#4A1337" />
-              <stop offset="70%" stopColor="#85215F" />
-              <stop offset="100%" stopColor="#180417" />
+              <stop offset="0%" stopColor="#e0f2fe" stopOpacity="0.85" />
+              <stop offset="35%" stopColor="#bae6fd" stopOpacity="0.8" />
+              <stop offset="70%" stopColor="#c7d2fe" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#e0e7ff" stopOpacity="0.7" />
             </linearGradient>
 
-            {/* Ribbon 2: Inner Shadowed Arc */}
+            {/* Ribbon 2: Luminous Mint to Azure Arc */}
             <linearGradient id="plumGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#120412" />
-              <stop offset="45%" stopColor="#5E1844" />
-              <stop offset="85%" stopColor="#9E2772" />
-              <stop offset="100%" stopColor="#1E061E" />
+              <stop offset="0%" stopColor="#f0fdf4" stopOpacity="0.9" />
+              <stop offset="45%" stopColor="#bbf7d0" stopOpacity="0.85" />
+              <stop offset="85%" stopColor="#bfdbfe" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#e0f2fe" stopOpacity="0.75" />
             </linearGradient>
 
-            {/* Traveling Laser Light Streak (Pure White Core to Neon Magenta Bloom) */}
+            {/* Traveling Laser Light Streak (Pure Azure to Emerald Accent) */}
             <linearGradient id="laserBeamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(255, 45, 141, 0)" />
-              <stop offset="40%" stopColor="rgba(255, 45, 141, 0.85)" />
-              <stop offset="50%" stopColor="#ffffff" />
-              <stop offset="60%" stopColor="rgba(255, 45, 141, 0.85)" />
-              <stop offset="100%" stopColor="rgba(255, 45, 141, 0)" />
+              <stop offset="0%" stopColor="rgba(14, 165, 233, 0)" />
+              <stop offset="40%" stopColor="rgba(14, 165, 233, 0.85)" />
+              <stop offset="50%" stopColor="#0284c7" />
+              <stop offset="60%" stopColor="rgba(16, 185, 129, 0.85)" />
+              <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" />
             </linearGradient>
 
             <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">

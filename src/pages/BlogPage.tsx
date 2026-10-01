@@ -311,7 +311,7 @@ export const BlogPage: React.FC = () => {
               type="submit"
               style={{
                 padding: '0.75rem 1.5rem',
-                backgroundColor: '#090d1a',
+                backgroundColor: 'var(--accent-primary)',
                 color: '#ffffff',
                 borderRadius: '8px',
                 border: 'none',
@@ -321,10 +321,10 @@ export const BlogPage: React.FC = () => {
                 transition: 'background-color 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
+                e.currentTarget.style.backgroundColor = 'var(--accent-hover)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#090d1a';
+                e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
               }}
             >
               Subscribe →

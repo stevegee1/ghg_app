@@ -245,7 +245,7 @@ export const SignUpPage: React.FC = () => {
                 value={primaryRole}
                 onChange={(e) => setPrimaryRole(e.target.value)}
                 className="cerebrium-auth-input"
-                style={{ background: '#0a0f1d', color: '#f8fafc' }}
+                style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}
               >
                 <option value="COMPLIANCE_OFFICER">CSO / Sustainability Lead</option>
                 <option value="FINANCE_DIRECTOR">CFO / Finance Director</option>
@@ -268,7 +268,7 @@ export const SignUpPage: React.FC = () => {
                 value={organisationCountry}
                 onChange={(e) => setOrganisationCountry(e.target.value)}
                 className="cerebrium-auth-input"
-                style={{ background: '#0a0f1d', color: '#f8fafc' }}
+                style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}
               >
                 <option value="GB">United Kingdom (GB)</option>
                 <option value="DE">Germany (DE)</option>
@@ -290,7 +290,7 @@ export const SignUpPage: React.FC = () => {
                 value={industrySector}
                 onChange={(e) => setIndustrySector(e.target.value)}
                 className="cerebrium-auth-input"
-                style={{ background: '#0a0f1d', color: '#f8fafc' }}
+                style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}
               >
                 <option value="MANUFACTURING">Manufacturing</option>
                 <option value="DATA_CENTRE">Data Centres & HPC</option>

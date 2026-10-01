@@ -16,16 +16,16 @@ export const Footer: React.FC = () => {
         >
           <defs>
             <linearGradient id="footerPlumDeep" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#120414" stopOpacity="0.8" />
-              <stop offset="50%" stopColor="#481236" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#85215f" stopOpacity="0.95" />
+              <stop offset="0%" stopColor="#e0f2fe" stopOpacity="0.7" />
+              <stop offset="50%" stopColor="#dbeafe" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#e0e7ff" stopOpacity="0.85" />
             </linearGradient>
 
             <linearGradient id="footerPlumBright" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#350c29" />
-              <stop offset="40%" stopColor="#7a2258" />
-              <stop offset="80%" stopColor="#c22d7a" />
-              <stop offset="100%" stopColor="#ff2d8d" />
+              <stop offset="0%" stopColor="#bae6fd" />
+              <stop offset="40%" stopColor="#93c5fd" />
+              <stop offset="80%" stopColor="#a5b4fc" />
+              <stop offset="100%" stopColor="#818cf8" />
             </linearGradient>
 
             <filter id="footerLaserGlow" x="-50%" y="-50%" width="200%" height="200%">
@@ -39,14 +39,14 @@ export const Footer: React.FC = () => {
             </filter>
           </defs>
 
-          {/* Broad Curving Plum Ribbon */}
+          {/* Broad Curving Ribbon */}
           <path
             d="M 50 650 C 200 480, 420 320, 680 220 C 800 170, 920 180, 980 210 L 980 650 Z"
             fill="url(#footerPlumDeep)"
             opacity="0.85"
           />
 
-          {/* Foreground 3D Sweeping Plum Ribbon */}
+          {/* Foreground 3D Sweeping Ribbon */}
           <path
             d="M 120 650 C 280 440, 520 270, 780 180 C 860 150, 930 160, 990 190"
             stroke="url(#footerPlumBright)"
@@ -58,16 +58,16 @@ export const Footer: React.FC = () => {
           {/* Inner Accent Ribbon Arc */}
           <path
             d="M 280 650 C 440 450, 640 300, 860 210"
-            stroke="#5a153f"
+            stroke="#cbd5e1"
             strokeWidth="38"
             strokeLinecap="round"
             opacity="0.75"
           />
 
-          {/* High-Velocity White/Magenta Kinetic Laser Stroke */}
+          {/* High-Velocity Kinetic Laser Stroke */}
           <path
             d="M 120 650 C 280 440, 520 270, 780 180 C 860 150, 930 160, 990 190"
-            stroke="#ffffff"
+            stroke="#0284c7"
             strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray="180 800"

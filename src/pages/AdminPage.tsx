@@ -738,7 +738,7 @@ export const AdminPage: React.FC = () => {
               Production Active
             </span>
           </div>
-          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main, #0f172a)', margin: 0, letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
             Executive Administration Console
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-muted, #475569)', marginTop: '0.25rem', maxWidth: '750px' }}>
@@ -1198,7 +1198,7 @@ export const AdminPage: React.FC = () => {
                               {b.status}
                             </span>
                           </td>
-                          <td style={{ fontWeight: 600, color: 'var(--text-main, #0f172a)', whiteSpace: 'nowrap' }}>
+                          <td style={{ fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
                             {formattedDate} UTC
                           </td>
                           <td>
@@ -1303,7 +1303,7 @@ export const AdminPage: React.FC = () => {
                     Financial Routing Rules
                   </span>
                 </div>
-                <h2 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main, #0f172a)', margin: 0 }}>
+                <h2 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                   Configure New Active Split
                 </h2>
                 <p className="card-subtitle" style={{ fontSize: '0.8125rem', color: 'var(--text-muted, #475569)', marginTop: '0.25rem' }}>
@@ -1328,7 +1328,7 @@ export const AdminPage: React.FC = () => {
                       border: '1px solid var(--border-medium, #cbd5e1)',
                       fontSize: '0.875rem',
                       backgroundColor: 'var(--bg-card, #ffffff)',
-                      color: 'var(--text-main, #0f172a)',
+                      color: 'var(--text-main)',
                     }}
                   >
                     <option value="">Platform Default (licenseeId IS NULL) - Platform-Wide Rule</option>
@@ -1550,7 +1550,7 @@ export const AdminPage: React.FC = () => {
                     Statutory Audit Trail
                   </span>
                 </div>
-                <h2 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main, #0f172a)', margin: 0 }}>
+                <h2 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                   Split Configuration Audit History
                 </h2>
                 <p className="card-subtitle" style={{ fontSize: '0.8125rem', color: 'var(--text-muted, #475569)', marginTop: '0.25rem' }}>
@@ -1728,7 +1728,7 @@ export const AdminPage: React.FC = () => {
                   className="form-input"
                   style={{ flex: 1, minWidth: '220px', fontSize: '0.85rem' }}
                 />
-                <div style={{ display: 'flex', gap: '0.35rem', backgroundColor: 'var(--bg-subtle, #111827)', padding: '3px', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', gap: '0.35rem', backgroundColor: 'var(--bg-subtle)', padding: '3px', borderRadius: '6px' }}>
                   {['ALL', 'PENDING', 'RESPONDED', 'CLOSED'].map((st) => (
                     <button
                       key={st}
@@ -1812,7 +1812,7 @@ export const AdminPage: React.FC = () => {
                           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
                             {enq.itemTitle}
                           </h3>
-                          <span style={{ fontSize: '0.72rem', backgroundColor: 'var(--bg-subtle, #1e293b)', padding: '2px 8px', borderRadius: '4px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                          <span style={{ fontSize: '0.72rem', backgroundColor: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                             {enq.itemId}
                           </span>
                           <span
@@ -1872,7 +1872,7 @@ export const AdminPage: React.FC = () => {
                     </div>
 
                     {/* Customer Info & Message Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', backgroundColor: 'var(--bg-subtle, #111827)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                       <div>
                         <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Customer Name</div>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '0.2rem' }}>{enq.contactName}</div>
@@ -1888,7 +1888,7 @@ export const AdminPage: React.FC = () => {
                             onClick={() => copyMerchEmail(enq.contactEmail)}
                             style={{
                               background: 'transparent',
-                              border: '1px solid var(--border-light, rgba(255,255,255,0.12))',
+                              border: '1px solid var(--border-light)',
                               borderRadius: '4px',
                               padding: '2px 6px',
                               fontSize: '0.7rem',
@@ -2654,10 +2654,10 @@ export const AdminPage: React.FC = () => {
       {/* Lead Auditor Review Modal / Drawer */}
       {showReviewModal && (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="modal-content" style={{ backgroundColor: 'var(--bg-card, #0f172a)', border: '1px solid var(--border-light, rgba(255,255,255,0.12))', borderRadius: '12px', width: '100%', maxWidth: '960px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+          <div className="modal-content" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', width: '100%', maxWidth: '960px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
             
             {/* Modal Header */}
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.08))', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-subtle, #111827)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-subtle)' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span className="badge badge-settled" style={{ fontSize: '0.72rem' }}>ISO 19011:2026</span>

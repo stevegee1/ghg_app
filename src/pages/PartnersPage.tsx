@@ -232,7 +232,7 @@ export const PartnersPage: React.FC = () => {
   return (
     <div
       style={{
-        backgroundColor: '#08040c',
+        backgroundColor: 'var(--bg-page)',
         minHeight: '100vh',
         color: 'var(--text-main)',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -249,7 +249,7 @@ export const PartnersPage: React.FC = () => {
           transform: 'translateX(-50%)',
           width: '900px',
           height: '600px',
-          background: 'radial-gradient(circle, rgba(255, 45, 141, 0.08) 0%, rgba(8, 4, 12, 0) 70%)',
+          background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(248, 250, 252, 0) 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -258,8 +258,8 @@ export const PartnersPage: React.FC = () => {
       {/* Navigation Breadcrumb */}
       <header
         style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          backgroundColor: 'rgba(8, 4, 12, 0.85)',
+          borderBottom: '1px solid var(--border-light)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(12px)',
           position: 'sticky',
           top: 0,
@@ -435,7 +435,7 @@ export const PartnersPage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '14px',
                 padding: '2.25rem',
               }}
@@ -568,7 +568,7 @@ export const PartnersPage: React.FC = () => {
                   marginTop: '2.25rem',
                   padding: '1.25rem',
                   borderRadius: '10px',
-                  backgroundColor: '#0d121c',
+                  backgroundColor: 'var(--bg-card)',
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               >
@@ -585,7 +585,7 @@ export const PartnersPage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '14px',
                 padding: '2.25rem',
               }}
@@ -614,7 +614,7 @@ export const PartnersPage: React.FC = () => {
               {fSuccessData ? (
                 <div
                   style={{
-                    backgroundColor: '#0d121c',
+                    backgroundColor: 'var(--bg-card)',
                     border: '1px solid rgba(255, 45, 141, 0.4)',
                     borderRadius: '12px',
                     padding: '2rem',
@@ -722,7 +722,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -751,7 +751,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -781,7 +781,7 @@ export const PartnersPage: React.FC = () => {
                             width: '100%',
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             border: '1px solid var(--border-light)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
@@ -790,7 +790,7 @@ export const PartnersPage: React.FC = () => {
                           }}
                         >
                           {COUNTRY_OPTIONS.map((c) => (
-                            <option key={c.code} value={c.code} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                            <option key={c.code} value={c.code} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                               {c.name}
                             </option>
                           ))}
@@ -815,7 +815,7 @@ export const PartnersPage: React.FC = () => {
                             width: '100%',
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             border: '1px solid var(--border-light)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
@@ -847,7 +847,7 @@ export const PartnersPage: React.FC = () => {
                                 border: selected
                                   ? '1px solid #ff2d8d'
                                   : '1px solid rgba(255, 255, 255, 0.12)',
-                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : '#0d121c',
+                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : 'var(--bg-card)',
                                 color: selected ? '#ffffff' : '#94a3b8',
                                 fontSize: '0.78rem',
                                 fontWeight: 500,
@@ -879,7 +879,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -887,16 +887,16 @@ export const PartnersPage: React.FC = () => {
                           boxSizing: 'border-box',
                         }}
                       >
-                        <option value="UNDER_500" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option value="UNDER_500" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           Under 500 units / month (Boutique Artisan Studio)
                         </option>
-                        <option value="500_2000" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option value="500_2000" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           500 – 2,000 units / month (Mid-tier Production Hub)
                         </option>
-                        <option value="2000_10000" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option value="2000_10000" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           2,000 – 10,000 units / month (High-volume Commercial Facility)
                         </option>
-                        <option value="OVER_10000" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option value="OVER_10000" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           Over 10,000 units / month (Industrial Scaled Operation)
                         </option>
                       </select>
@@ -923,7 +923,7 @@ export const PartnersPage: React.FC = () => {
                                 border: selected
                                   ? '1px solid #ff2d8d'
                                   : '1px solid rgba(255, 255, 255, 0.12)',
-                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : '#0d121c',
+                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : 'var(--bg-card)',
                                 color: selected ? '#ffffff' : '#94a3b8',
                                 fontSize: '0.78rem',
                                 fontWeight: 500,
@@ -957,7 +957,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -1002,7 +1002,7 @@ export const PartnersPage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '14px',
                 padding: '2.25rem',
               }}
@@ -1135,7 +1135,7 @@ export const PartnersPage: React.FC = () => {
                   marginTop: '2.25rem',
                   padding: '1.25rem',
                   borderRadius: '10px',
-                  backgroundColor: '#0d121c',
+                  backgroundColor: 'var(--bg-card)',
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               >
@@ -1152,7 +1152,7 @@ export const PartnersPage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '14px',
                 padding: '2.25rem',
               }}
@@ -1181,7 +1181,7 @@ export const PartnersPage: React.FC = () => {
               {cSuccessData ? (
                 <div
                   style={{
-                    backgroundColor: '#0d121c',
+                    backgroundColor: 'var(--bg-card)',
                     border: '1px solid rgba(255, 45, 141, 0.4)',
                     borderRadius: '12px',
                     padding: '2rem',
@@ -1291,7 +1291,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -1320,7 +1320,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -1350,7 +1350,7 @@ export const PartnersPage: React.FC = () => {
                             width: '100%',
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             border: '1px solid var(--border-light)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
@@ -1359,7 +1359,7 @@ export const PartnersPage: React.FC = () => {
                           }}
                         >
                           {COUNTRY_OPTIONS.map((c) => (
-                            <option key={c.code} value={c.code} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                            <option key={c.code} value={c.code} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                               {c.name}
                             </option>
                           ))}
@@ -1381,7 +1381,7 @@ export const PartnersPage: React.FC = () => {
                             width: '100%',
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             border: '1px solid var(--border-light)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
@@ -1389,19 +1389,19 @@ export const PartnersPage: React.FC = () => {
                             boxSizing: 'border-box',
                           }}
                         >
-                          <option value="REGISTERED_CHARITY" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                          <option value="REGISTERED_CHARITY" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                             Registered Charity
                           </option>
-                          <option value="NGO" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                          <option value="NGO" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                             Non-Governmental Org (NGO)
                           </option>
-                          <option value="TRUST" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                          <option value="TRUST" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                             Charitable Trust
                           </option>
-                          <option value="FOUNDATION" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                          <option value="FOUNDATION" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                             Environmental Foundation
                           </option>
-                          <option value="COMMUNITY_FUND" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                          <option value="COMMUNITY_FUND" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                             Community Climate Fund
                           </option>
                         </select>
@@ -1426,7 +1426,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -1457,7 +1457,7 @@ export const PartnersPage: React.FC = () => {
                                 border: selected
                                   ? '1px solid #ff2d8d'
                                   : '1px solid rgba(255, 255, 255, 0.12)',
-                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : '#0d121c',
+                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : 'var(--bg-card)',
                                 color: selected ? '#ffffff' : '#94a3b8',
                                 fontSize: '0.78rem',
                                 fontWeight: 500,
@@ -1492,7 +1492,7 @@ export const PartnersPage: React.FC = () => {
                             width: '100%',
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             border: '1px solid var(--border-light)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
@@ -1519,7 +1519,7 @@ export const PartnersPage: React.FC = () => {
                             width: '100%',
                             padding: '0.75rem 0.9rem',
                             borderRadius: '8px',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             border: '1px solid var(--border-light)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
@@ -1548,7 +1548,7 @@ export const PartnersPage: React.FC = () => {
                           width: '100%',
                           padding: '0.75rem 0.9rem',
                           borderRadius: '8px',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-light)',
                           color: 'var(--text-main)',
                           fontSize: '0.875rem',
@@ -1619,7 +1619,7 @@ export const PartnersPage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '12px',
                 padding: '1.75rem',
               }}
@@ -1647,7 +1647,7 @@ export const PartnersPage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '12px',
                 padding: '1.75rem',
               }}
@@ -1675,7 +1675,7 @@ export const PartnersPage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '12px',
                 padding: '1.75rem',
               }}
@@ -1733,7 +1733,7 @@ export const PartnersPage: React.FC = () => {
                   key={index}
                   style={{
                     backgroundColor: 'var(--bg-page)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    border: '1px solid var(--border-light)',
                     borderRadius: '10px',
                     overflow: 'hidden',
                   }}
@@ -1811,7 +1811,7 @@ export const PartnersPage: React.FC = () => {
               transform: 'translate(-50%, -50%)',
               width: '600px',
               height: '300px',
-              background: 'radial-gradient(circle, rgba(255, 45, 141, 0.08) 0%, rgba(17, 23, 38, 0) 70%)',
+              background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(248, 250, 252, 0) 70%)',
               pointerEvents: 'none',
             }}
           />
@@ -1842,7 +1842,7 @@ export const PartnersPage: React.FC = () => {
               style={{
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
-                backgroundColor: '#0d121c',
+                backgroundColor: 'var(--bg-card)',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: 'var(--text-main)',
                 fontSize: '0.875rem',

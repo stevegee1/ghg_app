@@ -756,7 +756,7 @@ h4 {
 
 .mega-intent-item:hover {
   background: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
+  border-color: var(--text-muted) !important;
   color: #000000 !important;
 }
 
@@ -812,7 +812,7 @@ h4 {
 .mega-ribbon-chip:hover {
   background: #f1f5f9 !important;
   color: #000000 !important;
-  border-color: #cbd5e1 !important;
+  border-color: var(--text-muted) !important;
 }
 
 /* Navbar Right Actions */
@@ -3614,7 +3614,7 @@ h4 {
    ========================================================================== */
 
 :root {
-  --cerebrium-obsidian: #08040c;
+  --cerebrium-obsidian: var(--bg-page);
   --cerebrium-plum-900: #140516;
   --cerebrium-plum-700: #3b132c;
   --cerebrium-plum-500: #7a2258;
@@ -3626,8 +3626,8 @@ h4 {
   --cerebrium-ink-navy: #0c1027;
   --cerebrium-slate-muted: #b3c0d4;
   --cerebrium-slate-text: #1e293b;
-  --cerebrium-terminal-bg: #0c0f1d;
-  --cerebrium-terminal-border: rgba(255, 255, 255, 0.12);
+  --cerebrium-terminal-bg: var(--bg-card);
+  --cerebrium-terminal-border: var(--border-light);
 }
 
 /* ── Keyframe Animations ── */
@@ -3696,8 +3696,8 @@ h4 {
 /* ── Cerebrium Hero Canvas & Animated Background ── */
 .cerebrium-hero-wrapper {
   position: relative;
-  background-color: var(--cerebrium-obsidian);
-  color: #ffffff;
+  background-color: var(--bg-page);
+  color: var(--text-main);
   overflow: hidden;
   min-height: 85vh;
   display: flex;
@@ -3724,7 +3724,7 @@ h4 {
 .cerebrium-grid-dots {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px);
   background-size: 36px 36px;
   opacity: 0.65;
   pointer-events: none;
@@ -4457,7 +4457,9 @@ h4 {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background-color: #08040c !important;
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
@@ -4500,7 +4502,7 @@ h4 {
 }
 
 .brand-text-white {
-  color: #ffffff !important;
+  color: var(--text-main) !important;
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 1.15rem;
@@ -4512,8 +4514,8 @@ h4 {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background-color: #141724;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 9999px;
   padding: 0.35rem 0.65rem;
   list-style: none;
@@ -4530,7 +4532,7 @@ h4 {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #cbd5e1 !important;
+  color: var(--text-muted) !important;
   padding: 0.35rem 0.65rem;
   border-radius: 9999px;
   text-decoration: none !important;
@@ -4543,8 +4545,8 @@ h4 {
 
 .cerebrium-capsule-link:hover,
 .cerebrium-capsule-link.active {
-  color: #ffffff !important;
-  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-main) !important;
+  background-color: var(--bg-subtle);
 }
 
 .capsule-dot {
@@ -4682,8 +4684,8 @@ h4 {
 
 .cerebrium-benchmark-card {
   position: relative;
-  background: #0c0f1e;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   padding: 2.25rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 45, 141, 0.14);
@@ -4727,8 +4729,8 @@ h4 {
 }
 
 .cerebrium-tab-btn.active {
-  background: #2b3353;
-  color: #ffffff;
+  background: var(--bg-card);
+  color: var(--text-main);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -4854,10 +4856,11 @@ h4 {
 
 .cerebrium-blog-banner {
   height: 220px;
-  background: #0d0614;
+  background: var(--bg-subtle);
   position: relative;
   overflow: hidden;
   display: flex;
+  border-bottom: 1px solid var(--border-light);
   align-items: center;
   justify-content: center;
 }
@@ -4907,8 +4910,8 @@ h4 {
 /* ── Cerebrium Cosmic Footer (Image 2) ── */
 .cerebrium-footer {
   position: relative;
-  background-color: #08040c;
-  color: #ffffff;
+  background-color: var(--bg-card);
+  color: var(--text-main);
   overflow: hidden;
   padding: 5.5rem 1.5rem 2.5rem 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -4958,9 +4961,9 @@ h4 {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cfd7e7;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
   text-decoration: none;
   transition: all 0.2s ease;
 }
@@ -4978,7 +4981,7 @@ h4 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #cbd5e1;
+  color: var(--text-main);
   margin-bottom: 1.25rem;
 }
 
@@ -4993,13 +4996,13 @@ h4 {
 
 .cerebrium-footer-link {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   text-decoration: none;
   transition: color 0.18s ease;
 }
 
 .cerebrium-footer-link:hover {
-  color: #ffffff;
+  color: var(--accent-primary);
 }
 
 /* Cerebrium Large Bottom CTA (Image 2) */
@@ -5090,7 +5093,7 @@ h4 {
 /* ── Audit-Ready Company: Carbon Emissions & Job Reporting Enterprise Matrix ── */
 .cerebrium-audit-matrix-section {
   padding: 6.5rem 1.5rem;
-  background-color: #07030b;
+  background-color: var(--bg-page);
   position: relative;
   overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -5145,7 +5148,7 @@ h4 {
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: -0.03em;
-  color: #ffffff;
+  color: var(--text-main);
   margin-bottom: 1.25rem;
 }
 
@@ -5164,10 +5167,10 @@ h4 {
 }
 
 .cerebrium-audit-matrix-card {
-  background: rgba(14, 9, 24, 0.85);
+  background: var(--bg-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-light);
   border-radius: 14px;
   padding: 2.25rem 2rem;
   display: flex;
@@ -5204,7 +5207,7 @@ h4 {
   font-family: var(--font-heading);
   font-size: 1.35rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-main);
   letter-spacing: -0.02em;
   margin: 0 0 1rem 0;
   line-height: 1.25;
@@ -5232,7 +5235,7 @@ h4 {
   align-items: flex-start;
   gap: 0.65rem;
   font-size: 0.85rem;
-  color: #cfd7e7;
+  color: var(--text-main);
   line-height: 1.45;
 }
 
@@ -5593,7 +5596,7 @@ h4 {
 /* Page View Container */
 .book-demo-page-container {
   min-height: calc(100vh - 80px);
-  background-color: var(--cerebrium-obsidian, #08040c);
+  background-color: var(--bg-page);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -5723,8 +5726,8 @@ h4 {
 /* The Architectural Dark Card (Exact Match to Screenshot) */
 .book-demo-card {
   position: relative;
-  background-color: #111726;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   padding: 2.25rem 2.25rem 2rem;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -5765,7 +5768,7 @@ h4 {
 .book-demo-title {
   font-size: 1.85rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-main);
   letter-spacing: -0.025em;
   margin: 0;
   line-height: 1.2;
@@ -5859,8 +5862,8 @@ h4 {
 .book-demo-input {
   width: 100%;
   height: 46px;
-  background: #0d121c;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   padding: 0 0.95rem;
   font-size: 0.92rem;
@@ -6163,7 +6166,7 @@ h4 {
 
 .cerebrium-auth-page {
   min-height: calc(100vh - 80px);
-  background-color: var(--cerebrium-obsidian, #08040c) !important;
+  background-color: var(--bg-page) !important;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -6176,8 +6179,8 @@ h4 {
 .cerebrium-auth-card {
   position: relative;
   z-index: 1;
-  background-color: #111726;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   padding: 2.25rem 2.25rem 2rem;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -6207,14 +6210,14 @@ h4 {
 .cerebrium-auth-brand-name {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-main);
   letter-spacing: -0.02em;
 }
 
 .cerebrium-auth-title {
   font-size: 1.65rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-main);
   letter-spacing: -0.025em;
   margin: 0 0 0.4rem 0;
   line-height: 1.2;
@@ -6254,8 +6257,8 @@ h4 {
 .cerebrium-auth-input {
   width: 100%;
   height: 46px;
-  background: #0d121c;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   padding: 0 0.95rem;
   font-size: 0.92rem;

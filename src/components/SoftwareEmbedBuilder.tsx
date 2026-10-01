@@ -460,8 +460,8 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
           style={{
             position: 'relative',
             borderRadius: '10px',
-            backgroundColor: '#0a0f1d',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-light)',
             overflow: 'hidden',
           }}
         >
@@ -471,11 +471,11 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '0.5rem 1rem',
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              backgroundColor: 'var(--bg-subtle)',
+              borderBottom: '1px solid var(--border-light)',
             }}
           >
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               HTML5 SNIPPET
             </span>
             <button
@@ -489,9 +489,9 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                backgroundColor: copiedCode ? '#16a34a' : 'rgba(255, 255, 255, 0.08)',
-                color: '#ffffff',
+                border: '1px solid var(--border-medium)',
+                backgroundColor: copiedCode ? 'var(--color-green)' : 'var(--bg-card)',
+                color: copiedCode ? '#ffffff' : 'var(--text-main)',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
@@ -523,7 +523,8 @@ export const SoftwareEmbedBuilder: React.FC<SoftwareEmbedBuilderProps> = ({
               fontSize: '0.825rem',
               lineHeight: 1.65,
               fontFamily: 'var(--font-mono, monospace)',
-              color: '#e2e8f0',
+              color: 'var(--text-main)',
+              backgroundColor: 'var(--bg-card)',
             }}
           >
             <code>{embedCode}</code>

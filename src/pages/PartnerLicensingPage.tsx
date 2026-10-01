@@ -145,7 +145,7 @@ export const PartnerLicensingPage: React.FC = () => {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#090d1a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    <span style={{ fontSize: '0.9375rem', color: '#1e293b', fontWeight: 500, lineHeight: 1.4 }}>
+                    <span style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', fontWeight: 500, lineHeight: 1.4 }}>
                       {feature}
                     </span>
                   </li>
@@ -186,29 +186,27 @@ export const PartnerLicensingPage: React.FC = () => {
                 }
               }}
               style={{
-                backgroundColor: '#090d1a',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'var(--bg-card)',
+                border: '2px solid var(--accent-primary)',
                 borderRadius: '12px',
                 padding: '2.75rem 2.25rem',
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: '0 16px 36px -10px rgba(0, 0, 0, 0.35)',
+                boxShadow: 'var(--shadow-lg)',
                 cursor: 'pointer',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 24px 48px -10px rgba(0, 0, 0, 0.45)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-xl)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 16px 36px -10px rgba(0, 0, 0, 0.35)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
               }}
             >
               {/* Rocket/Premium Icon */}
-              <div style={{ marginBottom: '1.25rem', color: '#ffffff' }}>
+              <div style={{ marginBottom: '1.25rem', color: 'var(--accent-primary)' }}>
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
                   <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
@@ -222,7 +220,7 @@ export const PartnerLicensingPage: React.FC = () => {
                 style={{
                   fontSize: '1.85rem',
                   fontWeight: 700,
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   letterSpacing: '-0.02em',
                   margin: '0 0 0.75rem 0',
                 }}
@@ -234,7 +232,7 @@ export const PartnerLicensingPage: React.FC = () => {
               <p
                 style={{
                   fontSize: '0.9375rem',
-                  color: '#94a3b8',
+                  color: 'var(--text-muted)',
                   lineHeight: 1.55,
                   margin: '0 0 2.25rem 0',
                   minHeight: '44px',
@@ -252,10 +250,10 @@ export const PartnerLicensingPage: React.FC = () => {
                   'Exclusive support services',
                 ].map((feature, idx) => (
                   <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    <span style={{ fontSize: '0.9375rem', color: '#f1f5f9', fontWeight: 500, lineHeight: 1.4 }}>
+                    <span style={{ fontSize: '0.9375rem', color: 'var(--text-main)', fontWeight: 500, lineHeight: 1.4 }}>
                       {feature}
                     </span>
                   </li>
@@ -269,7 +267,7 @@ export const PartnerLicensingPage: React.FC = () => {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    color: '#ffffff',
+                    color: 'var(--accent-primary)',
                     fontWeight: 700,
                     fontSize: '1rem',
                     letterSpacing: '-0.01em',
@@ -278,7 +276,7 @@ export const PartnerLicensingPage: React.FC = () => {
                   <span>Get a quote</span>
                   <span style={{ fontSize: '1.15rem' }}>→</span>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.4rem', fontWeight: 500 }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontWeight: 500 }}>
                   30 min · No obligation · On us
                 </div>
               </div>

@@ -731,7 +731,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                       flex: 1,
                       minWidth: '8px',
                       height: '2px',
-                      backgroundColor: isDone ? '#0f172a' : '#e2e8f0',
+                      backgroundColor: isDone ? 'var(--accent-primary)' : 'var(--border-light)',
                       borderRadius: '1px',
                       transition: 'background-color 0.2s ease',
                     }}

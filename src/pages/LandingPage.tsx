@@ -37,7 +37,7 @@ export const LandingPage: React.FC = () => {
           
           {/* Official UK Corporate Registration */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.78rem', color: '#cfd7e7', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
               UK Corporation No. <strong>15230476</strong> • ISO 19011 Audit-Readiness Framework
             </span>
           </div>
@@ -54,7 +54,7 @@ export const LandingPage: React.FC = () => {
                   fontWeight: 800,
                   lineHeight: 1.08,
                   marginBottom: '1.35rem',
-                  color: '#ffffff',
+                  color: 'var(--text-main)',
                   letterSpacing: '-0.03em',
                 }}
               >
@@ -64,7 +64,7 @@ export const LandingPage: React.FC = () => {
               <p
                 style={{
                   fontSize: '1.05rem',
-                  color: '#cfd7e7',
+                  color: 'var(--text-muted)',
                   lineHeight: 1.6,
                   marginBottom: '2rem',
                   maxWidth: '560px',
@@ -120,7 +120,7 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 {/* Statutory Credentials Bar */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.35rem', flexWrap: 'wrap', fontSize: '0.78rem', color: '#b3c0d4', fontFamily: 'var(--font-mono)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.35rem', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                   <span style={{ color: '#10b981', fontWeight: 600 }}>
                     CMA Green Claims Code Audit-Ready
                   </span>
@@ -136,13 +136,11 @@ export const LandingPage: React.FC = () => {
             <div
               style={{
                 position: 'relative',
-                backgroundColor: 'rgba(12, 16, 29, 0.88)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '12px',
                 padding: '1.5rem',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 45, 141, 0.12)',
+                boxShadow: 'var(--shadow-lg)',
               }}
             >
               {/* Monitored Physical Facility Ground Truth Window */}
@@ -154,7 +152,7 @@ export const LandingPage: React.FC = () => {
                   borderRadius: '8px',
                   overflow: 'hidden',
                   marginBottom: '1rem',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  border: '1px solid var(--border-light)',
                 }}
               >
                 <img
@@ -174,7 +172,7 @@ export const LandingPage: React.FC = () => {
                   <div style={{ fontSize: '0.65rem', color: 'var(--cerebrium-magenta)', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: '0.2rem' }}>
                     CONTINUOUS TELEMETRY NODE
                   </div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.2 }}>
                     Industrial Telemetry Station UK-01
                   </div>
                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'var(--font-mono)', marginTop: '0.25rem' }}>
@@ -192,7 +190,7 @@ export const LandingPage: React.FC = () => {
               </div>
 
               {/* Tabbed Demo Panels */}
-              <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.85rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
                 {(['SENSORS', 'EFFICIENCY', 'CERT'] as const).map(tab => (
                   <button
                     key={tab}
@@ -207,9 +205,9 @@ export const LandingPage: React.FC = () => {
                       border: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      backgroundColor: heroStationTab === tab ? 'rgba(255, 45, 141, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-                      color: heroStationTab === tab ? 'var(--cerebrium-magenta)' : '#94a3b8',
-                      outline: heroStationTab === tab ? '1px solid rgba(255, 45, 141, 0.4)' : '1px solid transparent',
+                      backgroundColor: heroStationTab === tab ? 'var(--accent-primary)' : 'var(--bg-subtle)',
+                      color: heroStationTab === tab ? '#ffffff' : 'var(--text-muted)',
+                      outline: 'none',
                     }}
                   >
                     {tab}
@@ -228,10 +226,10 @@ export const LandingPage: React.FC = () => {
                   ].map(sensor => (
                     <div
                       key={sensor.id}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)', fontSize: '0.75rem' }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-subtle)', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border-light)', fontSize: '0.75rem' }}
                     >
                       <div>
-                        <div style={{ fontWeight: 600, color: '#cfd7e7', marginBottom: '0.1rem' }}>{sensor.label}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.1rem' }}>{sensor.label}</div>
                         <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>{sensor.id} · {sensor.unit}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
@@ -256,10 +254,10 @@ export const LandingPage: React.FC = () => {
                   ].map(metric => (
                     <div key={metric.label}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#cfd7e7', fontWeight: 600 }}>{metric.label}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-main)', fontWeight: 600 }}>{metric.label}</span>
                         <span style={{ fontSize: '0.75rem', fontWeight: 800, color: metric.color, fontFamily: 'var(--font-mono)' }}>{metric.value}</span>
                       </div>
-                      <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '4px', backgroundColor: 'var(--border-light)', borderRadius: '2px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${metric.bar}%`, backgroundColor: metric.color, borderRadius: '2px', transition: 'width 0.6s ease' }} />
                       </div>
                       <div style={{ fontSize: '0.62rem', color: '#64748b', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>{metric.benchmark}</div>
@@ -280,10 +278,10 @@ export const LandingPage: React.FC = () => {
                   ].map(cert => (
                     <div
                       key={cert.framework}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-subtle)', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border-light)' }}
                     >
                       <div>
-                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#e2e8f0', fontFamily: 'var(--font-mono)' }}>{cert.framework}</div>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>{cert.framework}</div>
                         <div style={{ fontSize: '0.62rem', color: '#64748b', marginTop: '0.1rem' }}>{cert.scope}</div>
                       </div>
                       <span style={{ fontSize: '0.62rem', fontWeight: 800, color: cert.color, fontFamily: 'var(--font-mono)', letterSpacing: '0.04em', flexShrink: 0 }}>{cert.status}</span>
@@ -293,10 +291,10 @@ export const LandingPage: React.FC = () => {
               )}
 
               {/* Interactive Sweep Action Footer */}
-              <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <div style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
                   <span style={{ color: '#94a3b8' }}>Sweeps simulated:</span>{' '}
-                  <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{sweepCount}</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>{sweepCount}</span>
                   <span style={{ marginLeft: '0.75rem', color: '#64748b' }}>Last: {lastSweepTime}</span>
                 </div>
                 <button
@@ -379,7 +377,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 2.2 Physical-to-Digital Provenance & Authentic Brand Assets */}
-      <section style={{ backgroundColor: 'rgba(10, 14, 26, 0.95)', borderBottom: '1px solid var(--border-light)', padding: '4.5rem 0' }}>
+      <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '4.5rem 0' }}>
         <div className="container-x">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3.5rem', alignItems: 'center' }}>
             
@@ -387,11 +385,11 @@ export const LandingPage: React.FC = () => {
             <div
               style={{
                 position: 'relative',
-                backgroundColor: 'rgba(18, 24, 38, 0.7)',
+                backgroundColor: 'var(--bg-subtle)',
                 borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                border: '1px solid var(--border-light)',
                 padding: '1.5rem',
-                boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 45, 141, 0.1)',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem',
@@ -406,7 +404,7 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
 
-              <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: '#000000' }}>
+              <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-light)', backgroundColor: 'var(--bg-card)' }}>
                 <img
                   src="/images/vagaries-provenance-cards.jpg"
                   alt="NFTY LOGS Vagaries of GHG Digital Twin Collectible Cards"
@@ -414,7 +412,7 @@ export const LandingPage: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'var(--font-mono)', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'var(--font-mono)', borderTop: '1px solid var(--border-light)', paddingTop: '0.75rem' }}>
                 <span>Vagaries of GHG™ Digital Twin Series</span>
                 <span style={{ color: '#10b981', fontWeight: 700 }}>Dual-Logo Verified</span>
               </div>
@@ -426,11 +424,11 @@ export const LandingPage: React.FC = () => {
                 PHYSICAL-TO-DIGITAL PROVENANCE
               </div>
 
-              <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: '#ffffff', lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '1.25rem' }}>
                 From Physical Emissions to Immutable Trust Seals
               </h2>
 
-              <p style={{ fontSize: '1rem', color: '#cfd7e7', lineHeight: 1.65, marginBottom: '2rem' }}>
+              <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '2rem' }}>
                 Traditional ESG disclosures rely on unverified, retroactive spreadsheets. GHGEmissionLogs anchors real-time telemetry from physical smokestacks, utility meters, and workforce covenants directly into verifiable digital twin provenance cards and Polygon blockchain attestations.
               </p>
 
@@ -440,7 +438,7 @@ export const LandingPage: React.FC = () => {
                     01
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.25rem' }}>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                       Hardware Telemetry &amp; ISO 17025 Gatekeeper
                     </h3>
                     <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
@@ -454,7 +452,7 @@ export const LandingPage: React.FC = () => {
                     02
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.25rem' }}>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                       ISO 19011 Compliance Dossiers
                     </h3>
                     <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
@@ -468,7 +466,7 @@ export const LandingPage: React.FC = () => {
                     03
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.25rem' }}>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                       On-Chain Dual-Logo Provenance Seals
                     </h3>
                     <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
@@ -697,7 +695,7 @@ export const LandingPage: React.FC = () => {
                   alignItems: 'center',
                   gap: '0.5rem',
                   padding: '0.85rem 1.75rem',
-                  backgroundColor: '#090d1a',
+                  backgroundColor: 'var(--accent-primary)',
                   color: '#ffffff',
                   borderRadius: '6px',
                   fontWeight: 700,
@@ -733,7 +731,7 @@ export const LandingPage: React.FC = () => {
                     bottom: '0.65rem',
                     left: '0.75rem',
                     right: '0.75rem',
-                    backgroundColor: 'rgba(9, 13, 26, 0.85)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.8)',
                     padding: '4px 10px',
                     borderRadius: '4px',
                     fontSize: '0.68rem',
@@ -765,7 +763,7 @@ export const LandingPage: React.FC = () => {
                   <div style={{ width: '60%', backgroundColor: '#10b981' }} />
                 </div>
 
-                <div style={{ backgroundColor: '#090d1a', color: '#e2e8f0', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.8rem', lineHeight: 1.55, fontFamily: 'var(--font-mono)' }}>
+                <div style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-main)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.8rem', lineHeight: 1.55, fontFamily: 'var(--font-mono)' }}>
                   Continuous assurance algorithms automatically verify Scope 1 &amp; 2 boundary telemetry against primary facility sensors before compiling ISO 14064 compliance dossiers.
                 </div>
               </div>
@@ -879,7 +877,7 @@ export const LandingPage: React.FC = () => {
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.85rem 1.75rem',
-                    backgroundColor: '#090d1a',
+                    backgroundColor: 'var(--accent-primary)',
                     color: '#ffffff',
                     borderRadius: '6px',
                     fontWeight: 700,
@@ -903,8 +901,8 @@ export const LandingPage: React.FC = () => {
                     gap: '0.5rem',
                     padding: '0.85rem 1.75rem',
                     backgroundColor: 'transparent',
-                    color: '#090d1a',
-                    border: '1px solid rgba(15, 23, 42, 0.2)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--border-medium)',
                     borderRadius: '6px',
                     fontWeight: 700,
                     fontSize: '0.9rem',

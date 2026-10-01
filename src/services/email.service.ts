@@ -135,20 +135,20 @@ export class EmailService {
     const sendgridApiKey = process.env.SENDGRID_API_KEY;
 
     const htmlContent = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border: 1px solid #1e293b; border-radius: 12px; background-color: #0d121c; color: #ffffff;">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #090d16;">
         <div style="margin-bottom: 24px;">
-          <div style="font-size: 11px; font-weight: 700; color: #ff2d8d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Enterprise Sovereign Security</div>
-          <h2 style="color: #ffffff; margin: 0 0 6px 0; font-size: 22px; font-weight: 800;">Verify Your Work Email Address</h2>
-          <p style="color: #94a3b8; font-size: 13px; margin: 0;">${appName}</p>
+          <div style="font-size: 11px; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Enterprise Sovereign Security</div>
+          <h2 style="color: #090d16; margin: 0 0 6px 0; font-size: 22px; font-weight: 800;">Verify Your Work Email Address</h2>
+          <p style="color: #64748b; font-size: 13px; margin: 0;">${appName}</p>
         </div>
-        <p style="color: #e2e8f0; font-size: 15px; line-height: 1.6;">
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">
           An account registration was initiated for <strong>${toEmail}</strong> on the GHGEmissionLogs Sovereign Provenance Platform.
         </p>
-        <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
+        <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
           To verify ownership of this corporate domain and activate full cryptographic evidence-signing authority, please verify your email address below.
         </p>
         <div style="margin: 32px 0; text-align: center;">
-          <a href="${verificationUrl}" style="background-color: #ff2d8d; color: #ffffff; padding: 13px 32px; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 14px rgba(255, 45, 141, 0.35);">
+          <a href="${verificationUrl}" style="background-color: #0f172a; color: #ffffff; padding: 13px 32px; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);">
             Verify Work Email Address
           </a>
         </div>

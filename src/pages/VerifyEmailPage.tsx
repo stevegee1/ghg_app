@@ -92,7 +92,7 @@ export const VerifyEmailPage: React.FC = () => {
   return (
     <div
       style={{
-        backgroundColor: '#08040c',
+        backgroundColor: 'var(--bg-page)',
         minHeight: '100vh',
         color: 'var(--text-main)',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -114,7 +114,7 @@ export const VerifyEmailPage: React.FC = () => {
           transform: 'translateX(-50%)',
           width: '700px',
           height: '500px',
-          background: 'radial-gradient(circle, rgba(255, 45, 141, 0.09) 0%, rgba(8, 4, 12, 0) 70%)',
+          background: 'radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(248, 250, 252, 0) 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -124,13 +124,13 @@ export const VerifyEmailPage: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '520px',
-          backgroundColor: 'var(--bg-page)',
-          border: '1px solid rgba(255, 255, 255, 0.09)',
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
           borderRadius: '16px',
           padding: '2.5rem 2rem',
           position: 'relative',
           zIndex: 1,
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+          boxShadow: 'var(--shadow-lg)',
         }}
       >
         {/* Brand Header */}
@@ -327,8 +327,8 @@ export const VerifyEmailPage: React.FC = () => {
                       width: '100%',
                       padding: '0.75rem 0.9rem',
                       borderRadius: '8px',
-                      backgroundColor: '#0d121c',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      backgroundColor: 'var(--bg-card)',
+                      border: '1px solid var(--border-medium)',
                       color: 'var(--text-main)',
                       fontSize: '0.875rem',
                       outline: 'none',
@@ -418,8 +418,8 @@ export const VerifyEmailPage: React.FC = () => {
                     width: '100%',
                     padding: '0.75rem 0.9rem',
                     borderRadius: '8px',
-                    backgroundColor: '#0d121c',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    backgroundColor: 'var(--bg-card)',
+                    border: '1px solid var(--border-medium)',
                     color: 'var(--text-main)',
                     fontSize: '0.875rem',
                     outline: 'none',

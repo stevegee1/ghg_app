@@ -403,8 +403,8 @@ const CharityAllocationCallout: React.FC = () => (
       marginTop: '1.25rem',
       padding: '0.85rem 1rem',
       borderRadius: '10px',
-      backgroundColor: '#0d121c',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
+      backgroundColor: 'var(--bg-card)',
+      border: '1px solid var(--border-light)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -431,7 +431,7 @@ const CharityAllocationCallout: React.FC = () => (
         fontWeight: 600,
         color: 'var(--text-main)',
         backgroundColor: 'var(--bg-page)',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
+        border: '1px solid var(--border-medium)',
         borderRadius: '6px',
         textDecoration: 'none',
         whiteSpace: 'nowrap',
@@ -450,7 +450,7 @@ const PartnerNetworkCallout: React.FC = () => (
       marginTop: '0.75rem',
       padding: '0.85rem 1rem',
       borderRadius: '10px',
-      backgroundColor: '#0d121c',
+      backgroundColor: 'var(--bg-card)',
       border: '1px solid rgba(255, 45, 141, 0.25)',
       display: 'flex',
       alignItems: 'center',
@@ -666,7 +666,7 @@ export const MerchStorePage: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--cerebrium-obsidian, #08040c)', minHeight: '100vh', color: 'var(--text-main)', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ backgroundColor: 'var(--bg-page)', minHeight: '100vh', color: 'var(--text-main)', position: 'relative', overflow: 'hidden' }}>
       {/* Background ambient neon glow matching portal/login */}
       <div className="book-demo-ambient-glow" aria-hidden="true" />
 
@@ -674,7 +674,7 @@ export const MerchStorePage: React.FC = () => {
       <div
         className="container-x frame-bordered"
         style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.09)',
+          borderBottom: '1px solid var(--border-light)',
           padding: '0.85rem 1.5rem',
           display: 'flex',
           alignItems: 'center',
@@ -741,8 +741,8 @@ export const MerchStorePage: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: '#0d121c',
-              border: '1px solid rgba(255, 255, 255, 0.09)',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
               borderRadius: '10px',
               padding: '4px',
               marginTop: '1.75rem',
@@ -769,7 +769,7 @@ export const MerchStorePage: React.FC = () => {
                 fontWeight: activeTab === 'catalog' ? 700 : 500,
                 cursor: 'pointer',
                 border: activeTab === 'catalog' ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
-                backgroundColor: activeTab === 'catalog' ? '#111726' : 'transparent',
+                backgroundColor: activeTab === 'catalog' ? 'var(--accent-primary)' : 'transparent',
                 color: activeTab === 'catalog' ? '#ffffff' : '#94a3b8',
                 boxShadow: activeTab === 'catalog' ? '0 4px 12px rgba(0, 0, 0, 0.4)' : 'none',
                 transition: 'all 0.15s ease',
@@ -799,7 +799,7 @@ export const MerchStorePage: React.FC = () => {
                 fontWeight: activeTab === 'goal_frenzy' ? 700 : 500,
                 cursor: 'pointer',
                 border: activeTab === 'goal_frenzy' ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
-                backgroundColor: activeTab === 'goal_frenzy' ? '#111726' : 'transparent',
+                backgroundColor: activeTab === 'goal_frenzy' ? 'var(--accent-primary)' : 'transparent',
                 color: activeTab === 'goal_frenzy' ? '#ffffff' : '#94a3b8',
                 boxShadow: activeTab === 'goal_frenzy' ? '0 4px 12px rgba(0, 0, 0, 0.4)' : 'none',
                 transition: 'all 0.15s ease',
@@ -838,7 +838,7 @@ export const MerchStorePage: React.FC = () => {
                     fontWeight: selectedCategory === cat ? 700 : 500,
                     cursor: 'pointer',
                     border: selectedCategory === cat ? '1px solid #ff2d8d' : '1px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: selectedCategory === cat ? '#ff2d8d' : '#0d121c',
+                    backgroundColor: selectedCategory === cat ? '#ff2d8d' : 'var(--bg-card)',
                     color: selectedCategory === cat ? '#ffffff' : '#94a3b8',
                     boxShadow: selectedCategory === cat ? '0 4px 14px rgba(255, 45, 141, 0.35)' : 'none',
                     transition: 'all 0.15s ease',
@@ -856,7 +856,7 @@ export const MerchStorePage: React.FC = () => {
               style={{
                 position: 'fixed',
                 inset: 0,
-                backgroundColor: 'rgba(8, 4, 12, 0.94)',
+                backgroundColor: 'rgba(255, 255, 255, 0.94)',
                 backdropFilter: 'blur(8px)',
                 zIndex: 9999,
                 display: 'flex',
@@ -879,7 +879,7 @@ export const MerchStorePage: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div style={{ position: 'relative', height: 'min(480px, 50vh)', backgroundColor: '#0d121c' }}>
+                <div style={{ position: 'relative', height: 'min(480px, 50vh)', backgroundColor: 'var(--bg-card)' }}>
                   <img
                     src={lightboxImage.imageUrl}
                     alt={lightboxImage.title}
@@ -892,7 +892,7 @@ export const MerchStorePage: React.FC = () => {
                       position: 'absolute',
                       top: '12px',
                       right: '12px',
-                      background: 'rgba(13, 18, 28, 0.85)',
+                      background: 'rgba(15, 23, 42, 0.8)',
                       color: 'var(--text-main)',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       borderRadius: '50%',
@@ -954,7 +954,7 @@ export const MerchStorePage: React.FC = () => {
                   }}
                 >
                   <div
-                    style={{ position: 'relative', height: '240px', backgroundColor: '#0d121c', cursor: 'pointer', overflow: 'hidden' }}
+                    style={{ position: 'relative', height: '240px', backgroundColor: 'var(--bg-card)', cursor: 'pointer', overflow: 'hidden' }}
                     onClick={() => setLightboxImage(item)}
                     title="Click to zoom image"
                   >
@@ -974,7 +974,7 @@ export const MerchStorePage: React.FC = () => {
                         position: 'absolute',
                         bottom: '8px',
                         left: '8px',
-                        background: 'rgba(13, 18, 28, 0.85)',
+                        background: 'rgba(15, 23, 42, 0.8)',
                         backdropFilter: 'blur(4px)',
                         color: 'var(--text-main)',
                         padding: '3px 8px',
@@ -990,7 +990,7 @@ export const MerchStorePage: React.FC = () => {
                         position: 'absolute',
                         top: '8px',
                         right: '8px',
-                        background: 'rgba(13, 18, 28, 0.75)',
+                        background: 'rgba(15, 23, 42, 0.75)',
                         color: 'var(--text-light)',
                         padding: '3px 8px',
                         borderRadius: '4px',
@@ -1044,7 +1044,7 @@ export const MerchStorePage: React.FC = () => {
                           borderRadius: '8px',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
-                          backgroundColor: selectedItem.id === item.id ? '#ff2d8d' : '#0d121c',
+                          backgroundColor: selectedItem.id === item.id ? '#ff2d8d' : 'var(--bg-card)',
                           color: 'var(--text-main)',
                           border: selectedItem.id === item.id ? 'none' : '1px solid rgba(255, 255, 255, 0.12)',
                           boxShadow: selectedItem.id === item.id ? '0 4px 14px rgba(255, 45, 141, 0.45)' : 'none',
@@ -1062,7 +1062,7 @@ export const MerchStorePage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.09)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '16px',
                 boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
                 padding: '1.75rem',
@@ -1070,7 +1070,7 @@ export const MerchStorePage: React.FC = () => {
                 top: '100px',
               }}
             >
-              <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.09)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0', letterSpacing: '-0.02em' }}>
                   Order &amp; ESG Routing
                 </h2>
@@ -1084,7 +1084,7 @@ export const MerchStorePage: React.FC = () => {
                   <div style={{ backgroundColor: 'rgba(255, 45, 141, 0.1)', border: '1px solid #ff2d8d', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1rem' }}>Order Placed & Payment Settled</div>
                     <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', color: 'var(--text-light)', fontFamily: 'monospace' }}>
-                      Transaction: <code style={{ color: 'var(--text-main)', backgroundColor: '#0d121c', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
+                      Transaction: <code style={{ color: 'var(--text-main)', backgroundColor: 'var(--bg-card)', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
                     </div>
                   </div>
 
@@ -1112,7 +1112,7 @@ export const MerchStorePage: React.FC = () => {
                       width: '100%',
                       minHeight: '48px',
                       marginTop: '1.25rem',
-                      backgroundColor: '#0d121c',
+                      backgroundColor: 'var(--bg-card)',
                       color: 'var(--text-main)',
                       border: '1px solid var(--border-light)',
                       borderRadius: '8px',
@@ -1126,7 +1126,7 @@ export const MerchStorePage: React.FC = () => {
               ) : selectedItem.priceCents !== null ? (
                 /* PRICED ITEM: CAP AT £35.00 */
                 <div>
-                  <div style={{ padding: '1rem', backgroundColor: '#0d121c', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ padding: '1rem', backgroundColor: 'var(--bg-card)', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>{selectedItem.title}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', marginTop: '2px' }}>{selectedItem.partnerName}</div>
                     <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.5rem', fontFamily: 'monospace' }}>
@@ -1134,7 +1134,7 @@ export const MerchStorePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ backgroundColor: '#0d121c', border: '1px solid rgba(255, 255, 255, 0.09)', padding: '1rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
+                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '1rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
                     <div style={{ fontSize: '0.72rem', color: '#ff2d8d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
                       Compulsory Statutory Routing
                     </div>
@@ -1199,7 +1199,7 @@ export const MerchStorePage: React.FC = () => {
               ) : (
                 /* UNPRICED ITEM: CONTACT ON ORDER */
                 <div>
-                  <div style={{ padding: '1rem', backgroundColor: '#0d121c', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ padding: '1rem', backgroundColor: 'var(--bg-card)', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>{selectedItem.title}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', marginTop: '2px' }}>{selectedItem.partnerName}</div>
                     <div style={{ marginTop: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.85rem', backgroundColor: 'rgba(255, 45, 141, 0.12)', border: '1px solid rgba(255, 45, 141, 0.3)', borderRadius: '20px', color: '#ff2d8d', fontWeight: 700, fontSize: '0.85rem' }}>
@@ -1229,7 +1229,7 @@ export const MerchStorePage: React.FC = () => {
                           width: '100%',
                           minHeight: '48px',
                           fontSize: '0.85rem',
-                          backgroundColor: '#0d121c',
+                          backgroundColor: 'var(--bg-card)',
                           color: 'var(--text-main)',
                           border: '1px solid var(--border-light)',
                           borderRadius: '8px',
@@ -1269,7 +1269,7 @@ export const MerchStorePage: React.FC = () => {
                             minHeight: '48px',
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             boxSizing: 'border-box',
@@ -1293,7 +1293,7 @@ export const MerchStorePage: React.FC = () => {
                             minHeight: '48px',
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             boxSizing: 'border-box',
@@ -1315,7 +1315,7 @@ export const MerchStorePage: React.FC = () => {
                             padding: '0.75rem',
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: '#0d121c',
+                            backgroundColor: 'var(--bg-card)',
                             color: 'var(--text-main)',
                             fontSize: '0.875rem',
                             resize: 'vertical',
@@ -1377,7 +1377,7 @@ export const MerchStorePage: React.FC = () => {
               borderRadius: '16px',
               padding: '1.75rem 2rem',
               marginBottom: '2rem',
-              border: '1px solid rgba(255, 255, 255, 0.09)',
+              border: '1px solid var(--border-light)',
               boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
             }}
           >
@@ -1410,7 +1410,7 @@ export const MerchStorePage: React.FC = () => {
               <div
                 style={{
                   backgroundColor: 'var(--bg-page)',
-                  border: '1px solid rgba(255, 255, 255, 0.09)',
+                  border: '1px solid var(--border-light)',
                   borderRadius: '16px',
                   boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
                   padding: '1.75rem',
@@ -1441,7 +1441,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
@@ -1451,7 +1451,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {MAJOR_SPORTS.map((sport) => (
-                        <option key={sport.id} value={sport.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option key={sport.id} value={sport.id} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           {sport.name}
                         </option>
                       ))}
@@ -1487,7 +1487,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
@@ -1496,11 +1496,11 @@ export const MerchStorePage: React.FC = () => {
                         fontFamily: 'inherit',
                       }}
                     >
-                      <option value="" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>-- Choose {activeSport.teamLabel.toLowerCase()} --</option>
+                      <option value="" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>-- Choose {activeSport.teamLabel.toLowerCase()} --</option>
                       {activeSport.presetClubs.map((c) => (
-                        <option key={c} value={c} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>{c}</option>
+                        <option key={c} value={c} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>{c}</option>
                       ))}
-                      <option value="__custom__" style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>Other / Custom {activeSport.teamLabel.toLowerCase()}...</option>
+                      <option value="__custom__" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>Other / Custom {activeSport.teamLabel.toLowerCase()}...</option>
                     </select>
                     <span style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#ff2d8d', fontSize: '0.75rem' }}>
                       ▼
@@ -1521,7 +1521,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.85rem',
                         boxSizing: 'border-box',
@@ -1547,7 +1547,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         boxSizing: 'border-box',
@@ -1568,7 +1568,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         boxSizing: 'border-box',
@@ -1592,7 +1592,7 @@ export const MerchStorePage: React.FC = () => {
                       padding: '0.75rem',
                       borderRadius: '8px',
                       border: '1px solid var(--border-light)',
-                      backgroundColor: '#0d121c',
+                      backgroundColor: 'var(--bg-card)',
                       color: 'var(--text-main)',
                       fontSize: '0.875rem',
                       boxSizing: 'border-box',
@@ -1621,7 +1621,7 @@ export const MerchStorePage: React.FC = () => {
                       padding: '0.75rem',
                       borderRadius: '8px',
                       border: '1px solid var(--border-light)',
-                      backgroundColor: '#0d121c',
+                      backgroundColor: 'var(--bg-card)',
                       color: 'var(--text-main)',
                       fontSize: '0.875rem',
                       fontWeight: 600,
@@ -1635,7 +1635,7 @@ export const MerchStorePage: React.FC = () => {
               <div
                 style={{
                   backgroundColor: 'var(--bg-page)',
-                  border: '1px solid rgba(255, 255, 255, 0.09)',
+                  border: '1px solid var(--border-light)',
                   borderRadius: '16px',
                   boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
                   padding: '1.75rem',
@@ -1666,7 +1666,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
@@ -1676,7 +1676,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {GARMENT_OPTIONS.map((g) => (
-                        <option key={g.id} value={g.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option key={g.id} value={g.id} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           {g.label} - £{(g.priceCents / 100).toFixed(2)}
                         </option>
                       ))}
@@ -1715,7 +1715,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
@@ -1725,7 +1725,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {THREAD_COLORS.map((t) => (
-                        <option key={t.id} value={t.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option key={t.id} value={t.id} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           {t.label}
                         </option>
                       ))}
@@ -1763,7 +1763,7 @@ export const MerchStorePage: React.FC = () => {
                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                         borderRadius: '8px',
                         border: '1px solid var(--border-light)',
-                        backgroundColor: '#0d121c',
+                        backgroundColor: 'var(--bg-card)',
                         color: 'var(--text-main)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
@@ -1773,7 +1773,7 @@ export const MerchStorePage: React.FC = () => {
                       }}
                     >
                       {PLACEMENT_OPTIONS.map((p) => (
-                        <option key={p.id} value={p.id} style={{ backgroundColor: '#0d121c', color: 'var(--text-main)' }}>
+                        <option key={p.id} value={p.id} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
                           {p.label}
                         </option>
                       ))}
@@ -1791,7 +1791,7 @@ export const MerchStorePage: React.FC = () => {
             <div
               style={{
                 backgroundColor: 'var(--bg-page)',
-                border: '1px solid rgba(255, 255, 255, 0.09)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '16px',
                 boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.7)',
                 padding: '1.75rem',
@@ -1799,7 +1799,7 @@ export const MerchStorePage: React.FC = () => {
                 top: '100px',
               }}
             >
-              <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.09)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                 <div style={{ fontSize: '0.72rem', color: '#ff2d8d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Frenzy Custom Studio Milestone Order
                 </div>
@@ -1816,7 +1816,7 @@ export const MerchStorePage: React.FC = () => {
                   <div style={{ backgroundColor: 'rgba(255, 45, 141, 0.1)', border: '1px solid #ff2d8d', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1rem' }}>Frenzy Custom Order Initiated!</div>
                     <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', color: 'var(--text-light)', fontFamily: 'monospace' }}>
-                      Transaction: <code style={{ color: 'var(--text-main)', backgroundColor: '#0d121c', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
+                      Transaction: <code style={{ color: 'var(--text-main)', backgroundColor: 'var(--bg-card)', padding: '2px 6px', borderRadius: '4px' }}>{successResult.transactionId}</code>
                     </div>
                   </div>
 
@@ -1844,7 +1844,7 @@ export const MerchStorePage: React.FC = () => {
                       width: '100%',
                       minHeight: '48px',
                       marginTop: '1.25rem',
-                      backgroundColor: '#0d121c',
+                      backgroundColor: 'var(--bg-card)',
                       color: 'var(--text-main)',
                       border: '1px solid var(--border-light)',
                       borderRadius: '8px',
@@ -1858,7 +1858,7 @@ export const MerchStorePage: React.FC = () => {
               ) : (
                 <div>
                   {/* Order Summary Box */}
-                  <div style={{ padding: '1rem', backgroundColor: '#0d121c', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ padding: '1rem', backgroundColor: 'var(--bg-card)', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
                       {activeClubName} - {activeGarment.label}
                     </div>
@@ -1871,7 +1871,7 @@ export const MerchStorePage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setFrenzyQuantity(Math.max(1, frenzyQuantity - 1))}
-                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border-light)', background: '#111726', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700 }}
+                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700 }}
                         >
                           -
                         </button>
@@ -1879,7 +1879,7 @@ export const MerchStorePage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setFrenzyQuantity(frenzyQuantity + 1)}
-                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border-light)', background: '#111726', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700 }}
+                          style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700 }}
                         >
                           +
                         </button>
@@ -1904,7 +1904,7 @@ export const MerchStorePage: React.FC = () => {
                   </div>
 
                   {/* Compulsory Statutory Routing */}
-                  <div style={{ backgroundColor: '#0d121c', border: '1px solid rgba(255, 255, 255, 0.09)', padding: '1rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
+                  <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '1rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
                     <div style={{ fontSize: '0.72rem', color: '#ff2d8d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
                       Compulsory Statutory Routing
                     </div>
