@@ -8298,3 +8298,28 @@ h4 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   PERSEFONI & GLOBAL TACTILE BUTTON CLICK REACTIVITY
+   Ensures instantaneous user effect & tactile responsiveness upon click
+   ========================================================================== */
+button:active:not(:disabled),
+.btn:active:not(:disabled),
+.persefoni-submit-btn:active:not(:disabled),
+.persefoni-secondary-btn:active:not(:disabled),
+.persefoni-btn-black:active:not(:disabled),
+.persefoni-demo-submit-btn:active:not(:disabled),
+.cerebrium-nav-btn-magenta:active:not(:disabled),
+.cerebrium-nav-btn-ice:active:not(:disabled),
+.cerebrium-capsule-link:active {
+  transform: scale(0.97) translateY(1px) !important;
+  transition: transform 0.08s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@media (max-width: 960px) {
+  .store-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+}
+

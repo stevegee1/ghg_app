@@ -477,7 +477,7 @@ export const Layout: React.FC = () => {
                   className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
                   onClick={closeDropdowns}
                 >
-                  SUPPORT EXTREME WEATHER
+                  SUPPORT EXTREME WEATHER SURVIVOR
                 </NavLink>
               </li>
               <li>
