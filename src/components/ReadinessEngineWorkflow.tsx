@@ -196,7 +196,87 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
   const [submissionId, setSubmissionId] = useState<string | null>(initialSubId);
   const syncedRef = useRef(false);
 
+  // Dynamic Evidence State
+  const [uploadedEvidence, setUploadedEvidence] = useState<
+    Record<string, { file: File; name: string; size: string; status: 'ATTACHED' | 'UPLOADED' }>
+  >({});
+
+  // Step 2 Readiness Engine State & Normative Agreement
+  const [evaluating, setEvaluating] = useState(false);
+  const [readinessScore, setReadinessScore] = useState<number>(0);
+  const [submissionStatus, setSubmissionStatus] = useState<string>('SUBMITTED');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [aiReviewerNotes, setAiReviewerNotes] = useState<string | null>(null);
+  const [aiReviewedBy, setAiReviewedBy] = useState<string | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
+
+  // Step 3 Checkout State
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
+
+  // Step 4 Dual Logo & NFT State
+  const [succinctMessage, setSuccinctMessage] = useState(
+    scope === 'JOB_REPORTING'
+      ? 'Certified Section 106 Local Employment and Social Value Impact.'
+      : 'Pioneering verified low-carbon operations under ISO 14064-1 standard.'
+  );
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [uploadedLogoFile, setUploadedLogoFile] = useState<File | null>(null);
+  const [minting, setMinting] = useState(false);
+  const [credentialData, setCredentialData] = useState<any | null>(null);
+
+  // ── Statutory Step Completion & Gating Rules ─────────────────────────────
+  const isStepComplete = (step: WorkflowStep): boolean => {
+    switch (step) {
+      case 1:
+        return Boolean(submissionId);
+      case 2:
+        return Boolean(submissionId) && (readinessScore >= 80 || submissionStatus === 'AUDIT_READY');
+      case 3:
+        return Boolean(isPaid);
+      case 4:
+        return Boolean(credentialData);
+      case 5:
+        return Boolean(credentialData);
+      default:
+        return false;
+    }
+  };
+
+  const isStepUnlocked = (step: WorkflowStep): boolean => {
+    switch (step) {
+      case 1:
+        return true;
+      case 2:
+        return Boolean(submissionId);
+      case 3:
+        return (
+          Boolean(submissionId) &&
+          (readinessScore >= 80 || submissionStatus === 'AUDIT_READY') &&
+          (acceptedTerms || isPaid)
+        );
+      case 4:
+        return Boolean(isPaid);
+      case 5:
+        return Boolean(isPaid) && (Boolean(credentialData) || Boolean(submissionId));
+      default:
+        return false;
+    }
+  };
+
   const goToStep = (step: WorkflowStep) => {
+    if (!isStepUnlocked(step)) {
+      if (step === 2) {
+        setStepError('Stage 2 Conformance is locked. Please submit statutory boundary and evidence in Stage 1 first.');
+      } else if (step === 3) {
+        setStepError('Stage 3 Statutory Checkout is locked. You must clear Stage 2 Conformance (minimum 80% readiness score and acceptance of terms).');
+      } else if (step === 4) {
+        setStepError('Stage 4 Dual-Mark & Warranty Minting is locked. Please complete Stage 3 Statutory Settlement.');
+      } else if (step === 5) {
+        setStepError('Stage 5 Telemetry & Deployment is locked until statutory assurance credentials are issued.');
+      }
+      return;
+    }
     setStepError(null);
     setActiveStep(step);
     setMaxStepReached((prev) => Math.max(prev, step));
@@ -228,35 +308,6 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
       : ['SCOPE_1', 'SCOPE_2', 'SCOPE_3', 'FUGITIVE_EMISSIONS']
   );
   const [reportingYear, setReportingYear] = useState('2026');
-
-  // Dynamic Evidence State
-  const [uploadedEvidence, setUploadedEvidence] = useState<
-    Record<string, { file: File; name: string; size: string; status: 'ATTACHED' | 'UPLOADED' }>
-  >({});
-
-  // Step 2 Readiness Engine State & Normative Agreement
-  const [evaluating, setEvaluating] = useState(false);
-  const [readinessScore, setReadinessScore] = useState<number>(0);
-  const [submissionStatus, setSubmissionStatus] = useState<string>('SUBMITTED');
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [aiReviewerNotes, setAiReviewerNotes] = useState<string | null>(null);
-  const [aiReviewedBy, setAiReviewedBy] = useState<string | null>(null);
-  const [stepError, setStepError] = useState<string | null>(null);
-
-  // Step 3 Checkout State
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [isPaid, setIsPaid] = useState(false);
-
-  // Step 4 Dual Logo & NFT State
-  const [succinctMessage, setSuccinctMessage] = useState(
-    scope === 'JOB_REPORTING'
-      ? 'Certified Section 106 Local Employment and Social Value Impact.'
-      : 'Pioneering verified low-carbon operations under ISO 14064-1 standard.'
-  );
-  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
-  const [uploadedLogoFile, setUploadedLogoFile] = useState<File | null>(null);
-  const [minting, setMinting] = useState(false);
-  const [credentialData, setCredentialData] = useState<any | null>(null);
 
   // Step 5 Telemetry & Component Drop State
   const [copiedKey, setCopiedKey] = useState(false);
@@ -616,16 +667,24 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              backgroundColor: 'var(--bg-subtle)',
-              border: 'none',
+              backgroundColor: '#191c1a',
+              border: '1px solid #191c1a',
               color: '#ffffff',
               borderRadius: '6px',
               padding: '0.4rem 0.85rem',
               fontSize: '0.78rem',
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-              transition: 'background-color 0.15s ease',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#2e332f';
+              e.currentTarget.style.borderColor = '#2e332f';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#191c1a';
+              e.currentTarget.style.borderColor = '#191c1a';
             }}
             title="Clear and start a fresh assurance filing"
           >
@@ -658,8 +717,8 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
         >
           {([1, 2, 3, 4, 5] as WorkflowStep[]).map((step, idx) => {
             const isCurrent = activeStep === step;
-            const isDone = step < activeStep;
-            const canNavigate = step <= maxStepReached || step < activeStep;
+            const isDone = isStepComplete(step);
+            const canNavigate = isStepUnlocked(step);
             const accentColor = scope === 'JOB_REPORTING' ? '#2563eb' : '#16a34a';
 
             return (
@@ -668,19 +727,35 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   onClick={() => {
                     if (canNavigate) {
                       goToStep(step);
+                    } else {
+                      if (step === 2) {
+                        setStepError('Stage 2 Conformance is locked. Please submit statutory boundary and evidence in Stage 1 first.');
+                      } else if (step === 3) {
+                        setStepError('Stage 3 Statutory Checkout is locked. You must clear Stage 2 Conformance (minimum 80% readiness score and acceptance of terms).');
+                      } else if (step === 4) {
+                        setStepError('Stage 4 Dual-Mark & Warranty Minting is locked. Please complete Stage 3 Statutory Settlement.');
+                      } else if (step === 5) {
+                        setStepError('Stage 5 Telemetry & Deployment is locked until statutory assurance credentials are issued.');
+                      }
                     }
                   }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.45rem',
-                    cursor: canNavigate ? 'pointer' : isCurrent ? 'default' : 'not-allowed',
+                    cursor: canNavigate && !isCurrent ? 'pointer' : isCurrent ? 'default' : 'not-allowed',
                     flexShrink: 0,
                     userSelect: 'none',
-                    opacity: canNavigate || isCurrent ? 1 : 0.4,
+                    opacity: isCurrent ? 1 : canNavigate ? 0.9 : 0.35,
                     transition: 'all 0.15s ease',
                   }}
-                  title={canNavigate ? `Go to Step ${step}: ${STEP_LABELS_BY_SCOPE[scope][step]}` : isCurrent ? `Current Step ${step}` : `Step ${step} locked until previous stages are cleared`}
+                  title={
+                    isCurrent
+                      ? `Current Stage: ${STEP_LABELS_BY_SCOPE[scope][step]}`
+                      : canNavigate
+                      ? `Go to Stage ${step}: ${STEP_LABELS_BY_SCOPE[scope][step]}`
+                      : `Stage ${step} is locked until previous statutory gates are cleared`
+                  }
                 >
                   <div
                     style={{
@@ -731,7 +806,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                       flex: 1,
                       minWidth: '8px',
                       height: '2px',
-                      backgroundColor: isDone ? 'var(--accent-primary)' : 'var(--border-light)',
+                      backgroundColor: isDone ? '#0f172a' : '#e2e8f0',
                       borderRadius: '1px',
                       transition: 'background-color 0.2s ease',
                     }}
@@ -1004,8 +1079,9 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                               style={{
                                 fontSize: '0.7rem',
                                 fontWeight: 700,
-                                backgroundColor: 'var(--bg-subtle)',
-                                color: '#ffffff',
+                                backgroundColor: '#f1f5f9',
+                                border: '1px solid #cbd5e1',
+                                color: '#0f172a',
                                 padding: '2.5px 8px',
                                 borderRadius: '4px',
                                 letterSpacing: '0.03em',
@@ -1775,17 +1851,18 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   type="button"
                   onClick={() => goToStep(3)}
                   style={{
-                    backgroundColor: 'var(--bg-subtle)',
+                    backgroundColor: '#191c1a',
                     color: '#ffffff',
                     padding: '0.65rem 1.4rem',
                     borderRadius: '8px',
-                    border: 'none',
+                    border: '1px solid #191c1a',
                     fontWeight: 600,
                     fontSize: '0.875rem',
                     cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                   }}
                 >
-                  Go to Step 3 Checkout →
+                  Go to Step 3 Checkout &rarr;
                 </button>
                 <button
                   type="button"
@@ -2015,17 +2092,18 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   type="button"
                   onClick={() => goToStep(3)}
                   style={{
-                    backgroundColor: 'var(--bg-subtle)',
+                    backgroundColor: '#191c1a',
                     color: '#ffffff',
                     padding: '0.65rem 1.4rem',
                     borderRadius: '8px',
-                    border: 'none',
+                    border: '1px solid #191c1a',
                     fontWeight: 600,
                     fontSize: '0.875rem',
                     cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                   }}
                 >
-                  Go to Step 3 Checkout →
+                  Go to Step 3 Checkout &rarr;
                 </button>
               </div>
             </div>
@@ -2534,15 +2612,23 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   alignItems: 'center',
                   gap: '0.5rem',
                   padding: '0.65rem 1.5rem',
-                  backgroundColor: 'var(--bg-subtle)',
+                  backgroundColor: '#191c1a',
+                  border: '1px solid #191c1a',
                   color: '#ffffff',
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  borderRadius: '8px',
-                  border: 'none',
+                  borderRadius: '6px',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.15)',
-                  transition: 'background-color 0.15s ease',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2e332f';
+                  e.currentTarget.style.borderColor = '#2e332f';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#191c1a';
+                  e.currentTarget.style.borderColor = '#191c1a';
                 }}
               >
                 Finish &amp; View Credentials Locker →
