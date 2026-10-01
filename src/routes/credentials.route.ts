@@ -2,11 +2,11 @@
  * credentials.route.ts
  * ERC-1155 Audit Warranty Credential lifecycle endpoints:
  *
- *  POST /api/credentials/compose      — Upload client logo + message → dual-logo preview
- *  POST /api/credentials/mint         — Finalise credential → composite + Polygon mint
- *  GET  /api/credentials/:id/metadata.json  — Dynamic OpenSea ERC-1155 metadata
- *  GET  /api/credentials/:id/badge.svg     — Vector badge asset (SVG)
- *  GET  /api/credentials/my               — List authenticated user's credentials
+ *  POST /api/credentials/compose      : Upload client logo + message -> dual-logo preview
+ *  POST /api/credentials/mint         : Finalise credential -> composite + Polygon mint
+ *  GET  /api/credentials/:id/metadata.json  : Dynamic OpenSea ERC-1155 metadata
+ *  GET  /api/credentials/:id/badge.svg     : Vector badge asset (SVG)
+ *  GET  /api/credentials/my               : List authenticated user's credentials
  */
 
 import { Router, Request, Response } from 'express';

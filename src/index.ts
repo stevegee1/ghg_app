@@ -29,7 +29,7 @@ async function main() {
   const app = createApp();
   const port = Number(process.env.PORT) || 3000;
 
-  // Start listening FIRST — Railway health checks need 0.0.0.0:PORT to respond
+  // Start listening FIRST: Railway health checks need 0.0.0.0:PORT to respond
   app.listen(port, '0.0.0.0', () => {
     console.log(`Express server running on http://0.0.0.0:${port}`);
     console.log(`- API mounted at /api`);
@@ -191,11 +191,11 @@ async function main() {
 
     const licenseeCount = await prisma.licensee.count();
     const transactionCount = await prisma.transaction.count();
-    console.log(`✅ Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
-    console.log(`✅ Default Admin user initialized: ${adminEmail}`);
+    console.log(`[INFO] Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
+    console.log(`[INFO] Default Admin user initialized: ${adminEmail}`);
   } catch (e: any) {
-    console.error('⚠️  DB connection failed (check DATABASE_URL):', e?.message ?? e);
-    // Don't exit — server remains up to handle health checks and API errors gracefully
+    console.error('[ERROR] DB connection failed (check DATABASE_URL):', e?.message ?? e);
+    // Do not exit: server remains up to handle health checks and API errors gracefully
   }
 }
 

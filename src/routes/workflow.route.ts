@@ -263,7 +263,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
    * The agent evaluates each answer against ISO clauses and produces structured
    * ClauseReviewFinding[] docket, then transitions the submission to AI_SCREENED.
    *
-   * This runs asynchronously — returns immediately with a 202 Accepted.
+   * This runs asynchronously: returns immediately with a 202 Accepted.
    * Lead Auditor sees the findings when they open the submission in UNDER_REVIEW.
    *
    * Can be called by ADMIN or the owning licensee.
@@ -489,7 +489,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         try {
           const session = await checkoutService.createCheckoutSession({
             licenseeId: submission.licenseeId,
-            itemTitle: `GHG Assurance Fee — ${submission.framework.name}`,
+            itemTitle: `GHG Assurance Fee: ${submission.framework.name}`,
             grossAmountCents,
             currency: 'GBP',
             successUrl,

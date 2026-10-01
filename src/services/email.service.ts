@@ -51,7 +51,7 @@ export class EmailService {
           </a>
         </div>
         <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
-          This secure link will expire in <strong>${expiresInHours} hour</strong>. If you did not initiate this request, you can safely ignore this email — your password will remain unchanged.
+          This secure link will expire in <strong>${expiresInHours} hour</strong>. If you did not initiate this request, you can safely ignore this email; your password will remain unchanged.
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
         <p style="color: #94a3b8; font-size: 11px; margin: 0;">

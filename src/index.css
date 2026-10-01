@@ -29,6 +29,10 @@
   --color-sky-light: #f0f9ff;
   --color-sky-dark: #0369a1;
 
+  --color-blue: #0284c7;
+  --color-blue-light: #f0f9ff;
+  --color-blue-dark: #0369a1;
+
   --color-green: #10b981;
   --color-green-light: #ecfdf5;
   --color-green-dark: #047857;
@@ -1706,7 +1710,7 @@ h4 {
     font-size: 1.05rem !important;
   }
 
-  /* Hide carousel arrows on very small screens — rely on swipe */
+  /* Hide carousel arrows on very small screens - rely on swipe */
   .m3-carousel-arrow {
     display: none !important;
   }
@@ -2796,7 +2800,7 @@ h4 {
     gap: 1.25rem;
   }
 
-  /* Desktop sidebar — hidden on mobile (drawer replaces it) */
+  /* Desktop sidebar: hidden on mobile (drawer replaces it) */
   .portal-sidebar {
     display: none !important;
   }
@@ -3730,8 +3734,8 @@ h4 {
 }
 
 .cerebrium-capsule-nav:hover {
-  border-color: rgba(255, 45, 141, 0.35);
-  box-shadow: 0 14px 40px -10px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 45, 141, 0.15);
+  border-color: rgba(2, 132, 199, 0.35);
+  box-shadow: 0 14px 40px -10px rgba(0, 0, 0, 0.08), 0 0 20px rgba(2, 132, 199, 0.15);
 }
 
 .cerebrium-nav-brand {
@@ -3903,7 +3907,7 @@ h4 {
 .cerebrium-radar-ring {
   position: absolute;
   inset: -15px;
-  border: 1px solid rgba(255, 45, 141, 0.4);
+  border: 1px solid rgba(2, 132, 199, 0.35);
   border-radius: 50%;
   animation: radarPingWave 3.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
@@ -4135,10 +4139,10 @@ h4 {
 }
 
 .cerebrium-option-card:hover {
-  border-color: var(--cerebrium-magenta, #ff2d8d);
-  background-color: rgba(255, 45, 141, 0.03);
+  border-color: #0284c7;
+  background-color: rgba(2, 132, 199, 0.04);
   transform: translateY(-2px) scale(1.006);
-  box-shadow: 0 6px 18px -3px rgba(255, 45, 141, 0.18);
+  box-shadow: 0 4px 14px -3px rgba(2, 132, 199, 0.15);
 }
 
 .cerebrium-option-card:active {
@@ -4146,9 +4150,9 @@ h4 {
 }
 
 .cerebrium-option-card.selected-compliant {
-  border-color: var(--cerebrium-magenta, #ff2d8d);
-  background: linear-gradient(135deg, rgba(255, 45, 141, 0.06) 0%, rgba(2, 132, 199, 0.04) 100%);
-  box-shadow: 0 0 0 1.5px var(--cerebrium-magenta, #ff2d8d), 0 4px 16px rgba(255, 45, 141, 0.22);
+  border-color: #0f172a;
+  background: rgba(15, 23, 42, 0.04);
+  box-shadow: 0 0 0 1.5px #0f172a, 0 4px 16px rgba(15, 23, 42, 0.08);
 }
 
 .cerebrium-keycap-pill {
@@ -4168,16 +4172,16 @@ h4 {
 }
 
 .cerebrium-option-card:hover .cerebrium-keycap-pill {
-  border-color: var(--cerebrium-magenta, #ff2d8d);
-  color: var(--cerebrium-magenta, #ff2d8d);
+  border-color: #0284c7;
+  color: #0284c7;
 }
 
 .cerebrium-option-card.selected-compliant .cerebrium-keycap-pill {
-  background-color: var(--cerebrium-magenta, #ff2d8d);
-  border-color: var(--cerebrium-magenta, #ff2d8d);
+  background-color: #0f172a;
+  border-color: #0f172a;
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 45, 141, 0.5);
-  transform: scale(1.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transform: scale(1.04);
 }
 
 .cerebrium-option-label {
@@ -4202,10 +4206,10 @@ h4 {
 }
 
 .cerebrium-option-card.selected-compliant .cerebrium-option-radio-indicator {
-  border-color: var(--cerebrium-magenta, #ff2d8d);
-  background-color: var(--cerebrium-magenta, #ff2d8d);
+  border-color: #0f172a;
+  background-color: #0f172a;
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 45, 141, 0.45);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* Daylight Compliance Telemetry Stream Box */
@@ -4441,8 +4445,8 @@ h4 {
 .cerebrium-laser-bar {
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(90deg, #ff2d8d 0%, #0284c7 50%, #10b981 100%);
-  box-shadow: 0 0 10px rgba(255, 45, 141, 0.5);
+  background: linear-gradient(90deg, #0284c7 0%, #10b981 100%);
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.25);
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -4843,7 +4847,7 @@ h4 {
 .cerebrium-blog-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.1);
-  border-color: rgba(255, 45, 141, 0.35);
+  border-color: rgba(2, 132, 199, 0.35);
 }
 
 .cerebrium-blog-banner {
@@ -5391,7 +5395,7 @@ h4 {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--cerebrium-magenta, #ff2d8d);
+  color: #0284c7;
   margin-bottom: 0.75rem;
 }
 
@@ -5399,8 +5403,8 @@ h4 {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: var(--cerebrium-magenta, #ff2d8d);
-  box-shadow: 0 0 8px rgba(255, 45, 141, 0.6);
+  background-color: #0284c7;
+  box-shadow: 0 0 8px rgba(2, 132, 199, 0.5);
 }
 
 .cerebrium-arch-grid {
@@ -5421,8 +5425,8 @@ h4 {
 
 .cerebrium-arch-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 45, 141, 0.35);
-  box-shadow: 0 16px 36px -12px rgba(15, 23, 42, 0.08), 0 0 15px rgba(255, 45, 141, 0.08);
+  border-color: rgba(2, 132, 199, 0.35);
+  box-shadow: 0 16px 36px -12px rgba(15, 23, 42, 0.08), 0 0 15px rgba(2, 132, 199, 0.08);
 }
 
 .cerebrium-arch-card-top {
@@ -5453,9 +5457,9 @@ h4 {
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--cerebrium-magenta, #ff2d8d);
-  background-color: rgba(255, 45, 141, 0.08);
-  border: 1px solid rgba(255, 45, 141, 0.15);
+  color: #0284c7;
+  background-color: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.2);
   padding: 0.2rem 0.6rem;
   border-radius: 9999px;
   letter-spacing: 0.05em;
@@ -5540,7 +5544,7 @@ h4 {
 
 .cerebrium-reg-chip:hover {
   background-color: #ffffff;
-  border-color: rgba(255, 45, 141, 0.3);
+  border-color: rgba(2, 132, 199, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
@@ -5587,9 +5591,9 @@ h4 {
 }
 
 .cerebrium-engine-tab-btn.active {
-  background-color: var(--cerebrium-magenta, #ff2d8d);
+  background-color: #0f172a;
   color: #ffffff;
-  box-shadow: 0 2px 12px rgba(255, 45, 141, 0.45);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
 }
 
 /* Modern Dev Terminal Execution Log */
@@ -5729,7 +5733,7 @@ h4 {
   transform: translateX(-50%);
   width: 600px;
   height: 400px;
-  background: radial-gradient(circle, rgba(255, 45, 141, 0.08) 0%, rgba(103, 232, 249, 0.04) 50%, transparent 70%);
+  background: radial-gradient(circle, rgba(2, 132, 199, 0.06) 0%, rgba(16, 185, 129, 0.04) 50%, transparent 70%);
   filter: blur(60px);
   pointer-events: none;
   z-index: 0;
@@ -5770,7 +5774,7 @@ h4 {
 }
 
 .breadcrumb-current {
-  color: var(--cerebrium-magenta, #ff2d8d);
+  color: var(--text-main, #0f172a);
   font-weight: 600;
 }
 
@@ -5996,9 +6000,9 @@ h4 {
 
 .book-demo-input:focus {
   outline: none;
-  border-color: #ff2d8d;
-  box-shadow: 0 0 0 3px rgba(255, 45, 141, 0.16);
-  background: #0b0f17;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.12);
+  background: #ffffff;
 }
 
 .book-demo-select {
@@ -6250,7 +6254,7 @@ h4 {
 
 .bridge-link {
   font-size: 0.85rem;
-  color: var(--cerebrium-magenta, #ff2d8d);
+  color: var(--color-blue, #0284c7);
   text-decoration: none;
   font-weight: 600;
   transition: text-decoration 0.15s ease;
@@ -6494,7 +6498,7 @@ h4 {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   SHARED CLIENT PROFILE DASHBOARD (PART B.5) — GOOGLE SAAS GLASSMORPHISM
+   SHARED CLIENT PROFILE DASHBOARD (PART B.5): GOOGLE SAAS GLASSMORPHISM
    ───────────────────────────────────────────────────────────────────────────── */
 
 .shared-dash-container {

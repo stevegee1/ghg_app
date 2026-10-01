@@ -29,7 +29,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
 
   /**
    * GET /api/orders/track/:orderNumber
-   * Public endpoint — no auth required.
+   * Public endpoint: no auth required.
    * Returns sanitized order status for live tracking UI.
    */
   router.get('/api/orders/track/:orderNumber', async (req: Request, res: Response) => {
@@ -143,7 +143,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
         .fontSize(12)
         .font('Helvetica')
         .fillColor('#0f172a')
-        .text('Survivors Donation Keepsake — ESG Tax & Audit Invoice', { align: 'center' });
+        .text('Survivors Donation Keepsake: ESG Tax & Audit Invoice', { align: 'center' });
       doc.moveDown(0.25);
       doc
         .fontSize(9)
@@ -182,7 +182,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       // Financial Summary
       doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e2e8f0').stroke();
       doc.moveDown(0.75);
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Financial Summary — 85/15 Statutory Split');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Financial Summary: 85/15 Statutory Split');
       doc.moveDown(0.25);
       doc.fontSize(10).font('Helvetica').fillColor('#334155');
       const gross = (order.grossAmountCents / 100).toFixed(2);

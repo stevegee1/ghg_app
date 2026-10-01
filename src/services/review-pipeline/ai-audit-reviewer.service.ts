@@ -14,7 +14,7 @@
  *
  * The Lead Auditor then reviews the AI docket and makes the final APPROVED/REJECTED call.
  *
- * Implements IAuditReviewer — drop-in compatible with ReviewDispatcherService.
+ * Implements IAuditReviewer: drop-in compatible with ReviewDispatcherService.
  */
 
 import { PrismaClient, WorkflowStatus, ReviewOverallDecision } from '@prisma/client';
@@ -73,7 +73,7 @@ function evaluateClauseByRules(input: RulesEvaluationInput): {
     }
     return {
       status: 'CONFORMANT',
-      findings: `Affirmative response with ${hasEvidence ? 'supporting documentary evidence verified' : 'no evidence reference — acceptable for non-evidence-required clauses'} under ${isoClauseReference}.`,
+      findings: `Affirmative response with ${hasEvidence ? 'supporting documentary evidence verified' : 'no evidence reference: acceptable for non-evidence-required clauses'} under ${isoClauseReference}.`,
       confidence: hasEvidence ? 0.88 : 0.72,
       points: hasEvidence ? 5 : 3,
     };
@@ -233,7 +233,7 @@ export class AiAuditReviewer implements IAuditReviewer {
         llmResponse = result.content;
         reviewedBy = `AI Assurance Agent (${result.provider} / ${result.model})`;
       } catch (err: any) {
-        // LLM call failed — fall back to deterministic engine
+        // LLM call failed: fall back to deterministic engine
         console.warn(`[AI_AUDIT_REVIEWER] LLM call failed (${activeProvider.providerName}): ${err.message}. Falling back to rules engine.`);
         return this.runDeterministicEvaluation(submission, questions, answerMap);
       }
@@ -265,7 +265,7 @@ export class AiAuditReviewer implements IAuditReviewer {
         recommendedDecision = parsed.recommendedDecision === 'APPROVE' ? 'APPROVE' : 'REQUIRE_REVISION';
         executiveSummary = parsed.executiveSummary || 'AI pre-screen completed.';
       } catch (_parseErr) {
-        // JSON parse failed — fall back to deterministic engine
+        // JSON parse failed: fall back to deterministic engine
         console.warn(`[AI_AUDIT_REVIEWER] Failed to parse LLM response JSON. Falling back to rules engine.`);
         return this.runDeterministicEvaluation(submission, questions, answerMap);
       }
@@ -383,7 +383,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     this.persistAiFindings(submission.id, {
       clauseFindings,
       overallScore,
-      reviewedBy: 'AI Assurance Agent (Rules Engine — Deterministic ISO 19011:2018)',
+      reviewedBy: 'AI Assurance Agent (Rules Engine: Deterministic ISO 19011:2018)',
       executiveSummary,
     }).catch((err) => console.error('[AI_AUDIT_REVIEWER] Failed to persist deterministic findings:', err));
 
@@ -393,7 +393,7 @@ export class AiAuditReviewer implements IAuditReviewer {
       complianceScore: overallScore,
       reviewerNotes: executiveSummary,
       clauseFindings,
-      reviewedBy: 'AI Assurance Agent (Rules Engine — Deterministic ISO 19011:2018)',
+      reviewedBy: 'AI Assurance Agent (Rules Engine: Deterministic ISO 19011:2018)',
       reviewedAt: new Date(),
     };
   }

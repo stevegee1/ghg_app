@@ -76,7 +76,7 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
    */
   router.post('/api/charities/register', async (req: Request, res: Response) => {
     try {
-      // Enforce capacity gate at the backend — never trust frontend alone
+      // Enforce capacity gate at the backend: never trust frontend alone
       const activeCount = await prisma.charity.count({ where: { status: 'ACTIVE' } });
 
       if (activeCount >= MAX_ACTIVE_CHARITIES) {

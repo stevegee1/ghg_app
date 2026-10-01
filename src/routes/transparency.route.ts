@@ -77,7 +77,7 @@ export function createTransparencyRouter(prisma: PrismaClient): Router {
         publicPartners,
       });
     } catch (err: any) {
-      console.warn('⚠️  DB unreachable for Transparency Ledger API — returning presentation fallback data:', err?.message || err);
+      console.warn('[WARN] DB unreachable for Transparency Ledger API, returning presentation fallback data:', err?.message || err);
       return res.status(200).json({
         totalSettledTransactions: 12,
         totalCharityGiftCents: 345000,

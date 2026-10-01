@@ -21,7 +21,7 @@ export const FinancialSplitBar: React.FC<FinancialSplitBarProps> = ({
   const charityPercent = Number(((charityGiftCents / grossAmountCents) * 100).toFixed(1));
 
   const royaltyColor = dark ? 'rgba(255, 255, 255, 0.7)' : '#1a73e8';
-  const charityColor = dark ? '#ff2d8d' : '#059669';
+  const charityColor = dark ? '#10b981' : '#059669';
   const trackBg = dark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0';
   const mutedText = dark ? '#94a3b8' : 'var(--text-muted, #475569)';
   const mainText = dark ? '#ffffff' : 'var(--text-main, #0f172a)';

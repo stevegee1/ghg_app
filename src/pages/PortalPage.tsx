@@ -1729,7 +1729,7 @@ export const PortalPage: React.FC = () => {
             style={{
               background: '#ffffff',
               border: '1px solid rgba(15, 23, 42, 0.08)',
-              borderLeft: '4px solid var(--color-blue)',
+              borderLeft: '4px solid #191c1a',
               borderRadius: '14px',
               padding: '1.75rem 2rem',
               marginBottom: '2rem',
@@ -1742,8 +1742,8 @@ export const PortalPage: React.FC = () => {
             }}
           >
             <div style={{ flex: 1, minWidth: '300px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(2, 132, 199, 0.2)', padding: '3px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-blue)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
-                <span className="pe-live-beacon" style={{ width: '6px', height: '6px' }} />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '3px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
+                <span className="pe-live-beacon" style={{ width: '6px', height: '6px', background: '#10b981' }} />
                 <span>ASSESSMENT PENDING &bull; MANDATORY STATUTORY INTAKE</span>
               </div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.45rem', lineHeight: 1.25 }}>
@@ -1758,28 +1758,28 @@ export const PortalPage: React.FC = () => {
               type="button"
               onClick={() => navigate('/portal/onboarding')}
               style={{
-                background: 'var(--color-blue)',
+                background: '#191c1a',
                 color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
+                border: '1px solid #191c1a',
+                borderRadius: '6px',
                 padding: '0.8rem 1.65rem',
                 fontSize: '0.92rem',
                 fontWeight: 700,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#0270a6';
-                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.backgroundColor = '#2e332f';
+                e.currentTarget.style.borderColor = '#2e332f';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-blue)';
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.backgroundColor = '#191c1a';
+                e.currentTarget.style.borderColor = '#191c1a';
               }}
             >
               <span>Start Intake Assessment</span>

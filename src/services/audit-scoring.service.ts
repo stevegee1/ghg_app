@@ -92,7 +92,7 @@ export class AuditScoringService {
           {
             pillarIndex: 5,
             pillarName: 'Vehicle Recyclability Rate & Circularity',
-            isoClauseLink: 'ISO 22628:2002 (Road Vehicles — Recyclability and Recoverability)',
+            isoClauseLink: 'ISO 22628:2002 (Road Vehicles: Recyclability and Recoverability)',
             legalMandate: 'End-of-Life Vehicles (ELV) Directive / Waste Regulations',
             targetDepartment: 'Materials Engineering / Sustainability Directorate',
             questionText: 'What certified material tracking proves the chassis achieves minimum 85% recyclability and 95% recoverability?',

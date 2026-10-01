@@ -336,9 +336,9 @@ export const PartnersPage: React.FC = () => {
               gap: '0.5rem',
               padding: '0.35rem 0.85rem',
               borderRadius: '999px',
-              backgroundColor: 'rgba(255, 45, 141, 0.1)',
-              border: '1px solid rgba(255, 45, 141, 0.3)',
-              color: '#ff2d8d',
+              backgroundColor: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              color: '#0f172a',
               fontSize: '0.75rem',
               fontWeight: 700,
               letterSpacing: '0.06em',
@@ -381,8 +381,8 @@ export const PartnersPage: React.FC = () => {
             style={{
               display: 'inline-flex',
               padding: '0.35rem',
-              backgroundColor: 'var(--bg-page)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              backgroundColor: '#f1f5f9',
+              border: '1px solid #cbd5e1',
               borderRadius: '10px',
               gap: '0.35rem',
             }}
@@ -396,8 +396,8 @@ export const PartnersPage: React.FC = () => {
                 padding: '0.65rem 1.35rem',
                 borderRadius: '8px',
                 border: 'none',
-                backgroundColor: activeTab === 'fulfillment' ? '#ff2d8d' : 'transparent',
-                color: activeTab === 'fulfillment' ? '#ffffff' : '#94a3b8',
+                backgroundColor: activeTab === 'fulfillment' ? '#191c1a' : 'transparent',
+                color: activeTab === 'fulfillment' ? '#ffffff' : '#475569',
                 fontWeight: 600,
                 fontSize: '0.875rem',
                 cursor: 'pointer',
@@ -415,8 +415,8 @@ export const PartnersPage: React.FC = () => {
                 padding: '0.65rem 1.35rem',
                 borderRadius: '8px',
                 border: 'none',
-                backgroundColor: activeTab === 'charity' ? '#ff2d8d' : 'transparent',
-                color: activeTab === 'charity' ? '#ffffff' : '#94a3b8',
+                backgroundColor: activeTab === 'charity' ? '#191c1a' : 'transparent',
+                color: activeTab === 'charity' ? '#ffffff' : '#475569',
                 fontWeight: 600,
                 fontSize: '0.875rem',
                 cursor: 'pointer',
@@ -444,7 +444,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '0.8125rem',
                   fontWeight: 700,
-                  color: '#ff2d8d',
+                  color: '#0284c7',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   marginBottom: '0.75rem',
@@ -481,12 +481,12 @@ export const PartnersPage: React.FC = () => {
                       width: '32px',
                       height: '32px',
                       borderRadius: '8px',
-                      backgroundColor: 'rgba(255, 45, 141, 0.12)',
-                      border: '1px solid rgba(255, 45, 141, 0.25)',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ff2d8d',
+                      color: '#0f172a',
                       fontSize: '0.875rem',
                       fontWeight: 700,
                       flexShrink: 0,
@@ -510,12 +510,12 @@ export const PartnersPage: React.FC = () => {
                       width: '32px',
                       height: '32px',
                       borderRadius: '8px',
-                      backgroundColor: 'rgba(255, 45, 141, 0.12)',
-                      border: '1px solid rgba(255, 45, 141, 0.25)',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ff2d8d',
+                      color: '#0f172a',
                       fontSize: '0.875rem',
                       fontWeight: 700,
                       flexShrink: 0,
@@ -539,12 +539,12 @@ export const PartnersPage: React.FC = () => {
                       width: '32px',
                       height: '32px',
                       borderRadius: '8px',
-                      backgroundColor: 'rgba(255, 45, 141, 0.12)',
-                      border: '1px solid rgba(255, 45, 141, 0.25)',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ff2d8d',
+                      color: '#0f172a',
                       fontSize: '0.875rem',
                       fontWeight: 700,
                       flexShrink: 0,
@@ -615,7 +615,7 @@ export const PartnersPage: React.FC = () => {
                 <div
                   style={{
                     backgroundColor: 'var(--bg-card)',
-                    border: '1px solid rgba(255, 45, 141, 0.4)',
+                    border: '1px solid #10b981',
                     borderRadius: '12px',
                     padding: '2rem',
                     textAlign: 'center',
@@ -626,9 +626,9 @@ export const PartnersPage: React.FC = () => {
                       width: '48px',
                       height: '48px',
                       borderRadius: '50%',
-                      backgroundColor: 'rgba(255, 45, 141, 0.15)',
-                      border: '1px solid #ff2d8d',
-                      color: '#ff2d8d',
+                      backgroundColor: '#ecfdf5',
+                      border: '1px solid #10b981',
+                      color: '#047857',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -656,7 +656,7 @@ export const PartnersPage: React.FC = () => {
                   >
                     Application Reference ID: {fSuccessData.id}
                   </div>
-                  <p style={{ fontSize: '0.875rem', color: '#e2e8f0', lineHeight: 1.55, marginBottom: '1.5rem' }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-muted, #475569)', lineHeight: 1.55, marginBottom: '1.5rem' }}>
                     {fSuccessData.message}
                   </p>
                   <button
@@ -707,7 +707,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="f_company_name"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Company Legal Name *
                       </label>
@@ -736,7 +736,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="f_work_email"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Corporate Work Email *
                       </label>
@@ -769,7 +769,7 @@ export const PartnersPage: React.FC = () => {
                       <div>
                         <label
                           htmlFor="f_country"
-                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                         >
                           Country / Territory *
                         </label>
@@ -800,7 +800,7 @@ export const PartnersPage: React.FC = () => {
                       <div>
                         <label
                           htmlFor="f_region"
-                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                         >
                           Region / State / City *
                         </label>
@@ -829,7 +829,7 @@ export const PartnersPage: React.FC = () => {
                     {/* Capabilities Multi-Select Pills */}
                     <div>
                       <label
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.5rem' }}
                       >
                         Manufacturing & Dispatch Capabilities (Select all that apply) *
                       </label>
@@ -845,12 +845,12 @@ export const PartnersPage: React.FC = () => {
                                 padding: '0.45rem 0.8rem',
                                 borderRadius: '6px',
                                 border: selected
-                                  ? '1px solid #ff2d8d'
-                                  : '1px solid rgba(255, 255, 255, 0.12)',
-                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : 'var(--bg-card)',
-                                color: selected ? '#ffffff' : '#94a3b8',
+                                  ? '1px solid #0f172a'
+                                  : '1px solid #cbd5e1',
+                                backgroundColor: selected ? '#0f172a' : 'var(--bg-card)',
+                                color: selected ? '#ffffff' : 'var(--text-main)',
                                 fontSize: '0.78rem',
-                                fontWeight: 500,
+                                fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.12s ease',
                               }}
@@ -867,7 +867,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="f_capacity"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Current Monthly Capacity (Garment / Keepsake Units) *
                       </label>
@@ -905,7 +905,7 @@ export const PartnersPage: React.FC = () => {
                     {/* Certifications Multi-Select */}
                     <div>
                       <label
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.5rem' }}
                       >
                         Eco, Textile & Labor Certifications
                       </label>
@@ -921,12 +921,12 @@ export const PartnersPage: React.FC = () => {
                                 padding: '0.45rem 0.8rem',
                                 borderRadius: '6px',
                                 border: selected
-                                  ? '1px solid #ff2d8d'
-                                  : '1px solid rgba(255, 255, 255, 0.12)',
-                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : 'var(--bg-card)',
-                                color: selected ? '#ffffff' : '#94a3b8',
+                                  ? '1px solid #0f172a'
+                                  : '1px solid #cbd5e1',
+                                backgroundColor: selected ? '#0f172a' : 'var(--bg-card)',
+                                color: selected ? '#ffffff' : 'var(--text-main)',
                                 fontSize: '0.78rem',
-                                fontWeight: 500,
+                                fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.12s ease',
                               }}
@@ -943,7 +943,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="f_message"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Studio Machinery & Operational Notes (Optional)
                       </label>
@@ -974,16 +974,16 @@ export const PartnersPage: React.FC = () => {
                       disabled={fLoading}
                       style={{
                         padding: '0.85rem 1.5rem',
-                        borderRadius: '8px',
-                        backgroundColor: '#ff2d8d',
-                        border: 'none',
-                        color: 'var(--text-main)',
+                        borderRadius: '6px',
+                        backgroundColor: '#191c1a',
+                        border: '1px solid #191c1a',
+                        color: '#ffffff',
                         fontSize: '0.9375rem',
                         fontWeight: 700,
                         cursor: fLoading ? 'not-allowed' : 'pointer',
                         opacity: fLoading ? 0.7 : 1,
-                        transition: 'opacity 0.15s ease',
-                        boxShadow: '0 4px 14px rgba(255, 45, 141, 0.35)',
+                        transition: 'all 0.15s ease',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
                       }}
                     >
                       {fLoading ? 'Submitting Partner Dossier...' : 'Submit Studio Application for Review'}
@@ -1011,7 +1011,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '0.8125rem',
                   fontWeight: 700,
-                  color: '#ff2d8d',
+                  color: '#0284c7',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   marginBottom: '0.75rem',
@@ -1048,12 +1048,12 @@ export const PartnersPage: React.FC = () => {
                       width: '32px',
                       height: '32px',
                       borderRadius: '8px',
-                      backgroundColor: 'rgba(255, 45, 141, 0.12)',
-                      border: '1px solid rgba(255, 45, 141, 0.25)',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ff2d8d',
+                      color: '#0f172a',
                       fontSize: '0.875rem',
                       fontWeight: 700,
                       flexShrink: 0,
@@ -1077,12 +1077,12 @@ export const PartnersPage: React.FC = () => {
                       width: '32px',
                       height: '32px',
                       borderRadius: '8px',
-                      backgroundColor: 'rgba(255, 45, 141, 0.12)',
-                      border: '1px solid rgba(255, 45, 141, 0.25)',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ff2d8d',
+                      color: '#0f172a',
                       fontSize: '0.875rem',
                       fontWeight: 700,
                       flexShrink: 0,
@@ -1106,12 +1106,12 @@ export const PartnersPage: React.FC = () => {
                       width: '32px',
                       height: '32px',
                       borderRadius: '8px',
-                      backgroundColor: 'rgba(255, 45, 141, 0.12)',
-                      border: '1px solid rgba(255, 45, 141, 0.25)',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ff2d8d',
+                      color: '#0f172a',
                       fontSize: '0.875rem',
                       fontWeight: 700,
                       flexShrink: 0,
@@ -1182,7 +1182,7 @@ export const PartnersPage: React.FC = () => {
                 <div
                   style={{
                     backgroundColor: 'var(--bg-card)',
-                    border: '1px solid rgba(255, 45, 141, 0.4)',
+                    border: '1px solid #10b981',
                     borderRadius: '12px',
                     padding: '2rem',
                     textAlign: 'center',
@@ -1193,9 +1193,9 @@ export const PartnersPage: React.FC = () => {
                       width: '48px',
                       height: '48px',
                       borderRadius: '50%',
-                      backgroundColor: 'rgba(255, 45, 141, 0.15)',
-                      border: '1px solid #ff2d8d',
-                      color: '#ff2d8d',
+                      backgroundColor: '#ecfdf5',
+                      border: '1px solid #10b981',
+                      color: '#047857',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1223,7 +1223,7 @@ export const PartnersPage: React.FC = () => {
                   >
                     Application Reference ID: {cSuccessData.id}
                   </div>
-                  <p style={{ fontSize: '0.875rem', color: '#e2e8f0', lineHeight: 1.55, marginBottom: '1.5rem' }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-muted, #475569)', lineHeight: 1.55, marginBottom: '1.5rem' }}>
                     {cSuccessData.message}
                   </p>
                   <button
@@ -1276,7 +1276,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="c_org_name"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Organization Legal Name *
                       </label>
@@ -1305,7 +1305,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="c_work_email"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Official Representative Email *
                       </label>
@@ -1338,7 +1338,7 @@ export const PartnersPage: React.FC = () => {
                       <div>
                         <label
                           htmlFor="c_country"
-                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                         >
                           Registration Country *
                         </label>
@@ -1369,7 +1369,7 @@ export const PartnersPage: React.FC = () => {
                       <div>
                         <label
                           htmlFor="c_org_type"
-                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                         >
                           Legal Entity Type *
                         </label>
@@ -1412,7 +1412,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="c_reg_number"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Official Charity / Tax Registration Number
                       </label>
@@ -1439,7 +1439,7 @@ export const PartnersPage: React.FC = () => {
                     {/* Climate Focus Areas Multi-Select */}
                     <div>
                       <label
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.5rem' }}
                       >
                         Primary Climate & Ecological Focus Areas *
                       </label>
@@ -1455,12 +1455,12 @@ export const PartnersPage: React.FC = () => {
                                 padding: '0.45rem 0.8rem',
                                 borderRadius: '6px',
                                 border: selected
-                                  ? '1px solid #ff2d8d'
-                                  : '1px solid rgba(255, 255, 255, 0.12)',
-                                backgroundColor: selected ? 'rgba(255, 45, 141, 0.15)' : 'var(--bg-card)',
-                                color: selected ? '#ffffff' : '#94a3b8',
+                                  ? '1px solid #0f172a'
+                                  : '1px solid #cbd5e1',
+                                backgroundColor: selected ? '#0f172a' : 'var(--bg-card)',
+                                color: selected ? '#ffffff' : 'var(--text-main)',
                                 fontSize: '0.78rem',
-                                fontWeight: 500,
+                                fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.12s ease',
                               }}
@@ -1478,7 +1478,7 @@ export const PartnersPage: React.FC = () => {
                       <div>
                         <label
                           htmlFor="c_website"
-                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                         >
                           Official Website URL
                         </label>
@@ -1505,7 +1505,7 @@ export const PartnersPage: React.FC = () => {
                       <div>
                         <label
                           htmlFor="c_report_url"
-                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                          style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                         >
                           Audited Report / Accounts URL
                         </label>
@@ -1534,7 +1534,7 @@ export const PartnersPage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="c_message"
-                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.35rem' }}
+                        style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main, #0f172a)', marginBottom: '0.35rem' }}
                       >
                         Impact Mission & Allocation Objective (Optional)
                       </label>
@@ -1565,16 +1565,16 @@ export const PartnersPage: React.FC = () => {
                       disabled={cLoading}
                       style={{
                         padding: '0.85rem 1.5rem',
-                        borderRadius: '8px',
-                        backgroundColor: '#ff2d8d',
-                        border: 'none',
-                        color: 'var(--text-main)',
+                        borderRadius: '6px',
+                        backgroundColor: '#191c1a',
+                        border: '1px solid #191c1a',
+                        color: '#ffffff',
                         fontSize: '0.9375rem',
                         fontWeight: 700,
                         cursor: cLoading ? 'not-allowed' : 'pointer',
                         opacity: cLoading ? 0.7 : 1,
-                        transition: 'opacity 0.15s ease',
-                        boxShadow: '0 4px 14px rgba(255, 45, 141, 0.35)',
+                        transition: 'all 0.15s ease',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
                       }}
                     >
                       {cLoading ? 'Submitting Organization Dossier...' : 'Submit Organization Application'}
@@ -1593,7 +1593,7 @@ export const PartnersPage: React.FC = () => {
               style={{
                 fontSize: '0.8125rem',
                 fontWeight: 700,
-                color: '#ff2d8d',
+                color: '#0284c7',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 marginBottom: '0.5rem',
@@ -1628,7 +1628,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 700,
-                  color: '#ff2d8d',
+                  color: '#0284c7',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   marginBottom: '0.75rem',
@@ -1656,7 +1656,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 700,
-                  color: '#ff2d8d',
+                  color: '#0284c7',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   marginBottom: '0.75rem',
@@ -1684,7 +1684,7 @@ export const PartnersPage: React.FC = () => {
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 700,
-                  color: '#ff2d8d',
+                  color: '#0284c7',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   marginBottom: '0.75rem',
@@ -1709,7 +1709,7 @@ export const PartnersPage: React.FC = () => {
               style={{
                 fontSize: '0.8125rem',
                 fontWeight: 700,
-                color: '#ff2d8d',
+                color: '#0284c7',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 marginBottom: '0.5rem',
@@ -1760,8 +1760,9 @@ export const PartnersPage: React.FC = () => {
                     <span>{faq.q}</span>
                     <span
                       style={{
-                        color: '#ff2d8d',
+                        color: '#0f172a',
                         fontSize: '1.125rem',
+                        fontWeight: 700,
                         transform: isOpen ? 'rotate(45deg)' : 'none',
                         transition: 'transform 0.15s ease',
                       }}
@@ -1795,7 +1796,7 @@ export const PartnersPage: React.FC = () => {
           style={{
             marginTop: '5rem',
             backgroundColor: 'var(--bg-page)',
-            border: '1px solid rgba(255, 45, 141, 0.3)',
+            border: '1px solid #cbd5e1',
             borderRadius: '14px',
             padding: '3rem 2rem',
             textAlign: 'center',
@@ -1826,13 +1827,14 @@ export const PartnersPage: React.FC = () => {
               to="/merch"
               style={{
                 padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                backgroundColor: '#ff2d8d',
-                color: 'var(--text-main)',
+                borderRadius: '6px',
+                backgroundColor: '#191c1a',
+                border: '1px solid #191c1a',
+                color: '#ffffff',
                 fontSize: '0.875rem',
                 fontWeight: 700,
                 textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(255, 45, 141, 0.35)',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
               }}
             >
               Browse Merchandise
@@ -1841,9 +1843,9 @@ export const PartnersPage: React.FC = () => {
               to="/transparency"
               style={{
                 padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 backgroundColor: 'var(--bg-card)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
+                border: '1px solid #cbd5e1',
                 color: 'var(--text-main)',
                 fontSize: '0.875rem',
                 fontWeight: 600,
