@@ -72,12 +72,12 @@ export const ForgotPasswordPage: React.FC = () => {
               </svg>
             </div>
 
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.75rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#090d1a', marginBottom: '0.75rem' }}>
               Check your inbox
             </h2>
 
-            <p style={{ fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: '1.75rem' }}>
-              If an account is registered with <strong style={{ color: '#ffffff' }}>{email}</strong>, a secure password reset link valid for <strong>1 hour</strong> has been dispatched.
+            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.75rem' }}>
+              If an account is registered with <strong style={{ color: '#090d1a' }}>{email}</strong>, a secure password reset link valid for <strong>1 hour</strong> has been dispatched.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

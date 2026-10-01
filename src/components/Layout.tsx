@@ -852,20 +852,20 @@ export const Layout: React.FC = () => {
                 <NavLink
                   to="/portal/login"
                   className="cerebrium-nav-btn-ice"
-                  title="Sign in to console"
+                  title="Sign In to Console"
                 >
-                  SIGN IN TO CONSOLE
+                  Sign In
                 </NavLink>
                 <Link
                   to="/book-demo"
                   className="cerebrium-nav-btn-magenta"
-                  title="Book Architecture Demo"
+                  title="Book Compliance Demo"
                   onClick={(e) => {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent('open-book-demo-modal'));
                   }}
                 >
-                  <span>BOOK DEMO</span>
+                  <span>Book Demo</span>
                 </Link>
               </div>
             )}

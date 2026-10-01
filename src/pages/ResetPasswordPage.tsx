@@ -114,18 +114,18 @@ export const ResetPasswordPage: React.FC = () => {
               </svg>
             </div>
 
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.75rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#090d1a', marginBottom: '0.75rem' }}>
               Password Reset Complete!
             </h2>
 
-            <p style={{ fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: '1.75rem' }}>
+            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.75rem' }}>
               Your password has been securely updated. You can now sign in to your assurance console.
             </p>
 
             <button
               onClick={() => navigate('/portal/login')}
               className="cerebrium-auth-btn-magenta"
-              style={{ width: '100%', margin: 0 }}
+              style={{ margin: '0 auto' }}
             >
               Sign In to Console →
             </button>

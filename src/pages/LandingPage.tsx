@@ -81,40 +81,25 @@ export const LandingPage: React.FC = () => {
                     <Link
                       to={isAdmin ? '/admin' : '/portal'}
                       className="cerebrium-btn-magenta"
-                      style={{
-                        padding: '0.85rem 2.2rem',
-                        fontSize: '0.9375rem',
-                        letterSpacing: '0.06em',
-                      }}
                     >
-                      <span>{isAdmin ? 'OPEN ADMIN CONSOLE' : 'GO TO MY DASHBOARD'}</span>
-                      <span style={{ marginLeft: '0.4rem' }}>→</span>
+                      <span>{isAdmin ? 'Open Admin Console' : 'Go to My Dashboard'}</span>
+                      <span className="btn-arrow" style={{ marginLeft: '0.25rem' }}>→</span>
                     </Link>
                   ) : (
                     <>
                       <Link
                         to="/create-account"
                         className="cerebrium-btn-magenta"
-                        style={{
-                          padding: '0.85rem 2.2rem',
-                          fontSize: '0.9375rem',
-                          letterSpacing: '0.06em',
-                        }}
                       >
-                        <span>CREATE ACCOUNT</span>
-                        <span style={{ marginLeft: '0.4rem' }}>→</span>
+                        <span>Create Account</span>
+                        <span className="btn-arrow" style={{ marginLeft: '0.25rem' }}>→</span>
                       </Link>
 
                       <Link
                         to="/portal/login"
                         className="cerebrium-btn-ghost"
-                        style={{
-                          padding: '0.85rem 1.85rem',
-                          fontSize: '0.9375rem',
-                          letterSpacing: '0.06em',
-                        }}
                       >
-                        <span>SIGN IN TO CONSOLE</span>
+                        <span>Sign In to Console</span>
                       </Link>
                     </>
                   )}
@@ -383,7 +368,7 @@ export const LandingPage: React.FC = () => {
       {/* 2.2 Physical-to-Digital Provenance & Authentic Brand Assets */}
       <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '4.5rem 0' }}>
         <div className="container-x">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3.5rem', alignItems: 'center' }}>
+          <div className="provenance-layout-grid">
             
             {/* Left: Authentic Provenance Artwork Display */}
             <div
@@ -403,7 +388,7 @@ export const LandingPage: React.FC = () => {
                 <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--color-sky)', fontWeight: 800, letterSpacing: '0.08em' }}>
                   IMMUTABLE PROVENANCE ASSETS
                 </span>
-                <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
+                <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#64748b' }}>
                   ERC-1155 / POLYGON TRUST SEAL
                 </span>
               </div>
@@ -416,7 +401,7 @@ export const LandingPage: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'var(--font-mono)', borderTop: '1px solid var(--border-light)', paddingTop: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#64748b', fontFamily: 'var(--font-mono)', borderTop: '1px solid var(--border-light)', paddingTop: '0.75rem' }}>
                 <span>Vagaries of GHG™ Digital Twin Series</span>
                 <span style={{ color: '#10b981', fontWeight: 700 }}>Dual-Logo Verified</span>
               </div>
@@ -432,7 +417,7 @@ export const LandingPage: React.FC = () => {
                 From Physical Emissions to Immutable Trust Seals
               </h2>
 
-              <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '2rem' }}>
+              <p style={{ fontSize: '1rem', color: '#475569', lineHeight: 1.65, marginBottom: '2rem' }}>
                 Traditional ESG disclosures rely on unverified, retroactive spreadsheets. GHGEmissionLogs anchors real-time telemetry from physical smokestacks, utility meters, and workforce covenants directly into verifiable digital twin provenance cards and Polygon blockchain attestations.
               </p>
 
@@ -441,39 +426,39 @@ export const LandingPage: React.FC = () => {
                   <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(2, 132, 199, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-sky)', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>
                     01
                   </div>
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                       Hardware Telemetry &amp; ISO 17025 Gatekeeper
                     </h3>
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+                    <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
                       Activity data is continuously captured via live SSE streams. Telemetry passing calibration thresholds is sealed with SHA-256 integrity hashes before database insertion.
                     </p>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>
                     02
                   </div>
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                       ISO 19011 Compliance Dossiers
                     </h3>
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+                    <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
                       Evidence packages are pre-formatted for external certification auditors, proving continuous conformity across GHG Protocol Scopes 1-3, ISO 14064, and ISO 50001.
                     </p>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669', fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>
                     03
                   </div>
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                       On-Chain Dual-Logo Provenance Seals
                     </h3>
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+                    <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
                       Every verified reporting batch is cryptographically committed on Polygon. Dual-logo composites permanently tie corporate licensee credentials to verified environmental achievements.
                     </p>
                   </div>
@@ -484,17 +469,9 @@ export const LandingPage: React.FC = () => {
                 <Link
                   to={authDestination}
                   className="cerebrium-btn-ghost"
-                  style={{
-                    padding: '0.75rem 1.75rem',
-                    fontSize: '0.875rem',
-                    letterSpacing: '0.06em',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                  }}
                 >
-                  <span>EXPLORE PROVENANCE &amp; LICENSING</span>
-                  <span>→</span>
+                  <span>Explore Provenance &amp; Licensing</span>
+                  <span className="btn-arrow">→</span>
                 </Link>
               </div>
 
@@ -694,22 +671,10 @@ export const LandingPage: React.FC = () => {
               </p>
               <Link
                 to="/licensing#plans"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.85rem 1.75rem',
-                  backgroundColor: 'var(--accent-primary)',
-                  color: '#ffffff',
-                  borderRadius: '6px',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  textDecoration: 'none',
-                  letterSpacing: '0.04em',
-                }}
+                className="cerebrium-btn-solid-magenta"
               >
-                <span>EXPLORE LICENSING PLANS</span>
-                <span>→</span>
+                <span>Explore Licensing Plans</span>
+                <span className="btn-arrow">→</span>
               </Link>
             </div>
 
@@ -876,22 +841,10 @@ export const LandingPage: React.FC = () => {
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <Link
                   to={authDestination}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.85rem 1.75rem',
-                    backgroundColor: 'var(--accent-primary)',
-                    color: '#ffffff',
-                    borderRadius: '6px',
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    textDecoration: 'none',
-                    letterSpacing: '0.04em',
-                  }}
+                  className="cerebrium-btn-solid-magenta"
                 >
-                  <span>EXPLORE WORKFORCE ASSURANCE</span>
-                  <span>→</span>
+                  <span>Explore Workforce Assurance</span>
+                  <span className="btn-arrow">→</span>
                 </Link>
                 <Link
                   to="/book-demo"
@@ -899,23 +852,10 @@ export const LandingPage: React.FC = () => {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent('open-book-demo-modal'));
                   }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.85rem 1.75rem',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-main)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '6px',
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    letterSpacing: '0.04em',
-                    textDecoration: 'none',
-                  }}
+                  className="cerebrium-btn-ghost-dark"
                 >
-                  <span>TEST WORKFORCE AUDITOR</span>
-                  <span>→</span>
+                  <span>Test Workforce Auditor</span>
+                  <span className="btn-arrow">→</span>
                 </Link>
               </div>
             </div>
@@ -1188,7 +1128,8 @@ export const LandingPage: React.FC = () => {
             </div>
             <div className="cerebrium-audit-cta-actions">
               <Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="cerebrium-btn-solid-magenta">
-                LAUNCH AUDIT-READINESS DIAGNOSTIC
+                <span>Launch Audit Diagnostic</span>
+                <span className="btn-arrow">→</span>
               </Link>
               <Link
                 to="/book-demo"
@@ -1198,7 +1139,7 @@ export const LandingPage: React.FC = () => {
                   window.dispatchEvent(new CustomEvent('open-book-demo-modal'));
                 }}
               >
-                BOOK COMPLIANCE DEMO
+                <span>Book Compliance Demo</span>
               </Link>
             </div>
           </div>
