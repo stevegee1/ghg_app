@@ -8,7 +8,7 @@ interface OpenSeaBadgeProps {
 
 export const OpenSeaBadge: React.FC<OpenSeaBadgeProps> = ({
   transactionId,
-  licenseeId = 'lic_itm_power',
+  licenseeId = '',
   className = '',
 }) => {
   const [showModal, setShowModal] = useState(false);

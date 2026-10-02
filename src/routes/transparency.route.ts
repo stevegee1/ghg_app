@@ -77,40 +77,9 @@ export function createTransparencyRouter(prisma: PrismaClient): Router {
         publicPartners,
       });
     } catch (err: any) {
-      console.warn('[WARN] DB unreachable for Transparency Ledger API, returning presentation fallback data:', err?.message || err);
-      return res.status(200).json({
-        totalSettledTransactions: 12,
-        totalCharityGiftCents: 345000,
-        charityPercentage: 15,
-        publicPartners: [
-          {
-            licenseeId: 'lic_itm_power',
-            name: 'ITM Power Plc',
-            vertical: 'GREEN_HYDROGEN',
-            totalSettledTransactions: 5,
-            totalCharityGiftCents: 180000,
-            jobsCreated: 340,
-            attestationNote: 'Self-reported by partner via portal. Not independently verified.',
-          },
-          {
-            licenseeId: 'lic_ceres_power',
-            name: 'Ceres Power Holdings',
-            vertical: 'FUEL_CELLS',
-            totalSettledTransactions: 4,
-            totalCharityGiftCents: 120000,
-            jobsCreated: 210,
-            attestationNote: 'Submitted via partner\'s own system/API. Not independently verified.',
-          },
-          {
-            licenseeId: 'lic_sse_renewables',
-            name: 'SSE Renewables',
-            vertical: 'WIND_SOLAR',
-            totalSettledTransactions: 3,
-            totalCharityGiftCents: 45000,
-            jobsCreated: 150,
-            attestationNote: 'Self-reported by partner via portal. Not independently verified.',
-          },
-        ],
+      console.error('[ERROR] Failed to query Transparency Ledger from database:', err?.message || err);
+      return res.status(500).json({
+        error: 'Failed to retrieve transparency ledger data from database.',
       });
     }
   });

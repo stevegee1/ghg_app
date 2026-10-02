@@ -321,9 +321,9 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
   const [previewTheme, setPreviewTheme] = useState<'LIGHT' | 'DARK' | 'GLASS'>('LIGHT');
   const [codeExpanded, setCodeExpanded] = useState(false);
 
-  const licenseeId = user?.licenseeId || 'lic_itm_power';
-  const companyName = user?.companyName || user?.organizationName || 'ITM Power Test';
-  const telemetryApiKey = `ghg_live_${licenseeId.replace(/[^a-zA-Z0-9]/g, '')}_${(submissionId || 'sub').slice(0, 8)}`;
+  const licenseeId = user?.licenseeId || '';
+  const companyName = user?.companyName || user?.organizationName || user?.email || 'Enterprise Licensee';
+  const telemetryApiKey = `ghg_live_${licenseeId ? licenseeId.replace(/[^a-zA-Z0-9]/g, '') : 'client'}_${(submissionId || 'sub').slice(0, 8)}`;
 
   // Synchronize initial submission & check payment status once on mount
   useEffect(() => {

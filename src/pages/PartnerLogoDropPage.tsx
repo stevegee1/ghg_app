@@ -10,7 +10,7 @@ import { StatusBadge } from '../components/StatusBadge';
 export const PartnerLogoDropPage: React.FC = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const licenseeId = searchParams.get('licenseeId') || user?.licenseeId || 'lic_itm_power';
+  const licenseeId = searchParams.get('licenseeId') || user?.licenseeId || '';
 
   // Form State
   const [logoUrl, setLogoUrl] = useState<string>('');
@@ -25,8 +25,8 @@ export const PartnerLogoDropPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<any | null>(null);
 
-  // Pricing calculation
-  const pricePerDropCents = licenseeId === 'lic_jcb_test' ? 750 : 500; // £5.00 or £7.50 per drop
+  // Pricing calculation (Standard baseline per verified drop)
+  const pricePerDropCents = 500;
   const grossAmountCents = quantity * pricePerDropCents;
   const royaltyCents = Math.round((grossAmountCents * 8500) / 10000);
   const charityCents = grossAmountCents - royaltyCents;
@@ -141,6 +141,8 @@ export const PartnerLogoDropPage: React.FC = () => {
 
               {/* Logo Upload Component */}
               <BrandLogoUploader
+                initialLogoUrl={user?.companyLogoUrl || ''}
+                initialLogoName={user?.companyName || ''}
                 onLogoSelected={(url, name) => {
                   setLogoUrl(url);
                   setLogoName(name);
@@ -170,7 +172,7 @@ export const PartnerLogoDropPage: React.FC = () => {
                       onChange={() => setDeliveryType('DIGITAL')}
                     />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>🌐 Software / Web</div>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>Software / Web Application</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Site badge / SaaS integration</div>
                     </div>
                   </label>
@@ -196,7 +198,7 @@ export const PartnerLogoDropPage: React.FC = () => {
                     />
                     <div>
                       <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>Physical Keepsake</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Printed gear & products</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Printed gear &amp; products</div>
                     </div>
                   </label>
                 </div>

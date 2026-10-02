@@ -153,8 +153,9 @@ export const CheckoutPage: React.FC = () => {
 
     try {
       const ref = `order_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const targetLicenseeId = searchParams.get('licenseeId') || 'lic_ghg_official';
       const result = await api.checkout({
-        licenseeId: 'lic_default_platform',
+        licenseeId: targetLicenseeId,
         grossAmountCents,
         checkoutReferenceId: ref,
       });

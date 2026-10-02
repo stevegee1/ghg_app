@@ -18,27 +18,12 @@ export const CertificateViewPage: React.FC = () => {
       setLoading(true);
       try {
         const res = await api.getPortalTransactions();
-        const found = res.transactions?.find((t: any) => t.id === id) || {
-          id,
-          grossAmountCents: 10000,
-          status: 'SETTLED',
-          createdAt: new Date().toISOString(),
-          licenseeId: 'lic_itm_power',
-          triggerEvent: {
-            verificationSource: 'MANUAL_ATTESTATION',
-            attestationNote: 'Manually attested by partner. Not independently audited.',
-            deliveryType: 'DIGITAL',
-          },
-          financialSplit: {
-            licensorRoyaltyCents: 8500,
-            charityGiftCents: 1500,
-            charityAllocations: [
-              { charityId: 'charity_green_earth', charityName: 'Green Earth Foundation', amountCents: 750 },
-              { charityId: 'charity_ocean_clean', charityName: 'Clean Oceans Trust', amountCents: 750 },
-            ],
-          },
-        };
-        if (isMounted) setTransaction(found);
+        const found = res.transactions?.find((t: any) => t.id === id);
+        if (!found) {
+          if (isMounted) setError(`Transaction certificate record "${id}" was not found.`);
+        } else {
+          if (isMounted) setTransaction(found);
+        }
       } catch (err: any) {
         if (isMounted) setError('Failed to load transaction certificate details.');
       } finally {
