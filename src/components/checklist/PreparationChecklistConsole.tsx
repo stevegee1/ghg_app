@@ -4,17 +4,24 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/client';
 
 interface PreparationChecklistConsoleProps {
+  initialScope?: 'CARBON_EMISSION' | 'JOB_REPORTING';
+  onScopeChange?: (scope: 'CARBON_EMISSION' | 'JOB_REPORTING') => void;
   onProceedToDiagnostic: (workflowType?: 'CARBON' | 'JOB') => void;
   onChecklistsUpdated?: (checklists: any[]) => void;
 }
 
 export const PreparationChecklistConsole: React.FC<PreparationChecklistConsoleProps> = ({
+  initialScope = 'CARBON_EMISSION',
+  onScopeChange,
   onProceedToDiagnostic,
   onChecklistsUpdated,
 }) => {
   const { token } = useAuth();
   const navigate = useNavigate();
 
+  const [pipelineScope, setPipelineScope] = useState<'CARBON_EMISSION' | 'JOB_REPORTING'>(
+    initialScope === 'JOB_REPORTING' ? 'JOB_REPORTING' : 'CARBON_EMISSION'
+  );
   const [checklists, setChecklists] = useState<any[]>([]);
   const [selectedChecklistId, setSelectedChecklistId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -32,6 +39,22 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
 
   const fileInputRefs = useRef<{ [itemId: string]: HTMLInputElement | null }>({});
 
+  useEffect(() => {
+    if (initialScope && initialScope !== pipelineScope) {
+      setPipelineScope(initialScope);
+      const targetLists = checklists.filter((c: any) =>
+        initialScope === 'JOB_REPORTING'
+          ? c.recommendation?.workflowType === 'JOB'
+          : c.recommendation?.workflowType !== 'JOB'
+      );
+      if (targetLists.length > 0) {
+        setSelectedChecklistId(targetLists[0].id);
+      } else {
+        setSelectedChecklistId(null);
+      }
+    }
+  }, [initialScope, checklists, pipelineScope]);
+
   const loadChecklists = async () => {
     if (!token) return;
     try {
@@ -41,7 +64,15 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       const lists = res.checklists || [];
       setChecklists(lists);
       onChecklistsUpdated?.(lists);
-      if (lists.length > 0 && !selectedChecklistId) {
+
+      const targetLists = lists.filter((c: any) =>
+        pipelineScope === 'JOB_REPORTING'
+          ? c.recommendation?.workflowType === 'JOB'
+          : c.recommendation?.workflowType !== 'JOB'
+      );
+      if (targetLists.length > 0) {
+        setSelectedChecklistId(targetLists[0].id);
+      } else if (lists.length > 0) {
         setSelectedChecklistId(lists[0].id);
       }
     } catch (err: any) {
@@ -297,15 +328,37 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
     );
   }
 
+  const isJobPipeline = pipelineScope === 'JOB_REPORTING';
+  const pipelineLists = checklists.filter((c) =>
+    isJobPipeline
+      ? c.recommendation?.workflowType === 'JOB'
+      : c.recommendation?.workflowType !== 'JOB'
+  );
+
   const activeChecklist =
-    checklists.find((c) => c.id === selectedChecklistId) || checklists[0];
+    pipelineLists.find((c) => c.id === selectedChecklistId) || pipelineLists[0] || null;
   const items = activeChecklist?.items || [];
   const recommendation = activeChecklist?.recommendation;
 
-  // Calculate overall metrics
-  const totalAllItems = checklists.reduce((acc, c) => acc + (c.totalItems || 0), 0);
-  const completedAllItems = checklists.reduce((acc, c) => acc + (c.completedItems || 0), 0);
+  // Calculate pipeline-specific metrics
+  const totalAllItems = pipelineLists.reduce((acc, c) => acc + (c.totalItems || 0), 0);
+  const completedAllItems = pipelineLists.reduce((acc, c) => acc + (c.completedItems || 0), 0);
   const overallPercentage = totalAllItems > 0 ? Math.round((completedAllItems / totalAllItems) * 100) : 0;
+
+  const handleSwitchPipeline = (newScope: 'CARBON_EMISSION' | 'JOB_REPORTING') => {
+    setPipelineScope(newScope);
+    onScopeChange?.(newScope);
+    const targetLists = checklists.filter((c) =>
+      newScope === 'JOB_REPORTING'
+        ? c.recommendation?.workflowType === 'JOB'
+        : c.recommendation?.workflowType !== 'JOB'
+    );
+    if (targetLists.length > 0) {
+      setSelectedChecklistId(targetLists[0].id);
+    } else {
+      setSelectedChecklistId(null);
+    }
+  };
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -324,24 +377,26 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>
-                Preparation &amp; Evidence Gathering Console
+                {isJobPipeline ? 'Workforce & Social Value Preparation' : 'GHG & Carbon Emissions Preparation'}
               </span>
               <span
                 style={{
                   fontSize: '0.72rem',
                   padding: '0.2rem 0.55rem',
                   borderRadius: '4px',
-                  background: '#f0fdf4',
-                  color: '#166534',
+                  background: isJobPipeline ? '#eff6ff' : '#f0fdf4',
+                  color: isJobPipeline ? '#1e40af' : '#166534',
                   fontWeight: 700,
-                  border: '1px solid #bbf7d0',
+                  border: isJobPipeline ? '1px solid #bfdbfe' : '1px solid #bbf7d0',
                 }}
               >
-                Statutory Readiness Engine
+                {isJobPipeline ? 'Section 106 Statutory Engine' : 'ISO 14064-1 Readiness Engine'}
               </span>
             </div>
             <p style={{ fontSize: '0.9rem', color: '#475569', margin: 0, maxWidth: '640px', lineHeight: 1.5 }}>
-              Prepare and organize your baseline utility bills, meters, and governance policies below. Once mandatory items are satisfied, your dossier unlocks automated ISO diagnostic screening.
+              {isJobPipeline
+                ? 'Gather and attest Section 106 local authority covenants, apprenticeship verification, and Real Living Wage records.'
+                : 'Prepare and organize baseline utility electricity statements, gas meters, and governance policies for ISO audit verification.'}
             </p>
           </div>
 
@@ -350,7 +405,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               {overallPercentage}%
             </div>
             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-              {completedAllItems} of {totalAllItems} Total Tasks Done
+              {completedAllItems} of {totalAllItems} Pipeline Tasks Done
             </div>
           </div>
         </div>
@@ -370,11 +425,58 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
             style={{
               width: `${overallPercentage}%`,
               height: '100%',
-              background: '#16a34a',
+              background: isJobPipeline ? '#2563eb' : '#16a34a',
               transition: 'width 0.4s ease',
             }}
           />
         </div>
+      </div>
+
+      {/* Sovereign Pipeline Switcher (Distinctly Separates GHG & Carbon from Job Audit) */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => handleSwitchPipeline('CARBON_EMISSION')}
+          style={{
+            padding: '0.75rem 1.4rem',
+            borderRadius: '10px',
+            border: !isJobPipeline ? '2px solid #16a34a' : '1px solid #e2e8f0',
+            backgroundColor: !isJobPipeline ? '#f0fdf4' : '#ffffff',
+            color: !isJobPipeline ? '#166534' : '#475569',
+            fontWeight: 700,
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            boxShadow: !isJobPipeline ? '0 2px 4px rgba(22, 163, 74, 0.12)' : 'none',
+          }}
+        >
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: !isJobPipeline ? '#16a34a' : '#cbd5e1' }} />
+          <span>GHG &amp; Carbon Emissions Pipeline</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSwitchPipeline('JOB_REPORTING')}
+          style={{
+            padding: '0.75rem 1.4rem',
+            borderRadius: '10px',
+            border: isJobPipeline ? '2px solid #2563eb' : '1px solid #e2e8f0',
+            backgroundColor: isJobPipeline ? '#eff6ff' : '#ffffff',
+            color: isJobPipeline ? '#1e40af' : '#475569',
+            fontWeight: 700,
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            boxShadow: isJobPipeline ? '0 2px 4px rgba(37, 99, 235, 0.12)' : 'none',
+          }}
+        >
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: isJobPipeline ? '#2563eb' : '#cbd5e1' }} />
+          <span>Workforce &amp; Social Value (Job Audit) Pipeline</span>
+        </button>
       </div>
 
       {error && (
@@ -412,50 +514,88 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       )}
 
       {/* Framework Selector Tabs (Clean Plain-English Titles) */}
-      <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        {checklists.map((c) => {
-          const isSelected = c.id === selectedChecklistId;
-          const isReady = c.isReadyToIngest;
-          const cleanTitle = getPlainEnglishFrameworkTitle(c.recommendation?.frameworkName || '');
+      {pipelineLists.length === 0 ? (
+        <div
+          style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            padding: '2.5rem',
+            textAlign: 'center',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+            No {isJobPipeline ? 'Workforce & Social Value' : 'GHG & Carbon'} Checklists on File
+          </div>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1.25rem 0' }}>
+            {isJobPipeline
+              ? 'Complete your Section 106 and workforce statutory intake assessment to provision preparation evidence tasks.'
+              : 'Complete your carbon management and emissions boundary assessment to provision corporate GHG evidence tasks.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/portal/onboarding')}
+            style={{
+              padding: '0.65rem 1.4rem',
+              borderRadius: '8px',
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Open Statutory Intake Assessment &rarr;
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          {pipelineLists.map((c) => {
+            const isSelected = c.id === selectedChecklistId;
+            const isReady = c.isReadyToIngest;
+            const cleanTitle = getPlainEnglishFrameworkTitle(c.recommendation?.frameworkName || '');
 
-          return (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setSelectedChecklistId(c.id)}
-              style={{
-                padding: '0.65rem 1.15rem',
-                borderRadius: '8px',
-                background: isSelected ? 'var(--accent-primary)' : 'var(--bg-card)',
-                border: `1px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`,
-                color: isSelected ? '#ffffff' : '#334155',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.15s',
-                boxShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.02)',
-              }}
-            >
-              <span>{cleanTitle}</span>
-              <span
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedChecklistId(c.id)}
                 style={{
-                  fontSize: '0.72rem',
-                  padding: '0.15rem 0.45rem',
-                  borderRadius: '10px',
-                  background: isSelected ? 'rgba(255, 255, 255, 0.2)' : isReady ? '#dcfce7' : '#f1f5f9',
-                  color: isSelected ? '#ffffff' : isReady ? '#166534' : '#475569',
-                  fontWeight: 700,
+                  padding: '0.65rem 1.15rem',
+                  borderRadius: '8px',
+                  background: isSelected ? 'var(--accent-primary)' : 'var(--bg-card)',
+                  border: `1px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`,
+                  color: isSelected ? '#ffffff' : '#334155',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.15s',
+                  boxShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.02)',
                 }}
               >
-                {c.completedItems}/{c.totalItems}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                <span>{cleanTitle}</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '0.15rem 0.45rem',
+                    borderRadius: '10px',
+                    background: isSelected ? 'rgba(255, 255, 255, 0.2)' : isReady ? '#dcfce7' : '#f1f5f9',
+                    color: isSelected ? '#ffffff' : isReady ? '#166534' : '#475569',
+                    fontWeight: 700,
+                  }}
+                >
+                  {c.completedItems}/{c.totalItems}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Active Framework Details Header */}
       {recommendation && (

@@ -145,7 +145,13 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleLaunchChecklist = () => {
-    navigate('/portal?tab=checklist');
+    const hasCarbon = recommendations.some((r) => r.workflowType === 'CARBON' && r.clientAccepted !== false);
+    const hasJob = recommendations.some((r) => r.workflowType === 'JOB' && r.clientAccepted !== false);
+    if (!hasCarbon && hasJob) {
+      navigate('/portal?tab=checklist&scope=JOB_REPORTING');
+    } else {
+      navigate('/portal?tab=checklist&scope=CARBON_EMISSION');
+    }
   };
 
   return (

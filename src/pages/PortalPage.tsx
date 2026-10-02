@@ -462,9 +462,14 @@ export const PortalPage: React.FC = () => {
             next.set('scope', nextScope);
             next.set('step', String(nextStep));
             if (options?.submissionId) next.set('submission_id', options.submissionId);
+          } else if (resolvedView === 'checklist') {
+            next.set('scope', nextScope);
+            next.delete('step');
+            next.delete('submission_id');
           } else {
             next.delete('scope');
             next.delete('step');
+            next.delete('submission_id');
           }
           return next;
         },
@@ -738,6 +743,15 @@ export const PortalPage: React.FC = () => {
     const scopeParam = searchParams.get('scope');
     if (scopeParam === 'JOB_REPORTING' || scopeParam === 'CARBON_EMISSION') {
       setAuditScope(scopeParam);
+    } else if (tabParam === 'checklist' || tabParam === 'workflow') {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('scope', auditScope || 'CARBON_EMISSION');
+          return next;
+        },
+        { replace: true }
+      );
     }
     const stepParam = searchParams.get('step');
     if (stepParam) {
@@ -1413,21 +1427,25 @@ export const PortalPage: React.FC = () => {
           <span className="portal-nav-badge count">Live</span>
         </button>
 
+        {/* GHG & CARBON PIPELINE */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>GHG &amp; CARBON PIPELINE</div>
         <button
           type="button"
-          className={`portal-nav-btn ${activeView === 'checklist' ? 'active' : ''}`}
+          className={`portal-nav-btn ${activeView === 'checklist' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
           onClick={() => {
-            setActiveView('checklist');
+            navigateToView('checklist', { scope: 'CARBON_EMISSION' });
             onNav?.();
           }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
-          <span className="portal-nav-label">Preparation</span>
-          <span className="portal-nav-badge count">Readiness</span>
+          <span className="portal-nav-label">Carbon Preparation</span>
+          {isCarbonPrepReady ? (
+            <span className="portal-nav-badge count">Ready</span>
+          ) : (
+            <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Pending</span>
+          )}
         </button>
 
-        {/* ASSURANCE WORKFLOWS */}
-        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>ASSURANCE WORKFLOWS</div>
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
@@ -1437,7 +1455,7 @@ export const PortalPage: React.FC = () => {
           }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
-          <span className="portal-nav-label">GHG &amp; Carbon Emissions</span>
+          <span className="portal-nav-label">Carbon Assurance Engine</span>
           {!user?.hasCompletedAssessment ? (
             <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
           ) : !isCarbonPrepReady ? (
@@ -1451,6 +1469,25 @@ export const PortalPage: React.FC = () => {
           )}
         </button>
 
+        {/* WORKFORCE & JOB AUDIT PIPELINE */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>JOB AUDIT &amp; SOCIAL VALUE</div>
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'checklist' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
+          onClick={() => {
+            navigateToView('checklist', { scope: 'JOB_REPORTING' });
+            onNav?.();
+          }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
+          <span className="portal-nav-label">Job Audit Preparation</span>
+          {isJobPrepReady ? (
+            <span className="portal-nav-badge count">Ready</span>
+          ) : (
+            <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Pending</span>
+          )}
+        </button>
+
         <button
           type="button"
           className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
@@ -1460,7 +1497,7 @@ export const PortalPage: React.FC = () => {
           }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
-          <span className="portal-nav-label">Workforce &amp; Social Value</span>
+          <span className="portal-nav-label">Workforce Assurance Engine</span>
           {!user?.hasCompletedAssessment ? (
             <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
           ) : !isJobPrepReady ? (
@@ -1899,6 +1936,19 @@ export const PortalPage: React.FC = () => {
         {activeView === 'checklist' && (
           <div style={{ marginBottom: '2.5rem' }}>
             <PreparationChecklistConsole
+              initialScope={auditScope}
+              onScopeChange={(newScope) => {
+                setAuditScope(newScope);
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set('tab', 'checklist');
+                    next.set('scope', newScope);
+                    return next;
+                  },
+                  { replace: true }
+                );
+              }}
               onChecklistsUpdated={(updated) => setChecklists(updated)}
               onProceedToDiagnostic={(wfType) => {
                 refreshChecklists();
@@ -1942,7 +1992,7 @@ export const PortalPage: React.FC = () => {
             token={token}
             onNavigateToOnboarding={() => navigate('/portal/onboarding')}
             onNavigateToOverview={() => setActiveView('overview')}
-            onNavigateToChecklist={() => setActiveView('checklist')}
+            onNavigateToChecklist={() => navigateToView('checklist', { scope: auditScope })}
             fetchIsoStatus={fetchIsoStatus}
             onNavigateTab={(tab) => {
               if (tab === 'overview') setActiveView('overview');
