@@ -74,6 +74,53 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       return res.status(400).json({ error: 'frameworkId is required.' });
     }
 
+    // Statutory gating check for non-admin licensees
+    if (user.role !== 'ADMIN') {
+      const licensee = await prisma.licensee.findUnique({
+        where: { id: licenseeId },
+        select: { hasCompletedAssessment: true },
+      });
+
+      if (!licensee?.hasCompletedAssessment) {
+        return res.status(403).json({
+          error: 'Statutory intake assessment required before initializing workflow draft.',
+          code: 'INTAKE_ASSESSMENT_REQUIRED',
+        });
+      }
+
+      const checklists = await prisma.preparationChecklist.findMany({
+        where: {
+          licenseeId,
+          recommendation: {
+            workflowType: workflowType as WorkflowType,
+          },
+        },
+        include: {
+          recommendation: true,
+        },
+      });
+
+      if (checklists.length === 0) {
+        return res.status(403).json({
+          error: 'Statutory preparation checklist incomplete. You must complete all mandatory preparation items before launching the assurance diagnostic.',
+          code: 'PREPARATION_INCOMPLETE',
+        });
+      }
+
+      const mandatoryLists = checklists.filter(
+        (c) => c.recommendation?.isLegallyMandatory && c.recommendation?.clientAccepted !== false
+      );
+      const relevantLists = mandatoryLists.length > 0 ? mandatoryLists : checklists;
+      const allReady = relevantLists.every((c) => c.isReadyToIngest);
+
+      if (!allReady) {
+        return res.status(403).json({
+          error: 'Preparation checklist incomplete. You must complete all mandatory preparation items before launching the assurance diagnostic.',
+          code: 'PREPARATION_INCOMPLETE',
+        });
+      }
+    }
+
     try {
       const submission = await runWithRls(prisma, user, async () => {
         return workflowService.createDraft(
@@ -211,6 +258,32 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
         if (user.role !== 'ADMIN' && user.licenseeId && existing.licenseeId !== user.licenseeId) {
           throw new Error('Forbidden: Licensee mismatch.');
+        }
+
+        if (user.role !== 'ADMIN') {
+          const checklists = await tx.preparationChecklist.findMany({
+            where: {
+              licenseeId: existing.licenseeId,
+              recommendation: {
+                workflowType: existing.workflowType,
+              },
+            },
+            include: { recommendation: true },
+          });
+
+          if (checklists.length === 0) {
+            throw new Error('Preparation checklist incomplete. You must complete all mandatory preparation items before submitting for assurance review.');
+          }
+
+          const mandatoryLists = checklists.filter(
+            (c) => c.recommendation?.isLegallyMandatory && c.recommendation?.clientAccepted !== false
+          );
+          const relevantLists = mandatoryLists.length > 0 ? mandatoryLists : checklists;
+          const allReady = relevantLists.every((c) => c.isReadyToIngest);
+
+          if (!allReady) {
+            throw new Error('Preparation checklist incomplete. You must complete all mandatory preparation items before submitting for assurance review.');
+          }
         }
 
         return workflowService.transitionStatus(

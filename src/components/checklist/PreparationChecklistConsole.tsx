@@ -4,11 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/client';
 
 interface PreparationChecklistConsoleProps {
-  onProceedToDiagnostic: () => void;
+  onProceedToDiagnostic: (workflowType?: 'CARBON' | 'JOB') => void;
+  onChecklistsUpdated?: (checklists: any[]) => void;
 }
 
 export const PreparationChecklistConsole: React.FC<PreparationChecklistConsoleProps> = ({
   onProceedToDiagnostic,
+  onChecklistsUpdated,
 }) => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -36,9 +38,11 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       setLoading(true);
       setError(null);
       const res = await api.getChecklists(token);
-      setChecklists(res.checklists || []);
-      if (res.checklists && res.checklists.length > 0 && !selectedChecklistId) {
-        setSelectedChecklistId(res.checklists[0].id);
+      const lists = res.checklists || [];
+      setChecklists(lists);
+      onChecklistsUpdated?.(lists);
+      if (lists.length > 0 && !selectedChecklistId) {
+        setSelectedChecklistId(lists[0].id);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load preparation checklists');
@@ -68,8 +72,8 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       });
 
       // Update state locally
-      setChecklists((prevChecklists) =>
-        prevChecklists.map((c) => {
+      setChecklists((prevChecklists) => {
+        const next = prevChecklists.map((c) => {
           const updatedItems = c.items.map((i: any) =>
             i.id === itemId
               ? {
@@ -93,8 +97,10 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
             completedItems: completed,
             isReadyToIngest: mandatoryPending === 0,
           };
-        })
-      );
+        });
+        onChecklistsUpdated?.(next);
+        return next;
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to update item status');
     } finally {
@@ -944,7 +950,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
 
           <button
             type="button"
-            onClick={onProceedToDiagnostic}
+            onClick={() => onProceedToDiagnostic(recommendation?.workflowType)}
             style={{
               padding: '0.85rem 1.85rem',
               borderRadius: '8px',

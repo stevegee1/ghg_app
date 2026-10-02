@@ -265,6 +265,46 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
       return res.status(403).json({ error: 'Licensee account required to submit ISO readiness assessment.' });
     }
 
+    // Statutory intake and preparation checklist gating check for non-admin licensees
+    if (user.role !== 'ADMIN') {
+      const licensee = await prisma.licensee.findUnique({
+        where: { id: user.licenseeId },
+        select: { hasCompletedAssessment: true },
+      });
+
+      if (!licensee?.hasCompletedAssessment) {
+        return res.status(403).json({
+          error: 'Statutory intake assessment required before submitting diagnostic answers.',
+          code: 'INTAKE_ASSESSMENT_REQUIRED',
+        });
+      }
+
+      const checklists = await prisma.preparationChecklist.findMany({
+        where: { licenseeId: user.licenseeId },
+        include: { recommendation: true },
+      });
+
+      if (checklists.length === 0) {
+        return res.status(403).json({
+          error: 'Preparation checklist incomplete. Complete all mandatory preparation evidence items before submitting diagnostic answers.',
+          code: 'PREPARATION_INCOMPLETE',
+        });
+      }
+
+      const mandatoryLists = checklists.filter(
+        (c) => c.recommendation?.isLegallyMandatory && c.recommendation?.clientAccepted !== false
+      );
+      const relevantLists = mandatoryLists.length > 0 ? mandatoryLists : checklists;
+      const allReady = relevantLists.every((c) => c.isReadyToIngest);
+
+      if (!allReady) {
+        return res.status(403).json({
+          error: 'Preparation checklist incomplete. Complete all mandatory preparation evidence items before submitting diagnostic answers.',
+          code: 'PREPARATION_INCOMPLETE',
+        });
+      }
+    }
+
     if (!Array.isArray(answers) || answers.length === 0) {
       return res.status(400).json({ error: 'answers must be a non-empty array.' });
     }

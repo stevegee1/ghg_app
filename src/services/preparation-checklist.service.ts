@@ -351,7 +351,7 @@ export class PreparationChecklistService {
    * Retrieves all preparation checklists for a licensee with framework details.
    */
   async getChecklistsForLicensee(licenseeId: string) {
-    const lists = await this.prisma.preparationChecklist.findMany({
+    let lists = await this.prisma.preparationChecklist.findMany({
       where: { licenseeId },
       include: {
         recommendation: true,
@@ -361,6 +361,32 @@ export class PreparationChecklistService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    if (lists.length === 0) {
+      const recs = await this.prisma.complianceRecommendation.findMany({
+        where: { licenseeId },
+      });
+      if (recs.length > 0) {
+        for (const rec of recs) {
+          try {
+            await this.createChecklistForRecommendation(rec.id, licenseeId, rec.frameworkCode);
+          } catch (err) {
+            console.error('[AUTO-PROVISION CHECKLIST ERROR]', err);
+          }
+        }
+        lists = await this.prisma.preparationChecklist.findMany({
+          where: { licenseeId },
+          include: {
+            recommendation: true,
+            items: {
+              orderBy: [{ isMandatory: 'desc' }, { createdAt: 'asc' }],
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      }
+    }
+
     return this.attachEvidenceDocumentsList(lists);
   }
 

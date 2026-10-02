@@ -11,7 +11,9 @@ interface ReadinessEngineWorkflowProps {
   submissionId?: string | null;
   onRefreshStatus?: () => void;
   onNavigateTab?: (tab: string) => void;
+  onNavigateToChecklist?: () => void;
   scope?: AuditScope;
+  isPreparationReady?: boolean;
 }
 
 const STEP_LABELS_BY_SCOPE: Record<AuditScope, Record<WorkflowStep, string>> = {
@@ -189,7 +191,9 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
   submissionId: initialSubId = null,
   onRefreshStatus,
   onNavigateTab,
+  onNavigateToChecklist,
   scope = 'CARBON_EMISSION',
+  isPreparationReady = true,
 }) => {
   const [activeStep, setActiveStep] = useState<WorkflowStep>(initialStep);
   const [maxStepReached, setMaxStepReached] = useState<number>(initialStep);
@@ -394,8 +398,11 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
   };
 
   // Step 1 -> Step 2: Upload Evidence & Run Automated Readiness Engine
-  // Step 1 -> Step 2: Upload Evidence & Run Automated Readiness Engine
   const handleProceedToReadinessEngine = async () => {
+    if (!isPreparationReady) {
+      setStepError('Cannot proceed: Your preparation checklist is incomplete. Please complete all mandatory evidence items in the Preparation Workspace first.');
+      return;
+    }
     setEvaluating(true);
     setStepError(null);
     try {
@@ -881,6 +888,59 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                 : 'Define your statutory greenhouse gas boundary and select applicable ISO frameworks to dynamically generate required audit proof dropzones.'}
             </p>
 
+            {!isPreparationReady && (
+              <div
+                style={{
+                  background: '#fffbeb',
+                  border: '1px solid #fde68a',
+                  borderRadius: '10px',
+                  padding: '1.25rem',
+                  marginBottom: '1.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#92400e' }}>
+                      Preparation Checklist Incomplete
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#b45309', marginTop: '0.15rem' }}>
+                      Mandatory baseline evidence items in your preparation workspace must be complete before submitting Stage 1 Diagnostic.
+                    </div>
+                  </div>
+                </div>
+
+                {onNavigateToChecklist && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToChecklist}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#0f172a',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Open Preparation Workspace &rarr;
+                  </button>
+                )}
+              </div>
+            )}
+
             <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '0 0 1.75rem 0' }} />
 
             {/* Corporate Profile Details */}
@@ -1316,19 +1376,20 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
               <button
                 type="button"
                 onClick={handleProceedToReadinessEngine}
-                disabled={evaluating}
+                disabled={evaluating || !isPreparationReady}
+                title={!isPreparationReady ? 'Complete mandatory preparation checklist items first' : undefined}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.5rem',
                   padding: '10px 24px',
-                  backgroundColor: '#18181b', // Normative solid dark button
+                  backgroundColor: !isPreparationReady ? '#94a3b8' : '#18181b', // Normative solid dark button
                   color: '#ffffff',
                   fontSize: '0.875rem',
                   fontWeight: 500,
                   borderRadius: '8px',
                   border: 'none',
-                  cursor: evaluating ? 'wait' : 'pointer',
+                  cursor: evaluating ? 'wait' : !isPreparationReady ? 'not-allowed' : 'pointer',
                   transition: 'background-color 0.15s ease',
                 }}
               >
