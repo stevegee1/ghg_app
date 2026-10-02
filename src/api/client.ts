@@ -935,18 +935,19 @@ export const api = {
 
   // ── Assessment Layer ──────────────────────────────────────────────────────
   async submitAssessment(token: string, params: {
+    assuranceIntent?: 'CARBON' | 'JOB' | 'DUAL';
     organisationCountry: string;
     organisationSize: string;
     annualRevenueBand: string;
     industrySector: string;
-    hasPhysicalSites: boolean;
-    hasProductionProcess: boolean;
-    hasFleet: boolean;
-    hasIoTMeters: boolean;
-    isUKPublicContractor: boolean;
-    hasPlanningConsent: boolean;
-    makesPublicGreenClaims: boolean;
-    hasGreenHydrogen: boolean;
+    hasPhysicalSites?: boolean;
+    hasProductionProcess?: boolean;
+    hasFleet?: boolean;
+    hasIoTMeters?: boolean;
+    isUKPublicContractor?: boolean;
+    hasPlanningConsent?: boolean;
+    makesPublicGreenClaims?: boolean;
+    hasGreenHydrogen?: boolean;
   }): Promise<{ message: string; assessment: any; recommendations: any[] }> {
     const res = await fetch('/api/assessment', {
       method: 'POST',
@@ -955,6 +956,20 @@ export const api = {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
+  async activatePipeline(token: string, pipeline: 'CARBON' | 'JOB' | 'DUAL'): Promise<{ message: string; assessment: any }> {
+    const res = await fetch('/api/assessment/activate-pipeline', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ pipeline }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);

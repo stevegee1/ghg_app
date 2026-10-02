@@ -424,8 +424,43 @@ export const PortalPage: React.FC = () => {
   const isCurrentScopePrepReady =
     auditScope === 'JOB_REPORTING' ? isJobPrepReady : isCarbonPrepReady;
 
+  const isCarbonActive =
+    user?.assuranceIntent === 'CARBON' ||
+    user?.assuranceIntent === 'DUAL' ||
+    carbonChecklists.length > 0 ||
+    !user?.assuranceIntent;
+  const isJobActive =
+    user?.assuranceIntent === 'JOB' ||
+    user?.assuranceIntent === 'DUAL' ||
+    jobChecklists.length > 0;
+
   // ── ISO Workflow & Framework State ─────────────────────────────────────────
   const [activeStep, setActiveStep] = useState<WorkflowStep>(1);
+  const [activatingPipeline, setActivatingPipeline] = useState<boolean>(false);
+
+  const handleActivatePipeline = useCallback(
+    async (targetPipeline: 'CARBON' | 'JOB' | 'DUAL') => {
+      if (!token) return;
+      try {
+        setActivatingPipeline(true);
+        await api.activatePipeline(token, targetPipeline);
+        if (user && updateUser) {
+          updateUser({ ...user, assuranceIntent: targetPipeline });
+        }
+        await refreshChecklists();
+        if (targetPipeline === 'DUAL' || targetPipeline === 'JOB') {
+          navigateToView('checklist', { scope: 'JOB_REPORTING' });
+        } else {
+          navigateToView('checklist', { scope: 'CARBON_EMISSION' });
+        }
+      } catch (err: any) {
+        console.error('Failed to activate pipeline:', err);
+      } finally {
+        setActivatingPipeline(false);
+      }
+    },
+    [token, user, updateUser, refreshChecklists, navigateToView]
+  );
 
   const navigateToView = useCallback(
     (
@@ -1428,88 +1463,163 @@ export const PortalPage: React.FC = () => {
         </button>
 
         {/* GHG & CARBON PIPELINE */}
-        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>GHG &amp; CARBON PIPELINE</div>
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'checklist' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
-          onClick={() => {
-            navigateToView('checklist', { scope: 'CARBON_EMISSION' });
-            onNav?.();
-          }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
-          <span className="portal-nav-label">Carbon Preparation</span>
-          {isCarbonPrepReady ? (
-            <span className="portal-nav-badge count">Ready</span>
-          ) : (
-            <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Pending</span>
-          )}
-        </button>
+        {isCarbonActive && (
+          <>
+            <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>GHG &amp; CARBON PIPELINE</div>
+            <button
+              type="button"
+              className={`portal-nav-btn ${activeView === 'checklist' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
+              onClick={() => {
+                navigateToView('checklist', { scope: 'CARBON_EMISSION' });
+                onNav?.();
+              }}
+            >
+              <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
+              <span className="portal-nav-label">Carbon Preparation</span>
+              {isCarbonPrepReady ? (
+                <span className="portal-nav-badge count">Ready</span>
+              ) : (
+                <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Pending</span>
+              )}
+            </button>
 
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
-          onClick={() => {
-            handleNavigateWorkflow(1, 'CARBON_EMISSION');
-            onNav?.();
-          }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
-          <span className="portal-nav-label">Carbon Assurance Engine</span>
-          {!user?.hasCompletedAssessment ? (
-            <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
-          ) : !isCarbonPrepReady ? (
-            <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Prep Pending</span>
-          ) : (
-            activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? (
-              <span className="portal-nav-badge">Step {activeStep}/5</span>
-            ) : (
-              <span className="portal-nav-badge count">Ready</span>
-            )
-          )}
-        </button>
+            <button
+              type="button"
+              className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
+              onClick={() => {
+                handleNavigateWorkflow(1, 'CARBON_EMISSION');
+                onNav?.();
+              }}
+            >
+              <span className="portal-nav-icon"><GoogleIcons.Workflow /></span>
+              <span className="portal-nav-label">Carbon Assurance Engine</span>
+              {!user?.hasCompletedAssessment ? (
+                <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
+              ) : !isCarbonPrepReady ? (
+                <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Prep Pending</span>
+              ) : (
+                activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? (
+                  <span className="portal-nav-badge">Step {activeStep}/5</span>
+                ) : (
+                  <span className="portal-nav-badge count">Ready</span>
+                )
+              )}
+            </button>
+          </>
+        )}
 
         {/* WORKFORCE & JOB AUDIT PIPELINE */}
-        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>JOB AUDIT &amp; SOCIAL VALUE</div>
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'checklist' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
-          onClick={() => {
-            navigateToView('checklist', { scope: 'JOB_REPORTING' });
-            onNav?.();
-          }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
-          <span className="portal-nav-label">Job Audit Preparation</span>
-          {isJobPrepReady ? (
-            <span className="portal-nav-badge count">Ready</span>
-          ) : (
-            <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Pending</span>
-          )}
-        </button>
+        {isJobActive && (
+          <>
+            <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>JOB AUDIT &amp; SOCIAL VALUE</div>
+            <button
+              type="button"
+              className={`portal-nav-btn ${activeView === 'checklist' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
+              onClick={() => {
+                navigateToView('checklist', { scope: 'JOB_REPORTING' });
+                onNav?.();
+              }}
+            >
+              <span className="portal-nav-icon"><GoogleIcons.Folder /></span>
+              <span className="portal-nav-label">Job Audit Preparation</span>
+              {isJobPrepReady ? (
+                <span className="portal-nav-badge count">Ready</span>
+              ) : (
+                <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Pending</span>
+              )}
+            </button>
 
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
-          onClick={() => {
-            handleNavigateWorkflow(1, 'JOB_REPORTING');
-            onNav?.();
-          }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
-          <span className="portal-nav-label">Workforce Assurance Engine</span>
-          {!user?.hasCompletedAssessment ? (
-            <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
-          ) : !isJobPrepReady ? (
-            <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Prep Pending</span>
-          ) : (
-            activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? (
-              <span className="portal-nav-badge">Step {activeStep}/5</span>
-            ) : (
-              <span className="portal-nav-badge count">Ready</span>
-            )
-          )}
-        </button>
+            <button
+              type="button"
+              className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
+              onClick={() => {
+                handleNavigateWorkflow(1, 'JOB_REPORTING');
+                onNav?.();
+              }}
+            >
+              <span className="portal-nav-icon"><GoogleIcons.Jobs /></span>
+              <span className="portal-nav-label">Workforce Assurance Engine</span>
+              {!user?.hasCompletedAssessment ? (
+                <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
+              ) : !isJobPrepReady ? (
+                <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Prep Pending</span>
+              ) : (
+                activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? (
+                  <span className="portal-nav-badge">Step {activeStep}/5</span>
+                ) : (
+                  <span className="portal-nav-badge count">Ready</span>
+                )
+              )}
+            </button>
+          </>
+        )}
+
+        {/* ON-DEMAND AVAILABLE EXTENSIONS */}
+        {!isJobActive && (
+          <div style={{ margin: '0.85rem 0.5rem 0.25rem 0.5rem', padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Available Extension
+            </div>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#090d1a', marginBottom: '0.2rem' }}>
+              Section 106 &amp; Social Value
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: '0.65rem', lineHeight: 1.4 }}>
+              Planning covenants and verified apprentice quotas.
+            </div>
+            <button
+              type="button"
+              disabled={activatingPipeline}
+              onClick={() => handleActivatePipeline('DUAL')}
+              style={{
+                width: '100%',
+                padding: '0.45rem 0.6rem',
+                borderRadius: '6px',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: '#059669',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {activatingPipeline ? 'Activating...' : '+ Activate Module'}
+            </button>
+          </div>
+        )}
+
+        {!isCarbonActive && (
+          <div style={{ margin: '0.85rem 0.5rem 0.25rem 0.5rem', padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Available Extension
+            </div>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#090d1a', marginBottom: '0.2rem' }}>
+              GHG &amp; Carbon Emissions
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: '0.65rem', lineHeight: 1.4 }}>
+              Scope 1, 2 &amp; 3 emissions and ISO 14064 assurance.
+            </div>
+            <button
+              type="button"
+              disabled={activatingPipeline}
+              onClick={() => handleActivatePipeline('DUAL')}
+              style={{
+                width: '100%',
+                padding: '0.45rem 0.6rem',
+                borderRadius: '6px',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: '#0284c7',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {activatingPipeline ? 'Activating...' : '+ Activate Module'}
+            </button>
+          </div>
+        )}
 
         {/* VERIFICATION & GOVERNANCE */}
         <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>VERIFICATION &amp; GOVERNANCE</div>

@@ -23,6 +23,7 @@ model Licensee {
   organisationCountry      String? // ISO 3166-1 alpha-2 e.g. "GB", "DE", "US"
   industrySector           IndustrySector? // Set during onboarding
   hasCompletedAssessment   Boolean         @default(false)
+  assuranceIntent          String?         @default("DUAL") // "CARBON" | "JOB" | "DUAL"
   createdAt                DateTime        @default(now())
   updatedAt                DateTime        @updatedAt
 
@@ -994,6 +995,7 @@ model ClientAssessment {
   hasPlanningConsent     Boolean // Planning permission with S106 obligations?
   makesPublicGreenClaims Boolean // Make any environmental claims publicly?
   hasGreenHydrogen       Boolean @default(false) // Produce or operate green hydrogen?
+  assuranceIntent        String  @default("DUAL") // "CARBON" | "JOB" | "DUAL"
 
   // Metadata
   assessmentVersion String    @default("v1.0")

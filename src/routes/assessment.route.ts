@@ -31,6 +31,7 @@ export function createAssessmentRouter(prisma: PrismaClient): Router {
         hasPlanningConsent,
         makesPublicGreenClaims,
         hasGreenHydrogen,
+        assuranceIntent,
       } = req.body || {};
 
       // Validate required enum & country fields
@@ -48,6 +49,7 @@ export function createAssessmentRouter(prisma: PrismaClient): Router {
       }
 
       const input: IntakeAssessmentInput = {
+        assuranceIntent: ['CARBON', 'JOB', 'DUAL'].includes(assuranceIntent) ? assuranceIntent : 'DUAL',
         organisationCountry: organisationCountry.trim().toUpperCase().slice(0, 2),
         organisationSize,
         annualRevenueBand,
@@ -72,6 +74,32 @@ export function createAssessmentRouter(prisma: PrismaClient): Router {
     } catch (err: any) {
       console.error('[ASSESSMENT SUBMIT ERROR]', err);
       return res.status(500).json({ error: err.message || 'Failed to submit intake assessment' });
+    }
+  });
+
+  /**
+   * POST /api/assessment/activate-pipeline
+   * Seamlessly activates an additional compliance stream (e.g. adding JOB to an existing CARBON client).
+   */
+  router.post('/api/assessment/activate-pipeline', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || !user.licenseeId) {
+        return res.status(403).json({ error: 'Licensee context required' });
+      }
+      const { pipeline } = req.body || {};
+      if (!['CARBON', 'JOB', 'DUAL'].includes(pipeline)) {
+        return res.status(400).json({ error: 'Invalid pipeline: must be CARBON, JOB, or DUAL' });
+      }
+
+      const updated = await assessmentService.activatePipeline(user.licenseeId, pipeline);
+      return res.status(200).json({
+        message: 'Pipeline activated successfully',
+        assessment: updated,
+      });
+    } catch (err: any) {
+      console.error('[PIPELINE ACTIVATION ERROR]', err);
+      return res.status(500).json({ error: err.message || 'Failed to activate pipeline' });
     }
   });
 

@@ -14,6 +14,7 @@ export interface User {
   industrySector?: string;
   hasCompletedAssessment?: boolean;
   isOnboardingComplete?: boolean;
+  assuranceIntent?: 'CARBON' | 'JOB' | 'DUAL';
   emailVerified?: boolean;
   logoUrl?: string | null;
   websiteUrl?: string | null;

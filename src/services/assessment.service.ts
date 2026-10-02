@@ -11,20 +11,21 @@ import {
 import { PreparationChecklistService } from './preparation-checklist.service';
 
 export interface IntakeAssessmentInput {
+  assuranceIntent?: 'CARBON' | 'JOB' | 'DUAL';
   organisationCountry: string; // ISO 3166-1 alpha-2 e.g. "GB", "DE", "US"
   organisationSize: OrganisationSize;
   annualRevenueBand: RevenueBand;
   industrySector: IndustrySector;
 
-  hasPhysicalSites: boolean;
-  hasProductionProcess: boolean;
-  hasFleet: boolean;
-  hasIoTMeters: boolean;
+  hasPhysicalSites?: boolean;
+  hasProductionProcess?: boolean;
+  hasFleet?: boolean;
+  hasIoTMeters?: boolean;
 
-  isUKPublicContractor: boolean;
-  hasPlanningConsent: boolean;
-  makesPublicGreenClaims: boolean;
-  hasGreenHydrogen: boolean;
+  isUKPublicContractor?: boolean;
+  hasPlanningConsent?: boolean;
+  makesPublicGreenClaims?: boolean;
+  hasGreenHydrogen?: boolean;
 }
 
 export interface ComputedRecommendation {
@@ -170,27 +171,37 @@ export class AssessmentDecisionEngine {
     }
 
     // 8. Social Value Act & Fair Work Job Verification
+    const intent = input.assuranceIntent || 'DUAL';
     if (
+      intent === 'JOB' ||
+      input.hasPlanningConsent ||
       input.isUKPublicContractor ||
       input.industrySector === IndustrySector.CONSTRUCTION ||
       isLarge
     ) {
       list.push({
         frameworkCode: 'SOCIAL_VALUE_JOBS',
-        frameworkName: 'Social Value Act & Fair Work Job Verification',
+        frameworkName: 'Social Value Act & Section 106 Job Verification',
         workflowType: WorkflowType.JOB,
-        isLegallyMandatory: false,
+        isLegallyMandatory: Boolean(input.hasPlanningConsent),
         plainEnglishWhy:
-          'Public procurement tenders assign up to 20% total scoring weight to verified social value, Real Living Wage compliance, local community hiring, and apprentice training hours.',
+          'Section 106 municipal planning conditions and public tenders require verified social value, Real Living Wage compliance, local community hiring, and apprentice training hours.',
         consequenceIfSkipped:
-          'Lower competitive tender scoring against competing bidders who submit audited social value and job creation credentials.',
-        enforcementBody: 'Cabinet Office & Public Sector Procurement Boards',
+          'Inability to discharge Section 106 local authority planning covenants or lower competitive tender scoring against competing bidders.',
+        enforcementBody: 'Local Planning Authorities & Cabinet Office Procurement Boards',
         estimatedEffort: ComplianceEffort.LOW,
       });
     }
 
+    // Filter list strictly based on client mandate intent
+    const filteredList = list.filter((item) => {
+      if (intent === 'CARBON') return item.workflowType === WorkflowType.CARBON;
+      if (intent === 'JOB') return item.workflowType === WorkflowType.JOB;
+      return true;
+    });
+
     // Sort: Legally mandatory first, then by estimated effort (LOW first for quick wins)
-    list.sort((a, b) => {
+    filteredList.sort((a, b) => {
       if (a.isLegallyMandatory !== b.isLegallyMandatory) {
         return a.isLegallyMandatory ? -1 : 1;
       }
@@ -202,7 +213,7 @@ export class AssessmentDecisionEngine {
       return effortWeight[a.estimatedEffort] - effortWeight[b.estimatedEffort];
     });
 
-    return list.map((item, index) => ({
+    return filteredList.map((item, index) => ({
       ...item,
       displayOrder: index + 1,
     }));
@@ -247,14 +258,15 @@ export class AssessmentService {
           organisationSize: input.organisationSize,
           annualRevenueBand: input.annualRevenueBand,
           industrySector: input.industrySector,
-          hasPhysicalSites: input.hasPhysicalSites,
-          hasProductionProcess: input.hasProductionProcess,
-          hasFleet: input.hasFleet,
-          hasIoTMeters: input.hasIoTMeters,
-          isUKPublicContractor: input.isUKPublicContractor,
-          hasPlanningConsent: input.hasPlanningConsent,
-          makesPublicGreenClaims: input.makesPublicGreenClaims,
-          hasGreenHydrogen: input.hasGreenHydrogen,
+          hasPhysicalSites: input.hasPhysicalSites ?? false,
+          hasProductionProcess: input.hasProductionProcess ?? false,
+          hasFleet: input.hasFleet ?? false,
+          hasIoTMeters: input.hasIoTMeters ?? false,
+          isUKPublicContractor: input.isUKPublicContractor ?? false,
+          hasPlanningConsent: input.hasPlanningConsent ?? false,
+          makesPublicGreenClaims: input.makesPublicGreenClaims ?? false,
+          hasGreenHydrogen: input.hasGreenHydrogen ?? false,
+          assuranceIntent: input.assuranceIntent || 'DUAL',
           completedAt: new Date(),
         },
       });
@@ -289,6 +301,7 @@ export class AssessmentService {
           hasCompletedAssessment: true,
           organisationCountry: input.organisationCountry.trim().toUpperCase().slice(0, 2),
           industrySector: input.industrySector,
+          assuranceIntent: input.assuranceIntent || 'DUAL',
         },
       });
 
@@ -358,6 +371,86 @@ export class AssessmentService {
     });
 
     return assessment;
+  }
+
+  /**
+   * Activates an additional compliance pipeline (e.g. adding Job Auditing to an existing Carbon licensee).
+   */
+  async activatePipeline(licenseeId: string, pipeline: 'CARBON' | 'JOB' | 'DUAL'): Promise<any> {
+    const existingAssessment = await this.prisma.clientAssessment.findFirst({
+      where: { licenseeId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Update licensee assurance intent
+    await this.prisma.licensee.update({
+      where: { id: licenseeId },
+      data: { assuranceIntent: pipeline },
+    });
+
+    if (!existingAssessment) {
+      return { success: true, assuranceIntent: pipeline };
+    }
+
+    // Evaluate with new intent
+    const updatedInput: IntakeAssessmentInput = {
+      organisationCountry: existingAssessment.organisationCountry,
+      organisationSize: existingAssessment.organisationSize,
+      annualRevenueBand: existingAssessment.annualRevenueBand,
+      industrySector: existingAssessment.industrySector,
+      hasPhysicalSites: existingAssessment.hasPhysicalSites,
+      hasProductionProcess: existingAssessment.hasProductionProcess,
+      hasFleet: existingAssessment.hasFleet,
+      hasIoTMeters: existingAssessment.hasIoTMeters,
+      isUKPublicContractor: existingAssessment.isUKPublicContractor,
+      hasPlanningConsent: existingAssessment.hasPlanningConsent,
+      makesPublicGreenClaims: existingAssessment.makesPublicGreenClaims,
+      hasGreenHydrogen: existingAssessment.hasGreenHydrogen,
+      assuranceIntent: pipeline,
+    };
+
+    const computed = AssessmentDecisionEngine.evaluate(updatedInput);
+
+    // Existing recommendations
+    const existingRecs = await this.prisma.complianceRecommendation.findMany({
+      where: { assessmentId: existingAssessment.id },
+    });
+    const existingCodes = new Set(existingRecs.map((r) => r.frameworkCode));
+
+    // Provision any newly matching recommendations
+    for (const rec of computed) {
+      if (!existingCodes.has(rec.frameworkCode)) {
+        const created = await this.prisma.complianceRecommendation.create({
+          data: {
+            assessmentId: existingAssessment.id,
+            licenseeId,
+            frameworkCode: rec.frameworkCode,
+            frameworkName: rec.frameworkName,
+            workflowType: rec.workflowType,
+            isLegallyMandatory: rec.isLegallyMandatory,
+            plainEnglishWhy: rec.plainEnglishWhy,
+            consequenceIfSkipped: rec.consequenceIfSkipped,
+            enforcementBody: rec.enforcementBody,
+            estimatedEffort: rec.estimatedEffort,
+            clientAccepted: true,
+            clientReviewedAt: new Date(),
+            displayOrder: rec.displayOrder,
+          },
+        });
+        await this.checklistService.createChecklistForRecommendation(
+          created.id,
+          licenseeId,
+          rec.frameworkCode
+        );
+      }
+    }
+
+    await this.prisma.clientAssessment.update({
+      where: { id: existingAssessment.id },
+      data: { assuranceIntent: pipeline },
+    });
+
+    return this.getAssessment(licenseeId);
   }
 
   /**
