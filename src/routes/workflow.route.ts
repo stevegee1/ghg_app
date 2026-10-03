@@ -8,6 +8,7 @@ import {
   InvalidWorkflowTransitionError,
   MissingRequiredEvidenceError,
   WorkflowForbiddenError,
+  WorkflowNotFoundError,
   CREDENTIAL_MESSAGE_MAX_LENGTH,
 } from '../services/workflow-engine.service';
 import { CheckoutService } from '../services/checkout.service';
@@ -182,8 +183,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     }
 
     try {
-      const submission = await runWithRls(prisma, user, async () => {
-        return workflowService.createDraft(
+      const submission = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).createDraft(
           licenseeId,
           workflowType as WorkflowType,
           frameworkId,
@@ -254,8 +255,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     const user = req.user!;
 
     try {
-      const dossier = await runWithRls(prisma, user, async () => {
-        return workflowService.getSubmissionDossier(id);
+      const dossier = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).getSubmissionDossier(id);
       });
 
       if (!dossier) {
@@ -292,7 +293,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         if (!existing) throw new Error('Submission not found.');
 
         const effectiveLicenseeId = user.role === 'ADMIN' ? existing.licenseeId : user.licenseeId!;
-        return workflowService.saveAnswers(id, effectiveLicenseeId, answers);
+        return new WorkflowEngineService(tx).saveAnswers(id, effectiveLicenseeId, answers);
       });
 
       return res.status(200).json({ success: true, submission: updated });
@@ -346,7 +347,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
           }
         }
 
-        return workflowService.transitionStatus(
+        return new WorkflowEngineService(tx).transitionStatus(
           id,
           WorkflowStatus.SUBMITTED,
           { userId: user.userId, role: user.role, licenseeId: user.licenseeId },
@@ -386,6 +387,9 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       }
       if (err instanceof WorkflowForbiddenError) {
         return res.status(403).json({ error: err.message });
+      }
+      if (err instanceof WorkflowNotFoundError) {
+        return res.status(404).json({ error: err.message });
       }
       console.error('[WORKFLOW SUBMIT ERROR]', err);
       return res.status(400).json({ error: err.message || 'Failed to submit questionnaire.' });
@@ -509,14 +513,14 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     }
 
     try {
-      // transitionStatus enforces role and licensee checks internally; runWithRls is not used
-      // here to avoid nested Prisma interactive transactions which expire at 5000ms.
-      const updated = await workflowService.transitionStatus(
-        id,
-        targetStatus as WorkflowStatus,
-        { userId: user.userId, role: user.role, licenseeId: user.licenseeId },
-        triggerReason
-      );
+      const updated = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).transitionStatus(
+          id,
+          targetStatus as WorkflowStatus,
+          { userId: user.userId, role: user.role, licenseeId: user.licenseeId },
+          triggerReason
+        );
+      });
 
       return res.status(200).json({ success: true, submission: updated });
     } catch (err: any) {
@@ -525,6 +529,9 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       }
       if (err instanceof WorkflowForbiddenError) {
         return res.status(403).json({ error: err.message });
+      }
+      if (err instanceof WorkflowNotFoundError) {
+        return res.status(404).json({ error: err.message });
       }
       console.error('[WORKFLOW TRANSITION ERROR]', err);
       return res.status(400).json({ error: err.message || 'Failed to transition workflow status.' });
@@ -556,8 +563,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     }
 
     try {
-      const reviewed = await runWithRls(prisma, user, async () => {
-        return workflowService.submitReview(
+      const reviewed = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).submitReview(
           id,
           {
             overallDecision,
@@ -679,6 +686,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     }
 
     try {
+      // Runs on the root client: badge compositing can exceed the RLS transaction timeout.
+      // issueCredential enforces licensee ownership itself.
       const result = await workflowService.issueCredential(
         id,
         { clientMessage, clientLogoPath: req.file.path },
@@ -702,6 +711,9 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       if (err instanceof WorkflowForbiddenError) {
         return res.status(403).json({ error: err.message });
       }
+      if (err instanceof WorkflowNotFoundError) {
+        return res.status(404).json({ error: err.message });
+      }
       console.error('[WORKFLOW BADGE SETUP ERROR]', err);
       return res.status(500).json({ error: 'Failed to issue credential.' });
     }
@@ -716,10 +728,12 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     const user = req.user!;
 
     try {
-      const pdfBuffer = await workflowService.generatePdfProof(id, {
-        userId: user.userId,
-        role: user.role,
-        licenseeId: user.licenseeId,
+      const pdfBuffer = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).generatePdfProof(id, {
+          userId: user.userId,
+          role: user.role,
+          licenseeId: user.licenseeId,
+        });
       });
 
       res.setHeader('Content-Type', 'application/pdf');
@@ -729,6 +743,9 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     } catch (err: unknown) {
       if (err instanceof WorkflowForbiddenError) {
         return res.status(403).json({ error: err.message });
+      }
+      if (err instanceof WorkflowNotFoundError) {
+        return res.status(404).json({ error: err.message });
       }
       if (err instanceof InvalidWorkflowTransitionError) {
         return res.status(409).json({ error: 'The audit proof is available once the credential has been issued.' });
@@ -799,8 +816,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     }
 
     try {
-      const result = await runWithRls(prisma, user, async () => {
-        return workflowService.generateTelemetryApiKey(
+      const result = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).generateTelemetryApiKey(
           licenseeId,
           workflowType as WorkflowType,
           name
@@ -830,8 +847,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     }
 
     try {
-      const keys = await runWithRls(prisma, user, async () => {
-        return workflowService.listTelemetryApiKeys(licenseeId);
+      const keys = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).listTelemetryApiKeys(licenseeId);
       });
 
       return res.status(200).json({ keys });
@@ -857,8 +874,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     try {
       const buffer = fileBufferBase64 ? Buffer.from(fileBufferBase64, 'base64') : undefined;
 
-      const doc = await runWithRls(prisma, user, async () => {
-        return workflowService.uploadEvidenceDocument({
+      const doc = await runWithRls(prisma, user, async (tx) => {
+        return new WorkflowEngineService(tx).uploadEvidenceDocument({
           licenseeId,
           uploadedBy: user.userId,
           fileName,

@@ -762,10 +762,11 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
 
     it('Screen 9: PDF proof requires login and ownership', async () => {
       await request(app).get(`/api/workflow/submissions/${lifecycleSubId}/download-pdf`).expect(401);
+      // Row-level security hides another licensee's submission entirely.
       await request(app)
         .get(`/api/workflow/submissions/${lifecycleSubId}/download-pdf`)
         .set('Authorization', `Bearer ${partnerTokenB}`)
-        .expect(403);
+        .expect(404);
     });
 
     it('Screen 9: GET /api/workflow/submissions/:id/download-pdf streams audit certificate PDF', async () => {
@@ -861,7 +862,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .post(`/api/workflow/submissions/${draftAId}/transition`)
         .set('Authorization', `Bearer ${partnerTokenB}`)
         .send({ targetStatus: WorkflowStatus.SUBMITTED })
-        .expect(403);
+        .expect(404);
 
       const row = await prisma.workflowSubmission.findUnique({ where: { id: draftAId } });
       expect(row!.status).toBe(WorkflowStatus.DRAFT);

@@ -32,6 +32,13 @@ export class MissingRequiredEvidenceError extends Error {
 
 export const CREDENTIAL_MESSAGE_MAX_LENGTH = 100;
 
+export class WorkflowNotFoundError extends Error {
+  constructor() {
+    super('Submission not found.');
+    this.name = 'WorkflowNotFoundError';
+  }
+}
+
 export class WorkflowForbiddenError extends Error {
   constructor(message: string) {
     super(message);
@@ -88,8 +95,22 @@ const MANUAL_TRANSITION_ROLES: Partial<Record<WorkflowStatus, 'OWNER_OR_ADMIN' |
   [WorkflowStatus.UNDER_REVIEW]: 'ADMIN',
 };
 
+type WorkflowDb = PrismaClient | Prisma.TransactionClient;
+
 export class WorkflowEngineService {
-  constructor(private prisma: PrismaClient) {}
+  /**
+   * Pass the transaction client from runWithRls so tenant row-level security applies.
+   * The root PrismaClient is only for system work (seeding, background jobs).
+   */
+  constructor(private prisma: WorkflowDb) {}
+
+  /** Runs fn atomically: opens a transaction on the root client, or reuses the caller's. */
+  private atomic<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    if ('$transaction' in this.prisma) {
+      return this.prisma.$transaction(fn);
+    }
+    return fn(this.prisma);
+  }
 
   /**
    * Initializes standard baseline frameworks and questions for CARBON and JOB workflows if not present.
@@ -308,7 +329,7 @@ export class WorkflowEngineService {
       throw new Error(`Framework ${frameworkId} does not match workflowType ${workflowType}.`);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.atomic(async (tx) => {
       const submission = await tx.workflowSubmission.create({
         data: {
           licenseeId,
@@ -352,7 +373,7 @@ export class WorkflowEngineService {
       throw new Error(`Cannot edit answers while submission is in ${submission.status} status.`);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.atomic(async (tx) => {
       for (const ans of answers) {
         await tx.workflowAnswer.upsert({
           where: {
@@ -409,7 +430,7 @@ export class WorkflowEngineService {
     });
 
     if (!submission) {
-      throw new Error('Submission not found.');
+      throw new WorkflowNotFoundError();
     }
 
     if (actor.role !== 'ADMIN' && submission.licenseeId !== actor.licenseeId) {
@@ -441,7 +462,7 @@ export class WorkflowEngineService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.atomic(async (tx) => {
       const updateData: Prisma.WorkflowSubmissionUpdateInput = {
         status: targetStatus,
         ...(targetStatus === WorkflowStatus.SUBMITTED ? { submittedAt: new Date() } : {}),
@@ -492,7 +513,7 @@ export class WorkflowEngineService {
         ? WorkflowStatus.APPROVED
         : WorkflowStatus.REJECTED;
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.atomic(async (tx) => {
       // 1. Record structured Review Decision
       await tx.workflowReviewDecision.upsert({
         where: { submissionId },
@@ -589,7 +610,7 @@ export class WorkflowEngineService {
     });
 
     if (!submission) {
-      throw new Error(`Submission '${submissionId}' not found.`);
+      throw new WorkflowNotFoundError();
     }
 
     if (actor.role !== 'ADMIN' && submission.licenseeId !== actor.licenseeId) {
@@ -608,7 +629,7 @@ export class WorkflowEngineService {
       selectedFrameworks: [submission.framework.name],
     });
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.atomic(async (tx) => {
       // Conditional update so two concurrent requests cannot both issue a credential.
       const claimed = await tx.workflowSubmission.updateMany({
         where: { id: submissionId, status: WorkflowStatus.PAID },
@@ -667,7 +688,7 @@ export class WorkflowEngineService {
     });
 
     if (!submission) {
-      throw new Error(`Submission '${submissionId}' not found.`);
+      throw new WorkflowNotFoundError();
     }
 
     if (actor.role !== 'ADMIN' && submission.licenseeId !== actor.licenseeId) {
