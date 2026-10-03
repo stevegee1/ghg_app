@@ -2,25 +2,32 @@
  * anthropic.provider.ts
  *
  * Anthropic Claude LLM provider for the AI Audit Screener.
- * Activated when ANTHROPIC_API_KEY is present in environment.
- *
- * Model: claude-3-5-sonnet-20241022 (configurable via ANTHROPIC_MODEL env var)
+ * Activated when ANTHROPIC_API_KEY and ANTHROPIC_MODEL are both set.
  * API:   https://api.anthropic.com/v1/messages
  */
 
-import { ILlmProvider, LlmCompletionOptions, LlmCompletionResult, LlmMessage } from './llm-provider.interface';
+import {
+  ILlmProvider,
+  LlmCompletionOptions,
+  LlmCompletionResult,
+  LlmMessage,
+  readProviderConfig,
+  fetchWithTimeout,
+} from './llm-provider.interface';
 
 export class AnthropicProvider implements ILlmProvider {
   readonly providerName = 'Anthropic Claude';
-  readonly defaultModel = 'claude-3-5-sonnet-20241022';
 
   isConfigured(): boolean {
-    return Boolean(process.env.ANTHROPIC_API_KEY);
+    return readProviderConfig('anthropic') !== null;
   }
 
   async complete(messages: LlmMessage[], options: LlmCompletionOptions = {}): Promise<LlmCompletionResult> {
-    const apiKey = process.env.ANTHROPIC_API_KEY!;
-    const model = options.model || process.env.ANTHROPIC_MODEL || this.defaultModel;
+    const config = readProviderConfig('anthropic');
+    if (!config) {
+      throw new Error('Anthropic provider is not configured.');
+    }
+    const model = options.model || config.model;
     const temperature = options.temperature ?? 0.2;
     const maxTokens = options.maxTokens ?? 4096;
 
@@ -40,11 +47,11 @@ export class AnthropicProvider implements ILlmProvider {
       body.system = systemMsg;
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
+        'x-api-key': config.apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(body),
@@ -52,7 +59,8 @@ export class AnthropicProvider implements ILlmProvider {
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`Anthropic API error ${response.status}: ${err}`);
+      console.error(`[ANTHROPIC_PROVIDER] API error ${response.status} on model '${model}': ${err.slice(0, 500)}`);
+      throw new Error(`Anthropic API error ${response.status}.`);
     }
 
     const data: any = await response.json();

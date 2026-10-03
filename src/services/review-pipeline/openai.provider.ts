@@ -2,25 +2,32 @@
  * openai.provider.ts
  *
  * OpenAI GPT LLM provider for the AI Audit Screener.
- * Activated when OPENAI_API_KEY is present in environment.
- *
- * Model: gpt-4o (configurable via OPENAI_MODEL env var)
+ * Activated when OPENAI_API_KEY and OPENAI_MODEL are both set.
  * API:   https://api.openai.com/v1/chat/completions
  */
 
-import { ILlmProvider, LlmCompletionOptions, LlmCompletionResult, LlmMessage } from './llm-provider.interface';
+import {
+  ILlmProvider,
+  LlmCompletionOptions,
+  LlmCompletionResult,
+  LlmMessage,
+  readProviderConfig,
+  fetchWithTimeout,
+} from './llm-provider.interface';
 
 export class OpenAiProvider implements ILlmProvider {
-  readonly providerName = 'OpenAI GPT';
-  readonly defaultModel = 'gpt-4o';
+  readonly providerName = 'OpenAI';
 
   isConfigured(): boolean {
-    return Boolean(process.env.OPENAI_API_KEY);
+    return readProviderConfig('openai') !== null;
   }
 
   async complete(messages: LlmMessage[], options: LlmCompletionOptions = {}): Promise<LlmCompletionResult> {
-    const apiKey = process.env.OPENAI_API_KEY!;
-    const model = options.model || process.env.OPENAI_MODEL || this.defaultModel;
+    const config = readProviderConfig('openai');
+    if (!config) {
+      throw new Error('OpenAI provider is not configured.');
+    }
+    const model = options.model || config.model;
     const temperature = options.temperature ?? 0.2;
     const maxTokens = options.maxTokens ?? 4096;
 
@@ -32,18 +39,19 @@ export class OpenAiProvider implements ILlmProvider {
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
     };
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`OpenAI API error ${response.status}: ${err}`);
+      console.error(`[OPENAI_PROVIDER] API error ${response.status} on model '${model}': ${err.slice(0, 500)}`);
+      throw new Error(`OpenAI API error ${response.status}.`);
     }
 
     const data: any = await response.json();

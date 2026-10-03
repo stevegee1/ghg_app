@@ -13,7 +13,7 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
-import { WorkflowEngineService } from '../src/services/workflow-engine.service';
+import { seedFrameworks } from '../prisma/seeds/framework-seed';
 import { grantPipelineAccess } from './helpers/pipelineAccess';
 import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 import { getAssuranceFee, validateAssuranceFeeConfig } from '../src/services/assurance-fee.service';
@@ -34,9 +34,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
   let evidenceDocA: any;
 
   beforeAll(async () => {
-    // 1. Seed standard frameworks
-    const workflowService = new WorkflowEngineService(prisma);
-    await workflowService.seedStandardFrameworks();
+    // 1. Seed the framework registry
+    await seedFrameworks(prisma);
 
     const passwordHash = await bcrypt.hash('SecureWorkflowPass123!', 10);
 
@@ -101,9 +100,9 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       { expiresIn: '2h' }
     );
 
-    await grantPipelineAccess(prisma, licenseeA.id, WorkflowType.CARBON, 'ISO 14064-1');
-    await grantPipelineAccess(prisma, licenseeA.id, WorkflowType.JOB, 'UK Section 106');
-    await grantPipelineAccess(prisma, licenseeB.id, WorkflowType.CARBON, 'ISO 14064-1');
+    await grantPipelineAccess(prisma, licenseeA.id, WorkflowType.GHG, 'ISO_14064_1');
+    await grantPipelineAccess(prisma, licenseeA.id, WorkflowType.JOB, 'UK_SECTION_106');
+    await grantPipelineAccess(prisma, licenseeB.id, WorkflowType.GHG, 'ISO_14064_1');
 
     // Create sample evidence document for Licensee A
     evidenceDocA = await prisma.auditEvidenceDocument.create({
@@ -140,37 +139,59 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
   });
 
   describe('1. Framework Discovery & Question Registry (Part B.2 & B.3)', () => {
-    it('GET /api/workflow/frameworks lists all frameworks with ordered questions', async () => {
+    it('GET /api/workflow/frameworks lists registry frameworks with ordered questions', async () => {
       const res = await request(app)
         .get('/api/workflow/frameworks')
         .expect(200);
 
       expect(Array.isArray(res.body.frameworks)).toBe(true);
-      expect(res.body.frameworks.length).toBeGreaterThanOrEqual(4);
-
-      const iso14064 = res.body.frameworks.find((f: any) => f.id === 'ISO_14064_1');
+      const iso14064 = res.body.frameworks.find((f: any) => f.id === 'fwk_iso_14064');
       expect(iso14064).toBeDefined();
-      expect(iso14064.workflowType).toBe('CARBON');
-      expect(iso14064.questions.length).toBeGreaterThanOrEqual(3);
+      expect(iso14064.workflowType).toBe('GHG');
+      expect(iso14064.questions.length).toBe(4);
       expect(iso14064.questions[0].orderIndex).toBe(1);
     });
 
-    it('GET /api/workflow/frameworks?type=CARBON returns only carbon frameworks', async () => {
+    it('GET /api/workflow/frameworks?type=GHG returns only GHG frameworks', async () => {
       const res = await request(app)
-        .get('/api/workflow/frameworks?type=CARBON')
+        .get('/api/workflow/frameworks?type=GHG')
         .expect(200);
 
-      expect(res.body.frameworks.length).toBeGreaterThanOrEqual(2);
-      expect(res.body.frameworks.every((f: any) => f.workflowType === 'CARBON')).toBe(true);
+      expect(res.body.frameworks.length).toBeGreaterThanOrEqual(3);
+      expect(res.body.frameworks.every((f: any) => f.workflowType === 'GHG')).toBe(true);
     });
 
-    it('GET /api/workflow/frameworks?type=JOB returns only job reporting frameworks', async () => {
+    it('GET /api/workflow/frameworks?type=JOB returns only workforce frameworks', async () => {
       const res = await request(app)
         .get('/api/workflow/frameworks?type=JOB')
         .expect(200);
 
       expect(res.body.frameworks.length).toBeGreaterThanOrEqual(2);
       expect(res.body.frameworks.every((f: any) => f.workflowType === 'JOB')).toBe(true);
+    });
+
+    it('retired frameworks are not listed and cannot start a draft', async () => {
+      await prisma.workflowFramework.upsert({
+        where: { id: 'fwk_test_retired' },
+        update: { retiredAt: new Date() },
+        create: {
+          id: 'fwk_test_retired',
+          workflowType: WorkflowType.GHG,
+          code: 'TEST_RETIRED',
+          name: 'Retired Test Framework',
+          retiredAt: new Date(),
+        },
+      });
+
+      const list = await request(app).get('/api/workflow/frameworks').expect(200);
+      expect(list.body.frameworks.some((f: any) => f.id === 'fwk_test_retired')).toBe(false);
+
+      const draft = await request(app)
+        .post('/api/workflow/draft')
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .send({ workflowType: 'GHG', frameworkId: 'fwk_test_retired' })
+        .expect(400);
+      expect(draft.body.error).toContain('retired');
     });
 
     it('GET /api/workflow/frameworks?type=INVALID returns 400 Bad Request', async () => {
@@ -192,16 +213,16 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .post('/api/workflow/draft')
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
-          workflowType: 'CARBON',
-          frameworkId: 'ISO_14064_1',
+          workflowType: 'GHG',
+          frameworkId: 'fwk_iso_14064',
         })
         .expect(201);
 
       expect(res.body.success).toBe(true);
       expect(res.body.submission.status).toBe(WorkflowStatus.DRAFT);
       expect(res.body.submission.licenseeId).toBe(licenseeA.id);
-      expect(res.body.submission.workflowType).toBe('CARBON');
-      expect(res.body.submission.frameworkId).toBe('ISO_14064_1');
+      expect(res.body.submission.workflowType).toBe('GHG');
+      expect(res.body.submission.frameworkId).toBe('fwk_iso_14064');
 
       submissionId = res.body.submission.id;
 
@@ -216,7 +237,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
 
     it('PATCH /api/workflow/submissions/:id/answers autosaves answers in DRAFT status', async () => {
       const framework = await prisma.workflowFramework.findUnique({
-        where: { id: 'ISO_14064_1' },
+        where: { id: 'fwk_iso_14064' },
         include: { questions: { orderBy: { orderIndex: 'asc' } } },
       });
       question1Id = framework!.questions[0].id;
@@ -251,7 +272,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body.submission.id).toBe(submissionId);
       expect(res.body.submission.answers).toHaveLength(2);
       expect(res.body.submission.transitions).toHaveLength(1);
-      expect(res.body.submission.framework.code).toBe('ISO 14064-1');
+      expect(res.body.submission.framework.code).toBe('ISO_14064_1');
     });
   });
 
@@ -263,7 +284,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
 
     beforeAll(async () => {
       const framework = await prisma.workflowFramework.findUnique({
-        where: { id: 'ISO_14064_1' },
+        where: { id: 'fwk_iso_14064' },
         include: { questions: { orderBy: { orderIndex: 'asc' } } },
       });
       q1 = framework!.questions[0];
@@ -274,8 +295,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .post('/api/workflow/draft')
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
-          workflowType: 'CARBON',
-          frameworkId: 'ISO_14064_1',
+          workflowType: 'GHG',
+          frameworkId: 'fwk_iso_14064',
         });
       submissionId = res.body.submission.id;
     });
@@ -383,15 +404,17 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
     let q1: any;
     let q2: any;
     let q3: any;
+    let q4: any;
 
     beforeAll(async () => {
       const framework = await prisma.workflowFramework.findUnique({
-        where: { id: 'UK_SECTION_106' },
+        where: { id: 'fwk_uk_s106' },
         include: { questions: { orderBy: { orderIndex: 'asc' } } },
       });
       q1 = framework!.questions[0];
       q2 = framework!.questions[1];
       q3 = framework!.questions[2];
+      q4 = framework!.questions[3];
 
       // Create Job draft, populate answers with evidence, submit, and transition to UNDER_REVIEW
       const draftRes = await request(app)
@@ -399,7 +422,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
           workflowType: 'JOB',
-          frameworkId: 'UK_SECTION_106',
+          frameworkId: 'fwk_uk_s106',
         });
       submissionId = draftRes.body.submission.id;
 
@@ -411,6 +434,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
             { questionId: q1.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
             { questionId: q2.id, value: '45', evidenceDocumentId: evidenceDocA.id },
             { questionId: q3.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
+            { questionId: q4.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
           ],
         });
 
@@ -511,7 +535,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
 
     beforeAll(async () => {
       const framework = await prisma.workflowFramework.findUnique({
-        where: { id: 'ISO_14064_1' },
+        where: { id: 'fwk_iso_14064' },
         include: { questions: { orderBy: { orderIndex: 'asc' } } },
       });
       q1 = framework!.questions[0];
@@ -520,8 +544,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .post('/api/workflow/draft')
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
-          workflowType: 'CARBON',
-          frameworkId: 'ISO_14064_1',
+          workflowType: 'GHG',
+          frameworkId: 'fwk_iso_14064',
         });
       submissionId = draftRes.body.submission.id;
 
@@ -606,8 +630,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .post('/api/workflow/draft')
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
-          workflowType: 'CARBON',
-          frameworkId: 'ISO_14064_1',
+          workflowType: 'GHG',
+          frameworkId: 'fwk_iso_14064',
         });
       subAId = res.body.submission.id;
     });
@@ -650,13 +674,13 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .post('/api/workflow/draft')
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
-          workflowType: 'CARBON',
-          frameworkId: 'ISO_14064_1',
+          workflowType: 'GHG',
+          frameworkId: 'fwk_iso_14064',
         });
       lifecycleSubId = draft.body.submission.id;
 
       const fw = await prisma.workflowFramework.findUnique({
-        where: { id: 'ISO_14064_1' },
+        where: { id: 'fwk_iso_14064' },
         include: { questions: { orderBy: { orderIndex: 'asc' } } },
       });
       const qIds = fw!.questions.map((q) => q.id);
@@ -791,8 +815,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body.badges.length).toBeGreaterThanOrEqual(1);
       const found = res.body.badges.find((b: any) => b.id === lifecycleSubId);
       expect(found).toBeDefined();
-      expect(found.frameworkCode).toBe('ISO 14064-1');
-      expect(found.frameworkName).toContain('Corporate Greenhouse Gas');
+      expect(found.frameworkCode).toBe('ISO_14064_1');
+      expect(found.frameworkName).toContain('Corporate Greenhouse Gas Inventories');
     });
 
     it('Screen 11: POST /api/workflow/telemetry-key generates and returns scoped telemetry key', async () => {
@@ -815,8 +839,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       const screened = await prisma.workflowSubmission.create({
         data: {
           licenseeId: licenseeA.id,
-          workflowType: WorkflowType.CARBON,
-          frameworkId: 'ISO_14064_1',
+          workflowType: WorkflowType.GHG,
+          frameworkId: 'fwk_iso_14064',
           status: WorkflowStatus.AI_SCREENED,
           submittedAt: new Date(),
         },
@@ -826,8 +850,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       const draft = await prisma.workflowSubmission.create({
         data: {
           licenseeId: licenseeA.id,
-          workflowType: WorkflowType.CARBON,
-          frameworkId: 'ISO_14064_1',
+          workflowType: WorkflowType.GHG,
+          frameworkId: 'fwk_iso_14064',
           status: WorkflowStatus.DRAFT,
         },
       });
@@ -879,8 +903,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       const sub = await prisma.workflowSubmission.create({
         data: {
           licenseeId: licenseeA.id,
-          workflowType: WorkflowType.CARBON,
-          frameworkId: 'ISO_14064_1',
+          workflowType: WorkflowType.GHG,
+          frameworkId: 'fwk_iso_14064',
           status: WorkflowStatus.APPROVED,
           submittedAt: new Date(),
           reviewedAt: new Date(),

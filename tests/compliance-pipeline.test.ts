@@ -28,7 +28,6 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
-import { WorkflowEngineService } from '../src/services/workflow-engine.service';
 import { seedFrameworks } from '../prisma/seeds/framework-seed';
 
 const prisma = new PrismaClient();
@@ -97,10 +96,8 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
   const createdUserIds: string[] = [];
 
   beforeAll(async () => {
-    // 1. Seed frameworks into test DB
-    const workflowService = new WorkflowEngineService(prisma);
-    await workflowService.seedStandardFrameworks();
-    await seedFrameworks(prisma); // seeds GHG frameworks (UK_SECR etc.)
+    // 1. Seed the framework registry into the test DB
+    await seedFrameworks(prisma);
 
     // 2. Create admin
     const passwordHash = await bcrypt.hash('AdminPass123!', 10);

@@ -32,7 +32,6 @@ export interface LlmCompletionResult {
  */
 export interface ILlmProvider {
   readonly providerName: string;
-  readonly defaultModel: string;
   isConfigured(): boolean;
   complete(messages: LlmMessage[], options?: LlmCompletionOptions): Promise<LlmCompletionResult>;
 }
@@ -43,4 +42,43 @@ export interface ILlmProvider {
  */
 export function resolveActiveProvider(providers: ILlmProvider[]): ILlmProvider | null {
   return providers.find((p) => p.isConfigured()) ?? null;
+}
+
+/** API key and model environment variables for each supported provider. */
+export const LLM_PROVIDER_ENV = {
+  gemini: { key: 'GEMINI_API_KEY', model: 'GEMINI_MODEL' },
+  anthropic: { key: 'ANTHROPIC_API_KEY', model: 'ANTHROPIC_MODEL' },
+  openai: { key: 'OPENAI_API_KEY', model: 'OPENAI_MODEL' },
+} as const;
+
+export type LlmProviderId = keyof typeof LLM_PROVIDER_ENV;
+
+/** A provider is usable only when both its API key and its model name are configured. */
+export function readProviderConfig(id: LlmProviderId): { apiKey: string; model: string } | null {
+  const apiKey = process.env[LLM_PROVIDER_ENV[id].key]?.trim();
+  const model = process.env[LLM_PROVIDER_ENV[id].model]?.trim();
+  return apiKey && model ? { apiKey, model } : null;
+}
+
+/** Throws at boot when a provider key is set without its model name. */
+export function validateLlmProviderConfig(): void {
+  const problems = (Object.keys(LLM_PROVIDER_ENV) as LlmProviderId[])
+    .filter((id) => process.env[LLM_PROVIDER_ENV[id].key] && !process.env[LLM_PROVIDER_ENV[id].model])
+    .map((id) => `${LLM_PROVIDER_ENV[id].model} must be set when ${LLM_PROVIDER_ENV[id].key} is set.`);
+  if (problems.length > 0) {
+    throw new Error(problems.join(' '));
+  }
+}
+
+export const LLM_REQUEST_TIMEOUT_MS = 30000;
+
+/** fetch with an abort timeout so a stalled provider cannot hold an evaluation open. */
+export async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

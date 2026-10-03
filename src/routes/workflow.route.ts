@@ -20,11 +20,6 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
   const router = Router();
   const workflowService = new WorkflowEngineService(prisma);
 
-  // Initialize standard frameworks asynchronously in background on startup
-  workflowService.seedStandardFrameworks().catch((err) => {
-    console.error('[WORKFLOW SEED WARN]', err);
-  });
-
   const requireAdmin = (req: Request, res: Response, next: () => void) => {
     if (!req.user || req.user.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Forbidden: Admin access required.' });

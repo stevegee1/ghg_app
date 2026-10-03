@@ -4,8 +4,6 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
-import { ReviewDispatcherService } from '../src/services/review-pipeline/review-dispatcher.service';
-import { StandardAuditReviewer } from '../src/services/review-pipeline/audit-reviewer.interface';
 
 const prisma = new PrismaClient();
 const app = createApp();
@@ -300,18 +298,6 @@ describe('Lead Auditor Submissions Queue & Gate 1 Statutory Review Engine', () =
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('AUDIT_NOT_READY');
-    });
-  });
-
-  describe('4. ReviewDispatcherService Pluggable Pipeline Architecture', () => {
-    it('dispatches evaluation via StandardAuditReviewer correctly', async () => {
-      const dispatcher = new ReviewDispatcherService(prisma, new StandardAuditReviewer());
-      const evaluation = await dispatcher.evaluateSubmission(submissionA.id);
-
-      expect(evaluation).toBeDefined();
-      expect(evaluation.targetStatus).toBe('AUDIT_READY');
-      expect(evaluation.complianceScore).toBeGreaterThanOrEqual(80);
-      expect(evaluation.reviewedBy).toContain('Lead Auditor');
     });
   });
 });

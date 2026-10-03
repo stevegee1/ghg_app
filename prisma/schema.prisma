@@ -776,6 +776,8 @@ model WorkflowFramework {
   governingBody String?
   jurisdiction  String?
   description   String?
+  /// Set when a framework is withdrawn; retired frameworks cannot start new submissions
+  retiredAt     DateTime?
   createdAt     DateTime     @default(now())
 
   questions   WorkflowQuestion[]

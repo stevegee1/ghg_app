@@ -4,7 +4,6 @@ import {
   CredentialStatus,
   WorkflowType,
   WorkflowStatus,
-  WorkflowAnswerType,
   ReviewOverallDecision,
   EvidenceCategory,
 } from '@prisma/client';
@@ -113,197 +112,11 @@ export class WorkflowEngineService {
   }
 
   /**
-   * Initializes standard baseline frameworks and questions for CARBON and JOB workflows if not present.
-   */
-  async seedStandardFrameworks(): Promise<void> {
-    const frameworks = [
-      {
-        id: 'ISO_14064_1',
-        workflowType: WorkflowType.CARBON,
-        code: 'ISO 14064-1',
-        name: 'Corporate Greenhouse Gas Inventories',
-        governingBody: 'International Organization for Standardization',
-        jurisdiction: 'Global / Multi-National',
-        description: 'Standard specification with guidance for quantification and reporting of greenhouse gas emissions and removals.',
-        questions: [
-          {
-            orderIndex: 1,
-            text: 'Has your organization established an operational boundary covering Scope 1 direct emissions and Scope 2 energy indirect emissions?',
-            answerType: WorkflowAnswerType.BOOLEAN,
-            evidenceRequired: true,
-            isoClauseReference: 'ISO 14064-1:2018 Clause 5.2.2',
-            guidanceNotes: 'Attach organizational boundary chart and operational control documentation.',
-          },
-          {
-            orderIndex: 2,
-            text: 'What is the quantified gross Scope 1 direct greenhouse gas emissions in metric tonnes CO2 equivalent for the reporting period?',
-            answerType: WorkflowAnswerType.NUMBER,
-            evidenceRequired: true,
-            isoClauseReference: 'ISO 14064-1:2018 Clause 5.2.4',
-            guidanceNotes: 'Provide primary utility meter data, fuel purchase receipts, or continuous emissions monitoring logs.',
-          },
-          {
-            orderIndex: 3,
-            text: 'Have significant indirect emissions (Scope 3 categories 1-15) been evaluated using a documented significance criteria?',
-            answerType: WorkflowAnswerType.BOOLEAN,
-            evidenceRequired: true,
-            isoClauseReference: 'ISO 14064-1:2018 Clause 5.2.3',
-            guidanceNotes: 'Upload Scope 3 materiality screening matrix and data provenance records.',
-          },
-        ],
-      },
-      {
-        id: 'ISO_50001',
-        workflowType: WorkflowType.CARBON,
-        code: 'ISO 50001',
-        name: 'Energy Management Systems',
-        governingBody: 'International Organization for Standardization',
-        jurisdiction: 'Global / Multi-National',
-        description: 'Requirements for establishing, implementing, maintaining, and improving an energy management system.',
-        questions: [
-          {
-            orderIndex: 1,
-            text: 'Has an Energy Review been conducted identifying Significant Energy Uses (SEUs) and baseline EnPIs?',
-            answerType: WorkflowAnswerType.BOOLEAN,
-            evidenceRequired: true,
-            isoClauseReference: 'ISO 50001:2018 Clause 6.3',
-            guidanceNotes: 'Upload Energy Review summary sheet and facility sub-metering layout.',
-          },
-          {
-            orderIndex: 2,
-            text: 'What is your annualized total energy consumption across all monitored facilities in Megawatt-hours (MWh)?',
-            answerType: WorkflowAnswerType.NUMBER,
-            evidenceRequired: false,
-            isoClauseReference: 'ISO 50001:2018 Clause 6.5',
-            guidanceNotes: 'Enter aggregated MWh from fiscal energy ledger.',
-          },
-        ],
-      },
-      {
-        id: 'UK_SECTION_106',
-        workflowType: WorkflowType.JOB,
-        code: 'UK Section 106',
-        name: 'Local Employment & Training Covenant',
-        governingBody: 'UK Local Planning Authorities / DLUHC',
-        jurisdiction: 'United Kingdom',
-        description: 'Statutory planning obligations under Section 106 of the Town and Country Planning Act 1990 for local labor and training.',
-        questions: [
-          {
-            orderIndex: 1,
-            text: 'Does local resident labor constitute at least 20% of the total workforce employed on the development site?',
-            answerType: WorkflowAnswerType.BOOLEAN,
-            evidenceRequired: true,
-            isoClauseReference: 'TCPA 1990 Section 106 Sched 3',
-            guidanceNotes: 'Provide employee postcode verification registers audited against municipal boundaries.',
-          },
-          {
-            orderIndex: 2,
-            text: 'Total number of accredited apprenticeship weeks delivered during the reporting period:',
-            answerType: WorkflowAnswerType.NUMBER,
-            evidenceRequired: true,
-            isoClauseReference: 'CITB National Apprenticeship Benchmark',
-            guidanceNotes: 'Upload NVQ/City & Guilds indenture forms and training attendance certificates.',
-          },
-          {
-            orderIndex: 3,
-            text: 'Are all site operatives, subcontractors, and agency staff paid at or above the Real Living Wage?',
-            answerType: WorkflowAnswerType.BOOLEAN,
-            evidenceRequired: true,
-            isoClauseReference: 'Living Wage Foundation Accreditation Standard',
-            guidanceNotes: 'Upload payroll verification audit or Living Wage Foundation accreditation certificate.',
-          },
-        ],
-      },
-      {
-        id: 'SOCIAL_VALUE_PPN0620',
-        workflowType: WorkflowType.JOB,
-        code: 'Social Value PPN 06/20',
-        name: 'UK Public Sector Social Value Model',
-        governingBody: 'Cabinet Office',
-        jurisdiction: 'United Kingdom',
-        description: 'Tackling economic inequality, fighting climate change, and creating new businesses and jobs under PPN 06/20.',
-        questions: [
-          {
-            orderIndex: 1,
-            text: 'Number of full-time equivalent (FTE) jobs created for individuals previously unemployed or from disadvantaged backgrounds:',
-            answerType: WorkflowAnswerType.NUMBER,
-            evidenceRequired: true,
-            isoClauseReference: 'PPN 06/20 Theme 2 MAC 2.1',
-            guidanceNotes: 'Attach verified payroll starts and Department for Work and Pensions (DWP) referrals.',
-          },
-          {
-            orderIndex: 2,
-            text: 'Has a structured supplier diversity and SME supply chain spend program been implemented?',
-            answerType: WorkflowAnswerType.BOOLEAN,
-            evidenceRequired: false,
-            isoClauseReference: 'PPN 06/20 Theme 2 MAC 2.2',
-            guidanceNotes: 'Provide tier-1 supplier invoice breakdown showing percentage spent with local SMEs.',
-          },
-        ],
-      },
-    ];
-
-    for (const f of frameworks) {
-      await this.prisma.workflowFramework.upsert({
-        where: { id: f.id },
-        update: {
-          workflowType: f.workflowType,
-          code: f.code,
-          name: f.name,
-          governingBody: f.governingBody,
-          jurisdiction: f.jurisdiction,
-          description: f.description,
-        },
-        create: {
-          id: f.id,
-          workflowType: f.workflowType,
-          code: f.code,
-          name: f.name,
-          governingBody: f.governingBody,
-          jurisdiction: f.jurisdiction,
-          description: f.description,
-        },
-      });
-
-      for (const q of f.questions) {
-        const existingQ = await this.prisma.workflowQuestion.findFirst({
-          where: { frameworkId: f.id, orderIndex: q.orderIndex },
-        });
-
-        if (existingQ) {
-          await this.prisma.workflowQuestion.update({
-            where: { id: existingQ.id },
-            data: {
-              text: q.text,
-              answerType: q.answerType,
-              evidenceRequired: q.evidenceRequired,
-              isoClauseReference: q.isoClauseReference,
-              guidanceNotes: q.guidanceNotes,
-            },
-          });
-        } else {
-          await this.prisma.workflowQuestion.create({
-            data: {
-              frameworkId: f.id,
-              orderIndex: q.orderIndex,
-              text: q.text,
-              answerType: q.answerType,
-              evidenceRequired: q.evidenceRequired,
-              isoClauseReference: q.isoClauseReference,
-              guidanceNotes: q.guidanceNotes,
-            },
-          });
-        }
-      }
-    }
-  }
-
-  /**
-   * Lists frameworks parameterized by workflowType ('CARBON' | 'JOB').
+   * Lists active (non-retired) frameworks, optionally filtered by workflowType.
    */
   async listFrameworks(workflowType?: WorkflowType) {
     return this.prisma.workflowFramework.findMany({
-      where: workflowType ? { workflowType } : undefined,
+      where: { retiredAt: null, ...(workflowType ? { workflowType } : {}) },
       include: {
         questions: {
           orderBy: { orderIndex: 'asc' },
@@ -323,6 +136,10 @@ export class WorkflowEngineService {
 
     if (!framework) {
       throw new Error(`Framework with ID ${frameworkId} not found.`);
+    }
+
+    if (framework.retiredAt) {
+      throw new Error(`Framework ${frameworkId} has been retired and cannot start new submissions.`);
     }
 
     if (framework.workflowType !== workflowType) {

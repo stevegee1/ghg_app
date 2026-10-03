@@ -14,12 +14,18 @@
  *
  * The Lead Auditor then reviews the AI docket and makes the final APPROVED/REJECTED call.
  *
- * Implements IAuditReviewer: drop-in compatible with ReviewDispatcherService.
+ * Implements IAuditReviewer.
  */
 
 import { PrismaClient, WorkflowStatus, ReviewOverallDecision } from '@prisma/client';
 import { IAuditReviewer, AuditReviewResult, ClauseReviewFinding } from './audit-reviewer.interface';
 import { ILlmProvider, resolveActiveProvider } from './llm-provider.interface';
+
+/**
+ * Label recorded when no AI provider produced the findings (none configured, or the provider
+ * call or response failed). The Lead Auditor must be able to see that no AI model reviewed it.
+ */
+export const RULES_ENGINE_REVIEWER = 'Rules Engine (no AI model review)';
 import { GeminiProvider } from './gemini.provider';
 import { AnthropicProvider } from './anthropic.provider';
 import { OpenAiProvider } from './openai.provider';
@@ -410,7 +416,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     this.persistAiFindings(submission.id, {
       clauseFindings,
       overallScore,
-      reviewedBy: 'AI Assurance Agent (Rules Engine: Deterministic ISO 19011:2018)',
+      reviewedBy: RULES_ENGINE_REVIEWER,
       executiveSummary,
     }).catch((err) => console.error('[AI_AUDIT_REVIEWER] Failed to persist deterministic findings:', err));
 
@@ -420,7 +426,7 @@ export class AiAuditReviewer implements IAuditReviewer {
       complianceScore: overallScore,
       reviewerNotes: executiveSummary,
       clauseFindings,
-      reviewedBy: 'AI Assurance Agent (Rules Engine: Deterministic ISO 19011:2018)',
+      reviewedBy: RULES_ENGINE_REVIEWER,
       reviewedAt: new Date(),
     };
   }
@@ -638,7 +644,7 @@ Evidence Files Attached: ${(params.evidenceFileNames || []).join(', ') || 'None'
         ? `Deterministic pre-screen: ${conformantCount}/${total} clauses conformant (score ${score}%). Satisfies 80% threshold. Lead Auditor manual sign-off required.`
         : `Deterministic pre-screen: ${conformantCount}/${total} clauses conformant (score ${score}%). Below 80% threshold. Additional evidence or narrative required.`,
       clauseFindings,
-      reviewedBy: 'Deterministic Rules Engine (ISO 19011:2018 Clause 6.4)',
+      reviewedBy: RULES_ENGINE_REVIEWER,
       reviewedAt: new Date(),
     };
   }

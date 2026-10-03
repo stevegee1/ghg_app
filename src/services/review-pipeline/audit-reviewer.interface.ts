@@ -25,13 +25,3 @@ export interface AuditReviewResult {
 export interface IAuditReviewer {
   evaluateSubmission(submissionId: string): Promise<AuditReviewResult>;
 }
-
-export class StandardAuditReviewer implements IAuditReviewer {
-  async evaluateSubmission(submissionId: string): Promise<AuditReviewResult> {
-    // This stub must never be used in production.
-    // ReviewDispatcherService callers must inject an AiAuditReviewer instance via setReviewer().
-    throw new Error(
-      `StandardAuditReviewer is a placeholder. Inject AiAuditReviewer via ReviewDispatcherService.setReviewer() before calling evaluateSubmission('${submissionId}').`
-    );
-  }
-}

@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PortalRole } from '@prisma/client';
 import { validateAssuranceFeeConfig } from './services/assurance-fee.service';
+import { validateLlmProviderConfig } from './services/review-pipeline/llm-provider.interface';
 import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './services/platform-account.service';
 
 async function main() {
@@ -35,6 +36,13 @@ async function main() {
     validateAssuranceFeeConfig();
   } catch (err) {
     console.error(`FATAL: Assurance fee configuration is invalid. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
+
+  try {
+    validateLlmProviderConfig();
+  } catch (err) {
+    console.error(`FATAL: AI review provider configuration is invalid. ${(err as Error).message} Refusing to start.`);
     process.exit(1);
   }
 

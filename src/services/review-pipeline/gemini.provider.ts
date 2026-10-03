@@ -2,33 +2,32 @@
  * gemini.provider.ts
  *
  * Google Gemini LLM provider for the AI Audit Screener.
- * Activated when GEMINI_API_KEY is present in environment.
- *
- * Model: gemini-3.8-flash (configurable via GEMINI_MODEL env var)
+ * Activated when GEMINI_API_KEY and GEMINI_MODEL are both set.
  * API:   https://generativelanguage.googleapis.com/v1beta/models
  */
 
-import { ILlmProvider, LlmCompletionOptions, LlmCompletionResult, LlmMessage } from './llm-provider.interface';
+import {
+  ILlmProvider,
+  LlmCompletionOptions,
+  LlmCompletionResult,
+  LlmMessage,
+  readProviderConfig,
+  fetchWithTimeout,
+} from './llm-provider.interface';
 
 export class GeminiProvider implements ILlmProvider {
   readonly providerName = 'Google Gemini';
-  // gemini-2.0-flash was retired by Google Oct 2026. Current model: gemini-3.8-flash
-  readonly defaultModel = 'gemini-3.8-flash';
 
   isConfigured(): boolean {
-    const configured = Boolean(process.env.GEMINI_API_KEY);
-    if (configured) {
-      const model = process.env.GEMINI_MODEL || this.defaultModel;
-      console.info(`[GEMINI_PROVIDER] Active. Model: ${model}`);
-    } else {
-      console.warn('[GEMINI_PROVIDER] GEMINI_API_KEY not set. Falling back to deterministic rules engine.');
-    }
-    return configured;
+    return readProviderConfig('gemini') !== null;
   }
 
   async complete(messages: LlmMessage[], options: LlmCompletionOptions = {}): Promise<LlmCompletionResult> {
-    const apiKey = process.env.GEMINI_API_KEY!;
-    const model = options.model || process.env.GEMINI_MODEL || this.defaultModel;
+    const config = readProviderConfig('gemini');
+    if (!config) {
+      throw new Error('Gemini provider is not configured.');
+    }
+    const model = options.model || config.model;
     const temperature = options.temperature ?? 0.2;
     const maxOutputTokens = options.maxTokens ?? 4096;
 
@@ -41,7 +40,8 @@ export class GeminiProvider implements ILlmProvider {
       parts: [{ text: m.content }],
     }));
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    // The API key is sent as a header, never in the URL, so it cannot leak into proxy or access logs.
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
     const body = {
       system_instruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
@@ -53,25 +53,16 @@ export class GeminiProvider implements ILlmProvider {
       },
     };
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-    let response: Response;
-    try {
-      response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    const response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.apiKey },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       const errBody = await response.text();
-      console.error(`[GEMINI_PROVIDER] API error ${response.status} on model '${model}': ${errBody}`);
-      throw new Error(`Gemini API error ${response.status}: ${errBody}`);
+      console.error(`[GEMINI_PROVIDER] API error ${response.status} on model '${model}': ${errBody.slice(0, 500)}`);
+      throw new Error(`Gemini API error ${response.status}.`);
     }
 
     const data: any = await response.json();
