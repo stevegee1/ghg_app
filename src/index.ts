@@ -7,6 +7,8 @@ import { scheduleReconciliationJob } from './jobs/reconcile.job';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PortalRole } from '@prisma/client';
+import { validateAssuranceFeeConfig } from './services/assurance-fee.service';
+import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './services/platform-account.service';
 
 async function main() {
   console.log('GHG Logo Drop Backend - Milestone 3 Initialized');
@@ -20,6 +22,20 @@ async function main() {
       console.error('FATAL: STRIPE_WEBHOOK_SECRET environment variable must be set in production. Refusing to start.');
       process.exit(1);
     }
+  }
+
+  for (const name of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PLATFORM_ACCOUNT_ID']) {
+    if (!process.env[name]) {
+      console.error(`FATAL: ${name} environment variable must be set. Refusing to start.`);
+      process.exit(1);
+    }
+  }
+
+  try {
+    validateAssuranceFeeConfig();
+  } catch (err) {
+    console.error(`FATAL: Assurance fee configuration is invalid. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
   }
 
   const app = createApp();
@@ -39,49 +55,26 @@ async function main() {
       const { execSync } = require('child_process');
       execSync('npx prisma migrate deploy', { stdio: 'inherit' });
       console.log('✅ Database schema and migrations up to date.');
-    } catch (migErr: any) {
-      console.warn('⚠️  Prisma migrate deploy warning (trying db push fallback):', migErr?.message ?? migErr);
-      try {
-        const { execSync } = require('child_process');
-        execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
-        console.log('✅ Database schema pushed successfully.');
-      } catch (pushErr: any) {
-        console.error('❌ Failed to ensure database tables exist:', pushErr?.message ?? pushErr);
-      }
+    } catch (migErr: unknown) {
+      // Never fall back to db push in a deployed environment: it can rewrite or drop schema.
+      console.error('FATAL: prisma migrate deploy failed. Refusing to start.', migErr);
+      process.exit(1);
     }
   }
 
-  // 2. Ensure statutory platform charities and platform licensee exist in database
+  // 2. Ensure the platform licensee exists and settles to the configured platform Stripe account.
+  // Charities and split configurations are managed by administrators and are never seeded here.
   try {
-    const statutoryCharities = [
-      { id: 'charity_green_earth', name: 'Green Earth Foundation', stripeConnectedAccountId: 'acct_charity_green' },
-      { id: 'charity_ocean_clean', name: 'Clean Oceans Trust', stripeConnectedAccountId: 'acct_charity_ocean' },
-      { id: 'charity_youth_sport', name: 'Youth Eco Sports Trust', stripeConnectedAccountId: 'acct_charity_youth_sport' },
-    ];
-
-    for (const c of statutoryCharities) {
-      await prisma.charity.upsert({
-        where: { id: c.id },
-        update: { status: 'ACTIVE' },
-        create: {
-          id: c.id,
-          name: c.name,
-          stripeConnectedAccountId: c.stripeConnectedAccountId,
-          status: 'ACTIVE',
-        },
-      });
-    }
-
     await prisma.licensee.upsert({
-      where: { id: 'lic_ghg_official' },
-      update: { stripeConnectedAccountId: 'acct_platform_default_001' },
+      where: { id: PLATFORM_LICENSEE_ID },
+      update: { stripeConnectedAccountId: getPlatformStripeAccountId() },
       create: {
-        id: 'lic_ghg_official',
+        id: PLATFORM_LICENSEE_ID,
         name: 'NFTY LOGS® Official Store',
         vertical: 'B2C_SPORTS_MERCH' as any,
         royaltyBps: 8500,
         pricePerDropCents: 500,
-        stripeConnectedAccountId: 'acct_platform_default_001',
+        stripeConnectedAccountId: getPlatformStripeAccountId(),
       },
     });
 
@@ -158,32 +151,6 @@ async function main() {
     } catch (adminErr: any) {
       console.warn('⚠️  [ADMIN BOOTSTRAP WARNING] Non-blocking admin init notice:', adminErr?.message || adminErr);
     }
-
-    // 4. Ensure platform default split configuration exists
-    await prisma.splitConfigHistory.upsert({
-      where: { id: 'cfg_platform_default_001' },
-      update: {
-        royaltyBps: 8500,
-        charityAllocationBps: [
-          { charityId: 'charity_green_earth', bps: 3333 },
-          { charityId: 'charity_ocean_clean', bps: 3333 },
-          { charityId: 'charity_youth_sport', bps: 3334 },
-        ],
-        isActive: true,
-      },
-      create: {
-        id: 'cfg_platform_default_001',
-        licenseeId: null,
-        royaltyBps: 8500,
-        charityAllocationBps: [
-          { charityId: 'charity_green_earth', bps: 3333 },
-          { charityId: 'charity_ocean_clean', bps: 3333 },
-          { charityId: 'charity_youth_sport', bps: 3334 },
-        ],
-        isActive: true,
-        changedByUserId: 'usr_admin_001',
-      },
-    });
 
     const licenseeCount = await prisma.licensee.count();
     const transactionCount = await prisma.transaction.count();

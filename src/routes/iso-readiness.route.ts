@@ -8,11 +8,13 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { PrismaClient, IsoReadinessStatus } from '@prisma/client';
+import { PrismaClient, IsoReadinessStatus, WorkflowType, DeliveryType } from '@prisma/client';
 import { CheckoutService } from '../services/checkout.service';
 import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { FrameworkRegistryService } from '../services/framework-registry.service';
 import { runWithRls } from '../db/rls';
+import { getAssuranceFee } from '../services/assurance-fee.service';
+import { PLATFORM_LICENSEE_ID } from '../services/platform-account.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OFFICIAL ISO AUDIT-READINESS FRAMEWORK QUESTIONS
@@ -210,23 +212,19 @@ const ISO_FRAMEWORK = {
 // ─────────────────────────────────────────────────────────────────────────────
 // TIER DEFINITIONS (must match custom-keepsake.route.ts /api/preparation/pricing)
 // ─────────────────────────────────────────────────────────────────────────────
-const TIERS: Record<string, { name: string; grossAmountCents: number; currency: string }> = {
-  TIER_STATUTORY_READINESS: {
-    name: 'Statutory ISO Audit Readiness & Partner License',
-    grossAmountCents: 20000, // £200.00
-    currency: 'GBP',
-  },
-  TIER_1_READINESS: {
-    name: 'Single-Site Remote Readiness (ISO 14001 / ISO 50001 / ISO 19011:2026)',
-    grossAmountCents: 125000, // £1,250
-    currency: 'GBP',
-  },
-  TIER_2_CONTINUOUS: {
-    name: 'Continuous Assurance Protocol (Quarterly, Multi-Jurisdiction)',
-    grossAmountCents: 350000, // £3,500
-    currency: 'GBP',
-  },
+const TIERS: Record<string, { name: string }> = {
+  TIER_STATUTORY_READINESS: { name: 'Statutory ISO Audit Readiness & Partner License' },
+  TIER_1_READINESS: { name: 'Single-Site Remote Readiness (ISO 14001 / ISO 50001 / ISO 19011:2026)' },
+  TIER_2_CONTINUOUS: { name: 'Continuous Assurance Protocol (Quarterly, Multi-Jurisdiction)' },
 };
+
+// Workforce framework IDs used by the portal readiness flow; anything else is charged the GHG fee.
+const WORKFORCE_FRAMEWORK_IDS = new Set(['SECTION_106', 'ESRS_S1', 'APPRENTICE_STD', 'LOCAL_HIRING']);
+
+function feeForFrameworks(selectedFrameworks: string[]) {
+  const isWorkforce = selectedFrameworks.some((f) => WORKFORCE_FRAMEWORK_IDS.has(f));
+  return getAssuranceFee(isWorkforce ? WorkflowType.JOB : WorkflowType.GHG);
+}
 
 export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: CheckoutService): Router {
   const router = Router();
@@ -533,25 +531,22 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
 
     try {
-      const lic = await prisma.licensee.findUnique({ where: { id: user.licenseeId } });
-      if (lic && !lic.stripeConnectedAccountId) {
-        await prisma.licensee.update({
-          where: { id: lic.id },
-          data: { stripeConnectedAccountId: process.env.STRIPE_PLATFORM_ACCOUNT_ID || 'acct_platform_default_001' },
-        });
-      }
-
+      const fee = feeForFrameworks(submission.selectedFrameworks);
       const separator = successUrl.includes('?') ? '&' : '?';
+      // The platform is the payee for assurance fees; the client licensee is recorded as the payer.
       const sessionResult = await checkoutService.createCheckoutSession({
-        licenseeId: user.licenseeId,
+        licenseeId: PLATFORM_LICENSEE_ID,
         itemTitle: tier.name,
-        grossAmountCents: tier.grossAmountCents,
-        currency: tier.currency,
+        itemDescription: 'Audit-readiness review and dual-logo credential issuance.',
+        grossAmountCents: fee.amountPence,
+        currency: fee.currency,
+        deliveryType: DeliveryType.DIGITAL,
         successUrl: `${successUrl}${separator}submission_id=${submissionId}&tier=${tierSelected}`,
         cancelUrl,
         metadata: {
           submissionId,
           tierSelected,
+          payerLicenseeId: user.licenseeId,
         },
       });
 
@@ -571,12 +566,12 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
         sessionUrl: sessionResult.sessionUrl,
         sessionId: sessionResult.sessionId,
         transactionId: sessionResult.transactionId,
-        grossAmountCents: tier.grossAmountCents,
-        currency: tier.currency,
+        grossAmountCents: fee.amountPence,
+        currency: fee.currency,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[ISO CHECKOUT ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to create checkout session.' });
+      return res.status(502).json({ error: 'Unable to start checkout. Please try again.' });
     }
   });
 
@@ -596,25 +591,26 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
         try {
           const stripe = (checkoutService as any).stripe;
           const session = await stripe.checkout.sessions.retrieve(sessionId);
-          if (session && session.payment_status === 'paid') {
+          // Reconcile only the exact session this server created for one of this licensee's
+          // submissions. Mirrors the webhook: AUDIT_READY becomes APPROVED, no other status changes.
+          if (session && session.payment_status === 'paid' && session.metadata?.submissionId) {
             await runWithRls(prisma, { role: 'ADMIN', licenseeId: '' }, async (tx) => {
               const subToUpdate = await tx.isoReadinessSubmission.findFirst({
                 where: {
-                  OR: [
-                    { stripeSessionId: sessionId },
-                    ...(session.metadata?.submissionId ? [{ id: session.metadata.submissionId }] : []),
-                    { licenseeId },
-                  ],
+                  id: session.metadata.submissionId,
+                  licenseeId,
+                  stripeSessionId: sessionId,
                 },
-                orderBy: { createdAt: 'desc' },
               });
               if (subToUpdate && !subToUpdate.paidAt) {
                 await tx.isoReadinessSubmission.update({
                   where: { id: subToUpdate.id },
                   data: {
                     paidAt: new Date(),
-                    status: IsoReadinessStatus.APPROVED,
-                    stripeSessionId: sessionId,
+                    status:
+                      subToUpdate.status === IsoReadinessStatus.AUDIT_READY
+                        ? IsoReadinessStatus.APPROVED
+                        : subToUpdate.status,
                   },
                 });
               }

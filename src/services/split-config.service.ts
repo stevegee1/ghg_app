@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { CharityBpsInput } from './charity-allocation.service';
 
+export class SplitConfigMissingError extends Error {
+  constructor() {
+    super('No active split configuration exists. An administrator must configure the platform split before payments can be taken.');
+    this.name = 'SplitConfigMissingError';
+  }
+}
+
 export interface ResolvedSplitConfig {
   configId: string;
   licenseeId: string | null;
@@ -59,15 +66,6 @@ export async function resolveActiveSplitConfig(
     };
   }
 
-  // 3. Neither exists in DB -> Auto-return statutory platform default (85% royalty / 15% charity)
-  return {
-    configId: 'cfg_platform_statutory_default',
-    licenseeId: null,
-    royaltyBps: 8500,
-    charityAllocationBps: [
-      { charityId: 'charity_green_earth', bps: 750 },
-      { charityId: 'charity_ocean_clean', bps: 450 },
-      { charityId: 'charity_youth_sport', bps: 300 },
-    ],
-  };
+  // 3. Neither exists: refuse to invent a split. An administrator must configure one.
+  throw new SplitConfigMissingError();
 }

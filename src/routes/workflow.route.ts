@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
-import { PrismaClient, WorkflowType, WorkflowStatus } from '@prisma/client';
+import { PrismaClient, WorkflowType, WorkflowStatus, DeliveryType } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import {
   WorkflowEngineService,
@@ -10,6 +10,8 @@ import {
 } from '../services/workflow-engine.service';
 import { CheckoutService } from '../services/checkout.service';
 import { runWithRls } from '../db/rls';
+import { getAssuranceFee } from '../services/assurance-fee.service';
+import { PLATFORM_LICENSEE_ID } from '../services/platform-account.service';
 
 export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: CheckoutService): Router {
   const router = Router();
@@ -578,18 +580,23 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * Screen 7: POST /api/workflow/submissions/:id/checkout-session
-   * Initiates flat-fee statutory assurance checkout session with 15% ESG direct charity allocation.
+   * Creates a Stripe Checkout session for the pipeline's assurance fee. The submission only
+   * becomes PAID when the signed checkout.session.completed webhook is received.
    */
   router.post('/api/workflow/submissions/:id/checkout-session', authenticateToken, async (req: Request, res: Response) => {
     const { id } = req.params;
     const user = req.user!;
-    const licenseeId = user.licenseeId || req.body.licenseeId;
+
+    if (!checkoutService) {
+      console.error('[WORKFLOW CHECKOUT SESSION ERROR] Checkout service is not configured.');
+      return res.status(503).json({ error: 'Payments are temporarily unavailable.' });
+    }
 
     try {
       const submission = await runWithRls(prisma, user, async (tx) => {
         return tx.workflowSubmission.findUnique({
           where: { id },
-          include: { framework: true, licensee: true },
+          include: { framework: true },
         });
       });
 
@@ -597,99 +604,55 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return res.status(404).json({ error: 'Submission not found.' });
       }
 
-      if (user.role !== 'ADMIN' && submission.licenseeId !== licenseeId) {
+      if (user.role !== 'ADMIN' && submission.licenseeId !== user.licenseeId) {
         return res.status(403).json({ error: 'Forbidden: Licensee mismatch.' });
       }
 
       if (submission.status !== WorkflowStatus.APPROVED) {
-        return res.status(400).json({
+        return res.status(409).json({
           error: `Cannot initiate checkout for submission in '${submission.status}' status. Submission must be 'APPROVED'.`,
         });
       }
 
-      // Statutory flat fee: £1,500.00 (never priced by carbon credits/volume per Part D.2)
-      const grossAmountCents = 150000;
-      const charitySplitCents = 22500; // 15% Statutory ESG Charity Split
-      const softwareFeeCents = 127500; // 85% Platform Assurance & Software Fee
+      const fee = getAssuranceFee(submission.workflowType);
+      const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const pipeline = submission.workflowType === WorkflowType.JOB ? 'workforce' : 'ghg';
 
-      const host = req.get('host') || 'localhost:8080';
-      const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-      const successUrl = `${protocol}://${host}/portal?view=workflow&submissionId=${id}&step=8&session_id={CHECKOUT_SESSION_ID}`;
-      const cancelUrl = `${protocol}://${host}/portal?view=workflow&submissionId=${id}&step=6`;
+      // The platform is the payee for assurance fees; the client licensee is recorded as the payer.
+      const session = await checkoutService.createCheckoutSession({
+        licenseeId: PLATFORM_LICENSEE_ID,
+        itemTitle: `Assurance Fee: ${submission.framework.name}`,
+        itemDescription: 'Audit-readiness review and dual-logo credential issuance.',
+        grossAmountCents: fee.amountPence,
+        currency: fee.currency,
+        deliveryType: DeliveryType.DIGITAL,
+        successUrl: `${baseUrl}/portal?view=workflow&pipeline=${pipeline}&submissionId=${id}&payment=success`,
+        cancelUrl: `${baseUrl}/portal?view=workflow&pipeline=${pipeline}&submissionId=${id}&payment=cancelled`,
+        metadata: { workflowSubmissionId: id, payerLicenseeId: submission.licenseeId },
+      });
 
-      let checkoutUrl: string | null = null;
-      let stripeSessionId: string = `cs_live_wf_${crypto.randomBytes(12).toString('hex')}`;
-
-      if (checkoutService) {
-        try {
-          const session = await checkoutService.createCheckoutSession({
-            licenseeId: submission.licenseeId,
-            itemTitle: `GHG Assurance Fee: ${submission.framework.name}`,
-            grossAmountCents,
-            currency: 'GBP',
-            successUrl,
-            cancelUrl,
-          });
-          checkoutUrl = session.sessionUrl;
-          if (session.sessionId) {
-            stripeSessionId = session.sessionId;
-          }
-        } catch (stripeErr) {
-          // Fallback for local development/offline environments
-          console.warn('[WORKFLOW CHECKOUT SESSION] Stripe hosted session fallback:', (stripeErr as Error).message);
-        }
+      if (!session.sessionId || !session.sessionUrl) {
+        throw new Error('Stripe did not return a checkout session.');
       }
 
-      if (!checkoutUrl) {
-        checkoutUrl = `/api/portal/assurance-checkout-return?session_id=${stripeSessionId}&submissionId=${id}&simulated=true`;
-      }
+      await runWithRls(prisma, user, async (tx) => {
+        return tx.workflowSubmission.update({
+          where: { id },
+          data: { stripeSessionId: session.sessionId },
+        });
+      });
 
       return res.status(200).json({
         success: true,
         submissionId: id,
-        grossAmountCents,
-        charitySplitCents,
-        softwareFeeCents,
-        currency: 'GBP',
-        checkoutUrl,
-        stripeSessionId,
+        grossAmountCents: fee.amountPence,
+        currency: fee.currency,
+        checkoutUrl: session.sessionUrl,
+        stripeSessionId: session.sessionId,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[WORKFLOW CHECKOUT SESSION ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to create checkout session.' });
-    }
-  });
-
-  /**
-   * Screen 7: POST /api/workflow/submissions/:id/pay
-   * Confirms payment settlement (transitions APPROVED -> PAID).
-   */
-  router.post('/api/workflow/submissions/:id/pay', authenticateToken, async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const user = req.user!;
-    const licenseeId = user.licenseeId || req.body.licenseeId;
-
-    try {
-      const updated = await runWithRls(prisma, user, async () => {
-        return workflowService.simulatePayment(
-          id,
-          licenseeId,
-          { userId: user.userId, role: user.role },
-          req.body.stripeSessionId
-        );
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: 'Payment settled. Audit submission is now PAID.',
-        submission: updated,
-      });
-    } catch (err: any) {
-      if (err instanceof InvalidWorkflowTransitionError) {
-        return res.status(400).json({ error: err.message });
-      }
-      console.error('[WORKFLOW PAY ERROR]', err);
-      return res.status(400).json({ error: err.message || 'Failed to settle payment.' });
+      return res.status(502).json({ error: 'Unable to start checkout. Please try again.' });
     }
   });
 

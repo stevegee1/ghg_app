@@ -564,58 +564,6 @@ export class WorkflowEngineService {
   }
 
   /**
-   * Screen 7: Simulates flat fee payment completion or executes settlement webhook transition (APPROVED -> PAID).
-   */
-  async simulatePayment(
-    submissionId: string,
-    licenseeId: string,
-    actor: { userId: string; role: string },
-    stripeSessionId?: string
-  ) {
-    return this.prisma.$transaction(async (tx) => {
-      const submission = await tx.workflowSubmission.findUnique({
-        where: { id: submissionId },
-        include: { framework: true, licensee: true },
-      });
-
-      if (!submission) {
-        throw new Error(`Submission '${submissionId}' not found.`);
-      }
-
-      if (actor.role !== 'ADMIN' && submission.licenseeId !== licenseeId) {
-        throw new Error('Forbidden: Licensee mismatch.');
-      }
-
-      if (submission.status !== WorkflowStatus.APPROVED) {
-        throw new InvalidWorkflowTransitionError(submission.status, WorkflowStatus.PAID);
-      }
-
-      const sessionId = stripeSessionId || `cs_test_wf_${crypto.randomBytes(12).toString('hex')}`;
-
-      const updated = await tx.workflowSubmission.update({
-        where: { id: submissionId },
-        data: {
-          status: WorkflowStatus.PAID,
-          paidAt: new Date(),
-          stripeSessionId: sessionId,
-        },
-      });
-
-      await tx.workflowTransitionLog.create({
-        data: {
-          submissionId,
-          previousStatus: WorkflowStatus.APPROVED,
-          newStatus: WorkflowStatus.PAID,
-          triggeredBy: actor.userId,
-          triggerReason: `Audit assurance flat-fee payment settled via Stripe (${sessionId})`,
-        },
-      });
-
-      return updated;
-    });
-  }
-
-  /**
    * Screen 8: Badge Setup Form (PAID -> BADGE_ISSUED)
    * Client provides short message (max 100 chars) and logo image. Composites badge and transitions status.
    */

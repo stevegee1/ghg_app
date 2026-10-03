@@ -1,4 +1,5 @@
 import request from 'supertest';
+import Stripe from 'stripe';
 import {
   PrismaClient,
   WorkflowType,
@@ -13,6 +14,8 @@ import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { WorkflowEngineService } from '../src/services/workflow-engine.service';
 import { grantPipelineAccess } from './helpers/pipelineAccess';
+import { ensurePlatformSplitConfig } from './helpers/platformSplit';
+import { getAssuranceFee, validateAssuranceFeeConfig } from '../src/services/assurance-fee.service';
 
 const prisma = new PrismaClient();
 
@@ -695,18 +698,6 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .expect(200);
     });
 
-    it('Screen 7: POST /api/workflow/submissions/:id/checkout-session generates checkout URL', async () => {
-      const res = await request(app)
-        .post(`/api/workflow/submissions/${lifecycleSubId}/checkout-session`)
-        .set('Authorization', `Bearer ${partnerTokenA}`)
-        .expect(200);
-
-      expect(res.body.success).toBe(true);
-      expect(res.body.checkoutUrl).toBeDefined();
-      expect(res.body.grossAmountCents).toBe(150000);
-      expect(res.body.charitySplitCents).toBe(22500);
-    });
-
     it('Screen 8: POST /api/workflow/submissions/:id/badge-setup saves message & logo URL and transitions to BADGE_ISSUED', async () => {
       // Simulate payment transition first
       await prisma.workflowSubmission.update({
@@ -825,6 +816,169 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
 
       const row = await prisma.workflowSubmission.findUnique({ where: { id: draftAId } });
       expect(row!.status).toBe(WorkflowStatus.DRAFT);
+    });
+  });
+
+  describe('9. Assurance Fee Payment (Stripe Checkout and webhook only)', () => {
+    let payApp: any;
+    let mockSessionsCreate: jest.Mock;
+    let mockConstructEvent: jest.Mock;
+    let approvedId: string;
+
+    const createApproved = async () => {
+      const sub = await prisma.workflowSubmission.create({
+        data: {
+          licenseeId: licenseeA.id,
+          workflowType: WorkflowType.CARBON,
+          frameworkId: 'ISO_14064_1',
+          status: WorkflowStatus.APPROVED,
+          submittedAt: new Date(),
+          reviewedAt: new Date(),
+        },
+      });
+      return sub.id;
+    };
+
+    beforeAll(async () => {
+      mockSessionsCreate = jest.fn();
+      mockConstructEvent = jest.fn();
+      const mockStripe = {
+        paymentIntents: {
+          create: jest.fn().mockResolvedValue({ id: 'pi_fee_test', client_secret: 'pi_fee_test_secret' }),
+          retrieve: jest.fn(),
+        },
+        checkout: { sessions: { create: mockSessionsCreate, retrieve: jest.fn() } },
+        webhooks: { constructEvent: mockConstructEvent },
+        transfers: { create: jest.fn() },
+      } as unknown as Stripe;
+      payApp = createApp(mockStripe);
+      await ensurePlatformSplitConfig(prisma);
+      approvedId = await createApproved();
+    });
+
+    beforeEach(() => {
+      mockSessionsCreate.mockReset();
+      mockConstructEvent.mockReset();
+    });
+
+    it('charges the configured GHG fee and links the Stripe session to the submission', async () => {
+      mockSessionsCreate.mockResolvedValueOnce({ id: 'cs_fee_linked', url: 'https://checkout.stripe.com/c/pay/cs_fee_linked' });
+
+      const res = await request(payApp)
+        .post(`/api/workflow/submissions/${approvedId}/checkout-session`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .expect(200);
+
+      expect(res.body.grossAmountCents).toBe(Number(process.env.GHG_ASSURANCE_FEE_PENCE));
+      expect(res.body.currency).toBe(process.env.ASSURANCE_FEE_CURRENCY);
+      expect(res.body.checkoutUrl).toBe('https://checkout.stripe.com/c/pay/cs_fee_linked');
+
+      const params = mockSessionsCreate.mock.calls[0][0];
+      expect(params.line_items[0].price_data.unit_amount).toBe(Number(process.env.GHG_ASSURANCE_FEE_PENCE));
+      expect(params.metadata.workflowSubmissionId).toBe(approvedId);
+      expect(params.shipping_address_collection).toBeUndefined();
+
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: approvedId } });
+      expect(row!.stripeSessionId).toBe('cs_fee_linked');
+      expect(row!.status).toBe(WorkflowStatus.APPROVED);
+    });
+
+    it('returns an error and never a success URL when Stripe fails', async () => {
+      mockSessionsCreate.mockRejectedValueOnce(new Error('Stripe unavailable'));
+
+      const res = await request(payApp)
+        .post(`/api/workflow/submissions/${approvedId}/checkout-session`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .expect(502);
+
+      expect(res.body.checkoutUrl).toBeUndefined();
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: approvedId } });
+      expect(row!.status).toBe(WorkflowStatus.APPROVED);
+      expect(row!.paidAt).toBeNull();
+    });
+
+    it('has no client-callable endpoint that marks a submission paid', async () => {
+      await request(payApp)
+        .post(`/api/workflow/submissions/${approvedId}/pay`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .send({ stripeSessionId: 'cs_forged' })
+        .expect(404);
+    });
+
+    it('ignores a completed session that is not linked to the submission', async () => {
+      mockConstructEvent.mockReturnValueOnce({
+        type: 'checkout.session.completed',
+        data: { object: { id: 'cs_unrelated', metadata: { submissionId: approvedId }, payment_intent: null } },
+      });
+
+      await request(payApp)
+        .post('/webhooks/stripe')
+        .set('stripe-signature', 't=1,v1=test')
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({}))
+        .expect(200);
+
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: approvedId } });
+      expect(row!.status).toBe(WorkflowStatus.APPROVED);
+    });
+
+    it('marks the submission PAID only from the signed checkout.session.completed webhook', async () => {
+      mockConstructEvent.mockReturnValueOnce({
+        type: 'checkout.session.completed',
+        data: { object: { id: 'cs_fee_linked', metadata: { workflowSubmissionId: approvedId }, payment_intent: null } },
+      });
+
+      await request(payApp)
+        .post('/webhooks/stripe')
+        .set('stripe-signature', 't=1,v1=test')
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({}))
+        .expect(200);
+
+      const row = await prisma.workflowSubmission.findUnique({
+        where: { id: approvedId },
+        include: { transitions: { orderBy: { timestamp: 'asc' } } },
+      });
+      expect(row!.status).toBe(WorkflowStatus.PAID);
+      expect(row!.paidAt).not.toBeNull();
+      const last = row!.transitions[row!.transitions.length - 1];
+      expect(last.newStatus).toBe(WorkflowStatus.PAID);
+      expect(last.triggeredBy).toBe('STRIPE_WEBHOOK');
+    });
+
+    it('fee configuration rejects missing or invalid values at validation time', () => {
+      const saved = {
+        ghg: process.env.GHG_ASSURANCE_FEE_PENCE,
+        currency: process.env.ASSURANCE_FEE_CURRENCY,
+      };
+      try {
+        process.env.GHG_ASSURANCE_FEE_PENCE = '0';
+        expect(() => validateAssuranceFeeConfig()).toThrow(/GHG_ASSURANCE_FEE_PENCE/);
+        process.env.GHG_ASSURANCE_FEE_PENCE = '12.50';
+        expect(() => validateAssuranceFeeConfig()).toThrow(/GHG_ASSURANCE_FEE_PENCE/);
+        process.env.GHG_ASSURANCE_FEE_PENCE = saved.ghg;
+        delete process.env.ASSURANCE_FEE_CURRENCY;
+        expect(() => validateAssuranceFeeConfig()).toThrow(/ASSURANCE_FEE_CURRENCY/);
+      } finally {
+        process.env.GHG_ASSURANCE_FEE_PENCE = saved.ghg;
+        process.env.ASSURANCE_FEE_CURRENCY = saved.currency;
+      }
+      expect(() => validateAssuranceFeeConfig()).not.toThrow();
+      expect(getAssuranceFee(WorkflowType.JOB).amountPence).toBe(Number(process.env.WORKFORCE_ASSURANCE_FEE_PENCE));
+    });
+
+    it('rejects a webhook with an invalid signature', async () => {
+      mockConstructEvent.mockImplementationOnce(() => {
+        throw new Error('No signatures found matching the expected signature for payload');
+      });
+
+      const res = await request(payApp)
+        .post('/webhooks/stripe')
+        .set('stripe-signature', 't=1,v1=forged')
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({}))
+        .expect(400);
+      expect(res.text).toBe('Webhook Error: Invalid signature');
     });
   });
 });

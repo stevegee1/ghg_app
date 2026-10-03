@@ -1,8 +1,10 @@
 import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, FulfillmentStatus } from '@prisma/client';
+import crypto from 'crypto';
 import Stripe from 'stripe';
 import { TransactionService } from './transaction.service';
 import { resolveActiveSplitConfig } from './split-config.service';
 import { computeCharityAllocations } from './charity-allocation.service';
+import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './platform-account.service';
 
 export interface InitiateCheckoutInput {
   licenseeId: string;
@@ -44,22 +46,22 @@ export class CheckoutService {
       where: { id: licenseeId },
     });
 
-    if (licenseeId === 'lic_ghg_official') {
+    if (licenseeId === PLATFORM_LICENSEE_ID) {
       if (!licensee) {
         licensee = await this.prisma.licensee.create({
           data: {
-            id: 'lic_ghg_official',
+            id: PLATFORM_LICENSEE_ID,
             name: 'NFTY LOGS® Official Store',
             vertical: 'B2C_SPORTS_MERCH' as any,
             royaltyBps: 8500,
             pricePerDropCents: 500,
-            stripeConnectedAccountId: 'acct_platform_default_001',
+            stripeConnectedAccountId: getPlatformStripeAccountId(),
           },
         });
       } else if (!licensee.stripeConnectedAccountId) {
         licensee = await this.prisma.licensee.update({
           where: { id: licensee.id },
-          data: { stripeConnectedAccountId: 'acct_platform_default_001' },
+          data: { stripeConnectedAccountId: getPlatformStripeAccountId() },
         });
       }
     }
@@ -242,6 +244,7 @@ export class CheckoutService {
   async createCheckoutSession(params: {
     licenseeId: string;
     itemTitle: string;
+    itemDescription?: string;
     grossAmountCents: number;
     currency?: string;
     successUrl: string;
@@ -251,9 +254,9 @@ export class CheckoutService {
     shippingAddress?: any;
     metadata?: Record<string, string>;
   }) {
-    const { licenseeId, itemTitle, grossAmountCents, currency = 'GBP', successUrl, cancelUrl, customerEmail, deliveryType = DeliveryType.PHYSICAL, shippingAddress, metadata } = params;
+    const { licenseeId, itemTitle, itemDescription, grossAmountCents, currency = 'GBP', successUrl, cancelUrl, customerEmail, deliveryType = DeliveryType.PHYSICAL, shippingAddress, metadata } = params;
 
-    const refId = `stripe_cs_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const refId = `stripe_cs_${crypto.randomUUID()}`;
     const checkoutResult = await this.initiateCheckout({
       licenseeId,
       checkoutReferenceId: refId,
@@ -283,11 +286,15 @@ export class CheckoutService {
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         ...(customerEmail ? { customer_email: customerEmail } : {}),
-        shipping_address_collection: {
-          allowed_countries: [
-            'GB', 'US', 'CA', 'AU', 'NZ', 'IE', 'FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'SE', 'NO', 'DK', 'FI', 'CH', 'AT', 'PT', 'PL', 'ZA', 'JP', 'SG'
-          ],
-        },
+        ...(deliveryType === DeliveryType.PHYSICAL
+          ? {
+              shipping_address_collection: {
+                allowed_countries: [
+                  'GB', 'US', 'CA', 'AU', 'NZ', 'IE', 'FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'SE', 'NO', 'DK', 'FI', 'CH', 'AT', 'PT', 'PL', 'ZA', 'JP', 'SG',
+                ] as Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[],
+              },
+            }
+          : {}),
         phone_number_collection: {
           enabled: true,
         },
@@ -297,7 +304,7 @@ export class CheckoutService {
               currency: currency.toLowerCase(),
               product_data: {
                 name: itemTitle,
-                description: 'Authentic NFTY LOGS merchandise with verified 15% statutory ESG charitable split.',
+                description: itemDescription || 'Authentic NFTY LOGS merchandise with verified 15% statutory ESG charitable split.',
               },
               unit_amount: grossAmountCents,
             },
@@ -320,16 +327,11 @@ export class CheckoutService {
         sessionId: session?.id || null,
         transactionId: checkoutResult.transactionId,
       };
-    } catch (sessionErr: any) {
-      console.warn('[STRIPE CHECKOUT SESSION - DEV FALLBACK]', sessionErr?.message || sessionErr);
-      const devSessionId = `cs_dev_${checkoutResult.transactionId}`;
-      const devSessionUrl = `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id=${devSessionId}&tx_id=${checkoutResult.transactionId}`;
-      return {
-        sessionUrl: devSessionUrl,
-        sessionId: devSessionId,
-        transactionId: checkoutResult.transactionId,
-        clientSecret: checkoutResult.clientSecret,
-      };
+    } catch (sessionErr: unknown) {
+      // Never redirect to a success URL that Stripe did not issue. The pending transaction
+      // is left unsettled and the caller reports a payment failure.
+      console.error('[STRIPE CHECKOUT SESSION ERROR]', sessionErr);
+      throw new Error('Stripe checkout session could not be created.');
     }
   }
 }

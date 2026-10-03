@@ -9,11 +9,10 @@ export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe):
 
   router.post('/webhooks/stripe', async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'];
-    const isProduction = process.env.NODE_ENV === 'production';
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || (isProduction ? '' : 'whsec_test_secret');
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
-      console.error('[STRIPE WEBHOOK FATAL] STRIPE_WEBHOOK_SECRET is not configured in production.');
+      console.error('[STRIPE WEBHOOK FATAL] STRIPE_WEBHOOK_SECRET is not configured.');
       return res.status(500).send('Webhook Error: Webhook signing secret not configured');
     }
 
@@ -25,7 +24,8 @@ export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe):
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } catch (err: any) {
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      console.warn('[STRIPE WEBHOOK] Signature verification failed:', err?.message);
+      return res.status(400).send('Webhook Error: Invalid signature');
     }
 
     try {
@@ -235,7 +235,7 @@ export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe):
             }
 
             // 1b. Match WorkflowSubmission (Part B State Machine: APPROVED -> PAID)
-            const wfSubmissionId = session.metadata?.workflowSubmissionId || session.metadata?.submissionId;
+            const wfSubmissionId = session.metadata?.workflowSubmissionId;
             let wfSubmission = await tx.workflowSubmission.findFirst({
               where: {
                 OR: [

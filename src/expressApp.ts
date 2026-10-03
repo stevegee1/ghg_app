@@ -37,9 +37,13 @@ export function createApp(stripeInstance?: Stripe): Express {
   // Trust Railway reverse proxy for accurate IP resolution and express-rate-limit compatibility
   app.set('trust proxy', 1);
 
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeInstance && !stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY must be set to create the application.');
+  }
   const stripe =
     stripeInstance ||
-    new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+    new Stripe(stripeSecretKey as string, {
       apiVersion: '2024-04-10' as any,
     });
 

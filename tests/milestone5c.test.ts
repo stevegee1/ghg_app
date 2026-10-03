@@ -2,7 +2,7 @@ import request from 'supertest';
 import Stripe from 'stripe';
 import { PrismaClient, VerificationSource, DeliveryType } from '@prisma/client';
 import { CheckoutService } from '../src/services/checkout.service';
-import { resolveActiveSplitConfig } from '../src/services/split-config.service';
+import { resolveActiveSplitConfig, SplitConfigMissingError } from '../src/services/split-config.service';
 import { createApp } from '../src/expressApp';
 import { seed } from '../prisma/seed';
 
@@ -396,5 +396,14 @@ describe('Milestone 5c: Versioned Split Configuration & Audit Trail Tests', () =
     expect(history[0].previousConfigId).toBe(history[1].id);
     expect(history[1].isActive).toBe(false);
     expect(history[0].changedByUser.email).toBe('admin@ghglogodrop.com');
+  });
+
+  // Test 7: With no active configuration, payments are refused instead of using an invented split
+  test('7. resolveActiveSplitConfig throws when no active configuration exists', async () => {
+    const emptyPrisma = {
+      splitConfigHistory: { findFirst: jest.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+
+    await expect(resolveActiveSplitConfig(emptyPrisma, 'lic_without_config')).rejects.toBeInstanceOf(SplitConfigMissingError);
   });
 });

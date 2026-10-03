@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { JWT_SECRET } from '../middleware/auth.middleware';
 import { emailService } from '../services/email.service';
 import { validateWorkEmail } from '../utils/emailValidation';
+import { getPlatformStripeAccountId } from '../services/platform-account.service';
 
 export function createAuthRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -76,7 +77,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           vertical: 'B2B_CLEAN_TECH',
           royaltyBps: 1500, // 15% statutory ESG split
           isPubliclyVisible: true,
-          stripeConnectedAccountId: process.env.STRIPE_PLATFORM_ACCOUNT_ID || 'acct_platform_default_001',
+          stripeConnectedAccountId: getPlatformStripeAccountId(),
           organisationCountry: (organisationCountry?.trim() || 'GB').toUpperCase().slice(0, 2),
           industrySector: industrySector || null,
           websiteUrl: websiteUrl?.trim() || null,

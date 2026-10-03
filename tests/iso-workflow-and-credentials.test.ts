@@ -19,6 +19,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient, IsoReadinessStatus, CredentialStatus, WorkflowType } from '@prisma/client';
 import { createApp } from '../src/expressApp';
 import { grantPipelineAccess } from './helpers/pipelineAccess';
+import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
 const prisma = new PrismaClient();
@@ -102,6 +103,7 @@ beforeAll(async () => {
   );
 
   await grantPipelineAccess(prisma, testLicenseeId, WorkflowType.GHG, 'ISO 14064-1');
+  await ensurePlatformSplitConfig(prisma);
 });
 
 afterAll(async () => {
@@ -302,7 +304,7 @@ describe('3. POST /api/iso-readiness/checkout', () => {
     expect(res.body.status).toBe('AUDIT_READY');
   });
 
-  it('creates a Stripe Checkout session with correct amount for TIER_1_READINESS (£1,250) after AUDIT_READY', async () => {
+  it('creates a Stripe Checkout session for the configured GHG assurance fee after AUDIT_READY', async () => {
     const { stripe, mockCheckoutSessionsCreate } = createMockStripe();
     const app = createApp(stripe);
 
@@ -318,13 +320,37 @@ describe('3. POST /api/iso-readiness/checkout', () => {
         cancelUrl: 'https://test.example/portal?step=2',
       });
 
-    // Either success or fallback (dev Stripe key) — both are acceptable
-    expect([200, 500]).toContain(res.status);
-    if (res.status === 200) {
-      expect(res.body.success).toBe(true);
-      expect(res.body.grossAmountCents).toBe(125000); // £1,250 in pence
-      expect(res.body.currency).toBe('GBP');
-    }
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.grossAmountCents).toBe(Number(process.env.GHG_ASSURANCE_FEE_PENCE));
+    expect(res.body.currency).toBe(process.env.ASSURANCE_FEE_CURRENCY);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.metadata.submissionId).toBe(testSubmissionId);
+    expect(params.metadata.payerLicenseeId).toBe(testLicenseeId);
+  });
+});
+
+describe('3b. GET /api/iso-readiness/status payment reconciliation', () => {
+  it('ignores a paid Stripe session that was not created for this submission', async () => {
+    const { stripe } = createMockStripe();
+    const retrieve = jest.fn().mockResolvedValue({
+      id: 'cs_foreign_paid_session',
+      payment_status: 'paid',
+      metadata: { submissionId: testSubmissionId },
+    });
+    (stripe.checkout.sessions as unknown as { retrieve: jest.Mock }).retrieve = retrieve;
+    const app = createApp(stripe);
+
+    const res = await request(app)
+      .get(`/api/iso-readiness/status/${testLicenseeId}?session_id=cs_foreign_paid_session`)
+      .set('Authorization', `Bearer ${testAuthToken}`);
+
+    expect(res.status).toBe(200);
+    expect(retrieve).toHaveBeenCalledWith('cs_foreign_paid_session');
+    const row = await prisma.isoReadinessSubmission.findUnique({ where: { id: testSubmissionId } });
+    expect(row!.paidAt).toBeNull();
+    expect(row!.status).toBe(IsoReadinessStatus.AUDIT_READY);
   });
 });
 

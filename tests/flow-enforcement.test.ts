@@ -16,6 +16,7 @@ import { PrismaClient, IsoReadinessStatus, CredentialStatus, WorkflowType } from
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { grantPipelineAccess } from './helpers/pipelineAccess';
+import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 
 const prisma = new PrismaClient();
 
@@ -63,6 +64,7 @@ beforeAll(async () => {
   );
 
   await grantPipelineAccess(prisma, testLicenseeId, WorkflowType.GHG, 'ISO 14064-1');
+  await ensurePlatformSplitConfig(prisma);
 });
 
 afterAll(async () => {
@@ -180,10 +182,8 @@ describe('3-Gate Strict Workflow Enforcement', () => {
           cancelUrl: 'https://app.example.com/portal?step=2',
         });
 
-      expect([200, 500]).toContain(checkoutRes.status);
-      if (checkoutRes.status === 200) {
-        expect(checkoutRes.body.success).toBe(true);
-      }
+      expect(checkoutRes.status).toBe(200);
+      expect(checkoutRes.body.success).toBe(true);
     });
   });
 
