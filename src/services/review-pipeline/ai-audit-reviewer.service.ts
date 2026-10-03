@@ -129,15 +129,42 @@ function evaluateClauseByRules(input: RulesEvaluationInput): {
 // SYSTEM PROMPT BUILDER
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildAuditPrompt(submissionContext: string): { system: string; user: string } {
-  const system = `You are an ISO 14064-1:2018 and ISO 50001:2018 Lead Verification Agent operating under ISO 19011:2018 remote auditing guidelines. Your role is to pre-screen greenhouse gas and energy management questionnaire submissions before a human Lead Auditor makes the final decision.
+function buildAuditPrompt(
+  submissionContext: string,
+  frameworkCode?: string
+): { system: string; user: string } {
+  // Select the governing standard section based on pipeline
+  const pipelineContext = (() => {
+    if (!frameworkCode) return 'ISO 14064-1:2018 and ISO 50001:2018';
+    if (frameworkCode.startsWith('UK_SECR')) return 'UK Streamlined Energy and Carbon Reporting (SECR) Regulations 2018 and GHG Protocol Corporate Standard';
+    if (frameworkCode.startsWith('ISO_14064')) return 'ISO 14064-1:2018 Organisational GHG Quantification and GHG Protocol Corporate Standard';
+    if (frameworkCode.startsWith('ISO_50001')) return 'ISO 50001:2018 Energy Management Systems';
+    if (frameworkCode.startsWith('UK_PPN_006') || frameworkCode.startsWith('UK_PPN_0621')) return 'Cabinet Office PPN 006 Carbon Reduction Plan requirements and GHG Protocol Scope 1/2/3';
+    if (frameworkCode.startsWith('UK_GREEN_CLAIMS') || frameworkCode.startsWith('CMA')) return 'CMA Green Claims Code and DMCC Act 2024 substantiation principles';
+    if (frameworkCode.startsWith('ISO_14068') || frameworkCode.startsWith('SBTi')) return 'ISO 14068-1:2023 Carbon Neutrality and SBTi Corporate Target Validation requirements';
+    if (frameworkCode.startsWith('UK_SECTION_106')) return 'Section 106 Town and Country Planning Act 1990 local employment and skills obligations';
+    if (frameworkCode.startsWith('SOCIAL_VALUE') || frameworkCode.startsWith('UK_PPN_002') || frameworkCode.startsWith('UK_PPN_026')) return 'Social Value Act 2012 and Cabinet Office PPN 002 / PPN 026 Social Value procurement requirements';
+    if (frameworkCode.startsWith('UK_LCHS') || frameworkCode.startsWith('GREEN_HYDROGEN')) return 'UK Low Carbon Hydrogen Standard (LCHS) administered by DESNZ and Ofgem';
+    return 'ISO 14064-1:2018, ISO 50001:2018, and applicable UK statutory requirements';
+  })();
+
+  const system = `You are a Senior Lead Verification Auditor for the GHGEmissionLogs platform, operating under ISO 19011:2018 remote auditing guidelines. You pre-screen compliance questionnaire submissions across four service pipelines before a human Lead Auditor makes the final decision.
+
+Governing standard for this submission: ${pipelineContext}
 
 For each question-answer pair you receive:
-1. Evaluate conformity against the cited ISO clause and GHG Protocol requirements
+1. Evaluate conformity against the cited clause or regulatory requirement
 2. Check whether supporting evidence is referenced and plausible
 3. Assign a conformance status: CONFORMANT, NON_CONFORMANT, or INSUFFICIENT_EVIDENCE
 4. Produce a concise, objective auditor-grade finding (2-4 sentences, professional register)
 5. Assign a confidence score (0.0 to 1.0)
+
+Scoring thresholds (ISO 19011:2018 Clause 6.4):
+- CONFORMANT with evidence = 5 points
+- CONFORMANT without evidence (non-evidence-required clause) = 3 points
+- INSUFFICIENT_EVIDENCE = 1 point
+- NON_CONFORMANT = 0 points
+- Minimum 80 out of 100 required for APPROVE recommendation
 
 You MUST respond with valid JSON only, in this exact structure:
 {
@@ -146,19 +173,19 @@ You MUST respond with valid JSON only, in this exact structure:
       "questionId": "string",
       "isoClause": "string",
       "status": "CONFORMANT" | "NON_CONFORMANT" | "INSUFFICIENT_EVIDENCE",
-      "findings": "string (2-4 sentences)",
+      "findings": "string (2-4 sentences, auditor register)",
       "evidenceVerified": boolean,
       "confidence": number
     }
   ],
   "overallScore": number (0-100),
   "recommendedDecision": "APPROVE" | "REQUIRE_REVISION",
-  "executiveSummary": "string (3-5 sentences summarising the pre-screen outcome)"
+  "executiveSummary": "string (3-5 sentences summarising the pre-screen outcome for the Lead Auditor)"
 }
 
-Apply strict ISO 19011:2018 Clause 6.4 (collecting and verifying information) principles. Do not approve where mandatory evidence is absent.`;
+Do not approve where mandatory evidence is absent. Do not use markdown in your response.`;
 
-  const user = `Please evaluate the following GHG / Energy Management audit submission:\n\n${submissionContext}`;
+  const user = `Please evaluate the following compliance audit submission:\n\n${submissionContext}`;
 
   return { system, user };
 }
@@ -218,8 +245,8 @@ export class AiAuditReviewer implements IAuditReviewer {
 
     if (activeProvider) {
       // ── LLM PATH ─────────────────────────────────────────────────────────
-      const submissionContext = this.buildSubmissionContext(submission, questions, answerMap);
-      const { system, user } = buildAuditPrompt(submissionContext);
+    const submissionContext = this.buildSubmissionContext(submission, questions, answerMap);
+      const { system, user } = buildAuditPrompt(submissionContext, submission.framework.code);
 
       let llmResponse: string;
       try {
@@ -576,51 +603,42 @@ Evidence Files Attached: ${(params.evidenceFileNames || []).join(', ') || 'None'
       }
     }
 
-    // 2. Deterministic Statutory Rules Engine (ISO 19011:2026)
-    const attachedCount = answers.filter((a) =>
-      a.answer && (
-        a.answer.includes('evidence document attached') ||
-        a.answer.includes('.pdf') ||
-        a.answer.includes('.xlsx') ||
-        a.answer.includes('.csv') ||
-        a.answer.includes('Conforming:')
-      )
-    ).length;
-
-    const totalRequired = Math.max(1, answers.length);
-    const score = Math.min(100, Math.round(30 + ((attachedCount / totalRequired) * 70)));
-    const isApproved = score >= 80;
-
+    // 2. Deterministic Rules Engine (ISO 19011:2018) - active when no LLM key is configured
     const clauseFindings = answers.map((a) => {
+      const wordCount = (a.answer || '').trim().split(/\s+/).filter(Boolean).length;
+      // hasEvidenceDocument / evidenceDocumentId is set by the route when a file is attached
       const hasEvidence = Boolean(
-        a.answer && (
-          a.answer.includes('evidence document attached') ||
-          a.answer.includes('.pdf') ||
-          a.answer.includes('.xlsx') ||
-          a.answer.includes('.csv')
-        )
+        (a as any).hasEvidenceDocument ||
+        (a as any).evidenceDocumentId
       );
+      const isConformant = wordCount >= 5 || hasEvidence;
+      const status: 'CONFORMANT' | 'INSUFFICIENT_EVIDENCE' = isConformant ? 'CONFORMANT' : 'INSUFFICIENT_EVIDENCE';
 
       return {
         questionId: a.questionId,
-        isoClause: a.isoClause || 'ISO 19011:2026',
-        status: hasEvidence ? ('CONFORMANT' as const) : ('INSUFFICIENT_EVIDENCE' as const),
-        findings: hasEvidence
-          ? `Statutory evidence document verified against ${a.isoClause || 'framework standard'}. SHA-256 provenance registered.`
-          : `No supporting audit proof document provided for ${a.isoClause || 'framework standard'}. Mandatory for Gate 1 clearance under ISO 19011:2026.`,
+        isoClause: a.isoClause || 'ISO 19011:2018',
+        status,
+        findings: isConformant
+          ? `Response meets minimum documentary threshold for ${a.isoClause || 'this clause'}. ${hasEvidence ? 'Supporting evidence document registered in the evidence locker.' : 'Narrative response provided; evidence document recommended for a stronger audit trail.'}`
+          : `Response for ${a.isoClause || 'this clause'} is insufficient (${wordCount} words, no evidence attached). A substantive response with supporting documentation is required under ISO 19011:2018 Clause 6.4.`,
         evidenceVerified: hasEvidence,
       };
     });
+
+    const conformantCount = clauseFindings.filter((f) => f.status === 'CONFORMANT').length;
+    const total = Math.max(1, clauseFindings.length);
+    const score = Math.min(100, Math.round((conformantCount / total) * 100));
+    const isApproved = score >= 80;
 
     return {
       decision: isApproved ? 'APPROVE' : 'REQUIRE_REVISION',
       targetStatus: isApproved ? 'AUDIT_READY' : 'REVISION_REQUIRED',
       complianceScore: score,
       reviewerNotes: isApproved
-        ? `Statutory conformance score ${score}% satisfies ISO 19011:2026 Annex A remote audit threshold (minimum 80% required). Audit-ready status certified.`
-        : `Statutory conformance score ${score}% does not satisfy the mandatory 80% threshold under ISO 19011:2026. Additional statutory evidence documents required.`,
+        ? `Deterministic pre-screen: ${conformantCount}/${total} clauses conformant (score ${score}%). Satisfies 80% threshold. Lead Auditor manual sign-off required.`
+        : `Deterministic pre-screen: ${conformantCount}/${total} clauses conformant (score ${score}%). Below 80% threshold. Additional evidence or narrative required.`,
       clauseFindings,
-      reviewedBy: 'Deterministic Statutory Rules Engine (ISO 19011:2026)',
+      reviewedBy: 'Deterministic Rules Engine (ISO 19011:2018 Clause 6.4)',
       reviewedAt: new Date(),
     };
   }

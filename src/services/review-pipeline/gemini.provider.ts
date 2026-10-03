@@ -4,7 +4,7 @@
  * Google Gemini LLM provider for the AI Audit Screener.
  * Activated when GEMINI_API_KEY is present in environment.
  *
- * Model: gemini-1.5-pro-latest (configurable via GEMINI_MODEL env var)
+ * Model: gemini-2.0-flash (configurable via GEMINI_MODEL env var)
  * API:   https://generativelanguage.googleapis.com/v1beta/models
  */
 
@@ -12,7 +12,7 @@ import { ILlmProvider, LlmCompletionOptions, LlmCompletionResult, LlmMessage } f
 
 export class GeminiProvider implements ILlmProvider {
   readonly providerName = 'Google Gemini';
-  readonly defaultModel = 'gemini-3.8-flash';
+  readonly defaultModel = 'gemini-2.0-flash';
 
   isConfigured(): boolean {
     return Boolean(process.env.GEMINI_API_KEY);

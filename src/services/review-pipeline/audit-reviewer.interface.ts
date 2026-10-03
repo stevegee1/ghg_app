@@ -28,13 +28,10 @@ export interface IAuditReviewer {
 
 export class StandardAuditReviewer implements IAuditReviewer {
   async evaluateSubmission(submissionId: string): Promise<AuditReviewResult> {
-    return {
-      decision: 'APPROVE',
-      targetStatus: 'AUDIT_READY',
-      complianceScore: 92,
-      reviewerNotes: 'ISO 19011:2026 Annex A remote verification evaluated conformant across selected frameworks.',
-      reviewedBy: 'Lead Auditor (Standard Evaluation Engine)',
-      reviewedAt: new Date(),
-    };
+    // This stub must never be used in production.
+    // ReviewDispatcherService callers must inject an AiAuditReviewer instance via setReviewer().
+    throw new Error(
+      `StandardAuditReviewer is a placeholder. Inject AiAuditReviewer via ReviewDispatcherService.setReviewer() before calling evaluateSubmission('${submissionId}').`
+    );
   }
 }

@@ -1,5 +1,6 @@
 import { PrismaClient, IsoReadinessStatus } from '@prisma/client';
 import { IAuditReviewer, AuditReviewResult, StandardAuditReviewer } from './audit-reviewer.interface';
+import { AiAuditReviewer } from './ai-audit-reviewer.service';
 
 export type ReviewMode = 'MANUAL' | 'AI_COPILOT' | 'AI_AUTONOMOUS';
 
@@ -36,12 +37,14 @@ export class ReviewDispatcherService {
   }
 
   /**
-   * Evaluates a submission using the active reviewer strategy (or default StandardAuditReviewer)
+   * Evaluates a submission using the active reviewer strategy.
+   * Defaults to AiAuditReviewer (Gemini > Anthropic > OpenAI > deterministic rules).
    */
   public async evaluateSubmission(submissionId: string): Promise<AuditReviewResult> {
-    const reviewer = this.customReviewer || new StandardAuditReviewer();
+    const reviewer = this.customReviewer ?? new AiAuditReviewer(this.prisma);
     return reviewer.evaluateSubmission(submissionId);
   }
+
 
   /**
    * Retrieves paginated submissions for the Lead Auditor / Admin review queue
