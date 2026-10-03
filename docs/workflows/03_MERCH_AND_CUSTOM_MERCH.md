@@ -12,10 +12,10 @@ In enterprise SaaS and environmental governance, merchandise must never be an op
 
 | Subsystem | Existing File | Current Implementation | Production-Ready Gap to Close |
 | :--- | :--- | :--- | :--- |
-| **Keepsake Customizer** | [`custom-keepsake.route.ts`](file:///Users/mac/ghg_app/src/routes/custom-keepsake.route.ts) | Custom embroidery spec & pricing calculation | No hard check verifying that the licensee has an approved `AUDIT_READY` or `MINTED` credential before ordering |
+| **Keepsake Customizer** | [`custom-keepsake.route.ts`](file:///Users/mac/ghg_app/src/routes/custom-keepsake.route.ts) | Custom embroidery spec & pricing calculation | No hard check verifying that the licensee has an approved `AUDIT_READY` or `ISSUED` credential before ordering |
 | **Order Processing** | [`orders.route.ts`](file:///Users/mac/ghg_app/src/routes/orders.route.ts) | Order creation and Stripe payment handling | Needs middleware check: reject order creation with `403 Forbidden: Licensee Must Possess Active Verified Audit Credential` |
 | **Charity Allocation** | [`charity-allocation.service.ts`](file:///Users/mac/ghg_app/src/services/charity-allocation.service.ts) | 15% royalty calculation | Fully working, needs audit trail linkage to specific physical keepsake tracking number |
-| **Physical-Digital Twin** | [`nft-minting.service.ts`](file:///Users/mac/ghg_app/src/services/nft-minting.service.ts) | Mints ERC-1155 token | Needs physical NFC/QR code generator linking physical garment badge directly to the on-chain Polygon contract and IPFS metadata |
+| **Physical-Digital Twin** | [`credentials.route.ts`](file:///Users/mac/ghg_app/src/routes/credentials.route.ts) | Public credential verification record | Needs physical NFC/QR code generator linking the garment badge to the public verification record |
 
 ---
 
@@ -52,7 +52,7 @@ flowchart TD
     const hasValidCredential = await prisma.auditWarrantyCredential.findFirst({
       where: {
         licenseeId,
-        status: { in: ['MINTED', 'ACTIVE'] },
+        status: 'ISSUED',
         warrantyExpiresAt: { gt: new Date() },
       },
     });
@@ -79,4 +79,4 @@ flowchart TD
 ### 4.4 Physical-Digital Twin Linkage
 - [ ] **QR / NFC Cryptographic Tag**:
   - Every garment receives a sewn woven label with a cryptographically signed QR code linking to `/verify/seal/:hash`.
-  - Scanning the badge displays the underlying ISO telemetry, lead auditor sign-off date, and polygon blockchain transaction.
+  - Scanning the badge displays the underlying ISO telemetry, lead auditor sign-off date, and the credential verification record.

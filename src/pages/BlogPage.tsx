@@ -43,7 +43,7 @@ const BLOG_POSTS: BlogPost[] = [
     id: 'blog_3',
     title: 'The 85/15 Financial Split: Automated Charity Routing in Practice',
     category: 'Financial Governance',
-    summary: 'How Stripe Connect and Web3 smart contracts enforce a published 15% charity gift split from every licensed Logo Drop straight to climate survivor relief funds.',
+    summary: 'How Stripe Connect payment splits enforce a published 15% charity gift split from every licensed Logo Drop straight to climate survivor relief funds.',
   },
   {
     id: 'blog_4',

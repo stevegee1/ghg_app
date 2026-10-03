@@ -23,8 +23,7 @@ export interface CredentialItem {
   issuedAt: string;
   status: string;
   badgeImageUrl?: string | null;
-  tokenId?: string | null;
-  openSeaUrl?: string | null;
+  verifyUrl?: string | null;
   pdfDownloadUrl: string;
 }
 
@@ -622,7 +621,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Credentials</h3>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-light)', margin: '0.2rem 0 0 0' }}>
-              Issued assurance badges, on-chain tokens, and statutory partnership certificates.
+              Issued assurance badges, verification records, and statutory partnership certificates.
             </p>
           </div>
           <Link
@@ -690,14 +689,14 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   fontSize: '0.75rem',
                 }}>
-                  {cred.openSeaUrl ? (
+                  {cred.verifyUrl ? (
                     <a
-                      href={cred.openSeaUrl}
+                      href={cred.verifyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: 'var(--accent-primary)', fontFamily: 'var(--font-mono, monospace)', textDecoration: 'underline' }}
                     >
-                      Polygon PoS #{cred.tokenId || 'Token'}
+                      Verify credential
                     </a>
                   ) : (
                     <span style={{ color: 'var(--text-light)', fontFamily: 'var(--font-mono, monospace)' }}>

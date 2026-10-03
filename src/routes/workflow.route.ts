@@ -734,52 +734,6 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
   });
 
   /**
-   * Screen 9: POST /api/workflow/submissions/:id/mint
-   * Validates Polygon wallet address and mints ERC-1155 token (transitions BADGE_ISSUED -> MINTED).
-   */
-  router.post('/api/workflow/submissions/:id/mint', authenticateToken, async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const user = req.user!;
-    const licenseeId = user.licenseeId || req.body.licenseeId;
-    const recipientAddress = req.body?.recipientAddress || req.body?.walletAddress;
-
-    if (!recipientAddress || typeof recipientAddress !== 'string') {
-      return res.status(400).json({ error: 'recipientAddress is required.' });
-    }
-
-    const ethRegex = /^0x[a-fA-F0-9]{40}$/;
-    if (!ethRegex.test(recipientAddress.trim())) {
-      return res.status(400).json({
-        error: `Invalid wallet address format: '${recipientAddress}'. Must be a valid 42-character 0x-prefixed hex address.`,
-      });
-    }
-
-    try {
-      const result = await runWithRls(prisma, user, async () => {
-        return workflowService.mintBadge(
-          id,
-          licenseeId,
-          recipientAddress.trim(),
-          { userId: user.userId, role: user.role }
-        );
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: 'Token successfully minted on Polygon PoS.',
-        submission: result.submission,
-        mintResult: result.mintResult,
-      });
-    } catch (err: any) {
-      if (err instanceof InvalidWorkflowTransitionError) {
-        return res.status(400).json({ error: err.message });
-      }
-      console.error('[WORKFLOW MINT ERROR]', err);
-      return res.status(400).json({ error: err.message || 'Failed to mint token.' });
-    }
-  });
-
-  /**
    * Screen 9 & 10: GET /api/workflow/submissions/:id/pdf & /download-pdf
    * Streams downloadable PDF Proof of Audit and Badge Warranty Certificate.
    */
@@ -801,7 +755,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * Screen 10: GET /api/workflow/my-badges
-   * Returns all issued and minted badges for the authenticated licensee.
+   * Returns all issued badges for the authenticated licensee.
    */
   router.get('/api/workflow/my-badges', authenticateToken, async (req: Request, res: Response) => {
     const user = req.user!;
@@ -812,7 +766,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return tx.workflowSubmission.findMany({
           where: {
             ...(licenseeId ? { licenseeId } : {}),
-            status: { in: [WorkflowStatus.BADGE_ISSUED, WorkflowStatus.MINTED] },
+            status: WorkflowStatus.BADGE_ISSUED,
           },
           include: { framework: true, licensee: true },
           orderBy: { updatedAt: 'desc' },
@@ -830,9 +784,6 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         badgeLogoUrl: sub.clientLogoUrl,
         auditDate: sub.reviewedAt ? sub.reviewedAt.toISOString() : sub.updatedAt.toISOString(),
         status: sub.status,
-        polygonTxHash: sub.transactionHash,
-        walletAddress: sub.tokenId,
-        contractAddress: sub.contractAddress || '0x7b96aF9Bd211cBf6BA5b0dd53aa61Dc5806b6AcE',
         pdfDownloadUrl: `/api/workflow/submissions/${sub.id}/pdf`,
       }));
 

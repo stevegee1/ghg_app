@@ -5,7 +5,7 @@
  *   <script src="https://ghgapp-production.up.railway.app/embed/ghg-badge.js" async></script>
  *   <div class="ghg-audit-badge" data-licensee-id="lic_abc123" data-theme="dark"></div>
  *
- * ERC-1155 Credential usage (with specific credential):
+ * Issued credential usage (with specific credential):
  *   <div class="ghg-audit-badge"
  *        data-licensee-id="lic_abc123"
  *        data-credential-id="cred_xyz789"
@@ -16,7 +16,7 @@
  *  - Dual logos: client logo + GHG Emissions Registered Trade Mark
  *  - Client attestation message
  *  - 1-Year statutory warranty countdown (live, updated every second)
- *  - Direct link to Polygon OpenSea token
+ *  - Direct link to the public verification record
  *  - Full Shadow DOM isolation (host stylesheet cannot bleed in)
  *  - No dependencies. Vanilla JS only. Google SaaS standard aesthetic.
  *
@@ -36,8 +36,8 @@
     return 'https://ghgapp-production.up.railway.app';
   })();
 
-  // Official OpenSea logo SVG (inline, no external fetch)
-  var OPENSEA_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="16" height="16"><path d="M50 0C22.4 0 0 22.4 0 50s22.4 50 50 50 50-22.4 50-50S77.6 0 50 0zm-1.2 16.3l-.6 1.9L31.1 66.5h-.2l-1.4-3.5c-1.7-4.3-.8-9.1 2.4-12.5L48.8 16.3zm2.4 0L68 50.5c3.2 3.4 4.1 8.2 2.4 12.5l-1.4 3.5h-.2L51.2 18.2l-.6-1.9zm-14 54.9l-5.9-15.1h30.6l-5.9 15.1a4.3 4.3 0 0 1-8.9 0H37.2z" fill="#2081E2"/></svg>';
+  // Shield check icon (inline, no external fetch)
+  var VERIFY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>';
 
   // GHG logo placeholder SVG (inline) — shown if the server logo fails to load
   var GHG_MARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40" width="56" height="28"><rect width="80" height="40" rx="6" fill="#10b981" opacity=".15"/><text x="40" y="14" font-family="sans-serif" font-size="7" font-weight="800" fill="#10b981" text-anchor="middle" letter-spacing="0.5">GHG EMISSIONS</text><text x="40" y="24" font-family="sans-serif" font-size="6" font-weight="700" fill="#10b981" text-anchor="middle">REGISTERED TRADE MARK</text><text x="40" y="35" font-family="sans-serif" font-size="5.5" fill="#10b981" text-anchor="middle" opacity=".7">UKIPO Classes 25 &amp; 35</text></svg>';
@@ -57,6 +57,8 @@
     '.ghg-mark{flex-shrink:0;}',
     '.message{font-size:11.5px;font-style:italic;color:#475569;line-height:1.45;margin-bottom:8px;word-break:break-word;}',
     '.dark .message{color:#94a3b8;}',
+    '.licensee-name{font-size:12px;font-weight:700;color:#0f172a;word-break:break-word;}',
+    '.dark .licensee-name{color:#f1f5f9;}',
     '.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}',
     '.chip{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.04em;}',
     '.chip-green{background:rgba(16,185,129,.12);color:#10b981;}',
@@ -67,8 +69,8 @@
     '.countdown{font-size:10px;font-weight:700;color:#64748b;font-variant-numeric:tabular-nums;}',
     '.dark .countdown{color:#94a3b8;}',
     '.countdown.expiring{color:#ef4444;}',
-    '.opensea-link{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#2081e2;text-decoration:none;}',
-    '.opensea-link:hover{opacity:.8;}',
+    '.verify-link{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#0ea5e9;text-decoration:none;}',
+    '.verify-link:hover{opacity:.8;}',
     '.loading{padding:16px;font-size:12px;color:#94a3b8;font-style:italic;text-align:center;}',
     '.error-text{padding:10px 14px;font-size:11px;color:#64748b;background:rgba(239,68,68,.05);border-radius:8px;}',
   ].join('');
@@ -143,20 +145,20 @@
       var theme = this.getAttribute('data-theme') || 'light';
 
       if (credentialId) {
-        // Load specific credential metadata
-        var url = BASE_URL + '/api/credentials/' + credentialId + '/metadata.json';
-        fetchJson(url, function (err, meta) {
-          if (err || !meta) {
+        // Load the public verification record for this credential
+        var verifyPath = '/api/credentials/' + encodeURIComponent(credentialId) + '/verify';
+        fetchJson(BASE_URL + verifyPath, function (err, record) {
+          if (err || !record) {
             _this._renderFallback(licenseeId, theme);
             return;
           }
           var cred = {
-            licenseeName: meta.name || licenseeId,
-            clientMessage: (meta.description || '').substring(0, 120),
-            warrantyExpiresAt: (meta.attributes || []).find(function (a) { return a.trait_type === 'Warranty Expiry'; })?.value,
-            openSeaUrl: meta.external_url || '',
-            compositeBadgeUrl: meta.image || '',
-            verificationSeal: (meta.attributes || []).find(function (a) { return a.trait_type === 'Verification Seal'; })?.value || '',
+            licenseeName: record.licenseeName || licenseeId,
+            clientMessage: (record.clientMessage || '').substring(0, 120),
+            warrantyExpiresAt: record.warrantyExpiresAt,
+            valid: record.valid === true,
+            frameworks: record.selectedFrameworks || [],
+            verifyUrl: BASE_URL + verifyPath,
             theme: theme,
           };
           _this._credential = cred;
@@ -180,7 +182,7 @@
             '<div class="logos">',
               '<div class="ghg-mark">' + GHG_MARK_SVG + '</div>',
             '</div>',
-            '<div class="message">GHG Emissions Registered Trade Mark — Audit Verification Active</div>',
+            '<div class="message">GHG Emissions Registered Trade Mark: Audit Verification Active</div>',
             '<div class="meta">',
               '<span class="chip chip-green">ISO 14001 · ISO 50001</span>',
               '<span class="chip chip-sky">ISO 19011:2026</span>',
@@ -189,7 +191,7 @@
           '</div>',
           '<div class="footer">',
             '<span class="countdown">UKIPO Classes 25 &amp; 35</span>',
-            '<a class="opensea-link" href="' + escapeHtml(BASE_URL + '/transparency') + '" target="_blank" rel="noopener">' + OPENSEA_SVG + ' Verify</a>',
+            '<a class="verify-link" href="' + escapeHtml(BASE_URL + '/transparency') + '" target="_blank" rel="noopener">' + VERIFY_SVG + ' Verify</a>',
           '</div>',
         '</div>',
       ].join('');
@@ -197,35 +199,32 @@
     };
 
     GHGWarrantyBadge.prototype._renderCredential = function (cred) {
-      var countdown = formatCountdown(cred.warrantyExpiresAt);
-      var expiring = isExpiringSoon(cred.warrantyExpiresAt);
-      var clientLogoHtml = cred.compositeBadgeUrl && cred.compositeBadgeUrl.indexOf('data:') === 0
-        ? '<img class="client-logo" src="' + escapeHtml(cred.compositeBadgeUrl.substring(0, 300)) + '" alt="Credential badge" />'
-        : '';
+      var countdown = cred.valid ? formatCountdown(cred.warrantyExpiresAt) : 'NOT CURRENTLY VALID';
+      var expiring = !cred.valid || isExpiringSoon(cred.warrantyExpiresAt);
+      var frameworkChips = cred.frameworks.map(function (f) {
+        return '<span class="chip chip-green">' + escapeHtml(f) + '</span>';
+      }).join('');
 
       var html = [
         '<div class="badge ' + (cred.theme === 'dark' ? 'dark' : '') + '">',
           '<div class="top-stripe"></div>',
           '<div class="body">',
             '<div class="logos">',
-              clientLogoHtml || '',
-              clientLogoHtml ? '<div class="logo-sep"></div>' : '',
               '<div class="ghg-mark">' + GHG_MARK_SVG + '</div>',
+              '<div class="logo-sep"></div>',
+              '<div class="licensee-name">' + escapeHtml(cred.licenseeName) + '</div>',
             '</div>',
             cred.clientMessage
               ? '<div class="message">&ldquo;' + escapeHtml(cred.clientMessage.substring(0, 120)) + '&rdquo;</div>'
               : '',
             '<div class="meta">',
-              '<span class="chip chip-green">ISO 14001 · ISO 50001</span>',
-              '<span class="chip chip-sky">ISO 19011:2026</span>',
+              frameworkChips,
               '<span class="chip chip-purple">UKIPO Classes 25 &amp; 35</span>',
             '</div>',
           '</div>',
           '<div class="footer">',
             '<span class="countdown' + (expiring ? ' expiring' : '') + '" id="ghg-countdown">' + escapeHtml(countdown) + '</span>',
-            cred.openSeaUrl
-              ? '<a class="opensea-link" href="' + escapeHtml(cred.openSeaUrl) + '" target="_blank" rel="noopener">' + OPENSEA_SVG + '<span>View on OpenSea</span></a>'
-              : '<span class="countdown">Polygon ERC-1155</span>',
+            '<a class="verify-link" href="' + escapeHtml(cred.verifyUrl) + '" target="_blank" rel="noopener">' + VERIFY_SVG + '<span>Verify credential</span></a>',
           '</div>',
         '</div>',
       ].join('');
@@ -236,7 +235,7 @@
       var _this = this;
       if (this._timer) clearInterval(this._timer);
       this._timer = setInterval(function () {
-        if (!_this._credential || !_this._credential.warrantyExpiresAt) return;
+        if (!_this._credential || !_this._credential.valid || !_this._credential.warrantyExpiresAt) return;
         var el = _this._shadow.getElementById('ghg-countdown');
         if (!el) return;
         var countdown = formatCountdown(_this._credential.warrantyExpiresAt);

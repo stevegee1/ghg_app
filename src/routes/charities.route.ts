@@ -215,7 +215,6 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
           status: c.status,
           contractStartDate: c.contractStartDate,
           contractEndDate: c.contractEndDate,
-          walletAddress: c.walletAddress,
           stripeConnectedAccountId: c.stripeConnectedAccountId,
         })),
       });
@@ -229,7 +228,7 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
    * POST /api/charities/apply
    * Step 1 of Part C Charity Lifecycle:
    * Org submits name, registered charity number (if applicable), contact email, and a short statement.
-   * NO Stripe or wallet info required at this stage.
+   * NO Stripe info required at this stage.
    * Status = PENDING_APPLICATION.
    * Gated: Enforces server-side that new applications are only accepted while fewer than 3 charities
    * are in ACTIVE or APPROVED_AWAITING_STRIPE status combined.
@@ -289,9 +288,8 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
           contactEmail: contactEmail.toLowerCase().trim(),
           statement: statement.trim(),
           status: CharityStatus.PENDING_APPLICATION,
-          // No Stripe or wallet info at this stage
+          // No Stripe info at this stage
           stripeConnectedAccountId: null,
-          walletAddress: null,
         },
       });
 
@@ -339,47 +337,6 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
     } catch (err: any) {
       console.error('[CHARITY PARTNERSHIP PDF ERROR]', err);
       return res.status(500).json({ error: 'Failed to generate charity partnership PDF.' });
-    }
-  });
-
-  /**
-   * PATCH /api/charities/:id/wallet
-   * Optional on-chain wallet address can be added any time after ACTIVE.
-   */
-  router.patch('/api/charities/:id/wallet', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { walletAddress } = req.body || {};
-
-    if (!walletAddress || typeof walletAddress !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim())) {
-      return res.status(400).json({ error: 'Invalid EVM/Polygon wallet address. Must be a 42-character hex address starting with 0x.' });
-    }
-
-    try {
-      const charity = await prisma.charity.findUnique({ where: { id } });
-      if (!charity) {
-        return res.status(404).json({ error: 'Charity not found.' });
-      }
-
-      if (charity.status !== CharityStatus.ACTIVE) {
-        return res.status(400).json({
-          error: `Crypto wallet address can only be linked once charity is ACTIVE. Current status: ${charity.status}`,
-        });
-      }
-
-      const updated = await prisma.charity.update({
-        where: { id },
-        data: { walletAddress: walletAddress.trim() },
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: 'On-chain payout wallet address successfully updated.',
-        charityId: updated.id,
-        walletAddress: updated.walletAddress,
-      });
-    } catch (err: any) {
-      console.error('[CHARITY WALLET UPDATE ERROR]', err);
-      return res.status(500).json({ error: 'Failed to update charity wallet address.' });
     }
   });
 

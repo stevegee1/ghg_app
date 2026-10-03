@@ -40,7 +40,7 @@ async function createTestCredentialWithSubmission(data: {
       clientLogoUrl: '/test-logo.png',
       compositeBadgeUrl: 'data:image/svg+xml;base64,PHN2Zz4=',
       warrantyExpiresAt: data.warrantyExpiresAt,
-      status: CredentialStatus.MINTED,
+      status: CredentialStatus.ISSUED,
       allowedOrigins: data.allowedOrigins || [],
     },
   });

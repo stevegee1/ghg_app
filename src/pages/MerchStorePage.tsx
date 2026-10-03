@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
-import { OpenSeaBadge } from '../components/OpenSeaBadge';
 import { StatusBadge } from '../components/StatusBadge';
 
 interface MerchItem {
@@ -77,13 +76,13 @@ const MERCH_CATALOG: MerchItem[] = [
   },
   {
     id: 'item_nfty_softshell_vest',
-    title: 'NFTY LOGS® Web3 Provenance Embroidered Softshell Vest',
+    title: 'NFTY LOGS® Provenance Embroidered Softshell Vest',
     licenseeId: 'lic_ghg_official',
     partnerName: 'NFTY LOGS® Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/ca6c871a-d643-4695-a605-9a357fb26ae3.jpeg',
     category: 'Official Outerwear',
-    description: 'Sleeveless softshell vest embroidered with direct blockchain collectibles search paths for OpenSea, Rarible, and NFTY LOGS Labs.',
+    description: 'Sleeveless softshell vest embroidered with the NFTY LOGS Labs provenance mark.',
     objectPosition: 'center 25%',
   },
   {
@@ -94,7 +93,7 @@ const MERCH_CATALOG: MerchItem[] = [
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/3bf3f794-fcb4-412a-a556-b3289bbebd39.jpeg',
     category: 'Official Outerwear',
-    description: 'Embroidered with worldwide extreme weather survivor succour donation mandate and "While..." prompt blockchain collectibles statement.',
+    description: 'Embroidered with the worldwide extreme weather survivor succour donation mandate and "While..." prompt statement.',
     objectPosition: 'center 25%',
   },
   {
@@ -1098,10 +1097,6 @@ export const MerchStorePage: React.FC = () => {
                     <StatusBadge status="SETTLED" />
                   </div>
 
-                  <div style={{ margin: '1rem 0' }}>
-                    <OpenSeaBadge transactionId={successResult.transactionId} licenseeId={selectedItem.licenseeId} />
-                  </div>
-
                   <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.09)', paddingTop: '1rem', marginTop: '1rem' }}>
                     <FinancialSplitBar
                       grossAmountCents={successResult.grossAmountCents}
@@ -1831,10 +1826,6 @@ export const MerchStorePage: React.FC = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Status:</span>
                     <StatusBadge status="SETTLED" />
-                  </div>
-
-                  <div style={{ margin: '1rem 0' }}>
-                    <OpenSeaBadge transactionId={successResult.transactionId} licenseeId="lic_ghg_official" />
                   </div>
 
                   <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.09)', paddingTop: '1rem', marginTop: '1rem' }}>

@@ -9,7 +9,6 @@ import {
 import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import { compositeAuditBadge } from './dual-logo-composite.service';
-import { mintAuditWarrantyToken } from './nft-minting.service';
 
 export class InvalidWorkflowTransitionError extends Error {
   constructor(public currentStatus: WorkflowStatus, public targetStatus: WorkflowStatus) {
@@ -59,8 +58,7 @@ export const VALID_TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
   [WorkflowStatus.REJECTED]: [WorkflowStatus.SUBMITTED],
   [WorkflowStatus.APPROVED]: [WorkflowStatus.PAID],
   [WorkflowStatus.PAID]: [WorkflowStatus.BADGE_ISSUED],
-  [WorkflowStatus.BADGE_ISSUED]: [WorkflowStatus.MINTED],
-  [WorkflowStatus.MINTED]: [],
+  [WorkflowStatus.BADGE_ISSUED]: [],
 };
 
 export class WorkflowEngineService {
@@ -669,76 +667,6 @@ export class WorkflowEngineService {
   }
 
   /**
-   * Screen 9: Minting to Polygon PoS ERC-1155 (BADGE_ISSUED -> MINTED)
-   * Validates wallet address, calls minting service, and transitions status.
-   */
-  async mintBadge(
-    submissionId: string,
-    licenseeId: string,
-    recipientAddress: string,
-    actor: { userId: string; role: string }
-  ) {
-    const trimmedAddress = (recipientAddress || '').trim();
-    const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
-
-    if (!trimmedAddress || !ethAddressRegex.test(trimmedAddress)) {
-      throw new Error(`Invalid wallet address format: '${recipientAddress}'. Must be a valid 42-character 0x-prefixed hex address.`);
-    }
-
-    const submission = await this.prisma.workflowSubmission.findUnique({
-      where: { id: submissionId },
-      include: { framework: true, licensee: true },
-    });
-
-    if (!submission) {
-      throw new Error(`Submission '${submissionId}' not found.`);
-    }
-
-    if (actor.role !== 'ADMIN' && submission.licenseeId !== licenseeId) {
-      throw new Error('Forbidden: Licensee mismatch.');
-    }
-
-    if (submission.status !== WorkflowStatus.BADGE_ISSUED) {
-      throw new InvalidWorkflowTransitionError(submission.status, WorkflowStatus.MINTED);
-    }
-
-    const mintResult = await mintAuditWarrantyToken({
-      credentialId: submission.id,
-      licenseeId: submission.licenseeId,
-      metadataUri: `/api/workflow/submissions/${submission.id}`,
-      recipientAddress: trimmedAddress,
-    });
-
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.workflowSubmission.update({
-        where: { id: submissionId },
-        data: {
-          status: WorkflowStatus.MINTED,
-          tokenId: mintResult.tokenId,
-          contractAddress: mintResult.contractAddress,
-          transactionHash: mintResult.transactionHash,
-          openSeaUrl: mintResult.openSeaUrl,
-          mintedAt: new Date(),
-        },
-      }),
-      this.prisma.workflowTransitionLog.create({
-        data: {
-          submissionId,
-          previousStatus: WorkflowStatus.BADGE_ISSUED,
-          newStatus: WorkflowStatus.MINTED,
-          triggeredBy: actor.userId,
-          triggerReason: `Token ID #${mintResult.tokenId} minted to ${trimmedAddress} on Polygon PoS`,
-        },
-      }),
-    ]);
-
-    return {
-      submission: updated,
-      mintResult,
-    };
-  }
-
-  /**
    * Screen 9 & 10: PDF Proof of Audit outcome stream generator.
    */
   async generatePdfProof(submissionId: string, licenseeId?: string): Promise<Buffer> {
@@ -828,25 +756,6 @@ export class WorkflowEngineService {
             .font('Helvetica-Oblique')
             .fillColor('#475569')
             .text(`"${submission.clientMessage}"`);
-          doc.moveDown(1);
-        }
-
-        // On-chain Minting Details
-        if (submission.tokenId) {
-          doc
-            .fontSize(11)
-            .font('Helvetica-Bold')
-            .fillColor('#0f172a')
-            .text('ERC-1155 ON-CHAIN COMMITMENT');
-          doc.moveDown(0.4);
-          doc
-            .fontSize(9)
-            .font('Courier')
-            .fillColor('#334155')
-            .text(`Token ID: ${submission.tokenId}`)
-            .text(`Contract: ${submission.contractAddress || '0x0000000000000000000000000000000000000000'}`)
-            .text(`Transaction: ${submission.transactionHash || 'Deterministic Pre-Mint Seal'}`)
-            .text(`OpenSea: ${submission.openSeaUrl || 'Pending Index'}`);
           doc.moveDown(1);
         }
 

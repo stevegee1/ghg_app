@@ -70,7 +70,6 @@ export function createAdminCharitiesRouter(prisma: PrismaClient, stripe: Stripe)
           daysRemaining,
           expiringSoon,
           stripeConnectedAccountId: c.stripeConnectedAccountId,
-          walletAddress: c.walletAddress,
           totalDisbursedCents,
           totalDisbursedGbp: (totalDisbursedCents / 100).toFixed(2),
         };
@@ -91,7 +90,6 @@ export function createAdminCharitiesRouter(prisma: PrismaClient, stripe: Stripe)
           daysRemaining: null,
           expiringSoon: false,
           stripeConnectedAccountId: null,
-          walletAddress: null,
           totalDisbursedCents: 0,
           totalDisbursedGbp: '0.00',
         });

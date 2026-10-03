@@ -3,7 +3,6 @@ import { useSearchParams, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
-import { OpenSeaBadge } from '../components/OpenSeaBadge';
 import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
 import { WorkflowWizard } from '../components/workflow/WorkflowWizard';
 import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
@@ -170,7 +169,7 @@ const TIERS = [
       'Automated ISO 14001, ISO 50001 & ISO 14064 diagnostic review',
       'Remote ICT verification stamp under ISO 19011:2026 Annex A.16',
       'Expedited 72-hour lead assurance review turnaround',
-      'Digital provenance warranty NFT token on Polygon PoS',
+      'Dual-logo readiness credential with public verification record',
     ],
   },
   {
@@ -208,7 +207,7 @@ const JOB_TIERS = [
       'Section 106 local authority workforce hours & apprentice validation',
       'Remote statutory verification docket under ISO 19011:2026 Annex A.16',
       'Direct 15% statutory endowment to local disaster relief / charity',
-      'Social Value digital provenance warranty NFT on Polygon PoS',
+      'Social Value readiness credential with public verification record',
     ],
   },
   {
@@ -266,7 +265,7 @@ export const PortalPage: React.FC = () => {
     const tab = params.get('tab') || params.get('view');
     if (tab === 'checklist' || tab === 'preparation') return 'checklist';
     if (tab === 'workflow' || tab === 'diagnostic') return 'workflow';
-    if (tab === 'credentials' || tab === 'nft') return 'credentials';
+    if (tab === 'credentials') return 'credentials';
     if (tab === 'transactions' || tab === 'settlement') return 'transactions';
     if (tab === 'profile' || tab === 'evidence') return 'profile';
     if (tab === 'legal') return 'legal';
@@ -563,9 +562,6 @@ export const PortalPage: React.FC = () => {
   const [compositePreview, setCompositePreview] = useState<string | null>(null);
   const [compositeLoading, setCompositeLoading] = useState(false);
   const [compositeError, setCompositeError] = useState<string | null>(null);
-  const [mintLoading, setMintLoading] = useState(false);
-  const [mintError, setMintError] = useState<string | null>(null);
-  const [mintResult, setMintResult] = useState<any | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
 
   // ── Job filing modal ──────────────────────────────────────────────────────
@@ -817,7 +813,7 @@ export const PortalPage: React.FC = () => {
     api.getMyCredentials(token)
       .then((res) => setCredentials(res.credentials || []))
       .catch(() => setCredentials([]));
-  }, [token, mintResult]);
+  }, [token]);
 
   // ── Answer change ─────────────────────────────────────────────────────────
   const handleAnswerChange = (questionId: string, value: string) => {
@@ -1086,34 +1082,6 @@ export const PortalPage: React.FC = () => {
       setCompositeError(err.message || 'Failed to generate preview.');
     } finally {
       setCompositeLoading(false);
-    }
-  };
-
-  // ── Mint credential ───────────────────────────────────────────────────────
-  const handleMint = async () => {
-    if (!token || !clientLogoFile || !clientMessage.trim() || !submissionId) return;
-    if (!isPaid) {
-      setMintError('Gate 2 Enforcement: Payment settlement is required before issuing and minting on-chain credentials.');
-      return;
-    }
-    if (auditScope === 'CARBON_EMISSION' && !isAuditReady) {
-      setMintError('Gate 3 Enforcement: Lead Auditor AUDIT_READY clearance is required before issuing and minting on-chain credentials.');
-      return;
-    }
-    setMintLoading(true);
-    setMintError(null);
-    try {
-      const res = await api.mintCredential(token, {
-        clientLogoFile,
-        clientMessage,
-        submissionId,
-      });
-      setMintResult(res);
-      setActiveStep(5);
-    } catch (err: any) {
-      setMintError(err.message || 'Minting failed.');
-    } finally {
-      setMintLoading(false);
     }
   };
 
@@ -1400,7 +1368,7 @@ export const PortalPage: React.FC = () => {
         { label: 'Settled Transactions', value: loading ? '...' : settledCount.toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
         { label: 'Settled Gross Volume', value: loading ? '...' : `\u00a3${(settledGrossCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
         { label: '15% ESG Charity Split', value: loading ? '...' : `\u00a3${(settledCharityCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: 'var(--color-sky)' },
-        { label: 'Active Credentials', value: loading ? '...' : credentials.length.toString(), sub: 'Polygon ERC-1155 Minted', accent: 'var(--google-amber)' },
+        { label: 'Active Credentials', value: loading ? '...' : credentials.length.toString(), sub: 'Issued readiness credentials', accent: 'var(--google-amber)' },
       ]
     : [
         { label: 'Total Verified Jobs', value: loading ? '...' : totalVerifiedJobs.toLocaleString(), sub: 'Section 106 Local Impact', accent: 'var(--color-sky)' },
@@ -1778,7 +1746,7 @@ export const PortalPage: React.FC = () => {
                   Action Required: Corporate Email Verification Pending
                 </div>
                 <div style={{ fontSize: '0.82rem', color: '#78350f', lineHeight: 1.45 }}>
-                  A verification link was dispatched to <strong>{user.email}</strong>. Corporate email verification is required to unlock statutory ISO 19011 warranty claims, S106 filings, and Polygon PoS credential issuance.
+                  A verification link was dispatched to <strong>{user.email}</strong>. Corporate email verification is required to unlock statutory ISO 19011 warranty claims, S106 filings, and credential issuance.
                 </div>
                 {resendStatus && (
                   <div style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 600, marginTop: '0.35rem' }}>

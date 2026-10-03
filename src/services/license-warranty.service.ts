@@ -52,7 +52,7 @@ export class LicenseWarrantyService {
       where: { id: licenseeId },
       include: {
         auditWarrantyCredentials: {
-          where: { status: 'MINTED' },
+          where: { status: 'ISSUED' },
           orderBy: { createdAt: 'desc' },
           take: 1,
         },

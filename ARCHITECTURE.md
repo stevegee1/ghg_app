@@ -1,6 +1,6 @@
 # System Architecture & Technical Specification
 ## GHGEmissionLogs (NFTY LOGS LABS LTD)
-### Continuous Climate Telemetry, Statutory Workforce Assurance & On-Chain Provenance Ledger
+### Continuous Climate Telemetry, Statutory Workforce Assurance & Verified Credential Registry
 
 ---
 
@@ -14,7 +14,7 @@ The system features:
 * **Hardware Calibration & Anomaly Screening:** Sub-second screening of IoT telemetry streams against ISO 17025 calibration certificates with automated non-conformance logging.
 * **Cryptographic Evidence Locker:** SHA-256 content-addressable storage for regulatory filings and third-party audit dossiers.
 * **Statutory ESG Financial Splits:** Immutable automated split engine disbursing 85% to licensors and 15% to statutory climate and humanitarian charities via Stripe Connect.
-* **Tamper-Resistant On-Chain Provenance:** Co-branded dual-logo credentials and Polygon PoS ERC-1155 dynamic web-embed badges backed by UKIPO Registered Trade Mark UK00003980004.
+* **Verified Credentials:** Co-branded dual-logo credentials with SHA-256 verification seals, public verification records and embeddable web badges backed by UKIPO Registered Trade Mark UK00003980004.
 
 ```
 +----------------------------------------------------------------------------------------------------+
@@ -47,8 +47,8 @@ The system features:
 |  |  Anomaly Screener (PUE)  | |   (19011:2026 Audit)     | |    Defensive Category Validation   |  |
 |  +--------------------------+ +--------------------------+ +------------------------------------+  |
 |  +--------------------------+ +--------------------------+ +------------------------------------+  |
-|  |  Stripe Connect Split    | |  Dual-Logo Compositor    | |   Polygon ERC-1155 Token Minting   |  |
-|  |  Disbursement (85/15)    | |  SVG / Canvas Watermark  | |   On-Chain Provenance Contract     |  |
+|  |  Stripe Connect Split    | |  Dual-Logo Compositor    | |   Credential Issuance & Public     |  |
+|  |  Disbursement (85/15)    | |  SVG / Canvas Watermark  | |   Verification Records             |  |
 |  +--------------------------+ +--------------------------+ +------------------------------------+  |
 +----------------------------------------------------------------------------------------------------+
                                                   |
@@ -210,7 +210,7 @@ The platform supports modular framework selection:
  [AUDIT_READY]                   [REVISION_REQUIRED]
        │                                 │
        ▼ (Stripe Checkout settlement)    ▼ (Licensee remediates)
-   [APPROVED] ──> Mints ERC-1155 Token
+   [APPROVED] ──> Issues dual-logo credential
 ```
 
 ---
@@ -250,14 +250,11 @@ To prevent greenwashing and enforce genuine social impact, platform transactions
 
 ## 7. Cryptographic Provenance & Dual-Logo Credential Engine
 
-### 7.1 On-Chain Polygon PoS Lifecycle
-Upon reaching `APPROVED` status, the platform generates a permanent provenance asset:
+### 7.1 Credential Issuance Lifecycle
+Upon approval and verified payment, the platform issues a credential recorded in the platform database:
 1. **Asset Generation:** `src/services/dual-logo-composite.service.ts` combines the licensee's corporate mark with the statutory UKIPO Registered Trade Mark UK00003980004.
-2. **Metadata Formulation:** Formulates an ERC-1155 JSON schema containing:
-   * Verification seal (SHA-256 of `licenseeId + compositeBadgeUrl + timestamp`).
-   * Audit score and attested ISO frameworks.
-   * One-year statutory warranty expiration date.
-3. **Smart Contract Minting:** `src/services/nft-minting.service.ts` interacts with the Polygon ERC-1155 contract, recording `tokenId`, `transactionHash`, and `openSeaUrl`.
+2. **Verification Seal:** A SHA-256 seal is computed over the licensee, attestation message, badge and issue date, alongside the attested frameworks and the one-year warranty expiry.
+3. **Public Verification:** `GET /api/credentials/:id/verify` serves the verification record, and `GET /api/credentials/:id/badge.svg` serves the badge. No blockchain is used.
 
 ### 7.2 Dynamic Embeddable Badge (`<iframe />` & SVG)
 * Licensees embed their live compliance badge using `GET /api/credentials/embed/:id`.
@@ -311,9 +308,9 @@ Upon reaching `APPROVED` status, the platform generates a permanent provenance a
 | id (cuid, PK)                      |          | id (cuid, PK)                      |
 | submissionId (FK, Unique)          |          | licenseeId (FK)                    |
 | compositeBadgeUrl (String)         |          | fileName (String)                  |
-| tokenId (String, Polygon PoS)      |          | category (Enum: SCADA, OTHER...)   |
-| verificationSeal (SHA-256)         |          | fileUrl (String)                   |
-| status (Enum: PENDING, MINTED)     |          | sha256Hash (String)                |
+| verificationSeal (SHA-256)         |          | category (Enum: SCADA, OTHER...)   |
+| warrantyExpiresAt (DateTime)       |          | fileUrl (String)                   |
+| status (Enum: PENDING, ISSUED)     |          | sha256Hash (String)                |
 +------------------------------------+          +------------------------------------+
 ```
 

@@ -133,7 +133,7 @@ describe('Part C — ESG Split Engine & Charity Lifecycle', () => {
       expect(res.body.registrationOpen).toBe(true);
     });
 
-    it('POST /api/charities/apply successfully creates a PENDING_APPLICATION without Stripe or wallet info', async () => {
+    it('POST /api/charities/apply successfully creates a PENDING_APPLICATION without Stripe info', async () => {
       const res = await request(app)
         .post('/api/charities/apply')
         .send({
@@ -151,7 +151,6 @@ describe('Part C — ESG Split Engine & Charity Lifecycle', () => {
       const dbCharity = await prisma.charity.findUnique({ where: { id: res.body.charity.id } });
       expect(dbCharity).toBeDefined();
       expect(dbCharity!.stripeConnectedAccountId).toBeNull();
-      expect(dbCharity!.walletAddress).toBeNull();
     });
 
     it('POST /api/charities/apply validates required fields', async () => {
@@ -286,7 +285,7 @@ describe('Part C — ESG Split Engine & Charity Lifecycle', () => {
     });
   });
 
-  describe('4. Proof of Partnership PDF & On-Chain Wallet Linking (Step 4 & 5)', () => {
+  describe('4. Proof of Partnership PDF (Step 4)', () => {
     let activeCharityId: string;
 
     beforeAll(async () => {
@@ -305,47 +304,6 @@ describe('Part C — ESG Split Engine & Charity Lifecycle', () => {
       expect(res.headers['content-disposition']).toContain(`GHG-Charity-Partnership-${activeCharityId}.pdf`);
       // PDF file signature begins with %PDF-
       expect(res.body.slice(0, 5).toString('ascii')).toBe('%PDF-');
-    });
-
-    it('PATCH /api/charities/:id/wallet rejects invalid EVM hex addresses', async () => {
-      const res = await request(app)
-        .patch(`/api/charities/${activeCharityId}/wallet`)
-        .send({ walletAddress: 'not-an-evm-address' })
-        .expect(400);
-
-      expect(res.body.error).toContain('Invalid EVM/Polygon wallet address');
-    });
-
-    it('PATCH /api/charities/:id/wallet updates walletAddress when charity is ACTIVE', async () => {
-      const testWallet = '0x1234567890123456789012345678901234567890';
-      const res = await request(app)
-        .patch(`/api/charities/${activeCharityId}/wallet`)
-        .send({ walletAddress: testWallet })
-        .expect(200);
-
-      expect(res.body.success).toBe(true);
-      expect(res.body.walletAddress).toBe(testWallet);
-
-      const dbCharity = await prisma.charity.findUnique({ where: { id: activeCharityId } });
-      expect(dbCharity!.walletAddress).toBe(testWallet);
-    });
-
-    it('PATCH /api/charities/:id/wallet rejects if charity is not ACTIVE', async () => {
-      // Create a pending charity
-      const pending = await prisma.charity.create({
-        data: {
-          name: 'Pending Org',
-          contactEmail: 'pending@org.com',
-          status: CharityStatus.PENDING_APPLICATION,
-        },
-      });
-
-      const res = await request(app)
-        .patch(`/api/charities/${pending.id}/wallet`)
-        .send({ walletAddress: '0x1234567890123456789012345678901234567890' })
-        .expect(400);
-
-      expect(res.body.error).toContain('can only be linked once charity is ACTIVE');
     });
   });
 

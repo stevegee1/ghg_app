@@ -60,7 +60,7 @@ beforeAll(async () => {
       clientLogoUrl: '/test-logo.png',
       compositeBadgeUrl: 'data:image/svg+xml;base64,PHN2Zz4=',
       warrantyExpiresAt: new Date(Date.now() + 200 * 24 * 60 * 60 * 1000),
-      status: CredentialStatus.MINTED,
+      status: CredentialStatus.ISSUED,
       allowedOrigins: ['https://corp.example.com', 'https://app.corp.example.com'],
     },
   });

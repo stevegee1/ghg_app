@@ -8014,7 +8014,7 @@ h4 {
   background: #059669;
 }
 
-/* Stage 3 Blockchain Styles */
+/* Stage 3 Verification Seal Styles */
 .pe-seal-showcase {
   display: flex;
   align-items: center;
@@ -8667,7 +8667,7 @@ a:not([class]):hover {
   }
 }
 
-/* ── 8. Blockchain / Badge Credential (≤ 640px) ──────────────────────────── */
+/* ── 8. Badge Credential (≤ 640px) ──────────────────────────── */
 @media (max-width: 640px) {
   /* Badge embed preview: scale down */
   .badge-embed-preview {

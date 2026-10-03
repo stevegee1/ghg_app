@@ -198,9 +198,9 @@ export const Layout: React.FC = () => {
 
                     <div>
                       <div className="mobile-subheading">03 Provenance</div>
-                      <Link to={getSolutionPath('/portal?tab=nft')} className="mobile-sublink" onClick={closeDropdowns}>
-                        <div className="mobile-sublink-title">Polygon ERC-1155 NFT</div>
-                        <div className="mobile-sublink-desc">On-chain tamper-evident warranty</div>
+                      <Link to={getSolutionPath('/portal?tab=credentials')} className="mobile-sublink" onClick={closeDropdowns}>
+                        <div className="mobile-sublink-title">Verified Credentials</div>
+                        <div className="mobile-sublink-desc">Publicly verifiable audit warranty</div>
                       </Link>
                       <Link to={getSolutionPath('/portal?tab=studio')} className="mobile-sublink" onClick={closeDropdowns}>
                         <div className="mobile-sublink-title">Dual-Logo Studio</div>
@@ -323,7 +323,7 @@ export const Layout: React.FC = () => {
                         </ul>
                       </div>
 
-                      {/* Column 03: On-Chain Provenance (Governance & Social Endowment) */}
+                      {/* Column 03: Provenance (Governance & Social Endowment) */}
                       <div>
                         <div className="mega-col-header">
                           <div className="mega-col-number">
@@ -333,16 +333,16 @@ export const Layout: React.FC = () => {
                             <span>03</span>
                           </div>
                           <h4 className="mega-col-title">Provenance</h4>
-                          <p className="mega-col-subtitle">Endowment & on-chain</p>
+                          <p className="mega-col-subtitle">Endowment & credentials</p>
                         </div>
 
                         <ul className="mega-link-list">
                           <li>
-                            <Link to={getSolutionPath('/portal?tab=nft')} className="mega-item-link" onClick={closeDropdowns}>
+                            <Link to={getSolutionPath('/portal?tab=credentials')} className="mega-item-link" onClick={closeDropdowns}>
                               <div className="mega-item-name">
-                                <span>Polygon ERC-1155 NFT</span>
+                                <span>Verified Credentials</span>
                               </div>
-                              <div className="mega-item-desc">Permanent tamper-evident warranty</div>
+                              <div className="mega-item-desc">Publicly verifiable audit warranty</div>
                             </Link>
                           </li>
                           <li>
@@ -409,11 +409,11 @@ export const Layout: React.FC = () => {
                             </li>
                             <li>
                               <Link
-                                to={getSolutionPath('/portal?tab=nft')}
+                                to={getSolutionPath('/portal?tab=credentials')}
                                 className="mega-intent-item"
                                 onClick={closeDropdowns}
                               >
-                                <span>I want an audit warranty NFT</span>
+                                <span>I want a verified audit credential</span>
                                 <span>→</span>
                               </Link>
                             </li>

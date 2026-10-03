@@ -292,7 +292,7 @@ export const LeadAuditorSubmissionModal: React.FC<LeadAuditorSubmissionModalProp
                     Step 3: Gate 1 Commercial Clearance and Stripe Checkout
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Unlocks automatically when Lead Auditor issues sign-off. Enables official credential minting.
+                    Unlocks automatically when Lead Auditor issues sign-off. Enables official credential issuance.
                   </div>
                 </div>
               </div>

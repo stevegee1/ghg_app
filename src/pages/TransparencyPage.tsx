@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { OpenSeaBadge } from '../components/OpenSeaBadge';
 
 const PILLAR_LABELS: Record<string, string> = {
   REFORESTATION_AND_LAND: 'Reforestation & Land',
@@ -155,7 +154,7 @@ export const TransparencyPage: React.FC = () => {
           <div style={{ fontSize: '1.65rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.25rem', fontFamily: 'var(--font-mono)' }}>
             {ledgerLoading ? '...' : (data?.totalSettledTransactions ?? 0).toLocaleString()}
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--color-sky)', marginTop: '0.2rem', fontWeight: 500 }}>Verified On-Chain & Ledger</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-sky)', marginTop: '0.2rem', fontWeight: 500 }}>Verified Settlement Ledger</div>
         </div>
 
         <div className="persefoni-card" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
@@ -391,7 +390,6 @@ export const TransparencyPage: React.FC = () => {
                   <th style={{ padding: '0.75rem 1rem' }}>Licensee ID</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Annual Carbon</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Warranty</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>On-Chain</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Action</th>
                 </tr>
               </thead>
@@ -405,9 +403,6 @@ export const TransparencyPage: React.FC = () => {
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', backgroundColor: 'var(--color-green-light)', color: 'var(--color-green-dark)', padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontSize: '0.72rem', fontWeight: 700 }}>
                         Active
                       </span>
-                    </td>
-                    <td style={{ padding: '1rem' }}>
-                      <OpenSeaBadge licenseeId={partner.licenseeId} />
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <Link to={`/partner-logo-drop?licenseeId=${partner.licenseeId}`} style={{ color: 'var(--color-sky)', fontWeight: 700, textDecoration: 'none', fontSize: '0.8rem' }}>

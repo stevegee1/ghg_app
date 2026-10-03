@@ -218,7 +218,7 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
 
-  // Step 4 Dual Logo & NFT State
+  // Step 4 Dual Logo & Credential State
   const [succinctMessage, setSuccinctMessage] = useState(
     scope === 'JOB_REPORTING'
       ? 'Certified Section 106 Local Employment and Social Value Impact.'
@@ -226,7 +226,7 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
   );
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [uploadedLogoFile, setUploadedLogoFile] = useState<File | null>(null);
-  const [minting, setMinting] = useState(false);
+  const [issuing, setIssuing] = useState(false);
   const [credentialData, setCredentialData] = useState<any | null>(null);
 
   // ── Statutory Step Completion & Gating Rules ─────────────────────────────
@@ -275,7 +275,7 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
       } else if (step === 3) {
         setStepError('Stage 3 Statutory Checkout is locked. You must clear Stage 2 Conformance (minimum 80% readiness score and acceptance of terms).');
       } else if (step === 4) {
-        setStepError('Stage 4 Dual-Mark & Warranty Minting is locked. Please complete Stage 3 Statutory Settlement.');
+        setStepError('Stage 4 Dual-Mark & Warranty Issuance is locked. Please complete Stage 3 Statutory Settlement.');
       } else if (step === 5) {
         setStepError('Stage 5 Telemetry & Deployment is locked until statutory assurance credentials are issued.');
       }
@@ -345,8 +345,7 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
           }
           if (sub.hasCredential) {
             setCredentialData({
-              id: sub.id,
-              openSeaUrl: sub.openSeaUrl,
+              id: sub.credentialId,
               status: sub.credentialStatus,
             });
             if (initialStep === 1) {
@@ -504,32 +503,31 @@ export const ReadinessEngineWorkflow: React.FC<ReadinessEngineWorkflowProps> = (
     }
   };
 
-  // Step 4: Mint Polygon ERC-1155 Token (Deterministic: requires server credential, no mock tokens)
-  const handleMintToken = async () => {
+  // Step 4: Issue the dual-logo readiness credential from the platform database
+  const handleIssueCredential = async () => {
     if (!uploadedLogoFile) {
-      setStepError('Please upload your official company logo before minting.');
+      setStepError('Please upload your official company logo before issuing the credential.');
       return;
     }
-    setMinting(true);
+    setIssuing(true);
     setStepError(null);
     try {
-      const mintRes = await api.mintCredential(token || '', {
+      const issueRes = await api.issueCredential(token || '', {
         clientLogoFile: uploadedLogoFile,
         clientMessage: succinctMessage,
         submissionId: submissionId || '',
       });
 
-      if (mintRes?.credential) {
-        setCredentialData(mintRes.credential);
+      if (issueRes?.credentialId) {
+        setCredentialData({ id: issueRes.credentialId, status: issueRes.status });
         goToStep(5);
       } else {
-        throw new Error('Token minting did not return a valid attestation credential.');
+        throw new Error('Credential issuance did not return a credential record.');
       }
     } catch (err: any) {
-      console.error('[Minting Error]', err);
-      setStepError(err.message || 'Credential minting failed. Please verify that your account has verified payment and try again.');
+      setStepError(err.message || 'Credential issuance failed. Please verify that your account has verified payment and try again.');
     } finally {
-      setMinting(false);
+      setIssuing(false);
       onRefreshStatus?.();
     }
   };
@@ -740,7 +738,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                       } else if (step === 3) {
                         setStepError('Stage 3 Statutory Checkout is locked. You must clear Stage 2 Conformance (minimum 80% readiness score and acceptance of terms).');
                       } else if (step === 4) {
-                        setStepError('Stage 4 Dual-Mark & Warranty Minting is locked. Please complete Stage 3 Statutory Settlement.');
+                        setStepError('Stage 4 Dual-Mark & Warranty Issuance is locked. Please complete Stage 3 Statutory Settlement.');
                       } else if (step === 5) {
                         setStepError('Stage 5 Telemetry & Deployment is locked until statutory assurance credentials are issued.');
                       }
@@ -1806,8 +1804,8 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   </div>
                   <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>
                     {scope === 'JOB_REPORTING'
-                      ? 'Includes 1-year verified social value warranty, Polygon ERC-1155 token issuance, and continuous workforce telemetry monitoring.'
-                      : 'Includes 1-year verified mark license, Polygon ERC-1155 token issuance, and continuous telemetry monitoring.'}
+                      ? 'Includes 1-year verified social value warranty, a publicly verifiable credential, and continuous workforce telemetry monitoring.'
+                      : 'Includes 1-year verified mark license, a publicly verifiable credential, and continuous telemetry monitoring.'}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -1894,7 +1892,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
           </div>
         )}
 
-        {/* STEP 4: Dual-Logo Studio & NFT */}
+        {/* STEP 4: Dual-Logo Studio & Credential */}
         {activeStep === 4 && (
           !isPaid ? (
             <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '3rem 2rem', textAlign: 'center', maxWidth: '600px', margin: '2rem auto' }}>
@@ -1905,7 +1903,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                 Settlement Verification Required
               </h2>
               <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
-                Credential Studio and Polygon ERC-1155 token minting are locked until statutory assurance fees are settled under ISO 19011:2026.
+                Credential Studio and credential issuance are locked until statutory assurance fees are settled under ISO 19011:2026.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
@@ -1966,8 +1964,8 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
               }}
             >
               {scope === 'JOB_REPORTING'
-                ? 'Upload your company mark and succinct social value commitment statement to mint your Polygon ERC-1155 token.'
-                : 'Upload your company mark and succinct commitment statement to mint your Polygon ERC-1155 token.'}
+                ? 'Upload your company mark and succinct social value commitment statement to issue your readiness credential.'
+                : 'Upload your company mark and succinct commitment statement to issue your readiness credential.'}
             </p>
 
             <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '0 0 1.75rem 0' }} />
@@ -2076,7 +2074,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                     "{succinctMessage}"
                   </p>
                   <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    • Polygon ERC-1155 Token Mint Ready •
+                    • Ready to Issue •
                   </div>
                 </div>
               </div>
@@ -2111,8 +2109,8 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
 
               <button
                 type="button"
-                onClick={handleMintToken}
-                disabled={minting}
+                onClick={handleIssueCredential}
+                disabled={issuing}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -2124,11 +2122,11 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                   fontWeight: 500,
                   borderRadius: '8px',
                   border: 'none',
-                  cursor: minting ? 'wait' : 'pointer',
+                  cursor: issuing ? 'wait' : 'pointer',
                   transition: 'background-color 0.15s ease',
                 }}
               >
-                {minting ? 'Minting on Polygon...' : 'Mint Credential & Continue →'}
+                {issuing ? 'Issuing credential...' : 'Issue Credential & Continue →'}
               </button>
             </div>
           </div>
@@ -2439,7 +2437,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                 </div>
 
                 <span style={{ fontSize: '0.72rem', color: previewTheme === 'LIGHT' ? '#94a3b8' : '#64748b', zIndex: 1 }}>
-                  Interactive Preview · Click Ledger to verify on-chain registry provenance
+                  Interactive Preview · Click Ledger to view the public transparency record
                 </span>
               </div>
             </div>
@@ -2601,7 +2599,7 @@ curl -X POST "${appOrigin}/api/iso/telemetry/ingest" \\
                     Audit Warranty Credentials Locker
                   </h4>
                   <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>
-                    Inspect issued badges, on-chain tokens &amp; download PDF proofs.
+                    Inspect issued badges, verification records &amp; download PDF proofs.
                   </p>
                 </div>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>

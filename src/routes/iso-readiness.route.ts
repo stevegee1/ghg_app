@@ -635,7 +635,7 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
         selectedFrameworks: sub.selectedFrameworks,
         hasCredential: !!sub.credential,
         credentialStatus: sub.credential?.status || null,
-        openSeaUrl: sub.credential?.openSeaUrl || null,
+        credentialId: sub.credential?.id || null,
         createdAt: sub.createdAt,
         updatedAt: sub.updatedAt,
         answers: sub.answers,
@@ -655,7 +655,7 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
               selectedFrameworks: latest.selectedFrameworks,
               hasCredential: !!latest.credential,
               credentialStatus: latest.credential?.status || null,
-              openSeaUrl: latest.credential?.openSeaUrl || null,
+              credentialId: latest.credential?.id || null,
               createdAt: latest.createdAt,
               updatedAt: latest.updatedAt,
             }

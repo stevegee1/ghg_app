@@ -130,7 +130,6 @@ model Charity {
   status                   CharityStatus @default(ACTIVE)
   contractStartDate        DateTime?
   contractEndDate          DateTime?
-  walletAddress            String?
   registeredCharityNumber  String?
   contactEmail             String?
   statement                String?
@@ -484,7 +483,6 @@ model CustomKeepsakeSpec {
   placement         String // "LEFT_CHEST", "RIGHT_SLEEVE", "BACK_COLLAR"
   artisanLaborHours Float       @default(1.5)
   lcaCarbonGrams    Int         @default(450)
-  openSeaTokenUri   String?
   // Sports milestone customizer fields
   isGoalFrenzy      Boolean     @default(false)
   sportType         String? // e.g. "Football", "Basketball", "Rugby", "Tennis", "Athletics", "Running", "Motorsport"
@@ -661,13 +659,13 @@ model IsoReadinessSubmission {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AUDIT WARRANTY CREDENTIAL: ERC-1155 token lifecycle on Polygon PoS
+// AUDIT WARRANTY CREDENTIAL: issued and verified from the platform database
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum CredentialStatus {
   PENDING
   COMPOSITED
-  MINTED
+  ISSUED
   REVOKED
 }
 
@@ -684,11 +682,6 @@ model AuditWarrantyCredential {
   selectedFrameworks String[]               @default([])
   operationalHealth  String                 @default("ACTIVE")
   allowedOrigins     String[]               @default([])
-  /// Polygon PoS ERC-1155 token ID (numeric string)
-  tokenId            String?
-  contractAddress    String?
-  transactionHash    String?
-  openSeaUrl         String?
   /// 1 year from issuance
   warrantyExpiresAt  DateTime?
   /// SHA-256 of (licenseeId + clientMessage + compositeBadgeUrl + issuedAt)
@@ -757,7 +750,6 @@ enum WorkflowStatus {
   REJECTED
   PAID
   BADGE_ISSUED
-  MINTED
 }
 
 enum WorkflowAnswerType {
@@ -823,11 +815,6 @@ model WorkflowSubmission {
   clientMessage     String?
   clientLogoUrl     String?
   compositeBadgeUrl String?
-  tokenId           String?
-  contractAddress   String?
-  transactionHash   String?
-  openSeaUrl        String?
-  mintedAt          DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 

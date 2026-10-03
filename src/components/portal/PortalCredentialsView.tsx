@@ -31,7 +31,7 @@ export const PortalCredentialsView: React.FC<PortalCredentialsViewProps> = ({
             Issued Audit Warranty Credentials
           </h2>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-            Polygon PoS ERC-1155 tokens attesting 1-year statutory audit warranty
+            Dual-logo readiness credentials with a 1-year audit warranty and public verification record
           </p>
         </div>
         <button
@@ -48,7 +48,7 @@ export const PortalCredentialsView: React.FC<PortalCredentialsViewProps> = ({
         <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--bg-subtle)', borderRadius: '10px' }}>
           <p style={{ margin: '0 0 0.5rem 0', fontWeight: 700, color: 'var(--text-main)' }}>No credentials issued yet</p>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 1.25rem 0', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto' }}>
-            Complete your diagnostic evaluation in the Assurance Workflow Studio to generate and mint your tokenized audit badge.
+            Complete your diagnostic evaluation in the Assurance Workflow Studio to generate and issue your audit badge.
           </p>
           <button
             type="button"
@@ -64,10 +64,9 @@ export const PortalCredentialsView: React.FC<PortalCredentialsViewProps> = ({
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
                 <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Credential ID</th>
-                <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Token ID</th>
                 <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Status</th>
                 <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Warranty Expires</th>
-                <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>OpenSea</th>
+                <th style={{ padding: '0.65rem 1rem', textAlign: 'left' }}>Verification</th>
               </tr>
             </thead>
             <tbody>
@@ -75,9 +74,6 @@ export const PortalCredentialsView: React.FC<PortalCredentialsViewProps> = ({
                 <tr key={cred.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                   <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {cred.id.substring(0, 18)}...
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--color-sky)' }}>
-                    {cred.tokenId || '-'}
                   </td>
                   <td style={{ padding: '0.85rem 1rem' }}>
                     <StatusBadge status={cred.status} />
@@ -88,11 +84,11 @@ export const PortalCredentialsView: React.FC<PortalCredentialsViewProps> = ({
                       : '-'}
                   </td>
                   <td style={{ padding: '0.85rem 1rem' }}>
-                    {cred.openSeaUrl ? (
-                      <a href={cred.openSeaUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2081E2', fontSize: '0.8rem', fontWeight: 600 }}>
-                        OpenSea
+                    {cred.status === 'ISSUED' ? (
+                      <a href={`/api/credentials/${cred.id}/verify`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-sky)', fontSize: '0.8rem', fontWeight: 600 }}>
+                        Verify
                       </a>
-                    ) : <span style={{ color: 'var(--text-muted)' }}>Pending</span>}
+                    ) : <span style={{ color: 'var(--text-muted)' }}>Not issued</span>}
                   </td>
                 </tr>
               ))}

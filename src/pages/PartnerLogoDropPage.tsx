@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { BrandLogoUploader } from '../components/BrandLogoUploader';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
-import { OpenSeaBadge } from '../components/OpenSeaBadge';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const PartnerLogoDropPage: React.FC = () => {
@@ -100,9 +99,9 @@ export const PartnerLogoDropPage: React.FC = () => {
             </div>
 
             <div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Digital Provenance</div>
-              <div style={{ marginTop: '0.5rem' }}>
-                <OpenSeaBadge transactionId={successResult.transactionId} licenseeId={licenseeId} />
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Transaction Reference</div>
+              <div style={{ marginTop: '0.25rem', fontWeight: 600 }}>
+                <code>{successResult.transactionId}</code>
               </div>
             </div>
           </div>
@@ -141,7 +140,7 @@ export const PartnerLogoDropPage: React.FC = () => {
 
               {/* Logo Upload Component */}
               <BrandLogoUploader
-                initialLogoUrl={user?.companyLogoUrl || ''}
+                initialLogoUrl={user?.logoUrl || ''}
                 initialLogoName={user?.companyName || ''}
                 onLogoSelected={(url, name) => {
                   setLogoUrl(url);

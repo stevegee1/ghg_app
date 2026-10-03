@@ -128,7 +128,7 @@ export function createBadgeEmbedRouter(prisma: PrismaClient): Router {
 
       // Check for most recent credential to get framework text & allowed origins
       const credential = await prisma.auditWarrantyCredential.findFirst({
-        where: { licenseeId: licenseeId.trim(), status: 'MINTED' },
+        where: { licenseeId: licenseeId.trim(), status: 'ISSUED' },
         orderBy: { createdAt: 'desc' },
       });
 

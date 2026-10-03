@@ -330,16 +330,16 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body.error).toContain('Cannot edit answers while submission is in SUBMITTED status');
     });
 
-    it('Illegal status leap (e.g. SUBMITTED -> MINTED) fails with 400 InvalidWorkflowTransitionError', async () => {
+    it('Illegal status leap (e.g. SUBMITTED -> BADGE_ISSUED) fails with 400 InvalidWorkflowTransitionError', async () => {
       const res = await request(app)
         .post(`/api/workflow/submissions/${submissionId}/transition`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          targetStatus: WorkflowStatus.MINTED,
+          targetStatus: WorkflowStatus.BADGE_ISSUED,
         })
         .expect(400);
 
-      expect(res.body.error).toContain('Invalid workflow transition from SUBMITTED to MINTED');
+      expect(res.body.error).toContain('Invalid workflow transition from SUBMITTED to BADGE_ISSUED');
     });
 
     it('Non-admin user cannot transition submission to UNDER_REVIEW (400 Forbidden)', async () => {
@@ -495,7 +495,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
     });
   });
 
-  describe('5. Full Approval, Payment, and Minting Pipeline (Part B.1)', () => {
+  describe('5. Full Approval, Payment, and Badge Pipeline (Part B.1)', () => {
     let submissionId: string;
     let q1: any;
 
@@ -554,7 +554,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body.submission.complianceScore).toBe(100);
     });
 
-    it('Completes lifecycle: APPROVED -> PAID -> BADGE_ISSUED -> MINTED with complete audit log', async () => {
+    it('Completes lifecycle: APPROVED -> PAID -> BADGE_ISSUED with complete audit log', async () => {
       // 1. APPROVED -> PAID
       await request(app)
         .post(`/api/workflow/submissions/${submissionId}/transition`)
@@ -569,20 +569,13 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .send({ targetStatus: WorkflowStatus.BADGE_ISSUED, reason: 'Dual logo composite badge generated' })
         .expect(200);
 
-      // 3. BADGE_ISSUED -> MINTED
-      await request(app)
-        .post(`/api/workflow/submissions/${submissionId}/transition`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({ targetStatus: WorkflowStatus.MINTED, reason: 'ERC-1155 token minted on Polygon PoS' })
-        .expect(200);
-
       // Verify the final submission state and complete log
       const dossier = await request(app)
         .get(`/api/workflow/submissions/${submissionId}`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .expect(200);
 
-      expect(dossier.body.submission.status).toBe(WorkflowStatus.MINTED);
+      expect(dossier.body.submission.status).toBe(WorkflowStatus.BADGE_ISSUED);
       expect(dossier.body.submission.paidAt).toBeDefined();
 
       const logStatuses = dossier.body.submission.transitions.map((l: any) => l.newStatus);
@@ -593,7 +586,6 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         WorkflowStatus.APPROVED,
         WorkflowStatus.PAID,
         WorkflowStatus.BADGE_ISSUED,
-        WorkflowStatus.MINTED,
       ]);
     });
   });
@@ -641,7 +633,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
     });
   });
 
-  describe('7. Screens 7–11 Lifecycle Endpoints (Checkout, Badge Setup, Mint, PDF, Telemetry)', () => {
+  describe('7. Screens 7–11 Lifecycle Endpoints (Checkout, Badge Setup, PDF, Telemetry)', () => {
     let lifecycleSubId: string;
 
     beforeAll(async () => {
@@ -694,7 +686,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .send({
           overallDecision: 'APPROVED',
           overallScore: 100,
-          reviewerNotes: 'Approved for production checkout and minting.',
+          reviewerNotes: 'Approved for production checkout and badge issuance.',
           perQuestionDecisions: qIds.map((qid) => ({ questionId: qid, accepted: true, reasonIfRejected: null })),
         })
         .expect(200);
@@ -733,21 +725,6 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body.submission.clientMessage).toBe('Net Zero Operational Attestation 2026');
     });
 
-    it('Screen 9: POST /api/workflow/submissions/:id/mint records wallet address and polygon tx hash', async () => {
-      const res = await request(app)
-        .post(`/api/workflow/submissions/${lifecycleSubId}/mint`)
-        .set('Authorization', `Bearer ${partnerTokenA}`)
-        .send({
-          recipientAddress: '0x71C841832049987C653199d7559eB8b99c080eE1',
-        })
-        .expect(200);
-
-      expect(res.body.success).toBe(true);
-      expect(res.body.submission.status).toBe(WorkflowStatus.MINTED);
-      expect(res.body.submission.tokenId).toBeDefined();
-      expect(res.body.mintResult).toBeDefined();
-    });
-
     it('Screen 9: GET /api/workflow/submissions/:id/download-pdf streams audit certificate PDF', async () => {
       const res = await request(app)
         .get(`/api/workflow/submissions/${lifecycleSubId}/download-pdf`)
@@ -759,7 +736,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body).toBeDefined();
     });
 
-    it('Screen 10: GET /api/workflow/my-badges returns minted and issued credentials for licensee', async () => {
+    it('Screen 10: GET /api/workflow/my-badges returns issued badges for licensee', async () => {
       const res = await request(app)
         .get('/api/workflow/my-badges')
         .set('Authorization', `Bearer ${partnerTokenA}`)

@@ -33,7 +33,7 @@ export const PortalLegalView: React.FC = () => {
             85% Core Operations / 15% ESG Endowment
           </h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-            Every transaction automatically splits 15% of gross fees directly to verified UK/EU environmental disaster relief charities and registered social foundation partners under transparent on-chain accounting.
+            Every transaction automatically splits 15% of gross fees directly to verified UK/EU environmental disaster relief charities and registered social foundation partners under transparent, publicly auditable accounting.
           </p>
         </div>
 

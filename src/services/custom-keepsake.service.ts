@@ -52,7 +52,6 @@ export interface RecordKeepsakeSpecInput {
   placement: string;
   artisanLaborHours?: number;
   lcaCarbonGrams?: number;
-  openSeaTokenUri?: string;
   isGoalFrenzy?: boolean;
   sportType?: string;
   frenzyClub?: string;
@@ -192,7 +191,6 @@ export class CustomKeepsakeService {
       placement,
       artisanLaborHours = 1.5,
       lcaCarbonGrams = 450,
-      openSeaTokenUri,
     } = input;
 
     const transaction = await this.prisma.transaction.findUnique({
@@ -212,7 +210,6 @@ export class CustomKeepsakeService {
         placement,
         artisanLaborHours,
         lcaCarbonGrams,
-        openSeaTokenUri: openSeaTokenUri || null,
         isGoalFrenzy: !!input.isGoalFrenzy,
         sportType: input.sportType || 'Football',
         frenzyClub: input.frenzyClub || null,

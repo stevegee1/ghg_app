@@ -60,18 +60,18 @@ const STAGES: AssuranceStage[] = [
     id: 'trust-seal',
     stepNumber: '03',
     tabLabel: 'Cryptographic Trust Seal',
-    subLabel: 'Polygon Ledger Commit',
-    title: 'Tamper-proof assurance seal committed to public blockchain.',
-    narrative: 'Once verified, emission records and calibration logs are bundled into an immutable cryptographic Merkle tree. A SHA-256 state root is sealed onto Polygon PoS (ERC-1155), establishing an indisputable audit trail that independent verifiers (BSI, TÜV, DNV) can inspect without accessing proprietary trade secrets.',
-    agentName: 'Blockchain Provenance Validator',
-    agentRecommendation: 'Merkle root 0x7e4b9...3a8f committed to Polygon Block #62,914,801. Statutory ISO 14064-3 assurance certificate signed with zero human tampering possible.',
+    subLabel: 'Verification Seal',
+    title: 'Tamper-evident credential with a public verification record.',
+    narrative: 'Once the Lead Auditor approves the dossier, the dual-logo credential is issued with a SHA-256 verification seal over the licensee, attestation and issue date. Anyone can check the credential against the public verification record, and any alteration to the badge breaks the seal.',
+    agentName: 'Credential Verification Service',
+    agentRecommendation: 'Illustrative example: credential issued with a SHA-256 verification seal and a public verification record valid for 12 months.',
     records: [
-      { label: 'Block Commitment', value: 'Polygon PoS Block #62,914,801', badge: 'Sealed' },
-      { label: 'Cryptographic Hash', value: '0x8f2c...4e19 (SHA-256 Merkle Root)' },
-      { label: 'Assurance Certificate', value: 'ERC-1155 Statutory Digital Twin', badge: 'Level 5' },
-      { label: 'Audit Standard', value: 'ISAE 3410 & UK CMA Green Claims Code' },
+      { label: 'Verification Record', value: 'Public credential registry', badge: 'Issued' },
+      { label: 'Cryptographic Hash', value: 'SHA-256 verification seal' },
+      { label: 'Credential', value: 'Dual-logo readiness credential' },
+      { label: 'Audit Standard', value: 'ISO 19011 review methodology' },
     ],
-    ctaText: 'Verify On-Chain Provenance',
+    ctaText: 'View Verification Records',
     ctaLink: '/portal?tab=evidence',
   },
 ];
@@ -133,7 +133,7 @@ export const ContinuousAssuranceFlow: React.FC = () => {
             From physical telemetry event to verified cryptographic trust seal
           </h2>
           <p className="pe-flow-subtitle">
-            Experience how GHGEmissionLogs continuously bridges physical smokestack emissions, automated 15% drift calibration, and public blockchain assurance ledgers in near-real-time.
+            Experience how GHGEmissionLogs continuously bridges physical smokestack emissions, automated 15% drift calibration, and publicly verifiable credentials in near-real-time.
           </p>
         </div>
 
@@ -296,7 +296,7 @@ export const ContinuousAssuranceFlow: React.FC = () => {
               <div className="pe-canvas">
                 {activeIdx === 0 && <Stage1TelemetryCanvas />}
                 {activeIdx === 1 && <Stage2CalibrationCanvas />}
-                {activeIdx === 2 && <Stage3BlockchainCanvas />}
+                {activeIdx === 2 && <Stage3SealCanvas />}
               </div>
             </div>
           </div>
@@ -489,30 +489,30 @@ const Stage2CalibrationCanvas: React.FC = () => {
 // ==========================================
 // STAGE 3: CRYPTOGRAPHIC TRUST SEAL CANVAS
 // ==========================================
-const Stage3BlockchainCanvas: React.FC = () => {
+const Stage3SealCanvas: React.FC = () => {
   return (
     <div className="pe-canvas-inner">
       <div className="pe-canvas-header">
         <span className="pe-live-indicator">
           <span className="pe-live-beacon beacon-sealed" />
-          <span>CRYPTOGRAPHIC LEDGER &bull; POLYGON PoS</span>
+          <span>VERIFICATION SEAL &bull; ILLUSTRATIVE</span>
         </span>
-        <span className="pe-canvas-mono">BLOCK #62,914,801</span>
+        <span className="pe-canvas-mono">SHA-256</span>
       </div>
 
       <div className="pe-diagram-stage">
         <div className="pe-seal-showcase">
-          {/* Isometric Blockchain Block Seal Box */}
+          {/* Isometric Seal Box */}
           <div className="pe-block-cube">
             <div className="pe-cube-face pe-cube-top">
               <span>SHA-256</span>
             </div>
             <div className="pe-cube-face pe-cube-front">
-              <span className="pe-cube-id">BLOCK #62,914,801</span>
-              <span className="pe-cube-hash">0x8f2c...4e19</span>
+              <span className="pe-cube-id">CREDENTIAL SEAL</span>
+              <span className="pe-cube-hash">SHA-256</span>
             </div>
             <div className="pe-cube-face pe-cube-side">
-              <span>POLYGON</span>
+              <span>REGISTRY</span>
             </div>
           </div>
 
@@ -525,9 +525,9 @@ const Stage3BlockchainCanvas: React.FC = () => {
                   <polyline points="9 12 11 14 15 10" />
                 </svg>
               </div>
-              <div className="pe-stamp-title">ISO 14064-3 SEALED</div>
-              <div className="pe-stamp-sub">ZERO TAMPERING POSSIBLE</div>
-              <div className="pe-stamp-meta">MATURITY LEVEL 5 &bull; IMMUTABLE</div>
+              <div className="pe-stamp-title">CREDENTIAL ISSUED</div>
+              <div className="pe-stamp-sub">TAMPER-EVIDENT SEAL</div>
+              <div className="pe-stamp-meta">PUBLIC VERIFICATION RECORD</div>
             </div>
           </div>
         </div>
@@ -536,17 +536,17 @@ const Stage3BlockchainCanvas: React.FC = () => {
         <div className="pe-terminal-stream">
           <div className="pe-term-row">
             <span className="pe-term-ts">09:41:28.104</span>
-            <span className="pe-term-label">MERKLE_ROOT:</span>
-            <span className="pe-term-hash">0x7e4b981ca290f11d6b0521e...</span>
+            <span className="pe-term-label">SEAL:</span>
+            <span className="pe-term-hash">SHA-256 over licensee, attestation, issue date</span>
           </div>
           <div className="pe-term-row">
             <span className="pe-term-ts">09:41:28.450</span>
-            <span className="pe-term-label">POLYGON_TX:</span>
-            <span className="pe-term-tx">0x3b118...a94c &bull; 12 Confirmations</span>
+            <span className="pe-term-label">RECORD:</span>
+            <span className="pe-term-tx">Public verification record published</span>
           </div>
           <div className="pe-term-row highlight">
             <span className="pe-term-ts">09:41:28.910</span>
-            <span className="pe-term-status">&bull; AUDIT DOSSIER CRYPTOGRAPHICALLY SECURED</span>
+            <span className="pe-term-status">&bull; CREDENTIAL ISSUED AND VERIFIABLE</span>
           </div>
         </div>
       </div>

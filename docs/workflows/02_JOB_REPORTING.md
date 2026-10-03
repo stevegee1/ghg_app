@@ -18,7 +18,7 @@ This workflow provides end-to-end statutory job creation and social value verifi
 | **Report Submission** | [`job-reporting.route.ts`](file:///Users/mac/ghg_app/src/routes/job-reporting.route.ts#L97-L140) | Basic insert into `JobCreationReport` | Missing automated evidence document hashing, S3 upload, and AI review trigger |
 | **AI Audit Reviewer** | N/A | None | Must parse payroll summaries, apprenticeships contracts, and residency proofs to verify statutory quotas |
 | **Lead Auditor Console** | N/A | None | Lead Auditor / Social Value Assessor console to verify local authority planning covenants and sign off |
-| **On-Chain Credential** | [`nft-minting.service.ts`](file:///Users/mac/ghg_app/src/services/nft-minting.service.ts) | Only wired for `IsoReadinessSubmission` | Must wire ERC-1155 minting and dual-logo composite for Job & Social Value credentials |
+| **Credential** | [`credentials.route.ts`](file:///Users/mac/ghg_app/src/routes/credentials.route.ts) | Only wired for `IsoReadinessSubmission` | Must wire dual-logo credential issuance and verification for Job & Social Value credentials |
 
 ---
 
@@ -43,7 +43,7 @@ flowchart TD
     J --> L[Stripe S.106 Attestation Tier Checkout]
     L -->|Payment Webhook Verified| M(Workflow State: PAID)
     M --> N[Generate Dual-Logo S.106 Social Value Seal & PDF Evidence Packet]
-    N --> O[Mint ERC-1155 S.106 Compliance Token on Polygon]
+    N --> O[Issue S.106 Compliance Credential with Public Verification Record]
 ```
 
 ---
@@ -83,5 +83,5 @@ flowchart TD
   - Review dashboard highlighting compliance against the specific local authority's Section 106 covenant clauses.
   - Single-click export of Section 106 Compliance Attestation PDF with embedded QR verification code for local planning officers.
 
-### 4.5 Dual-Logo ERC-1155 Credentialing
-- [ ] Issue ERC-1155 token bearing the licensee's crest and municipal social impact metadata.
+### 4.5 Dual-Logo Credentialing
+- [ ] Issue a dual-logo credential bearing the licensee's crest and municipal social impact details, with a public verification record.

@@ -75,9 +75,6 @@ export async function generateCharityPartnershipPdf(charity: Charity): Promise<B
       if (charity.stripeConnectedAccountId) {
         doc.text(`Stripe Connected ID:      ${charity.stripeConnectedAccountId}`);
       }
-      if (charity.walletAddress) {
-        doc.text(`On-Chain Wallet:          ${charity.walletAddress}`);
-      }
       doc.moveDown(1.5);
 
       // Mission Statement

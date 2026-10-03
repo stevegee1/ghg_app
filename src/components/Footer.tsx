@@ -191,7 +191,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/transparency" className="cerebrium-footer-link">SECR Guidelines</Link></li>
               <li><Link to="/transparency" className="cerebrium-footer-link">CSRD / ESRS Disclosures</Link></li>
               <li><Link to="/transparency" className="cerebrium-footer-link">UKIPO Mark UK00003980004</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">Polygon Audit Trails</Link></li>
+              <li><Link to="/transparency" className="cerebrium-footer-link">Public Audit Trails</Link></li>
             </ul>
           </div>
 

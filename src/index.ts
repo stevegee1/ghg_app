@@ -20,10 +20,6 @@ async function main() {
       console.error('FATAL: STRIPE_WEBHOOK_SECRET environment variable must be set in production. Refusing to start.');
       process.exit(1);
     }
-    if (!process.env.POLYGON_PRIVATE_KEY || !process.env.POLYGON_CONTRACT_ADDRESS) {
-      console.error('FATAL: POLYGON_PRIVATE_KEY and POLYGON_CONTRACT_ADDRESS must be set in production for on-chain Polygon trust seals. Refusing to start.');
-      process.exit(1);
-    }
   }
 
   const app = createApp();

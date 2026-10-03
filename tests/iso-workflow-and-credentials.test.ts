@@ -1,12 +1,12 @@
 /**
- * iso-workflow-and-minting.test.ts
+ * iso-workflow-and-credentials.test.ts
  *
- * Integration tests for the full Carbon Emission Audit-Readiness & ERC-1155 pipeline:
+ * Integration tests for the full Carbon Emission Audit-Readiness & credential pipeline:
  *  1. GET  /api/iso-readiness/framework           — Framework load & structure validation
  *  2. POST /api/iso-readiness/submit              — Questionnaire submission with authentication
  *  3. POST /api/iso-readiness/checkout            — Stripe Checkout session generation w/ 85/15 split metadata
  *  4. POST /api/credentials/compose              — Dual-logo compositing & 120-char constraint
- *  5. GET  /api/credentials/:id/metadata.json    — OpenSea ERC-1155 schema validation
+ *  5. GET  /api/credentials/:id/verify           — Public verification record
  *  6. GET  /api/credentials/:id/badge.svg        — SVG content-type & dual-logo rendering
  */
 
@@ -387,11 +387,10 @@ describe('4. POST /api/credentials/compose', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TEST 5: GET /api/credentials/:id/metadata.json
+// TEST 5: GET /api/credentials/:id/verify
 // ─────────────────────────────────────────────────────────────────────────────
-describe('5. GET /api/credentials/:id/metadata.json (OpenSea schema)', () => {
+describe('5. GET /api/credentials/:id/verify (public verification record)', () => {
   beforeAll(async () => {
-    // Seed a MINTED credential directly for testing metadata endpoint
     let submission = testSubmissionId
       ? await prisma.isoReadinessSubmission.findUnique({ where: { id: testSubmissionId } })
       : null;
@@ -412,48 +411,47 @@ describe('5. GET /api/credentials/:id/metadata.json (OpenSea schema)', () => {
       data: {
         licenseeId: testLicenseeId,
         submissionId: submission.id,
-        clientMessage: 'ISO 14001 compliant — carbon reduction 2030 target',
+        clientMessage: 'ISO 14001 compliant, carbon reduction 2030 target',
         clientLogoUrl: '/uploads/client-logos/test.png',
         compositeBadgeUrl: 'data:image/svg+xml;base64,PHN2Zy8+',
-        tokenId: '12345678901234567',
-        contractAddress: '0xabc123def456abc123def456abc123def456abc1',
-        transactionHash: '0xtxhash001',
-        openSeaUrl: 'https://opensea.io/assets/matic/0xabc123def456abc123def456abc123def456abc1/12345678901234567',
+        selectedFrameworks: ['ISO 14001:2015'],
         warrantyExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         verificationSeal: 'a'.repeat(64),
-        status: CredentialStatus.MINTED,
+        status: CredentialStatus.ISSUED,
       },
     });
     testCredentialId = cred.id;
   });
 
-  it('returns valid OpenSea ERC-1155 metadata JSON', async () => {
-    const res = await request(testApp).get(`/api/credentials/${testCredentialId}/metadata.json`);
+  it('returns a valid verification record for an issued credential', async () => {
+    const res = await request(testApp).get(`/api/credentials/${testCredentialId}/verify`);
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/json/);
+    expect(res.body.credentialId).toBe(testCredentialId);
+    expect(res.body.status).toBe(CredentialStatus.ISSUED);
+    expect(res.body.valid).toBe(true);
+    expect(res.body.verificationSeal).toBe('a'.repeat(64));
+    expect(res.body.selectedFrameworks).toEqual(['ISO 14001:2015']);
+    expect(res.body.scopeStatement).toMatch(/not a third-party verification/i);
+  });
 
-    const meta = res.body;
-    expect(meta.name).toBeDefined();
-    expect(meta.description).toBeDefined();
-    expect(meta.image).toBeDefined();
-    expect(meta.attributes).toBeInstanceOf(Array);
-    expect(meta.attributes.length).toBeGreaterThanOrEqual(6);
-
-    // Required OpenSea trait types
-    const traitTypes = meta.attributes.map((a: any) => a.trait_type);
-    expect(traitTypes).toContain('Standard Framework');
-    expect(traitTypes).toContain('Issuer');
-    expect(traitTypes).toContain('Warranty Expiry');
-    expect(traitTypes).toContain('Network');
-
-    // Network must be Polygon
-    const networkTrait = meta.attributes.find((a: any) => a.trait_type === 'Network');
-    expect(networkTrait?.value).toBe('Polygon PoS');
+  it('reports an expired credential as not valid', async () => {
+    await prisma.auditWarrantyCredential.update({
+      where: { id: testCredentialId },
+      data: { warrantyExpiresAt: new Date(Date.now() - 1000) },
+    });
+    const res = await request(testApp).get(`/api/credentials/${testCredentialId}/verify`);
+    expect(res.status).toBe(200);
+    expect(res.body.valid).toBe(false);
+    await prisma.auditWarrantyCredential.update({
+      where: { id: testCredentialId },
+      data: { warrantyExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) },
+    });
   });
 
   it('returns 404 for unknown credential ID', async () => {
-    const res = await request(testApp).get('/api/credentials/nonexistent_cred_id_000/metadata.json');
+    const res = await request(testApp).get('/api/credentials/nonexistent_cred_id_000/verify');
     expect(res.status).toBe(404);
   });
 });
@@ -469,16 +467,16 @@ describe('6. GET /api/credentials/:id/badge.svg (SVG badge)', () => {
     expect(res.headers['content-type']).toMatch(/image\/svg\+xml/);
   });
 
-  it('SVG contains GHG Emissions Registered Trade Mark text', async () => {
+  it('SVG contains the credential heading', async () => {
     const res = await request(testApp).get(`/api/credentials/${testCredentialId}/badge.svg`);
     const svgText = res.text || (Buffer.isBuffer(res.body) ? res.body.toString('utf8') : '');
-    expect(svgText).toContain('GHG EMISSIONS REGISTERED TRADE MARK');
+    expect(svgText).toContain('GHGEMISSIONLOGS AUDIT-READINESS CREDENTIAL');
   });
 
-  it('SVG contains ISO 19011:2026 reference', async () => {
+  it('SVG contains the recorded framework', async () => {
     const res = await request(testApp).get(`/api/credentials/${testCredentialId}/badge.svg`);
     const svgText = res.text || (Buffer.isBuffer(res.body) ? res.body.toString('utf8') : '');
-    expect(svgText).toContain('ISO 19011:2026');
+    expect(svgText).toContain('ISO 14001:2015');
   });
 
   it('SVG contains client attestation message', async () => {
@@ -487,9 +485,9 @@ describe('6. GET /api/credentials/:id/badge.svg (SVG badge)', () => {
     expect(svgText).toContain('ISO 14001 compliant');
   });
 
-  it('SVG contains Polygon ERC-1155 Token reference', async () => {
+  it('SVG links to the public verification record', async () => {
     const res = await request(testApp).get(`/api/credentials/${testCredentialId}/badge.svg`);
     const svgText = res.text || (Buffer.isBuffer(res.body) ? res.body.toString('utf8') : '');
-    expect(svgText).toContain('Polygon ERC-1155');
+    expect(svgText).toContain(`/api/credentials/${testCredentialId}/verify`);
   });
 });

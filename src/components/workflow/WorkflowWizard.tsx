@@ -37,8 +37,7 @@ export interface WorkflowSubmission {
     | 'APPROVED'
     | 'REJECTED'
     | 'PAID'
-    | 'BADGE_ISSUED'
-    | 'MINTED';
+    | 'BADGE_ISSUED';
   submittedAt?: string | null;
   reviewedAt?: string | null;
   reviewerId?: string | null;
@@ -48,11 +47,6 @@ export interface WorkflowSubmission {
   clientMessage?: string | null;
   clientLogoUrl?: string | null;
   compositeBadgeUrl?: string | null;
-  tokenId?: string | null;
-  contractAddress?: string | null;
-  transactionHash?: string | null;
-  openSeaUrl?: string | null;
-  mintedAt?: string | null;
   framework: {
     id: string;
     code: string;
@@ -104,7 +98,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
   // 6: Decision State (6a: REJECTED, 6b: APPROVED)
   // 7: Stripe Checkout
   // 8: Badge Setup Form
-  // 9: Badge Generated & Minting
+  // 9: Badge Issued
   // 10: Dashboard "My Badges"
   // 11: Telemetry API Access
   const [currentScreen, setCurrentScreen] = useState<number>(2);
@@ -134,11 +128,6 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
   const [clientMessage, setClientMessage] = useState<string>('');
   const [clientLogoUrl, setClientLogoUrl] = useState<string>('');
   const [isGeneratingBadge, setIsGeneratingBadge] = useState<boolean>(false);
-
-  // Minting State (Screen 9)
-  const [walletAddress, setWalletAddress] = useState<string>('');
-  const [walletError, setWalletError] = useState<string | null>(null);
-  const [isMinting, setIsMinting] = useState<boolean>(false);
 
   // Telemetry API Keys State (Screen 11)
   const [telemetryKeys, setTelemetryKeys] = useState<{
@@ -229,9 +218,6 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
           break;
         case 'BADGE_ISSUED':
           setCurrentScreen(9);
-          break;
-        case 'MINTED':
-          setCurrentScreen(10);
           break;
         default:
           setCurrentScreen(4);
@@ -492,44 +478,6 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
     }
   };
 
-  // Mint Badge to Polygon Wallet (Screen 9 -> Screen 10)
-  const handleMintBadge = async () => {
-    if (!submission?.id) return;
-
-    const ethRegex = /^0x[a-fA-F0-9]{40}$/;
-    if (!walletAddress || !ethRegex.test(walletAddress.trim())) {
-      setWalletError('Please enter a valid 42-character 0x-prefixed Polygon wallet address.');
-      return;
-    }
-    setWalletError(null);
-
-    try {
-      setIsMinting(true);
-      setError(null);
-      const res = await fetch(`/api/workflow/submissions/${submission.id}/mint`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          recipientAddress: walletAddress.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Minting failed.');
-
-      setSubmission(data.submission);
-      // Advance to Screen 10 (My Badges view)
-      setCurrentScreen(10);
-    } catch (err: any) {
-      setError(err.message || 'Error executing on-chain mint');
-    } finally {
-      setIsMinting(false);
-    }
-  };
-
   // Generate Scoped Telemetry Key (Screen 11)
   const handleGenerateTelemetryKey = async () => {
     try {
@@ -608,7 +556,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
               {currentScreen === 6 && (submission?.status === 'REJECTED' ? ' Review Findings' : ' Audit Verification Approved')}
               {currentScreen === 7 && ' Stripe Assurance Checkout'}
               {currentScreen === 8 && ' Badge Customization'}
-              {currentScreen === 9 && ' Composite Preview & Minting'}
+              {currentScreen === 9 && ' Badge Issued'}
               {currentScreen === 10 && ' My Verified Badges'}
               {currentScreen === 11 && ' Telemetry API Ingestion'}
             </span>
@@ -1532,7 +1480,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Configure Your Warranty Badge</h2>
             <p className="text-sm text-slate-400">
               Provide an attestation statement and upload your corporate mark. This will be composited into your official
-              verification badge and embedded into the on-chain mint metadata.
+              verification badge and recorded against your public verification record.
             </p>
           </div>
 
@@ -1554,7 +1502,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
                 className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
               <p className="text-[11px] text-slate-500">
-                Short message (max 100 chars) embedded permanently in composite visual seal and ERC-1155 token metadata.
+                Short message (max 100 chars) embedded permanently in the composite visual seal.
               </p>
             </div>
 
@@ -1594,8 +1542,8 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
       )}
 
       {/* ─────────────────────────────────────────────────────────────────────────────
-          SCREEN 9: Badge Generated & Minting
-          Composite badge preview, mint to wallet address, download PDF proof
+          SCREEN 9: Badge Issued
+          Composite badge preview and PDF proof download
       ───────────────────────────────────────────────────────────────────────────── */}
       {currentScreen === 9 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-10 space-y-6 shadow-2xl">
@@ -1605,8 +1553,8 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Audit Warranty Badge Issued</h2>
             <p className="text-sm text-slate-400">
-              Your composite verification seal has been composited and cryptographically sealed. Mint to your Polygon wallet
-              or download the executive boardroom PDF report.
+              Your composite verification seal has been generated and cryptographically sealed. Download the executive
+              boardroom PDF report or view it in My Badges.
             </p>
           </div>
 
@@ -1630,44 +1578,6 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
               <div>Warranty: <span className="text-emerald-400">1-Year Active Coverage</span></div>
               <div>•</div>
               <div>Audit Date: <span className="text-white">{new Date().toLocaleDateString('en-GB')}</span></div>
-            </div>
-          </div>
-
-          {/* Mint to Wallet Section */}
-          <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-3">
-            <h4 className="text-sm font-bold text-white">Mint ERC-1155 Token to Polygon PoS</h4>
-            <div className="space-y-2">
-              <label className="block text-xs text-slate-400">Recipient Polygon Wallet Address (0x...):</label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={walletAddress}
-                  onChange={(e) => {
-                    setWalletAddress(e.target.value);
-                    setWalletError(null);
-                  }}
-                  placeholder="0x71C...49A"
-                  className="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-emerald-500"
-                />
-                <button
-                  type="button"
-                  disabled={isMinting || !walletAddress.trim()}
-                  onClick={handleMintBadge}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition-all shadow-lg flex items-center justify-center space-x-2"
-                >
-                  {isMinting ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Minting on Polygon...</span>
-                    </>
-                  ) : (
-                    <span>Mint to Wallet</span>
-                  )}
-                </button>
-              </div>
-              {walletError && (
-                <p className="text-xs text-rose-400 font-medium">{walletError}</p>
-              )}
             </div>
           </div>
 
@@ -1697,7 +1607,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
 
       {/* ─────────────────────────────────────────────────────────────────────────────
           SCREEN 10: Dashboard "My Badges" View
-          Badge image, framework, audit date, mint status, on-chain link, PDF download
+          Badge image, framework, audit date, status, PDF download
       ───────────────────────────────────────────────────────────────────────────── */}
       {currentScreen === 10 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-10 space-y-6 shadow-2xl">
@@ -1738,7 +1648,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
                   <span className="px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-full uppercase tracking-wider font-mono">
-                    {submission?.status === 'MINTED' ? 'Minted (ERC-1155)' : 'Badge Issued'}
+                    Badge Issued
                   </span>
                   <span className="text-xs text-slate-500 font-mono">
                     Audit Date: {new Date().toLocaleDateString('en-GB')}
@@ -1749,29 +1659,6 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
                   1-Year Statutory Warranty • ISO 19011:2026 Audit Lineage
                 </p>
               </div>
-
-              {/* On-chain commitment details */}
-              {submission?.tokenId && (
-                <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl text-xs space-y-1 font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Polygon Token ID:</span>
-                    <span className="text-purple-400 font-bold">#{submission.tokenId}</span>
-                  </div>
-                  {submission.openSeaUrl && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">OpenSea Registry:</span>
-                      <a
-                        href={submission.openSeaUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        View On-Chain Item ↗
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div className="flex flex-wrap gap-3 pt-2">
                 <a

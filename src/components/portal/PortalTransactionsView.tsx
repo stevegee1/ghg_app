@@ -1,6 +1,5 @@
 import React from 'react';
 import { StatusBadge } from '../StatusBadge';
-import { OpenSeaBadge } from '../OpenSeaBadge';
 
 interface PortalTransactionsViewProps {
   filteredTransactions: any[];
@@ -81,7 +80,6 @@ export const PortalTransactionsView: React.FC<PortalTransactionsViewProps> = ({
                 <th style={{ padding: '0.75rem 1rem' }}>Status</th>
                 <th style={{ padding: '0.75rem 1rem' }}>Gross Amount</th>
                 <th style={{ padding: '0.75rem 1rem' }}>15% Charity Split</th>
-                <th style={{ padding: '0.75rem 1rem' }}>On-Chain</th>
                 <th style={{ padding: '0.75rem 1rem' }}>Date</th>
               </tr>
             </thead>
@@ -99,9 +97,6 @@ export const PortalTransactionsView: React.FC<PortalTransactionsViewProps> = ({
                   </td>
                   <td style={{ padding: '0.85rem 1rem', fontWeight: 800, color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
                     £{(tx.charityGiftCents / 100).toFixed(2)}
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <OpenSeaBadge transactionId={tx.id} licenseeId={tx.licenseeId} />
                   </td>
                   <td style={{ padding: '0.85rem 1rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     {new Date(tx.createdAt).toLocaleDateString('en-GB')}

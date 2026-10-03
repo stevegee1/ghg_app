@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { OpenSeaBadge } from '../components/OpenSeaBadge';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 import { StatusBadge } from '../components/StatusBadge';
 
@@ -59,7 +58,6 @@ export const CertificateViewPage: React.FC = () => {
             </div>
           </div>
 
-          <OpenSeaBadge transactionId={transaction.id} licenseeId={transaction.licenseeId} />
         </div>
 
         <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem' }}>
@@ -100,14 +98,6 @@ export const CertificateViewPage: React.FC = () => {
           <Link to="/transparency" className="btn btn-secondary">
             ← View Public Transparency Registry
           </Link>
-          <a
-            href={`https://opensea.io/assets/ethereum/0x71c7656ec7ab88b098defb751b7401b5f6d8976f/${transaction.id.slice(-4)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-opensea"
-          >
-            Open on OpenSea ↗
-          </a>
         </div>
       </div>
     </div>

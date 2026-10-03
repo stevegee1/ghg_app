@@ -44,7 +44,7 @@ export const BookDemoPage: React.FC = () => {
           </div>
           <div className="trust-item">
             <span className="trust-dot">&bull;</span>
-            <span>Polygon PoS ERC-1155 Digital Twin Seals</span>
+            <span>Publicly Verifiable Dual-Logo Credentials</span>
           </div>
         </div>
       </div>

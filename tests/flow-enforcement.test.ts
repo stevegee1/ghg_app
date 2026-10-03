@@ -4,7 +4,7 @@
  * Explicit verification of the 3-Gate Flow Enforcement:
  *  - Gate 1: You cannot checkout via Stripe unless audit status is AUDIT_READY or APPROVED (HTTP 403)
  *  - Gate 2: You cannot compose badges or access ingestion API unless payment is settled (HTTP 403)
- *  - Gate 3: You cannot mint Polygon ERC-1155 NFT credentials unless BOTH audit is AUDIT_READY and payment is settled (HTTP 403)
+ *  - Gate 3: You cannot issue a credential unless BOTH audit is AUDIT_READY and payment is settled (HTTP 403)
  */
 
 import request from 'supertest';
@@ -184,8 +184,8 @@ describe('3-Gate Strict Workflow Enforcement', () => {
     });
   });
 
-  describe('Gate 3: ERC-1155 Minting Enforcement', () => {
-    it('blocks NFT minting with HTTP 403 if audit is not approved or payment is missing', async () => {
+  describe('Gate 3: Credential Issuance Enforcement', () => {
+    it('blocks credential issuance with HTTP 403 if audit is not approved or payment is missing', async () => {
       if (!fs.existsSync(LOGO_PATH)) return;
 
       // Create an unpaid, unapproved submission
@@ -199,21 +199,21 @@ describe('3-Gate Strict Workflow Enforcement', () => {
       });
 
       const res = await request(testApp)
-        .post('/api/credentials/mint')
+        .post('/api/credentials/issue')
         .set('Authorization', `Bearer ${testAuthToken}`)
         .attach('clientLogo', LOGO_PATH)
-        .field('clientMessage', 'Attempting unauthorized mint')
+        .field('clientMessage', 'Attempting unauthorized issuance')
         .field('submissionId', sub.id);
 
       expect(res.status).toBe(403);
       expect(res.body.error).toMatch(/approved|payment/i);
     });
 
-    it('allows NFT minting when both Gate 1 (AUDIT_READY) and Gate 2 (paidAt) are verified', async () => {
+    it('issues the credential when both Gate 1 (AUDIT_READY) and Gate 2 (paidAt) are verified', async () => {
       if (!fs.existsSync(LOGO_PATH)) return;
 
       const res = await request(testApp)
-        .post('/api/credentials/mint')
+        .post('/api/credentials/issue')
         .set('Authorization', `Bearer ${testAuthToken}`)
         .attach('clientLogo', LOGO_PATH)
         .field('clientMessage', 'Statutory ISO 14064-1 Audit Verified')
@@ -222,7 +222,16 @@ describe('3-Gate Strict Workflow Enforcement', () => {
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.credentialId).toBeDefined();
-      expect(res.body.network).toBe('Polygon PoS');
+      expect(res.body.status).toBe('ISSUED');
+      expect(res.body.verificationSeal).toMatch(/^[a-f0-9]{64}$/);
+
+      const again = await request(testApp)
+        .post('/api/credentials/issue')
+        .set('Authorization', `Bearer ${testAuthToken}`)
+        .attach('clientLogo', LOGO_PATH)
+        .field('clientMessage', 'Duplicate issuance attempt')
+        .field('submissionId', testSubmissionId);
+      expect(again.status).toBe(409);
     });
   });
 });

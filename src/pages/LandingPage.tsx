@@ -71,7 +71,7 @@ export const LandingPage: React.FC = () => {
                   maxWidth: '560px',
                 }}
               >
-                Deploy audit-readiness pipelines across GHG Protocol Scopes 1-3, ISO 14064, ISO 50001, and UK Social Value &amp; Section 106 covenants with real-time IoT telemetry stream, tamper-proof calibration, and automated on-chain Polygon trust seals.
+                Deploy audit-readiness pipelines across GHG Protocol Scopes 1-3, ISO 14064, ISO 50001, and UK Social Value &amp; Section 106 covenants with real-time IoT telemetry stream, tamper-proof calibration, and publicly verifiable dual-logo credentials.
               </p>
 
               {/* Action Buttons & Statutory Badges (Cerebrium Action Pair) */}
@@ -389,7 +389,7 @@ export const LandingPage: React.FC = () => {
                   IMMUTABLE PROVENANCE ASSETS
                 </span>
                 <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#64748b' }}>
-                  ERC-1155 / POLYGON TRUST SEAL
+                  SHA-256 VERIFICATION SEAL
                 </span>
               </div>
 
@@ -418,7 +418,7 @@ export const LandingPage: React.FC = () => {
               </h2>
 
               <p style={{ fontSize: '1rem', color: '#475569', lineHeight: 1.65, marginBottom: '2rem' }}>
-                Traditional ESG disclosures rely on unverified, retroactive spreadsheets. GHGEmissionLogs anchors real-time telemetry from physical smokestacks, utility meters, and workforce covenants directly into verifiable digital twin provenance cards and Polygon blockchain attestations.
+                Traditional ESG disclosures rely on unverified, retroactive spreadsheets. GHGEmissionLogs anchors real-time telemetry from physical smokestacks, utility meters, and workforce covenants directly into verifiable digital twin provenance cards and publicly verifiable credentials.
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -456,10 +456,10 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                      On-Chain Dual-Logo Provenance Seals
+                      Dual-Logo Provenance Seals
                     </h3>
                     <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
-                      Every verified reporting batch is cryptographically committed on Polygon. Dual-logo composites permanently tie corporate licensee credentials to verified environmental achievements.
+                      Every issued credential is sealed with a SHA-256 fingerprint and a public verification record. Dual-logo composites permanently tie corporate licensee credentials to verified environmental achievements.
                     </p>
                   </div>
                 </div>
@@ -496,7 +496,7 @@ export const LandingPage: React.FC = () => {
                 { title: 'Real-Time Audit Gates', desc: 'Audit-readiness from the first telemetry ping. Ingest calibrated sensor streams in milliseconds with automated ISO 17025 verification. Continuous screening flags anomalies before certification freezes.' },
                 { title: '15% Baseline Anomaly Lock', desc: 'Automated export freeze under ISO 14064-1 Clause 10.2. Any facility sensor drifting beyond the 15% threshold automatically seals ledger issuance until supervisor root-cause resolution is verified.' },
                 { title: 'Social Value & S106 Workforce', desc: 'Town and Country Planning Act 1990 covenant enforcement and Public Services (Social Value) Act 2012 compliance. Automatically track local employment quotas, accredited apprenticeships, and Real Living Wage guarantees with live council reporting dossiers.' },
-                { title: 'On-Chain Ledger Seal', desc: 'Permanent Polygon ERC-1155 tamper-evident verification. Every verified metric batch is cryptographically hashed with SHA-256 and committed on-chain with dual-logo statutory provenance.' },
+                { title: 'Verified Credential Seal', desc: 'Tamper-evident dual-logo credentials. Every issued credential carries a SHA-256 verification seal and a public verification record that anyone can check against the platform registry.' },
               ].map((item, idx) => (
                 <button
                   key={item.title}
@@ -514,7 +514,7 @@ export const LandingPage: React.FC = () => {
                 'Audit-readiness from the first telemetry ping. Ingest calibrated sensor streams in milliseconds with automated ISO 17025 verification. Continuous screening flags anomalies before certification freezes.',
                 'Automated export freeze under ISO 14064-1 Clause 10.2. Any facility sensor drifting beyond the 15% threshold automatically seals ledger issuance until supervisor root-cause resolution is verified.',
                 'Town and Country Planning Act 1990 covenant enforcement and Public Services (Social Value) Act 2012 compliance. Automatically track local employment quotas, accredited apprenticeships, and Real Living Wage guarantees with live council reporting dossiers.',
-                'Permanent Polygon ERC-1155 tamper-evident verification. Every verified metric batch is cryptographically hashed with SHA-256 and committed on-chain with dual-logo statutory provenance.',
+                'Tamper-evident dual-logo credentials. Every issued credential carries a SHA-256 verification seal and a public verification record that anyone can check against the platform registry.',
               ][activeWhyItem]}
             </p>
           </div>
@@ -1042,7 +1042,7 @@ export const LandingPage: React.FC = () => {
                   <span>15% Baseline Drift Freeze (HTTP 423) prevents non-conforming exports</span>
                 </li>
                 <li className="cerebrium-audit-card-point">
-                  <span>SHA-256 cryptographic provenance seals anchored on Polygon mainnet</span>
+                  <span>SHA-256 verification seals with a public verification record</span>
                 </li>
                 <li className="cerebrium-audit-card-point">
                   <span>Aligned with UK CMA Green Claims Code for anti-greenwashing protection</span>

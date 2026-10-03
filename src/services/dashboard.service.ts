@@ -20,8 +20,7 @@ export interface CredentialItem {
   issuedAt: string;
   status: string;
   badgeImageUrl?: string | null;
-  tokenId?: string | null;
-  openSeaUrl?: string | null;
+  verifyUrl?: string | null;
   pdfDownloadUrl: string;
 }
 
@@ -129,7 +128,7 @@ export class DashboardService {
           s.status === WorkflowStatus.APPROVED ||
           s.status === WorkflowStatus.REJECTED;
 
-        const isBadged = s.status === WorkflowStatus.BADGE_ISSUED || s.status === WorkflowStatus.MINTED;
+        const isBadged = s.status === WorkflowStatus.BADGE_ISSUED;
 
         if (s.workflowType === WorkflowType.CARBON) {
           if (isActive) carbonActive++;
@@ -152,7 +151,7 @@ export class DashboardService {
         include: { credential: true },
       });
       for (const iso of legacyIsoSubs) {
-        if (iso.credential && (iso.credential.status === CredentialStatus.COMPOSITED || iso.credential.status === CredentialStatus.MINTED)) {
+        if (iso.credential && (iso.credential.status === CredentialStatus.COMPOSITED || iso.credential.status === CredentialStatus.ISSUED)) {
           carbonBadges++;
         } else {
           carbonActive++;
@@ -242,7 +241,7 @@ export class DashboardService {
     // Sort all activity reverse-chronologically
     activityItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    // 4. Credentials Panel (Issued Badges, Minted Tokens, PDF Proofs)
+    // 4. Credentials Panel (Issued Badges, PDF Proofs)
     const credentials: CredentialItem[] = [];
 
     if (effectiveLicenseeId) {
@@ -252,23 +251,15 @@ export class DashboardService {
       });
 
       for (const cred of credentialsList) {
-        // Resolve URL: If openSeaUrl is pointing to external domain but referencing metadata.json,
-        // normalize to relative endpoint /api/credentials/... so it is 100% reachable locally and in production.
-        let effectiveOpenSeaUrl = cred.openSeaUrl;
-        if (effectiveOpenSeaUrl && effectiveOpenSeaUrl.includes('/api/credentials/')) {
-          effectiveOpenSeaUrl = effectiveOpenSeaUrl.substring(effectiveOpenSeaUrl.indexOf('/api/credentials/'));
-        }
-
         credentials.push({
           id: cred.id,
           type: 'AUDIT_BADGE',
           title: cred.clientMessage || 'Statutory ISO Audit Assurance Badge',
           frameworkOrScope: cred.selectedFrameworks.join(', ') || 'ISO 14001:2015 & ISO 50001:2018',
           issuedAt: cred.createdAt.toISOString(),
-          status: cred.status === CredentialStatus.MINTED ? 'MINTED_ON_CHAIN' : 'ISSUED',
+          status: cred.status,
           badgeImageUrl: cred.compositeBadgeUrl || `/api/credentials/${cred.id}/badge.svg`,
-          tokenId: cred.tokenId,
-          openSeaUrl: effectiveOpenSeaUrl,
+          verifyUrl: cred.status === CredentialStatus.ISSUED ? `/api/credentials/${cred.id}/verify` : null,
           pdfDownloadUrl: `/api/portal/iso/report/${cred.submissionId}`,
         });
       }

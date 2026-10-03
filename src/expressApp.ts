@@ -112,7 +112,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use('/api/portal/iso/evidence/upload', uploadLimiter);
   app.use('/api/portal/iso/evidence/upload-file', uploadLimiter);
   app.use('/api/credentials/compose', uploadLimiter);
-  app.use('/api/credentials/mint', uploadLimiter);
+  app.use('/api/credentials/issue', uploadLimiter);
 
   // Use raw body parsing strictly for the webhook route
   app.use('/webhooks/stripe', express.raw({ type: '*/*' }));

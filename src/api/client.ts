@@ -597,16 +597,15 @@ export const api = {
     return data;
   },
 
-  async mintCredential(
+  async issueCredential(
     token: string,
-    params: { clientLogoFile: File; clientMessage: string; submissionId: string; recipientAddress?: string }
+    params: { clientLogoFile: File; clientMessage: string; submissionId: string }
   ): Promise<any> {
     const form = new FormData();
     form.append('clientLogo', params.clientLogoFile);
     form.append('clientMessage', params.clientMessage);
     form.append('submissionId', params.submissionId);
-    if (params.recipientAddress) form.append('recipientAddress', params.recipientAddress);
-    const res = await fetch('/api/credentials/mint', {
+    const res = await fetch('/api/credentials/issue', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: form,

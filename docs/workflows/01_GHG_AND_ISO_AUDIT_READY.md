@@ -45,7 +45,6 @@ flowchart TD
     K --> M[Stripe Payment Gate: £1,250 / £3,500]
     M -->|Payment Webhook Verified| N(Workflow State: PAID)
     N --> O[Generate Tamper-Proof Dual-Logo Badge & PDF Certificate]
-    O --> P[Trigger ERC-1155 On-Chain Minting]
 ```
 
 ---
