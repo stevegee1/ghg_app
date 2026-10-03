@@ -1,5 +1,6 @@
 import request from 'supertest';
 import Stripe from 'stripe';
+import path from 'path';
 import {
   PrismaClient,
   WorkflowType,
@@ -18,6 +19,7 @@ import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 import { getAssuranceFee, validateAssuranceFeeConfig } from '../src/services/assurance-fee.service';
 
 const prisma = new PrismaClient();
+const LOGO_PATH = path.join(process.cwd(), 'public', 'images', 'nfty-logs-logo.png');
 
 describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
   let app: any;
@@ -698,8 +700,14 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .expect(200);
     });
 
-    it('Screen 8: POST /api/workflow/submissions/:id/badge-setup saves message & logo URL and transitions to BADGE_ISSUED', async () => {
-      // Simulate payment transition first
+    it('Screen 9: PDF proof is unavailable before the credential is issued', async () => {
+      await request(app)
+        .get(`/api/workflow/submissions/${lifecycleSubId}/download-pdf`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .expect(409);
+    });
+
+    it('Screen 8: badge-setup never reads a file path supplied by the client', async () => {
       await prisma.workflowSubmission.update({
         where: { id: lifecycleSubId },
         data: { status: WorkflowStatus.PAID, paidAt: new Date() },
@@ -708,15 +716,56 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       const res = await request(app)
         .post(`/api/workflow/submissions/${lifecycleSubId}/badge-setup`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
-        .send({
-          badgeMessage: 'Net Zero Operational Attestation 2026',
-          badgeLogoUrl: '',
-        })
-        .expect(200);
+        .send({ clientMessage: 'Attempted path read', clientLogoUrl: path.join(process.cwd(), '.env') })
+        .expect(400);
 
-      expect(res.body.success).toBe(true);
+      expect(res.body.error).toContain('clientLogo');
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: lifecycleSubId } });
+      expect(row!.status).toBe(WorkflowStatus.PAID);
+    });
+
+    it('Screen 8: badge-setup issues a verifiable credential for a PAID submission', async () => {
+      const res = await request(app)
+        .post(`/api/workflow/submissions/${lifecycleSubId}/badge-setup`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .field('clientMessage', 'Net Zero Operational Attestation 2026')
+        .attach('clientLogo', LOGO_PATH)
+        .expect(201);
+
       expect(res.body.submission.status).toBe(WorkflowStatus.BADGE_ISSUED);
       expect(res.body.submission.clientMessage).toBe('Net Zero Operational Attestation 2026');
+      expect(res.body.verificationSeal).toMatch(/^[a-f0-9]{64}$/);
+
+      const credential = await prisma.auditWarrantyCredential.findUnique({
+        where: { workflowSubmissionId: lifecycleSubId },
+      });
+      expect(credential).not.toBeNull();
+      expect(credential!.id).toBe(res.body.credentialId);
+      expect(credential!.licenseeId).toBe(licenseeA.id);
+      expect(credential!.status).toBe('ISSUED');
+
+      const verify = await request(app).get(res.body.verifyPath).expect(200);
+      expect(verify.body.valid).toBe(true);
+      expect(verify.body.licenseeName).toBe(licenseeA.name);
+    });
+
+    it('Screen 8: a credential cannot be issued twice', async () => {
+      await request(app)
+        .post(`/api/workflow/submissions/${lifecycleSubId}/badge-setup`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .field('clientMessage', 'Second issuance attempt')
+        .attach('clientLogo', LOGO_PATH)
+        .expect(409);
+
+      expect(await prisma.auditWarrantyCredential.count({ where: { workflowSubmissionId: lifecycleSubId } })).toBe(1);
+    });
+
+    it('Screen 9: PDF proof requires login and ownership', async () => {
+      await request(app).get(`/api/workflow/submissions/${lifecycleSubId}/download-pdf`).expect(401);
+      await request(app)
+        .get(`/api/workflow/submissions/${lifecycleSubId}/download-pdf`)
+        .set('Authorization', `Bearer ${partnerTokenB}`)
+        .expect(403);
     });
 
     it('Screen 9: GET /api/workflow/submissions/:id/download-pdf streams audit certificate PDF', async () => {

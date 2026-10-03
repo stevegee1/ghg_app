@@ -673,8 +673,12 @@ model AuditWarrantyCredential {
   id                 String                 @id @default(cuid())
   licenseeId         String
   licensee           Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  submissionId       String                 @unique
-  submission         IsoReadinessSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  /// Legacy ISO readiness submission (retired pipeline). Exactly one submission link is set.
+  submissionId       String?                 @unique
+  submission         IsoReadinessSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  /// Workflow engine submission (GHG and Workforce pipelines)
+  workflowSubmissionId String?             @unique
+  workflowSubmission   WorkflowSubmission? @relation(fields: [workflowSubmissionId], references: [id], onDelete: Cascade)
   /// Client's attestation message, up to 200 characters, embedded in the badge
   clientMessage      String
   clientLogoUrl      String
@@ -819,6 +823,7 @@ model WorkflowSubmission {
   updatedAt         DateTime          @updatedAt
 
   answers                  WorkflowAnswer[]
+  credential               AuditWarrantyCredential?
   reviewDecision           WorkflowReviewDecision?
   transitions              WorkflowTransitionLog[]
   complianceRecommendation ComplianceRecommendation?

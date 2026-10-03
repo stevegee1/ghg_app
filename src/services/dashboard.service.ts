@@ -121,16 +121,11 @@ export class DashboardService {
       });
 
       for (const s of submissions) {
-        const isActive =
-          s.status === WorkflowStatus.DRAFT ||
-          s.status === WorkflowStatus.SUBMITTED ||
-          s.status === WorkflowStatus.UNDER_REVIEW ||
-          s.status === WorkflowStatus.APPROVED ||
-          s.status === WorkflowStatus.REJECTED;
-
         const isBadged = s.status === WorkflowStatus.BADGE_ISSUED;
+        const isActive = !isBadged;
 
-        if (s.workflowType === WorkflowType.CARBON) {
+        // The GHG pipeline covers both GHG inventory and carbon claims frameworks.
+        if (s.workflowType === WorkflowType.GHG || s.workflowType === WorkflowType.CARBON) {
           if (isActive) carbonActive++;
           if (isBadged) carbonBadges++;
           if (!carbonLatestDraft && s.status === WorkflowStatus.DRAFT) {
@@ -260,7 +255,9 @@ export class DashboardService {
           status: cred.status,
           badgeImageUrl: cred.compositeBadgeUrl || `/api/credentials/${cred.id}/badge.svg`,
           verifyUrl: cred.status === CredentialStatus.ISSUED ? `/api/credentials/${cred.id}/verify` : null,
-          pdfDownloadUrl: `/api/portal/iso/report/${cred.submissionId}`,
+          pdfDownloadUrl: cred.workflowSubmissionId
+            ? `/api/workflow/submissions/${cred.workflowSubmissionId}/pdf`
+            : `/api/portal/iso/report/${cred.submissionId}`,
         });
       }
     }

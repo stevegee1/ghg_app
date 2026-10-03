@@ -2,11 +2,13 @@ import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { PrismaClient, WorkflowType, WorkflowStatus, DeliveryType } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { logoUpload } from '../middleware/logo-upload.middleware';
 import {
   WorkflowEngineService,
   InvalidWorkflowTransitionError,
   MissingRequiredEvidenceError,
   WorkflowForbiddenError,
+  CREDENTIAL_MESSAGE_MAX_LENGTH,
 } from '../services/workflow-engine.service';
 import { CheckoutService } from '../services/checkout.service';
 import { runWithRls } from '../db/rls';
@@ -658,48 +660,50 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * Screen 8: POST /api/workflow/submissions/:id/badge-setup
-   * Collects client message (max 100 chars) and logo, composites badge, and transitions PAID -> BADGE_ISSUED.
+   * Multipart: clientLogo (image file) and clientMessage. Issues the dual-logo credential
+   * for a PAID submission and transitions it to BADGE_ISSUED.
    */
-  router.post('/api/workflow/submissions/:id/badge-setup', authenticateToken, async (req: Request, res: Response) => {
+  router.post('/api/workflow/submissions/:id/badge-setup', authenticateToken, logoUpload.single('clientLogo'), async (req: Request, res: Response) => {
     const { id } = req.params;
     const user = req.user!;
-    const licenseeId = user.licenseeId || req.body.licenseeId;
-    const clientMessage = req.body?.clientMessage || req.body?.badgeMessage;
-    const clientLogoUrl = req.body?.clientLogoUrl || req.body?.badgeLogoUrl;
+    const clientMessage = typeof req.body?.clientMessage === 'string' ? req.body.clientMessage : '';
 
-    if (!clientMessage || typeof clientMessage !== 'string') {
+    if (!req.file) {
+      return res.status(400).json({ error: 'clientLogo image file is required.' });
+    }
+    if (!clientMessage.trim()) {
       return res.status(400).json({ error: 'clientMessage is required.' });
     }
-
-    if (clientMessage.trim().length > 100) {
-      return res.status(400).json({ error: 'clientMessage must not exceed 100 characters.' });
+    if (clientMessage.trim().length > CREDENTIAL_MESSAGE_MAX_LENGTH) {
+      return res.status(400).json({ error: `clientMessage must not exceed ${CREDENTIAL_MESSAGE_MAX_LENGTH} characters.` });
     }
 
     try {
-      const result = await runWithRls(prisma, user, async () => {
-        return workflowService.setupBadge(
-          id,
-          licenseeId,
-          {
-            clientMessage,
-            clientLogoUrl,
-          },
-          { userId: user.userId, role: user.role }
-        );
-      });
+      const result = await workflowService.issueCredential(
+        id,
+        { clientMessage, clientLogoPath: req.file.path },
+        { userId: user.userId, role: user.role, licenseeId: user.licenseeId }
+      );
 
-      return res.status(200).json({
+      return res.status(201).json({
         success: true,
-        message: 'Audit Warranty Badge composited and issued.',
+        message: 'Dual-logo credential issued.',
         submission: result.submission,
-        compositeResult: result.compositeResult,
+        credentialId: result.credential.id,
+        verificationSeal: result.credential.verificationSeal,
+        warrantyExpiresAt: result.credential.warrantyExpiresAt,
+        verifyPath: `/api/credentials/${result.credential.id}/verify`,
+        badgePath: `/api/credentials/${result.credential.id}/badge.svg`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof InvalidWorkflowTransitionError) {
-        return res.status(400).json({ error: err.message });
+        return res.status(409).json({ error: 'A credential can only be issued once, after payment is confirmed.' });
+      }
+      if (err instanceof WorkflowForbiddenError) {
+        return res.status(403).json({ error: err.message });
       }
       console.error('[WORKFLOW BADGE SETUP ERROR]', err);
-      return res.status(400).json({ error: err.message || 'Failed to generate badge.' });
+      return res.status(500).json({ error: 'Failed to issue credential.' });
     }
   });
 
@@ -707,19 +711,30 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
    * Screen 9 & 10: GET /api/workflow/submissions/:id/pdf & /download-pdf
    * Streams downloadable PDF Proof of Audit and Badge Warranty Certificate.
    */
-  router.get(['/api/workflow/submissions/:id/pdf', '/api/workflow/submissions/:id/download-pdf'], async (req: Request, res: Response) => {
+  router.get(['/api/workflow/submissions/:id/pdf', '/api/workflow/submissions/:id/download-pdf'], authenticateToken, async (req: Request, res: Response) => {
     const { id } = req.params;
+    const user = req.user!;
 
     try {
-      const pdfBuffer = await workflowService.generatePdfProof(id);
+      const pdfBuffer = await workflowService.generatePdfProof(id, {
+        userId: user.userId,
+        role: user.role,
+        licenseeId: user.licenseeId,
+      });
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="GHG-Audit-Proof-${id}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
       return res.status(200).send(pdfBuffer);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (err instanceof WorkflowForbiddenError) {
+        return res.status(403).json({ error: err.message });
+      }
+      if (err instanceof InvalidWorkflowTransitionError) {
+        return res.status(409).json({ error: 'The audit proof is available once the credential has been issued.' });
+      }
       console.error('[WORKFLOW PDF ERROR]', err);
-      return res.status(404).json({ error: err.message || 'Failed to generate PDF proof.' });
+      return res.status(404).json({ error: 'Audit proof not found.' });
     }
   });
 

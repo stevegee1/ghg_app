@@ -1,6 +1,7 @@
 import {
   Prisma,
   PrismaClient,
+  CredentialStatus,
   WorkflowType,
   WorkflowStatus,
   WorkflowAnswerType,
@@ -28,6 +29,8 @@ export class MissingRequiredEvidenceError extends Error {
     this.name = 'MissingRequiredEvidenceError';
   }
 }
+
+export const CREDENTIAL_MESSAGE_MAX_LENGTH = 100;
 
 export class WorkflowForbiddenError extends Error {
   constructor(message: string) {
@@ -564,24 +567,20 @@ export class WorkflowEngineService {
   }
 
   /**
-   * Screen 8: Badge Setup Form (PAID -> BADGE_ISSUED)
-   * Client provides short message (max 100 chars) and logo image. Composites badge and transitions status.
+   * Screen 8: Issues the dual-logo credential for a paid submission (PAID -> BADGE_ISSUED).
+   * The logo path must come from the server-side upload handler, never from the client.
    */
-  async setupBadge(
+  async issueCredential(
     submissionId: string,
-    licenseeId: string,
-    input: {
-      clientMessage: string;
-      clientLogoUrl?: string | null;
-    },
-    actor: { userId: string; role: string }
+    input: { clientMessage: string; clientLogoPath: string },
+    actor: WorkflowActor
   ) {
-    if (!input.clientMessage || input.clientMessage.trim().length === 0) {
+    const clientMessage = input.clientMessage.trim();
+    if (!clientMessage) {
       throw new Error('Badge setup requires an attestation message.');
     }
-
-    if (input.clientMessage.length > 100) {
-      throw new Error('Client message exceeds maximum allowed length of 100 characters.');
+    if (clientMessage.length > CREDENTIAL_MESSAGE_MAX_LENGTH) {
+      throw new Error(`Client message exceeds maximum allowed length of ${CREDENTIAL_MESSAGE_MAX_LENGTH} characters.`);
     }
 
     const submission = await this.prisma.workflowSubmission.findUnique({
@@ -593,53 +592,70 @@ export class WorkflowEngineService {
       throw new Error(`Submission '${submissionId}' not found.`);
     }
 
-    if (actor.role !== 'ADMIN' && submission.licenseeId !== licenseeId) {
-      throw new Error('Forbidden: Licensee mismatch.');
+    if (actor.role !== 'ADMIN' && submission.licenseeId !== actor.licenseeId) {
+      throw new WorkflowForbiddenError('You do not have access to this submission.');
     }
 
     if (submission.status !== WorkflowStatus.PAID) {
       throw new InvalidWorkflowTransitionError(submission.status, WorkflowStatus.BADGE_ISSUED);
     }
 
-    // Generate composite badge with platform logo and client logo (outside transaction to avoid DB timeout)
+    // Composite outside the transaction: image rendering can exceed the interactive transaction timeout.
     const compositeResult = await compositeAuditBadge({
-      clientLogoPath: input.clientLogoUrl || '',
-      clientMessage: input.clientMessage.trim(),
+      clientLogoPath: input.clientLogoPath,
+      clientMessage,
       licenseeName: submission.licensee.name,
       selectedFrameworks: [submission.framework.name],
     });
 
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.workflowSubmission.update({
-        where: { id: submissionId },
+    return this.prisma.$transaction(async (tx) => {
+      // Conditional update so two concurrent requests cannot both issue a credential.
+      const claimed = await tx.workflowSubmission.updateMany({
+        where: { id: submissionId, status: WorkflowStatus.PAID },
         data: {
           status: WorkflowStatus.BADGE_ISSUED,
-          clientMessage: input.clientMessage.trim(),
-          clientLogoUrl: input.clientLogoUrl || null,
+          clientMessage,
+          clientLogoUrl: input.clientLogoPath,
           compositeBadgeUrl: compositeResult.dataUri,
         },
-      }),
-      this.prisma.workflowTransitionLog.create({
+      });
+      if (claimed.count !== 1) {
+        throw new InvalidWorkflowTransitionError(submission.status, WorkflowStatus.BADGE_ISSUED);
+      }
+
+      const credential = await tx.auditWarrantyCredential.create({
+        data: {
+          licenseeId: submission.licenseeId,
+          workflowSubmissionId: submissionId,
+          clientMessage,
+          clientLogoUrl: input.clientLogoPath,
+          compositeBadgeUrl: compositeResult.dataUri,
+          selectedFrameworks: [submission.framework.name],
+          verificationSeal: compositeResult.verificationSeal,
+          warrantyExpiresAt: new Date(compositeResult.warrantyExpiresAt),
+          status: CredentialStatus.ISSUED,
+        },
+      });
+
+      await tx.workflowTransitionLog.create({
         data: {
           submissionId,
           previousStatus: WorkflowStatus.PAID,
           newStatus: WorkflowStatus.BADGE_ISSUED,
           triggeredBy: actor.userId,
-          triggerReason: `Audit warranty badge generated and verified with SHA-256 seal ${compositeResult.verificationSeal.slice(0, 16)}`,
+          triggerReason: `Credential ${credential.id} issued with SHA-256 seal ${compositeResult.verificationSeal.slice(0, 16)}`,
         },
-      }),
-    ]);
+      });
 
-    return {
-      submission: updated,
-      compositeResult,
-    };
+      const updated = await tx.workflowSubmission.findUniqueOrThrow({ where: { id: submissionId } });
+      return { submission: updated, credential, compositeResult };
+    });
   }
 
   /**
    * Screen 9 & 10: PDF Proof of Audit outcome stream generator.
    */
-  async generatePdfProof(submissionId: string, licenseeId?: string): Promise<Buffer> {
+  async generatePdfProof(submissionId: string, actor: WorkflowActor): Promise<Buffer> {
     const submission = await this.prisma.workflowSubmission.findUnique({
       where: { id: submissionId },
       include: {
@@ -654,8 +670,12 @@ export class WorkflowEngineService {
       throw new Error(`Submission '${submissionId}' not found.`);
     }
 
-    if (licenseeId && submission.licenseeId !== licenseeId) {
-      throw new Error('Forbidden: Licensee mismatch.');
+    if (actor.role !== 'ADMIN' && submission.licenseeId !== actor.licenseeId) {
+      throw new WorkflowForbiddenError('You do not have access to this submission.');
+    }
+
+    if (submission.status !== WorkflowStatus.BADGE_ISSUED) {
+      throw new InvalidWorkflowTransitionError(submission.status, WorkflowStatus.BADGE_ISSUED);
     }
 
     return new Promise((resolve, reject) => {
