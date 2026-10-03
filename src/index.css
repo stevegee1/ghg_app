@@ -1,92 +1,105 @@
 /* 
-  Persefoni-Inspired Enterprise B2B Design System (Sky Blue & Emerald Green)
-  Engineered for Tier-1 Carbon Accounting & Continuous ISO Assurance.
+  GHG Emission Logs — Google Material Design 3 Enterprise System
+  Aligned with Google Cloud Console / Google Workspace UIX standards.
+  Primary: Google Blue #1a73e8 | Surface: #f8f9fa | On-Surface: #202124
 */
 
 :root, [data-theme="light"], [data-theme="dark"] {
-  --bg-page: #f8fafc;
+  /* ── Surfaces (Google Cloud Console palette) ── */
+  --bg-page: #f8f9fa;       /* Google's canonical app background */
   --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
-  --bg-subtle: #f8fafc;
+  --bg-card-hover: #f1f3f4; /* Google hover state */
+  --bg-subtle: #f1f3f4;
   --bg-elevated: #ffffff;
-  --bg-terminal: #090d16;
+  --bg-terminal: #202124;
 
-  /* High-Contrast Deep Dark Typography (European/Google SaaS Standard) */
-  --text-main: #090d16; /* Deep, solid contrast black - never fainted */
-  --text-muted: #475569; /* Crisp dark charcoal - clear and punchy */
-  --text-light: #64748b; /* Solid secondary text */
+  /* ── Typography (Google Material on-surface) ── */
+  --text-main: #202124;    /* Google's primary on-surface */
+  --text-muted: #5f6368;   /* Google's secondary on-surface */
+  --text-light: #80868b;   /* Google's tertiary on-surface */
 
-  --border-light: #e2e8f0;
-  --border-medium: #cbd5e1;
-  --border-focus: #0f172a;
+  /* ── Borders ── */
+  --border-light: #e8eaed;  /* Google Divider */
+  --border-medium: #dadce0; /* Google Outlined border */
+  --border-focus: #1a73e8;  /* Google Blue focus ring */
 
-  /* Normative & Enterprise B2B Clean Minimalist Palette */
-  --accent-primary: #0f172a;
-  --accent-hover: #1e293b;
-  --accent-light: #f1f5f9;
+  /* ── Primary Interactive — Google Blue ── */
+  --accent-primary: #1a73e8;   /* Google Blue 600 */
+  --accent-hover: #1557b0;     /* Google Blue 700 */
+  --accent-light: #e8f0fe;     /* Google Blue 50 */
+  --accent-text: #1a73e8;      /* On-surface interactive */
 
-  --color-sky: #0284c7;
-  --color-sky-light: #f0f9ff;
-  --color-sky-dark: #0369a1;
+  /* ── Sky / Info ── */
+  --color-sky: #1a73e8;
+  --color-sky-light: #e8f0fe;
+  --color-sky-dark: #1557b0;
 
-  --color-blue: #0284c7;
-  --color-blue-light: #f0f9ff;
-  --color-blue-dark: #0369a1;
+  /* ── Blue aliases (backward compat) ── */
+  --color-blue: #1a73e8;
+  --color-blue-light: #e8f0fe;
+  --color-blue-dark: #1557b0;
 
-  --color-green: #10b981;
-  --color-green-light: #ecfdf5;
-  --color-green-dark: #047857;
+  /* ── Success / Green ── */
+  --color-green: #137333;      /* Google Green 700 */
+  --color-green-light: #e6f4ea; /* Google Green 50 */
+  --color-green-dark: #0d652d;
 
-  --google-amber: #f59e0b;
-  --google-red: #ef4444;
+  /* ── Warning / Amber ── */
+  --google-amber: #f29900;     /* Google Yellow 600 */
 
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  /* ── Error / Red ── */
+  --google-red: #d93025;       /* Google Red 600 */
+
+  /* ── Elevation shadows (Material 3 tonal) ── */
+  --shadow-xs: 0 1px 2px rgba(60,64,67,0.10);
+  --shadow-sm: 0 1px 3px rgba(60,64,67,0.12), 0 1px 2px rgba(60,64,67,0.08);
+  --shadow-md: 0 2px 6px rgba(60,64,67,0.15), 0 1px 2px rgba(60,64,67,0.08);
+  --shadow-lg: 0 4px 12px rgba(60,64,67,0.15), 0 2px 4px rgba(60,64,67,0.08);
   --card-shadow: var(--shadow-sm);
   --card-shadow-hover: var(--shadow-md);
 
-  --nav-bg: rgba(255, 255, 255, 0.96);
-}
+  /* ── Nav ── */
+  --nav-bg: rgba(255, 255, 255, 0.98);
 
-:root {
-  --font-family: 'IBM Plex Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-heading: 'IBM Plex Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Roboto Mono', 'SF Mono', Menlo, Consolas, monospace;
-
-  /* Strict architectural border-radius scale (Greenly 4px standard) */
-  --radius-xs: 4px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-pill: 9999px; /* Reserved: status chips and avatar circles only */
-
-  /* 8px spatial scale */
-  --space-1: 8px;
-  --space-2: 16px;
-  --space-3: 24px;
-  --space-4: 32px;
-  --space-5: 48px;
-  --space-6: 64px;
-
-  /* Greenly Architectural Color Scale (Mapped to Our Blue #0284c7) */
+  /* ── Google Material Color Scale ── */
   --color-primary-10: var(--accent-primary);
   --color-greyscale-2: var(--text-muted);
   --color-greyscale-6: var(--text-light);
   --color-greyscale-8: var(--text-light);
   --color-greyscale-9: var(--border-light);
 
-  /* Portal surface tokens */
-  --portal-preview-bg: #f0f9ff;
-  --portal-preview-border: #e2e8f0;
-  --portal-preview-placeholder-color: #94a3b8;
+  /* ── Portal surface tokens ── */
+  --portal-preview-bg: #e8f0fe;
+  --portal-preview-border: #e8eaed;
+  --portal-preview-placeholder-color: #80868b;
+}
+
+:root {
+  /* ── Typography: Google Sans first, Inter fallback ── */
+  --font-family: 'Google Sans', 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'Google Sans', 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'Roboto Mono', 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ── Border radius (Material 3 rounded) ── */
+  --radius-xs: 4px;
+  --radius-sm: 4px;
+  --radius-md: 8px;    /* Material 3 medium = 8dp */
+  --radius-lg: 12px;   /* Material 3 large = 12dp */
+  --radius-pill: 9999px;
+
+  /* ── 8dp spatial scale (Material baseline) ── */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
 }
 
 [data-theme="dark"] {
-  --portal-preview-bg: #1e293b;
-  --portal-preview-border: #334155;
-  --portal-preview-placeholder-color: #64748b;
+  --portal-preview-bg: #1e3a5f;
+  --portal-preview-border: #3c4043;
+  --portal-preview-placeholder-color: #9aa0a6;
 }
 
 *, *::before, *::after {
@@ -8327,3 +8340,485 @@ button:active:not(:disabled),
   }
 }
 
+/* ==========================================================================
+   GOOGLE MATERIAL DESIGN 3 — INTERACTIVE STATE LAYER
+   Ensures focus rings, active states, and links use Google Blue consistently
+   ========================================================================== */
+
+/* Focus ring — replaces near-black with Google Blue */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Nav active link — Google Blue indicator */
+.nav-link-active,
+.cerebrium-nav-link.active,
+.portal-nav-btn.active {
+  color: var(--accent-primary) !important;
+  border-left-color: var(--accent-primary) !important;
+}
+
+/* Sidebar nav active state — Google Cloud Console style */
+.portal-nav-btn.active {
+  background: var(--accent-light) !important;
+  color: var(--accent-primary) !important;
+  border-left-color: var(--accent-primary) !important;
+}
+
+/* Primary action buttons — Google Blue */
+.persefoni-submit-btn,
+.persefoni-demo-submit-btn,
+.workflow-primary-btn,
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+}
+
+.persefoni-submit-btn:hover:not(:disabled),
+.persefoni-demo-submit-btn:hover:not(:disabled),
+.workflow-primary-btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Link color — Google Blue */
+a:not([class]) {
+  color: var(--accent-primary);
+}
+
+a:not([class]):hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   GOOGLE MATERIAL DESIGN 3 — FULL MOBILE RESPONSIVE SYSTEM
+   Breakpoints: 360 | 480 | 640 | 768 | 960 | 1024 | 1280
+   ========================================================================== */
+
+/* ── 1. Global Mobile Baseline (≤ 640px) ─────────────────────────────────── */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.05rem; }
+
+  .container-x {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Full-width cards on mobile */
+  .persefoni-card,
+  .admin-card,
+  .workflow-card {
+    border-radius: var(--radius-md);
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* Stack any flex row into column on small screens */
+  .flex-row-mobile-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Hide desktop-only overflow decorations */
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* ── 2. Navigation (≤ 768px) ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* App header inner layout */
+  .cerebrium-nav-brand {
+    max-width: 160px;
+    overflow: hidden;
+  }
+
+  /* Hide text labels in nav — icon-only on very small */
+  .nav-label-hide-mobile {
+    display: none;
+  }
+
+  /* Google account popover — full width on mobile */
+  .google-account-popover {
+    right: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
+  }
+
+  /* Main content padding after fixed header */
+  .main-content {
+    padding-top: 0;
+  }
+}
+
+/* ── 3. Portal Dashboard Layout (≤ 960px) ────────────────────────────────── */
+@media (max-width: 960px) {
+  /* Portal body layout: sidebar collapses to hamburger drawer */
+  .portal-dashboard-layout {
+    flex-direction: column;
+    padding: 1rem 0.875rem 4rem 0.875rem;
+    gap: 1rem;
+    min-height: auto;
+  }
+
+  /* Portal main content: full width */
+  .portal-main-content,
+  .portal-content-area {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* KPI stats grids: 2-column then 1-column */
+  .portal-kpi-grid,
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Workflow stepper: compact mobile bar shown */
+  .portal-stepper-full {
+    display: none !important;
+  }
+
+  .portal-stepper-mobile-bar {
+    display: flex !important;
+  }
+
+  /* Assessment question form: full-width inputs */
+  .assessment-form-row {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+/* ── 4. KPI Grid collapse to single column (≤ 480px) ────────────────────── */
+@media (max-width: 480px) {
+  .portal-kpi-grid,
+  .admin-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Entitlement pill row: wrap */
+  .entitlement-pills-row {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* Pipeline filter tabs: horizontal scroll */
+  .pipeline-filter-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .pipeline-filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── 5. Admin Readiness Tracker (≤ 960px) ────────────────────────────────── */
+@media (max-width: 960px) {
+  /* Tracker table: horizontal scroll container */
+  .tracker-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+  }
+
+  .tracker-table-wrapper table {
+    min-width: 640px;
+  }
+
+  /* Tracker header: stack title and actions */
+  .tracker-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .tracker-header-row .tracker-filter-group {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  /* Admin console pipeline KPI cards: 2-col */
+  .admin-pipeline-kpis {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Admin pipeline KPI: single column */
+  .admin-pipeline-kpis {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 6. Merch Store (≤ 960px) ────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  /* Category pill strip: horizontal scroll */
+  .merch-category-pills,
+  .merch-filter-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    gap: 0.5rem !important;
+  }
+
+  .merch-category-pills::-webkit-scrollbar,
+  .merch-filter-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .merch-category-pills > *,
+  .merch-filter-pills > * {
+    flex-shrink: 0;
+  }
+
+  /* Product grid: 2 columns on tablet */
+  .merch-product-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  /* Order panel: stack below product grid */
+  .merch-order-panel {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 1.5rem;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  /* Store tab switcher: full-width */
+  .store-tab-group {
+    width: 100%;
+    display: flex;
+  }
+
+  .store-tab-group > * {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Product grid: single column on phones */
+  .merch-product-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 7. Workflow Wizard (≤ 768px) ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Wizard content: remove side padding, use full bleed */
+  .workflow-wizard-content,
+  .workflow-step-panel {
+    padding: 1.25rem 1rem !important;
+  }
+
+  /* Answer option cards: stack vertically */
+  .workflow-answer-options {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+
+  /* Evidence upload dropzone: full width */
+  .evidence-dropzone {
+    min-height: 120px !important;
+  }
+
+  /* Navigation buttons: full width stacked */
+  .workflow-nav-actions {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .workflow-nav-actions > button,
+  .workflow-nav-actions > a {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Progress bar header: compact */
+  .workflow-progress-header {
+    padding: 0.75rem 1rem !important;
+  }
+}
+
+/* ── 8. Blockchain / Badge Credential (≤ 640px) ──────────────────────────── */
+@media (max-width: 640px) {
+  /* Badge embed preview: scale down */
+  .badge-embed-preview {
+    transform: scale(0.85);
+    transform-origin: top left;
+  }
+
+  /* Credential share row: stack */
+  .credential-share-row {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  .credential-share-row > * {
+    width: 100% !important;
+  }
+}
+
+/* ── 9. Modal / Drawer Full-Screen on Mobile (≤ 640px) ───────────────────── */
+@media (max-width: 640px) {
+  /* Modals: full-screen on mobile */
+  .modal-overlay .modal-content,
+  .modal-overlay .persefoni-modal-inner,
+  .modal-overlay .book-demo-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 1.25rem 1rem !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* ── 10. Audit Stepper (≤ 768px) ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .audit-step-labels {
+    display: none !important;
+  }
+
+  .audit-step-dots {
+    display: flex !important;
+  }
+
+  .audit-matrix-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+/* ── 11. Evidence Locker (≤ 768px) ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .evidence-locker-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .evidence-locker-header .header-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .evidence-locker-header .header-actions > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .evidence-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 12. Console minimal footer (≤ 768px) ────────────────────────────────── */
+@media (max-width: 768px) {
+  .console-minimal-footer-inner {
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    text-align: center !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .console-footer-right {
+    display: none !important;
+  }
+}
+
+/* ── 13. Readiness Engine Workflow (≤ 640px) ─────────────────────────────── */
+@media (max-width: 640px) {
+  .readiness-section-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .readiness-step-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+}
+
+/* ── 14. Risk Speedometer & Charts (≤ 640px) ─────────────────────────────── */
+@media (max-width: 640px) {
+  .risk-speedometer-wrapper {
+    transform: scale(0.8);
+    transform-origin: top center;
+    margin-bottom: -2rem;
+  }
+
+  .chart-legend-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+/* ── 15. Touch-friendly tap targets ──────────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  /* Minimum 48dp touch target (Material guideline) */
+  button,
+  .btn,
+  [role="button"],
+  .portal-nav-btn,
+  .cerebrium-nav-btn-ice,
+  .cerebrium-nav-btn-magenta,
+  .merch-category-pill,
+  select {
+    min-height: 44px;
+  }
+
+  /* Remove hover-only states on touch devices */
+  .persefoni-card:hover {
+    box-shadow: var(--card-shadow) !important;
+    border-color: var(--border-light) !important;
+    transform: none !important;
+  }
+
+  /* Increase link hit area */
+  a {
+    padding-block: 2px;
+  }
+}
+
+/* ── 16. Safe area insets (iPhone notch / Dynamic Island) ────────────────── */
+@supports (padding: max(0px)) {
+  .main-content {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+
+  .console-minimal-footer {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}

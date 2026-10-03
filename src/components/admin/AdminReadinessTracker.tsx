@@ -335,12 +335,12 @@ export const AdminReadinessTracker: React.FC = () => {
       )}
 
       {/* Search + Filter Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
+      <div className="tracker-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
             Client Readiness &amp; Pipeline Entitlements
           </h3>
-          <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0.25rem 0 0' }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
             Live mirror of every licensee intake state, service line access, and audit dossier readiness.
             {filterLine !== 'ALL' && (
               <span style={{ marginLeft: '0.5rem', color: SERVICE_LINE_META[filterLine].color, fontWeight: 600 }}>
@@ -358,17 +358,22 @@ export const AdminReadinessTracker: React.FC = () => {
           placeholder="Search company, contact email, sector..."
           style={{
             padding: '0.6rem 0.95rem',
-            border: '1px solid #cbd5e1',
-            borderRadius: '6px',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '8px',
             fontSize: '0.85rem',
-            minWidth: '280px',
+            minWidth: '240px',
+            flex: '1 1 240px',
+            maxWidth: '360px',
+            outline: 'none',
+            transition: 'border-color 0.15s ease',
+            fontFamily: 'inherit',
           }}
         />
       </div>
 
       {/* Tracker Table */}
-      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+      <div className="tracker-table-wrapper" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '10px', overflowX: 'auto' }}>
+        <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '0.73rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               <th style={th}>Client Organisation</th>

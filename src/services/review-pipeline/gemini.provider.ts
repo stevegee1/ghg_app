@@ -4,7 +4,7 @@
  * Google Gemini LLM provider for the AI Audit Screener.
  * Activated when GEMINI_API_KEY is present in environment.
  *
- * Model: gemini-2.0-flash (configurable via GEMINI_MODEL env var)
+ * Model: gemini-3.8-flash (configurable via GEMINI_MODEL env var)
  * API:   https://generativelanguage.googleapis.com/v1beta/models
  */
 
@@ -12,10 +12,18 @@ import { ILlmProvider, LlmCompletionOptions, LlmCompletionResult, LlmMessage } f
 
 export class GeminiProvider implements ILlmProvider {
   readonly providerName = 'Google Gemini';
-  readonly defaultModel = 'gemini-2.0-flash';
+  // gemini-2.0-flash was retired by Google Oct 2026. Current model: gemini-3.8-flash
+  readonly defaultModel = 'gemini-3.8-flash';
 
   isConfigured(): boolean {
-    return Boolean(process.env.GEMINI_API_KEY);
+    const configured = Boolean(process.env.GEMINI_API_KEY);
+    if (configured) {
+      const model = process.env.GEMINI_MODEL || this.defaultModel;
+      console.info(`[GEMINI_PROVIDER] Active. Model: ${model}`);
+    } else {
+      console.warn('[GEMINI_PROVIDER] GEMINI_API_KEY not set. Falling back to deterministic rules engine.');
+    }
+    return configured;
   }
 
   async complete(messages: LlmMessage[], options: LlmCompletionOptions = {}): Promise<LlmCompletionResult> {
@@ -61,8 +69,9 @@ export class GeminiProvider implements ILlmProvider {
     }
 
     if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Gemini API error ${response.status}: ${err}`);
+      const errBody = await response.text();
+      console.error(`[GEMINI_PROVIDER] API error ${response.status} on model '${model}': ${errBody}`);
+      throw new Error(`Gemini API error ${response.status}: ${errBody}`);
     }
 
     const data: any = await response.json();

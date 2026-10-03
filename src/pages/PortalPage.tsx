@@ -395,31 +395,31 @@ export const PortalPage: React.FC = () => {
   }, [token]);
 
   const carbonChecklists = checklists.filter(
-    (c) => c.recommendation?.workflowType === 'CARBON'
+    (c) => c?.recommendation?.workflowType === 'CARBON'
   );
   const jobChecklists = checklists.filter(
-    (c) => c.recommendation?.workflowType === 'JOB'
+    (c) => c?.recommendation?.workflowType === 'JOB'
   );
 
   const mandatoryCarbonChecklists = carbonChecklists.filter(
-    (c) => c.recommendation?.isLegallyMandatory && c.recommendation?.clientAccepted !== false
+    (c) => c?.recommendation?.isLegallyMandatory && c?.recommendation?.clientAccepted !== false
   );
   const relevantCarbonChecklists =
     mandatoryCarbonChecklists.length > 0 ? mandatoryCarbonChecklists : carbonChecklists;
   const isCarbonPrepReady =
     Boolean(user?.hasCompletedAssessment) &&
     relevantCarbonChecklists.length > 0 &&
-    relevantCarbonChecklists.every((c) => c.isReadyToIngest);
+    relevantCarbonChecklists.every((c) => Boolean(c?.isReadyToIngest));
 
   const mandatoryJobChecklists = jobChecklists.filter(
-    (c) => c.recommendation?.isLegallyMandatory && c.recommendation?.clientAccepted !== false
+    (c) => c?.recommendation?.isLegallyMandatory && c?.recommendation?.clientAccepted !== false
   );
   const relevantJobChecklists =
     mandatoryJobChecklists.length > 0 ? mandatoryJobChecklists : jobChecklists;
   const isJobPrepReady =
     Boolean(user?.hasCompletedAssessment) &&
     relevantJobChecklists.length > 0 &&
-    relevantJobChecklists.every((c) => c.isReadyToIngest);
+    relevantJobChecklists.every((c) => Boolean(c?.isReadyToIngest));
 
   const isCurrentScopePrepReady =
     auditScope === 'JOB_REPORTING' ? isJobPrepReady : isCarbonPrepReady;

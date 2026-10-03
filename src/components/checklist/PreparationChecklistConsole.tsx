@@ -554,7 +554,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
         <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
           {pipelineLists.map((c) => {
             const isSelected = c.id === selectedChecklistId;
-            const isReady = c.isReadyToIngest;
+            const isReady = Boolean(c?.isReadyToIngest);
             const cleanTitle = getPlainEnglishFrameworkTitle(c.recommendation?.frameworkName || '');
 
             return (
@@ -598,7 +598,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       )}
 
       {/* Active Framework Details Header */}
-      {recommendation && (
+      {activeChecklist && recommendation && (
         <div
           style={{
             background: '#ffffff',
@@ -644,7 +644,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               )}
             </div>
 
-            {activeChecklist.isReadyToIngest ? (
+            {activeChecklist?.isReadyToIngest ? (
               <span
                 style={{
                   fontSize: '0.78rem',
@@ -663,7 +663,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               </span>
             ) : (
               <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
-                {activeChecklist.completedItems} of {activeChecklist.totalItems} requirements complete
+                {activeChecklist?.completedItems ?? 0} of {activeChecklist?.totalItems ?? 0} requirements complete
               </span>
             )}
           </div>
@@ -1064,7 +1064,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       </div>
 
       {/* Ready to Ingest Hand-Off Banner */}
-      {activeChecklist.isReadyToIngest && (
+      {Boolean(activeChecklist?.isReadyToIngest) && (
         <div
           style={{
             background: '#f0fdf4',

@@ -329,12 +329,20 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     // ─────────────────────────────────────────────────────────────────────────────
     const { AiAuditReviewer } = await import('../services/review-pipeline/ai-audit-reviewer.service');
     const reviewer = new AiAuditReviewer(prisma);
-    const evaluation = await reviewer.evaluateIsoSubmission({
-      licenseeName: user.name || user.email || 'Licensee Account',
-      selectedFrameworks: frameworks,
-      answers,
-      evidenceFileNames: answers.filter(a => a.answer && (a.answer.includes('.pdf') || a.answer.includes('.xlsx') || a.answer.includes('.csv'))).map(a => a.answer),
-    });
+    console.info(`[ISO_READINESS_SUBMIT] Starting AI evaluation for licensee: ${user.licenseeId}, frameworks: ${frameworks.join(', ')}, answers: ${answers.length}`);
+    let evaluation: Awaited<ReturnType<typeof reviewer.evaluateIsoSubmission>>;
+    try {
+      evaluation = await reviewer.evaluateIsoSubmission({
+        licenseeName: user.name || user.email || 'Licensee Account',
+        selectedFrameworks: frameworks,
+        answers,
+        evidenceFileNames: answers.filter(a => a.answer && (a.answer.includes('.pdf') || a.answer.includes('.xlsx') || a.answer.includes('.csv'))).map(a => a.answer),
+      });
+      console.info(`[ISO_READINESS_SUBMIT] AI evaluation complete. Score: ${evaluation.complianceScore}%, Reviewer: ${evaluation.reviewedBy}, Decision: ${evaluation.decision}`);
+    } catch (evalErr: any) {
+      console.error('[ISO_READINESS_SUBMIT] AI evaluation threw an unhandled error:', evalErr?.message);
+      return res.status(500).json({ error: 'AI compliance evaluation failed. Please retry.' });
+    }
 
     const isAuditReady = evaluation.targetStatus === 'AUDIT_READY' && evaluation.complianceScore >= 80;
     const resolvedStatus = IsoReadinessStatus.SUBMITTED;

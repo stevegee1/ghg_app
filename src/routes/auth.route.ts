@@ -357,7 +357,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
 
   /**
    * GET /api/auth/me
-   * Resolves currently authenticated user with tenant organization name.
+   * Resolves currently authenticated user with org name, entitlements, and service line access.
    */
   const handleMe = async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization;
@@ -369,7 +369,16 @@ export function createAuthRouter(prisma: PrismaClient): Router {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       const user = await prisma.portalUser.findUnique({
         where: { id: decoded.userId },
-        include: { licensee: true },
+        include: {
+          licensee: {
+            include: {
+              serviceEntitlements: {
+                where: { status: 'ACTIVE' },
+                select: { serviceLine: true, status: true, grantedAt: true },
+              },
+            },
+          },
+        },
       });
       if (!user) {
         return res.status(401).json({ error: 'User no longer exists' });
@@ -387,7 +396,10 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           primaryRole: user.primaryRole,
           isOnboardingComplete: user.isOnboardingComplete,
           hasCompletedAssessment: user.licensee?.hasCompletedAssessment ?? false,
-          assuranceIntent: 'DUAL' as const, // Deprecated; service access now gated by ServiceEntitlement records
+          // Active service entitlements — use these for pipeline access gating
+          serviceEntitlements: user.licensee?.serviceEntitlements ?? [],
+          // Deprecated: use serviceEntitlements[].serviceLine instead
+          assuranceIntent: 'DUAL' as const,
           companyName: user.licensee?.name || (user.role === 'ADMIN' ? 'GHG Platform Administration' : 'Authorized Entity'),
           organisationCountry: user.licensee?.organisationCountry || 'GB',
           industrySector: user.licensee?.industrySector || null,
