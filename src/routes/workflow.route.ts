@@ -102,8 +102,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
     const { workflowType, frameworkId } = req.body || {};
 
-    if (!workflowType || (workflowType !== 'CARBON' && workflowType !== 'JOB')) {
-      return res.status(400).json({ error: "workflowType must be 'CARBON' or 'JOB'." });
+    if (!workflowType || (workflowType !== 'GHG' && workflowType !== 'CARBON' && workflowType !== 'JOB')) {
+      return res.status(400).json({ error: "workflowType must be 'GHG', 'CARBON', or 'JOB'." });
     }
 
     if (!frameworkId || typeof frameworkId !== 'string') {
@@ -112,6 +112,25 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
     // Statutory gating check for non-admin licensees
     if (user.role !== 'ADMIN') {
+      // Gate 1: Active ServiceEntitlement for requested pipeline
+      const serviceLineMap: Record<string, string> = { GHG: 'GHG', CARBON: 'CARBON', JOB: 'JOB' };
+      const requiredServiceLine = serviceLineMap[workflowType as string];
+      const entitlement = await prisma.serviceEntitlement.findFirst({
+        where: {
+          licenseeId,
+          serviceLine: requiredServiceLine as any,
+          status: 'ACTIVE',
+        },
+      });
+
+      if (!entitlement) {
+        return res.status(403).json({
+          error: `Active ${workflowType} service entitlement required. Contact your account manager to activate this compliance pipeline.`,
+          code: 'ENTITLEMENT_REQUIRED',
+        });
+      }
+
+      // Gate 2: Intake assessment completed
       const licensee = await prisma.licensee.findUnique({
         where: { id: licenseeId },
         select: { hasCompletedAssessment: true },

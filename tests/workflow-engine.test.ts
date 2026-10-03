@@ -168,7 +168,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .get('/api/workflow/frameworks?type=INVALID')
         .expect(400);
 
-      expect(res.body.error).toContain("Must be 'CARBON' or 'JOB'");
+      expect(res.body.error).toContain("Must be 'GHG', 'CARBON', or 'JOB'");
     });
   });
 
