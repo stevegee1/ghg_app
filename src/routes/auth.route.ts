@@ -387,7 +387,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           primaryRole: user.primaryRole,
           isOnboardingComplete: user.isOnboardingComplete,
           hasCompletedAssessment: user.licensee?.hasCompletedAssessment ?? false,
-          assuranceIntent: (user.licensee?.assuranceIntent as 'CARBON' | 'JOB' | 'DUAL') || 'DUAL',
+          assuranceIntent: 'DUAL' as const, // Deprecated; service access now gated by ServiceEntitlement records
           companyName: user.licensee?.name || (user.role === 'ADMIN' ? 'GHG Platform Administration' : 'Authorized Entity'),
           organisationCountry: user.licensee?.organisationCountry || 'GB',
           industrySector: user.licensee?.industrySector || null,

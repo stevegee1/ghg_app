@@ -11,6 +11,8 @@ import {
 import { PreparationChecklistService } from './preparation-checklist.service';
 
 export interface IntakeAssessmentInput {
+  serviceLines?: ('GHG' | 'CARBON' | 'JOB' | 'MERCH')[]; // Which pipelines the client is purchasing
+  /** @deprecated use serviceLines. Kept for backward compatibility during migration. */
   assuranceIntent?: 'CARBON' | 'JOB' | 'DUAL';
   organisationCountry: string; // ISO 3166-1 alpha-2 e.g. "GB", "DE", "US"
   organisationSize: OrganisationSize;
@@ -58,7 +60,7 @@ export class AssessmentDecisionEngine {
       list.push({
         frameworkCode: 'UK_SECR',
         frameworkName: 'Streamlined Energy and Carbon Reporting (SECR)',
-        workflowType: WorkflowType.CARBON,
+        workflowType: WorkflowType.GHG,
         isLegallyMandatory: true,
         plainEnglishWhy:
           'Because your organization operates in the United Kingdom with over 250 employees or over £36m turnover, you have a statutory duty under the Companies Act 2006 to report Scope 1 and Scope 2 emissions and energy efficiency in your annual Directors Report.',
@@ -72,15 +74,15 @@ export class AssessmentDecisionEngine {
     // 2. UK Public Procurement Notice (PPN 06/21)
     if (input.isUKPublicContractor) {
       list.push({
-        frameworkCode: 'UK_PPN_0621',
-        frameworkName: 'UK Public Procurement Carbon Reduction Plan (PPN 06/21)',
+        frameworkCode: 'UK_PPN_006',
+        frameworkName: 'UK Public Procurement Carbon Reduction Plan (PPN 006)',
         workflowType: WorkflowType.CARBON,
         isLegallyMandatory: true,
         plainEnglishWhy:
-          'You hold or bid for UK public sector and Central Government contracts. Under Crown Commercial Service PPN 06/21, you must publish an executive-signed Carbon Reduction Plan covering Scope 1, 2, and mandated Scope 3 subsets.',
+          'You hold or bid for UK public sector contracts. Under Crown Commercial Service PPN 006 (formerly PPN 06/21), you must publish a board-signed Carbon Reduction Plan covering Scope 1, 2, and mandated Scope 3 categories on your company website.',
         consequenceIfSkipped:
           'Mandatory disqualification from bidding on UK Central Government contracts valued at £5m per annum or above.',
-        enforcementBody: 'Cabinet Office & Crown Commercial Service',
+        enforcementBody: 'Cabinet Office / Crown Commercial Service',
         estimatedEffort: ComplianceEffort.MEDIUM,
       });
     }
@@ -89,11 +91,11 @@ export class AssessmentDecisionEngine {
     if (isUK && input.hasPlanningConsent) {
       list.push({
         frameworkCode: 'UK_SECTION_106',
-        frameworkName: 'Section 106 Planning Obligation (Carbon & Local Employment)',
+        frameworkName: 'Section 106 Planning Obligation (Local Employment)',
         workflowType: WorkflowType.JOB,
         isLegallyMandatory: true,
         plainEnglishWhy:
-          'Your development operates under planning permission subject to Section 106 legal agreements. The Local Planning Authority requires verified evidence of carbon offset compliance and local workforce quotas.',
+          'Your development operates under planning permission subject to Section 106 legal agreements. The Local Planning Authority requires verified evidence of local workforce hire quotas, apprenticeship targets, and training records.',
         consequenceIfSkipped:
           'Planning breach notices, withholding of building control sign-off, or refusal of certificate of lawful occupancy.',
         enforcementBody: 'Local Planning Authority (LPA)',
@@ -120,15 +122,15 @@ export class AssessmentDecisionEngine {
     // 5. Green Hydrogen Production & Guarantee of Origin
     if (input.hasGreenHydrogen || input.industrySector === IndustrySector.GREEN_HYDROGEN) {
       list.push({
-        frameworkCode: 'GREEN_HYDROGEN_CERTIFHY',
-        frameworkName: 'Green Hydrogen Certification & GHG Verification (CertifHy / LCHS)',
-        workflowType: WorkflowType.CARBON,
+        frameworkCode: 'UK_LCHS',
+        frameworkName: 'UK Low Carbon Hydrogen Standard (LCHS)',
+        workflowType: WorkflowType.GHG,
         isLegallyMandatory: true,
         plainEnglishWhy:
-          'You produce, compress, or distribute electrolytic green hydrogen. Under the UK Low Carbon Hydrogen Standard (LCHS) and EU RED II/III, hydrogen must be proven below 20g CO2e/MJ with verified hourly renewable power correlation.',
+          'You produce, compress, or distribute electrolytic green hydrogen. Under the UK Low Carbon Hydrogen Standard (LCHS) administered by DESNZ and Ofgem, hydrogen must be proven below 20g CO2e/MJ with verified hourly renewable power correlation to qualify for the Hydrogen Business Model (HBM) subsidy.',
         consequenceIfSkipped:
-          'Ineligibility for Hydrogen Business Model (HBM) subsidy revenues, cancellation of premium offtake agreements, and loss of green certification status.',
-        enforcementBody: 'Department for Energy Security and Net Zero (DESNZ) / Ofgem / CertifHy',
+          'Ineligibility for Hydrogen Business Model (HBM) subsidy revenues, cancellation of premium offtake agreements, and loss of LCHS certification status.',
+        enforcementBody: 'Department for Energy Security and Net Zero (DESNZ) / Ofgem',
         estimatedEffort: ComplianceEffort.HIGH,
       });
     }
@@ -137,8 +139,8 @@ export class AssessmentDecisionEngine {
     if (input.hasPhysicalSites || input.hasProductionProcess || input.hasFleet) {
       list.push({
         frameworkCode: 'ISO_14064_1',
-        frameworkName: 'ISO 14064-1:2018 Organization GHG Quantification',
-        workflowType: WorkflowType.CARBON,
+        frameworkName: 'ISO 14064-1:2018 Organisation GHG Quantification and Disclosure',
+        workflowType: WorkflowType.GHG,
         isLegallyMandatory: false,
         plainEnglishWhy:
           'Because you manage physical facilities, manufacturing lines, or vehicles, ISO 14064-1 provides the international audit standard recognized by global banks, institutional investors, and Tier-1 enterprise supply chain auditors.',
@@ -158,8 +160,8 @@ export class AssessmentDecisionEngine {
     ) {
       list.push({
         frameworkCode: 'ISO_50001',
-        frameworkName: 'ISO 50001:2018 Energy Management Assurance',
-        workflowType: WorkflowType.CARBON,
+        frameworkName: 'ISO 50001:2018 Energy Management System (EnMS)',
+        workflowType: WorkflowType.GHG,
         isLegallyMandatory: false,
         plainEnglishWhy:
           'Your operations feature high energy density or automated metering infrastructure. ISO 50001 certification grants full statutory exemption from costly UK ESOS Phase 3 energy audits.',
@@ -193,10 +195,17 @@ export class AssessmentDecisionEngine {
       });
     }
 
-    // Filter list strictly based on client mandate intent
+    // Derive effective service lines from new field, falling back to legacy assuranceIntent
+    const selectedLines: string[] = input.serviceLines ?? [];
+    const legacyIntent = input.assuranceIntent || 'DUAL';
+    const wantsGhg = selectedLines.includes('GHG') || legacyIntent === 'CARBON' || legacyIntent === 'DUAL' || selectedLines.length === 0;
+    const wantsCarbon = selectedLines.includes('CARBON') || legacyIntent === 'CARBON' || legacyIntent === 'DUAL' || selectedLines.length === 0;
+    const wantsJob = selectedLines.includes('JOB') || legacyIntent === 'JOB' || legacyIntent === 'DUAL' || selectedLines.length === 0;
+
     const filteredList = list.filter((item) => {
-      if (intent === 'CARBON') return item.workflowType === WorkflowType.CARBON;
-      if (intent === 'JOB') return item.workflowType === WorkflowType.JOB;
+      if (item.workflowType === WorkflowType.GHG) return wantsGhg;
+      if (item.workflowType === WorkflowType.CARBON) return wantsCarbon;
+      if (item.workflowType === WorkflowType.JOB) return wantsJob;
       return true;
     });
 
@@ -266,7 +275,7 @@ export class AssessmentService {
           hasPlanningConsent: input.hasPlanningConsent ?? false,
           makesPublicGreenClaims: input.makesPublicGreenClaims ?? false,
           hasGreenHydrogen: input.hasGreenHydrogen ?? false,
-          assuranceIntent: input.assuranceIntent || 'DUAL',
+          serviceLinesRequested: (input.serviceLines as any) ?? [],
           completedAt: new Date(),
         },
       });
@@ -301,9 +310,27 @@ export class AssessmentService {
           hasCompletedAssessment: true,
           organisationCountry: input.organisationCountry.trim().toUpperCase().slice(0, 2),
           industrySector: input.industrySector,
-          assuranceIntent: input.assuranceIntent || 'DUAL',
         },
       });
+
+      // 5b. Create ServiceEntitlement records (PENDING) for each selected service line
+      const selectedLines: ('GHG' | 'CARBON' | 'JOB' | 'MERCH')[] =
+        (input.serviceLines as any) ??
+        (input.assuranceIntent === 'CARBON' ? ['GHG', 'CARBON'] :
+         input.assuranceIntent === 'JOB' ? ['JOB'] :
+         ['GHG', 'CARBON', 'JOB']); // DUAL default
+
+      for (const line of selectedLines) {
+        await tx.serviceEntitlement.upsert({
+          where: { licenseeId_serviceLine: { licenseeId, serviceLine: line as any } },
+          update: { status: 'PENDING', updatedAt: new Date() },
+          create: {
+            licenseeId,
+            serviceLine: line as any,
+            status: 'PENDING',
+          },
+        });
+      }
 
       // 6. Update PortalUser onboarding state if userId is provided
       if (userId) {
@@ -376,23 +403,33 @@ export class AssessmentService {
   /**
    * Activates an additional compliance pipeline (e.g. adding Job Auditing to an existing Carbon licensee).
    */
-  async activatePipeline(licenseeId: string, pipeline: 'CARBON' | 'JOB' | 'DUAL'): Promise<any> {
+  async activatePipeline(licenseeId: string, pipeline: 'CARBON' | 'JOB' | 'DUAL' | 'GHG'): Promise<any> {
     const existingAssessment = await this.prisma.clientAssessment.findFirst({
       where: { licenseeId },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Update licensee assurance intent
-    await this.prisma.licensee.update({
-      where: { id: licenseeId },
-      data: { assuranceIntent: pipeline },
-    });
+    // Map legacy pipeline string to ServiceLine array
+    const newLines: ('GHG' | 'CARBON' | 'JOB')[] =
+      pipeline === 'GHG'    ? ['GHG'] :
+      pipeline === 'CARBON' ? ['GHG', 'CARBON'] :
+      pipeline === 'JOB'    ? ['JOB'] :
+                              ['GHG', 'CARBON', 'JOB']; // DUAL
 
-    if (!existingAssessment) {
-      return { success: true, assuranceIntent: pipeline };
+    // Upsert ServiceEntitlement records
+    for (const line of newLines) {
+      await this.prisma.serviceEntitlement.upsert({
+        where: { licenseeId_serviceLine: { licenseeId, serviceLine: line as any } },
+        update: { status: 'PENDING', updatedAt: new Date() },
+        create: { licenseeId, serviceLine: line as any, status: 'PENDING' },
+      });
     }
 
-    // Evaluate with new intent
+    if (!existingAssessment) {
+      return { success: true, serviceLines: newLines };
+    }
+
+    // Evaluate with new service lines
     const updatedInput: IntakeAssessmentInput = {
       organisationCountry: existingAssessment.organisationCountry,
       organisationSize: existingAssessment.organisationSize,
@@ -406,7 +443,7 @@ export class AssessmentService {
       hasPlanningConsent: existingAssessment.hasPlanningConsent,
       makesPublicGreenClaims: existingAssessment.makesPublicGreenClaims,
       hasGreenHydrogen: existingAssessment.hasGreenHydrogen,
-      assuranceIntent: pipeline,
+      serviceLines: newLines,
     };
 
     const computed = AssessmentDecisionEngine.evaluate(updatedInput);
@@ -447,7 +484,7 @@ export class AssessmentService {
 
     await this.prisma.clientAssessment.update({
       where: { id: existingAssessment.id },
-      data: { assuranceIntent: pipeline },
+      data: { serviceLinesRequested: newLines as any },
     });
 
     return this.getAssessment(licenseeId);

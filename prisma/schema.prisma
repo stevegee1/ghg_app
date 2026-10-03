@@ -23,7 +23,8 @@ model Licensee {
   organisationCountry      String? // ISO 3166-1 alpha-2 e.g. "GB", "DE", "US"
   industrySector           IndustrySector? // Set during onboarding
   hasCompletedAssessment   Boolean         @default(false)
-  assuranceIntent          String?         @default("DUAL") // "CARBON" | "JOB" | "DUAL"
+
+  entitlements             ServiceEntitlement[]
   createdAt                DateTime        @default(now())
   updatedAt                DateTime        @updatedAt
 
@@ -724,7 +725,23 @@ model DemoBooking {
 // WORKFLOW ENGINE: Parameterized Carbon & Job Reporting Compliance State Machine
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// The four separately-gated compliance service lines.
+/// GHG  = measure and disclose (SECR, ISO 14064-1, ESOS)
+/// CARBON = commit, reduce and claim (PPN 006, SBTi, ISO 14068-1, CMA)
+/// JOB  = employment, skills and social value reporting (S106, PPN 002/026, GPG, MSA)
+/// MERCH = merchandise sales with product footprint and charity split
+enum ServiceLine {
+  GHG
+  CARBON
+  JOB
+  MERCH
+}
+
+/// Alias used on WorkflowFramework and WorkflowSubmission.
+/// CARBON covers both GHG and CARBON service lines at the framework level;
+/// use ServiceLine for client-facing pipeline routing.
 enum WorkflowType {
+  GHG
   CARBON
   JOB
 }
@@ -995,7 +1012,9 @@ model ClientAssessment {
   hasPlanningConsent     Boolean // Planning permission with S106 obligations?
   makesPublicGreenClaims Boolean // Make any environmental claims publicly?
   hasGreenHydrogen       Boolean @default(false) // Produce or operate green hydrogen?
-  assuranceIntent        String  @default("DUAL") // "CARBON" | "JOB" | "DUAL"
+
+  // Service lines the client selected during intake (drives pipeline routing)
+  serviceLinesRequested  ServiceLine[] @default([])
 
   // Metadata
   assessmentVersion String    @default("v1.0")
@@ -1043,6 +1062,38 @@ model ComplianceRecommendation {
 
   @@index([licenseeId, frameworkCode])
   @@index([assessmentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICE ENTITLEMENT: Per-licensee, per-service-line access control record.
+// A licensee gains access to a pipeline only after an entitlement record exists
+// with status ACTIVE. Admin can revoke or suspend without deleting data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum EntitlementStatus {
+  PENDING    // Assessment submitted, awaiting admin review
+  ACTIVE     // Pipeline access granted
+  SUSPENDED  // Temporarily blocked (payment lapse, non-conformance hold)
+  REVOKED    // Permanently withdrawn
+}
+
+model ServiceEntitlement {
+  id          String            @id @default(cuid())
+  licenseeId  String
+  licensee    Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  serviceLine ServiceLine
+  status      EntitlementStatus @default(PENDING)
+  grantedAt   DateTime?
+  grantedBy   String?           // PortalUser.id of the admin who approved
+  revokedAt   DateTime?
+  revokedBy   String?
+  revokeReason String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([licenseeId, serviceLine])
+  @@index([licenseeId, status])
+  @@index([serviceLine, status])
 }
 
 /// Per-framework, per-client preparation checklist.
