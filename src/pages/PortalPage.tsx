@@ -438,30 +438,6 @@ export const PortalPage: React.FC = () => {
   const [activeStep, setActiveStep] = useState<WorkflowStep>(1);
   const [activatingPipeline, setActivatingPipeline] = useState<boolean>(false);
 
-  const handleActivatePipeline = useCallback(
-    async (targetPipeline: 'CARBON' | 'JOB' | 'DUAL') => {
-      if (!token) return;
-      try {
-        setActivatingPipeline(true);
-        await api.activatePipeline(token, targetPipeline);
-        if (user && updateUser) {
-          updateUser({ ...user, assuranceIntent: targetPipeline });
-        }
-        await refreshChecklists();
-        if (targetPipeline === 'DUAL' || targetPipeline === 'JOB') {
-          navigateToView('checklist', { scope: 'JOB_REPORTING' });
-        } else {
-          navigateToView('checklist', { scope: 'CARBON_EMISSION' });
-        }
-      } catch (err: any) {
-        console.error('Failed to activate pipeline:', err);
-      } finally {
-        setActivatingPipeline(false);
-      }
-    },
-    [token, user, updateUser, refreshChecklists, navigateToView]
-  );
-
   const navigateToView = useCallback(
     (
       targetView: DashboardView,
@@ -526,6 +502,30 @@ export const PortalPage: React.FC = () => {
       navigateToView('workflow', { scope: targetScope, step: targetStep });
     },
     [navigateToView, auditScope]
+  );
+
+  const handleActivatePipeline = useCallback(
+    async (targetPipeline: 'CARBON' | 'JOB' | 'DUAL') => {
+      if (!token) return;
+      try {
+        setActivatingPipeline(true);
+        await api.activatePipeline(token, targetPipeline);
+        if (user && updateUser) {
+          updateUser({ ...user, assuranceIntent: targetPipeline });
+        }
+        await refreshChecklists();
+        if (targetPipeline === 'DUAL' || targetPipeline === 'JOB') {
+          navigateToView('checklist', { scope: 'JOB_REPORTING' });
+        } else {
+          navigateToView('checklist', { scope: 'CARBON_EMISSION' });
+        }
+      } catch (err: any) {
+        console.error('Failed to activate pipeline:', err);
+      } finally {
+        setActivatingPipeline(false);
+      }
+    },
+    [token, user, updateUser, refreshChecklists, navigateToView]
   );
   const activeTiers = auditScope === 'CARBON_EMISSION' ? TIERS : JOB_TIERS;
   const [framework, setFramework] = useState<any | null>(null);
