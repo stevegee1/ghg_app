@@ -17,7 +17,7 @@
  * Implements IAuditReviewer.
  */
 
-import { PrismaClient, WorkflowStatus, ReviewOverallDecision } from '@prisma/client';
+import { Prisma, PrismaClient, WorkflowStatus } from '@prisma/client';
 import { IAuditReviewer, AuditReviewResult, ClauseReviewFinding } from './audit-reviewer.interface';
 import { ILlmProvider, resolveActiveProvider } from './llm-provider.interface';
 
@@ -311,6 +311,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     await this.persistAiFindings(submissionId, {
       clauseFindings,
       overallScore,
+      recommendedDecision,
       reviewedBy,
       executiveSummary,
     });
@@ -363,11 +364,11 @@ export class AiAuditReviewer implements IAuditReviewer {
     return lines.join('\n');
   }
 
-  private runDeterministicEvaluation(
+  private async runDeterministicEvaluation(
     submission: any,
     questions: any[],
     answerMap: Map<string, any>
-  ): AuditReviewResult {
+  ): Promise<AuditReviewResult> {
     const clauseFindings: ClauseReviewFinding[] = [];
     let totalPoints = 0;
     let maxPoints = 0;
@@ -413,12 +414,13 @@ export class AiAuditReviewer implements IAuditReviewer {
       `Overall pre-screen score: ${overallScore}%. ` +
       `Recommendation: ${recommendedDecision}. Lead Auditor manual verification required before finalisation.`;
 
-    this.persistAiFindings(submission.id, {
+    await this.persistAiFindings(submission.id, {
       clauseFindings,
       overallScore,
+      recommendedDecision,
       reviewedBy: RULES_ENGINE_REVIEWER,
       executiveSummary,
-    }).catch((err) => console.error('[AI_AUDIT_REVIEWER] Failed to persist deterministic findings:', err));
+    });
 
     return {
       decision: recommendedDecision,
@@ -445,70 +447,41 @@ export class AiAuditReviewer implements IAuditReviewer {
     data: {
       clauseFindings: ClauseReviewFinding[];
       overallScore: number;
+      recommendedDecision: 'APPROVE' | 'REQUIRE_REVISION';
       reviewedBy: string;
       executiveSummary: string;
     }
   ): Promise<void> {
-    const nonConformantCount = data.clauseFindings.filter(
-      (f) => f.status !== 'CONFORMANT'
-    ).length;
-    const overallDecision =
-      nonConformantCount === 0 && data.overallScore >= 75
-        ? ReviewOverallDecision.APPROVED
-        : ReviewOverallDecision.REJECTED;
+    const aiFields = {
+      aiScreenedAt: new Date(),
+      aiReviewer: data.reviewedBy,
+      aiScore: data.overallScore,
+      aiRecommendation: data.recommendedDecision,
+      aiSummary: data.executiveSummary,
+      aiClauseFindings: data.clauseFindings as unknown as Prisma.InputJsonValue,
+    };
 
-    await this.prisma.workflowReviewDecision.upsert({
-      where: { submissionId },
-      update: {
-        reviewerId: null,
-        overallDecision,
-        overallScore: data.overallScore,
-        perQuestionDecisions: data.clauseFindings as any,
-        reviewerNotes: `[AI PRE-SCREEN by ${data.reviewedBy}]\n\n${data.executiveSummary}`,
-      },
-      create: {
-        submissionId,
-        reviewerId: null,
-        overallDecision,
-        overallScore: data.overallScore,
-        perQuestionDecisions: data.clauseFindings as any,
-        reviewerNotes: `[AI PRE-SCREEN by ${data.reviewedBy}]\n\n${data.executiveSummary}`,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      // Advance only a SUBMITTED submission; a later Lead Auditor state is never overwritten.
+      const advanced = await tx.workflowSubmission.updateMany({
+        where: { id: submissionId, status: WorkflowStatus.SUBMITTED },
+        data: { ...aiFields, status: WorkflowStatus.AI_SCREENED },
+      });
+
+      if (advanced.count === 1) {
+        await tx.workflowTransitionLog.create({
+          data: {
+            submissionId,
+            previousStatus: WorkflowStatus.SUBMITTED,
+            newStatus: WorkflowStatus.AI_SCREENED,
+            triggeredBy: 'AI_AGENT_ASSURANCE_ENGINE',
+            triggerReason: `${data.reviewedBy} pre-screen: score ${data.overallScore}%, recommendation ${data.recommendedDecision}`,
+          },
+        });
+      } else {
+        await tx.workflowSubmission.update({ where: { id: submissionId }, data: aiFields });
+      }
     });
-
-    // Transition submission to AI_SCREENED only if it is currently SUBMITTED
-    const currentSub = await this.prisma.workflowSubmission.findUnique({
-      where: { id: submissionId },
-      select: { status: true },
-    });
-
-    if (currentSub?.status === WorkflowStatus.SUBMITTED) {
-      await this.prisma.workflowSubmission.update({
-        where: { id: submissionId },
-        data: {
-          status: WorkflowStatus.AI_SCREENED,
-          complianceScore: data.overallScore,
-        },
-      });
-
-      await this.prisma.workflowTransitionLog.create({
-        data: {
-          submissionId,
-          previousStatus: WorkflowStatus.SUBMITTED,
-          newStatus: WorkflowStatus.AI_SCREENED,
-          triggeredBy: 'AI_AGENT_ASSURANCE_ENGINE',
-          triggerReason: `${data.reviewedBy} pre-screen: score ${data.overallScore}%, decision ${overallDecision}`,
-        },
-      });
-    } else {
-      // Just record compliance score without overwriting subsequent state
-      await this.prisma.workflowSubmission.update({
-        where: { id: submissionId },
-        data: {
-          complianceScore: data.overallScore,
-        },
-      });
-    }
   }
 
   /**

@@ -573,16 +573,16 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
         });
     });
 
-    it('CARBON submission AI screening endpoint returns 202 Accepted', async () => {
-      // Trigger AI screen (async - returns immediately)
-      const res = await request(app)
+    it('only a Lead Auditor can trigger AI screening, and never on a draft', async () => {
+      await request(app)
         .post(`/api/workflow/submissions/${carbonSubmissionId}/ai-screen`)
         .set('Authorization', `Bearer ${carbonToken}`)
-        .expect(202);
+        .expect(403);
 
-      expect(res.body.success).toBe(true);
-      expect(res.body.message).toContain('AI Assurance Agent screening initiated');
-      expect(res.body.submissionId).toBe(carbonSubmissionId);
+      await request(app)
+        .post(`/api/workflow/submissions/${carbonSubmissionId}/ai-screen`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(409);
     });
   });
 
@@ -680,14 +680,11 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
       expect(res.body.success).toBe(true);
     });
 
-    it('JOB submission AI screening returns 202 Accepted', async () => {
-      const res = await request(app)
+    it('JOB licensee cannot trigger AI screening', async () => {
+      await request(app)
         .post(`/api/workflow/submissions/${jobSubmissionId}/ai-screen`)
         .set('Authorization', `Bearer ${jobToken}`)
-        .expect(202);
-
-      expect(res.body.success).toBe(true);
-      expect(res.body.submissionId).toBe(jobSubmissionId);
+        .expect(403);
     });
 
     it('JOB answers are isolated — CARBON licensee cannot read JOB submission', async () => {
@@ -883,32 +880,22 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   describe('7. AI Findings retrieval', () => {
-    it('GET /api/workflow/submissions/:id/ai-findings returns findings shape for CARBON submission', async () => {
-      // Wait briefly for the async AI screen to have had a chance to run
-      // (test env has NODE_ENV=test so auto-trigger is skipped; we triggered manually above)
-      await new Promise((r) => setTimeout(r, 500));
-
-      const res = await request(app)
+    it('AI findings are internal to the Lead Auditor and hidden from licensees', async () => {
+      await request(app)
         .get(`/api/workflow/submissions/${carbonSubmissionId}/ai-findings`)
         .set('Authorization', `Bearer ${carbonToken}`)
-        .expect((res) => {
-          // Either 200 (screened) or 404 (not yet - async hasn't finished)
-          expect([200, 404]).toContain(res.status);
-        });
-
-      if (res.status === 200) {
-        expect(res.body.complianceScore).toBeDefined();
-        expect(typeof res.body.complianceScore).toBe('number');
-      }
-    });
-
-    it('AI findings endpoint refuses cross-licensee access', async () => {
+        .expect(403);
       await request(app)
         .get(`/api/workflow/submissions/${carbonSubmissionId}/ai-findings`)
         .set('Authorization', `Bearer ${jobToken}`)
-        .expect((res) => {
-          expect([403, 404]).toContain(res.status);
-        });
+        .expect(403);
+    });
+
+    it('returns 404 to the Lead Auditor before any pre-screen exists', async () => {
+      await request(app)
+        .get(`/api/workflow/submissions/${carbonSubmissionId}/ai-findings`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
     });
   });
 });

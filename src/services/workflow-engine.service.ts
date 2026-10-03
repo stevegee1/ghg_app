@@ -31,6 +31,13 @@ export class MissingRequiredEvidenceError extends Error {
 
 export const CREDENTIAL_MESSAGE_MAX_LENGTH = 100;
 
+export class ReviewValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ReviewValidationError';
+  }
+}
+
 export class WorkflowNotFoundError extends Error {
   constructor() {
     super('Submission not found.');
@@ -64,7 +71,7 @@ export interface PerQuestionDecisionInput {
 }
 
 export interface ReviewDecisionInput {
-  reviewerId?: string | null;
+  reviewerAccreditation: string;
   overallDecision: ReviewOverallDecision;
   overallScore: number;
   perQuestionDecisions: PerQuestionDecisionInput[];
@@ -305,11 +312,12 @@ export class WorkflowEngineService {
   }
 
   /**
-   * Records a structured Lead Auditor review decision (APPROVED or REJECTED) with per-question breakdowns.
+   * Records the Lead Auditor's decision (APPROVED or REJECTED) with a decision on every question.
+   * The auditor's name is taken from their account; their accreditation is recorded as given.
    */
-  async submitReview(submissionId: string, decision: ReviewDecisionInput, actor: { userId: string; role: string }) {
+  async submitReview(submissionId: string, decision: ReviewDecisionInput, actor: WorkflowActor) {
     if (actor.role !== 'ADMIN') {
-      throw new Error('Forbidden: Only Lead Auditors can record review decisions.');
+      throw new WorkflowForbiddenError('Only Lead Auditors can record review decisions.');
     }
 
     const submission = await this.prisma.workflowSubmission.findUnique({
@@ -318,58 +326,78 @@ export class WorkflowEngineService {
     });
 
     if (!submission) {
-      throw new Error('Submission not found.');
+      throw new WorkflowNotFoundError();
     }
 
     if (submission.status !== WorkflowStatus.UNDER_REVIEW && submission.status !== WorkflowStatus.AI_SCREENED) {
-      throw new Error(`Cannot submit review while submission is in ${submission.status}. Must be UNDER_REVIEW or AI_SCREENED.`);
+      throw new InvalidWorkflowTransitionError(
+        submission.status,
+        decision.overallDecision === ReviewOverallDecision.APPROVED ? WorkflowStatus.APPROVED : WorkflowStatus.REJECTED
+      );
     }
 
+    const decisionsByQuestion = new Map(decision.perQuestionDecisions.map((d) => [d.questionId, d]));
+    const questionIds = new Set(submission.framework.questions.map((q) => q.id));
+    const undecided = submission.framework.questions.filter((q) => !decisionsByQuestion.has(q.id));
+    const unknown = decision.perQuestionDecisions.filter((d) => !questionIds.has(d.questionId));
+    if (undecided.length > 0 || unknown.length > 0) {
+      throw new ReviewValidationError('A decision is required for every question in the framework, and only those questions.');
+    }
+    if (decision.perQuestionDecisions.some((d) => !d.accepted && !d.reasonIfRejected?.trim())) {
+      throw new ReviewValidationError('Every rejected question needs a reason the client can act on.');
+    }
+    if (
+      decision.overallDecision === ReviewOverallDecision.APPROVED &&
+      decision.perQuestionDecisions.some((d) => !d.accepted)
+    ) {
+      throw new ReviewValidationError('A submission cannot be approved while any question is rejected.');
+    }
+
+    const reviewer = await this.prisma.portalUser.findUnique({
+      where: { id: actor.userId },
+      select: { firstName: true, lastName: true, email: true },
+    });
+    if (!reviewer) {
+      throw new WorkflowForbiddenError('Reviewer account not found.');
+    }
+    const reviewerName = [reviewer.firstName, reviewer.lastName].filter(Boolean).join(' ') || reviewer.email;
+
     const targetStatus =
-      decision.overallDecision === ReviewOverallDecision.APPROVED
-        ? WorkflowStatus.APPROVED
-        : WorkflowStatus.REJECTED;
+      decision.overallDecision === ReviewOverallDecision.APPROVED ? WorkflowStatus.APPROVED : WorkflowStatus.REJECTED;
+    const reviewData = {
+      reviewerId: actor.userId,
+      reviewerName,
+      reviewerAccreditation: decision.reviewerAccreditation,
+      overallDecision: decision.overallDecision,
+      overallScore: decision.overallScore,
+      perQuestionDecisions: decision.perQuestionDecisions as unknown as Prisma.InputJsonValue,
+      reviewerNotes: decision.reviewerNotes || null,
+    };
 
     return this.atomic(async (tx) => {
-      // 1. Record structured Review Decision
       await tx.workflowReviewDecision.upsert({
         where: { submissionId },
-        update: {
-          reviewerId: decision.reviewerId || actor.userId,
-          overallDecision: decision.overallDecision,
-          overallScore: decision.overallScore,
-          perQuestionDecisions: decision.perQuestionDecisions as any,
-          reviewerNotes: decision.reviewerNotes || null,
-        },
-        create: {
-          submissionId,
-          reviewerId: decision.reviewerId || actor.userId,
-          overallDecision: decision.overallDecision,
-          overallScore: decision.overallScore,
-          perQuestionDecisions: decision.perQuestionDecisions as any,
-          reviewerNotes: decision.reviewerNotes || null,
-        },
+        update: reviewData,
+        create: { submissionId, ...reviewData },
       });
 
-      // 2. Update Submission status & complianceScore
       const updated = await tx.workflowSubmission.update({
         where: { id: submissionId },
         data: {
           status: targetStatus,
           complianceScore: decision.overallScore,
           reviewedAt: new Date(),
-          reviewerId: decision.reviewerId || actor.userId,
+          reviewerId: actor.userId,
         },
       });
 
-      // 3. Log transition
       await tx.workflowTransitionLog.create({
         data: {
           submissionId,
           previousStatus: submission.status,
           newStatus: targetStatus,
           triggeredBy: actor.userId,
-          triggerReason: `Lead Auditor review completed: ${decision.overallDecision} (Score: ${decision.overallScore}%)`,
+          triggerReason: `Lead Auditor ${reviewerName} (${decision.reviewerAccreditation}) recorded ${decision.overallDecision} with score ${decision.overallScore}%`,
         },
       });
 

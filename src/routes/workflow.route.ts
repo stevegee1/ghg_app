@@ -9,6 +9,7 @@ import {
   MissingRequiredEvidenceError,
   WorkflowForbiddenError,
   WorkflowNotFoundError,
+  ReviewValidationError,
   CREDENTIAL_MESSAGE_MAX_LENGTH,
 } from '../services/workflow-engine.service';
 import { CheckoutService } from '../services/checkout.service';
@@ -394,102 +395,82 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * POST /api/workflow/submissions/:id/ai-screen
-   * Triggers the AI Assurance Agent to evaluate a SUBMITTED submission.
-   * The agent evaluates each answer against ISO clauses and produces structured
-   * ClauseReviewFinding[] docket, then transitions the submission to AI_SCREENED.
-   *
-   * This runs asynchronously: returns immediately with a 202 Accepted.
-   * Lead Auditor sees the findings when they open the submission in UNDER_REVIEW.
-   *
-   * Can be called by ADMIN or the owning licensee.
+   * Admin-only: re-runs the AI pre-screen for a SUBMITTED or AI_SCREENED submission (for example
+   * after the automatic run failed). Returns 202 and runs in the background.
    */
-  router.post('/api/workflow/submissions/:id/ai-screen', authenticateToken, async (req: Request, res: Response) => {
+  router.post('/api/workflow/submissions/:id/ai-screen', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
-    const user = req.user!;
 
     try {
       const submission = await prisma.workflowSubmission.findUnique({
         where: { id },
-        select: { id: true, licenseeId: true, status: true },
+        select: { id: true, status: true },
       });
 
       if (!submission) {
         return res.status(404).json({ error: 'Submission not found.' });
       }
-
-      if (user.role !== 'ADMIN' && user.licenseeId && submission.licenseeId !== user.licenseeId) {
-        return res.status(403).json({ error: 'Forbidden: Access to other licensees is prohibited.' });
+      if (submission.status !== WorkflowStatus.SUBMITTED && submission.status !== WorkflowStatus.AI_SCREENED) {
+        return res.status(409).json({ error: `AI pre-screen cannot run while the submission is ${submission.status}.` });
       }
 
       const { AiAuditReviewer } = await import('../services/review-pipeline/ai-audit-reviewer.service');
-      const reviewer = new AiAuditReviewer(prisma);
-
-      // Run asynchronously so the HTTP response returns immediately
-      reviewer.evaluateSubmission(id)
-        .then((result) => {
-          console.log(`[AI_SCREEN] Submission ${id} pre-screened: score=${result.complianceScore}%, decision=${result.decision}, by=${result.reviewedBy}`);
-        })
-        .catch((err) => {
-          console.error(`[AI_SCREEN] Failed for submission ${id}:`, err.message);
-        });
-
-      return res.status(202).json({
-        success: true,
-        message: 'AI Assurance Agent screening initiated. The submission will transition to AI_SCREENED status when complete.',
-        submissionId: id,
+      new AiAuditReviewer(prisma).evaluateSubmission(id).catch((err: unknown) => {
+        console.error(`[AI_SCREEN] Failed for submission ${id}:`, err);
       });
-    } catch (err: any) {
+
+      return res.status(202).json({ success: true, submissionId: id });
+    } catch (err: unknown) {
       console.error('[AI_SCREEN INIT ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to initiate AI screening.' });
+      return res.status(500).json({ error: 'Failed to start AI pre-screen.' });
     }
   });
 
   /**
    * GET /api/workflow/submissions/:id/ai-findings
-   * Returns the AI pre-screen findings stored in WorkflowReviewDecision.
-   * Used by the Lead Auditor console to view the AI docket before making a decision.
+   * Admin-only: the AI pre-screen docket shown to the Lead Auditor. It is advice to the auditor,
+   * not a decision, so it is not exposed to licensees.
    */
-  router.get('/api/workflow/submissions/:id/ai-findings', authenticateToken, async (req: Request, res: Response) => {
+  router.get('/api/workflow/submissions/:id/ai-findings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
-    const user = req.user!;
 
     try {
       const submission = await prisma.workflowSubmission.findUnique({
         where: { id },
-        select: { id: true, licenseeId: true, status: true, complianceScore: true },
+        select: {
+          id: true,
+          status: true,
+          aiScreenedAt: true,
+          aiReviewer: true,
+          aiScore: true,
+          aiRecommendation: true,
+          aiSummary: true,
+          aiClauseFindings: true,
+        },
       });
 
       if (!submission) {
         return res.status(404).json({ error: 'Submission not found.' });
       }
-
-      if (user.role !== 'ADMIN' && user.licenseeId && submission.licenseeId !== user.licenseeId) {
-        return res.status(403).json({ error: 'Forbidden: Access to other licensees is prohibited.' });
-      }
-
-      const decision = await prisma.workflowReviewDecision.findUnique({
-        where: { submissionId: id },
-      });
-
-      if (!decision) {
-        return res.status(404).json({ error: 'No AI pre-screen findings found for this submission. Trigger /ai-screen first.' });
+      if (!submission.aiScreenedAt) {
+        return res.status(404).json({ error: 'No AI pre-screen has been recorded for this submission yet.' });
       }
 
       return res.status(200).json({
         submissionId: id,
-        status: submission?.status,
-        complianceScore: submission?.complianceScore,
+        status: submission.status,
         aiFindings: {
-          overallDecision: decision.overallDecision,
-          overallScore: decision.overallScore,
-          reviewerNotes: decision.reviewerNotes,
-          clauseFindings: decision.perQuestionDecisions,
-          createdAt: decision.createdAt,
+          screenedAt: submission.aiScreenedAt,
+          reviewer: submission.aiReviewer,
+          score: submission.aiScore,
+          recommendation: submission.aiRecommendation,
+          summary: submission.aiSummary,
+          clauseFindings: submission.aiClauseFindings,
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[AI_FINDINGS GET ERROR]', err);
-      return res.status(500).json({ error: 'Failed to retrieve AI screening findings.' });
+      return res.status(500).json({ error: 'Failed to retrieve AI pre-screen findings.' });
     }
   });
 
@@ -536,38 +517,61 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * POST /api/workflow/submissions/:id/review
-   * Admin-only: Records structured review decision (APPROVED | REJECTED) with per-question breakdowns.
+   * Admin-only: the Lead Auditor's decision (APPROVED | REJECTED) with a decision on every question.
    */
   router.post('/api/workflow/submissions/:id/review', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
     const user = req.user!;
-    const { overallDecision, overallScore, perQuestionDecisions, reviewerNotes } = req.body || {};
+    const { overallDecision, overallScore, perQuestionDecisions, reviewerNotes, reviewerAccreditation } = req.body || {};
 
-    if (!overallDecision || (overallDecision !== 'APPROVED' && overallDecision !== 'REJECTED')) {
+    if (overallDecision !== 'APPROVED' && overallDecision !== 'REJECTED') {
       return res.status(400).json({ error: "overallDecision must be 'APPROVED' or 'REJECTED'." });
     }
-
-    if (typeof overallScore !== 'number' || overallScore < 0 || overallScore > 100) {
+    if (typeof overallScore !== 'number' || !Number.isInteger(overallScore) || overallScore < 0 || overallScore > 100) {
       return res.status(400).json({ error: 'overallScore must be an integer between 0 and 100.' });
     }
-
-    if (!Array.isArray(perQuestionDecisions) || perQuestionDecisions.length === 0) {
+    if (typeof reviewerAccreditation !== 'string' || !reviewerAccreditation.trim()) {
+      return res.status(400).json({ error: 'reviewerAccreditation is required for every review decision.' });
+    }
+    if (reviewerNotes !== undefined && reviewerNotes !== null && typeof reviewerNotes !== 'string') {
+      return res.status(400).json({ error: 'reviewerNotes must be text.' });
+    }
+    const decisionsValid =
+      Array.isArray(perQuestionDecisions) &&
+      perQuestionDecisions.length > 0 &&
+      perQuestionDecisions.every(
+        (d: unknown) =>
+          typeof d === 'object' &&
+          d !== null &&
+          typeof (d as { questionId?: unknown }).questionId === 'string' &&
+          typeof (d as { accepted?: unknown }).accepted === 'boolean'
+      );
+    if (!decisionsValid) {
       return res.status(400).json({
         error: 'perQuestionDecisions must be a non-empty array of { questionId, accepted, reasonIfRejected }.',
       });
     }
+
+    const cleanDecisions = (perQuestionDecisions as Array<{ questionId: string; accepted: boolean; reasonIfRejected?: unknown }>).map(
+      (d) => ({
+        questionId: d.questionId,
+        accepted: d.accepted,
+        reasonIfRejected: typeof d.reasonIfRejected === 'string' ? d.reasonIfRejected.trim() : null,
+      })
+    );
 
     try {
       const reviewed = await runWithRls(prisma, user, async (tx) => {
         return new WorkflowEngineService(tx).submitReview(
           id,
           {
+            reviewerAccreditation: reviewerAccreditation.trim(),
             overallDecision,
             overallScore,
-            perQuestionDecisions,
-            reviewerNotes,
+            perQuestionDecisions: cleanDecisions,
+            reviewerNotes: typeof reviewerNotes === 'string' ? reviewerNotes.trim() : null,
           },
-          { userId: user.userId, role: user.role }
+          { userId: user.userId, role: user.role, licenseeId: user.licenseeId }
         );
       });
 
@@ -576,9 +580,21 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         message: `Submission marked ${overallDecision} with conformance score ${overallScore}%.`,
         submission: reviewed,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (err instanceof ReviewValidationError) {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err instanceof InvalidWorkflowTransitionError) {
+        return res.status(409).json({ error: err.message });
+      }
+      if (err instanceof WorkflowNotFoundError) {
+        return res.status(404).json({ error: err.message });
+      }
+      if (err instanceof WorkflowForbiddenError) {
+        return res.status(403).json({ error: err.message });
+      }
       console.error('[WORKFLOW REVIEW ERROR]', err);
-      return res.status(400).json({ error: err.message || 'Failed to record review decision.' });
+      return res.status(500).json({ error: 'Failed to record review decision.' });
     }
   });
 

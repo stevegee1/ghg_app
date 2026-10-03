@@ -17,6 +17,7 @@ import { seedFrameworks } from '../prisma/seeds/framework-seed';
 import { grantPipelineAccess } from './helpers/pipelineAccess';
 import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 import { getAssuranceFee, validateAssuranceFeeConfig } from '../src/services/assurance-fee.service';
+import { AiAuditReviewer, RULES_ENGINE_REVIEWER } from '../src/services/review-pipeline/ai-audit-reviewer.service';
 
 const prisma = new PrismaClient();
 const LOGO_PATH = path.join(process.cwd(), 'public', 'images', 'nfty-logs-logo.png');
@@ -467,6 +468,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .send({
           overallDecision: 'REJECTED',
           overallScore: 55,
+          reviewerAccreditation: 'IEMA Lead Auditor 12345',
           reviewerNotes: 'Apprenticeship weeks do not meet statutory CITB benchmark.',
           perQuestionDecisions: [
             { questionId: q1.id, accepted: true, reasonIfRejected: null },
@@ -476,6 +478,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
               reasonIfRejected: 'Reported 45 weeks is below mandatory 52-week annual apprentice threshold.',
             },
             { questionId: q3.id, accepted: true, reasonIfRejected: null },
+            { questionId: q4.id, accepted: true, reasonIfRejected: null },
           ],
         })
         .expect(200);
@@ -490,7 +493,9 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .expect(200);
 
       expect(dossier.body.submission.reviewDecision.overallDecision).toBe('REJECTED');
-      expect(dossier.body.submission.reviewDecision.perQuestionDecisions).toHaveLength(3);
+      expect(dossier.body.submission.reviewDecision.perQuestionDecisions).toHaveLength(4);
+      expect(dossier.body.submission.reviewDecision.reviewerAccreditation).toBe('IEMA Lead Auditor 12345');
+      expect(dossier.body.submission.reviewDecision.reviewerName).toBe(adminUser.email);
       expect(dossier.body.submission.reviewDecision.perQuestionDecisions[1].accepted).toBe(false);
     });
 
@@ -531,14 +536,14 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
 
   describe('5. Full Approval, Payment, and Badge Pipeline (Part B.1)', () => {
     let submissionId: string;
-    let q1: any;
+    let allQuestionIds: string[];
 
     beforeAll(async () => {
       const framework = await prisma.workflowFramework.findUnique({
         where: { id: 'fwk_iso_14064' },
         include: { questions: { orderBy: { orderIndex: 'asc' } } },
       });
-      q1 = framework!.questions[0];
+      allQuestionIds = framework!.questions.map((q) => q.id);
 
       const draftRes = await request(app)
         .post('/api/workflow/draft')
@@ -577,10 +582,9 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .send({
           overallDecision: 'APPROVED',
           overallScore: 100,
+          reviewerAccreditation: 'IEMA Lead Auditor 12345',
           reviewerNotes: 'Exemplary Scope 1 and 2 carbon accounting with verified primary evidence.',
-          perQuestionDecisions: [
-            { questionId: q1.id, accepted: true, reasonIfRejected: null },
-          ],
+          perQuestionDecisions: allQuestionIds.map((questionId) => ({ questionId, accepted: true, reasonIfRejected: null })),
         })
         .expect(200);
 
@@ -718,6 +722,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .send({
           overallDecision: 'APPROVED',
           overallScore: 100,
+          reviewerAccreditation: 'IEMA Lead Auditor 12345',
           reviewerNotes: 'Approved for production checkout and badge issuance.',
           perQuestionDecisions: qIds.map((qid) => ({ questionId: qid, accepted: true, reasonIfRejected: null })),
         })
@@ -1053,6 +1058,120 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .send(JSON.stringify({}))
         .expect(400);
       expect(res.text).toBe('Webhook Error: Invalid signature');
+    });
+  });
+
+  describe('10. AI pre-screen and Lead Auditor decision are kept separately', () => {
+    let subId: string;
+    let questionIds: string[];
+    type QuestionDecision = { questionId: string; accepted: boolean; reasonIfRejected: string | null };
+    const approveAll = (): QuestionDecision[] =>
+      questionIds.map((questionId) => ({ questionId, accepted: true, reasonIfRejected: null }));
+
+    beforeAll(async () => {
+      const framework = await prisma.workflowFramework.findUnique({
+        where: { id: 'fwk_iso_14064' },
+        include: { questions: { orderBy: { orderIndex: 'asc' } } },
+      });
+      questionIds = framework!.questions.map((q) => q.id);
+
+      const sub = await prisma.workflowSubmission.create({
+        data: {
+          licenseeId: licenseeA.id,
+          workflowType: WorkflowType.GHG,
+          frameworkId: 'fwk_iso_14064',
+          status: WorkflowStatus.SUBMITTED,
+          submittedAt: new Date(),
+          answers: {
+            create: framework!.questions.map((q) => ({
+              questionId: q.id,
+              value: 'true',
+              evidenceDocumentId: evidenceDocA.id,
+            })),
+          },
+        },
+      });
+      subId = sub.id;
+    });
+
+    it('records the pre-screen on the submission and labels it when no AI model ran', async () => {
+      const reviewer = new AiAuditReviewer(prisma, []);
+      await reviewer.evaluateSubmission(subId);
+
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: subId } });
+      expect(row!.status).toBe(WorkflowStatus.AI_SCREENED);
+      expect(row!.aiReviewer).toBe(RULES_ENGINE_REVIEWER);
+      expect(typeof row!.aiScore).toBe('number');
+      expect(row!.aiClauseFindings).not.toBeNull();
+      expect(await prisma.workflowReviewDecision.findUnique({ where: { submissionId: subId } })).toBeNull();
+
+      const findings = await request(app)
+        .get(`/api/workflow/submissions/${subId}/ai-findings`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+      expect(findings.body.aiFindings.reviewer).toBe(RULES_ENGINE_REVIEWER);
+      expect(Array.isArray(findings.body.aiFindings.clauseFindings)).toBe(true);
+
+      await request(app)
+        .get(`/api/workflow/submissions/${subId}/ai-findings`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .expect(403);
+    });
+
+    it.each([
+      ['missing accreditation', { reviewerAccreditation: '' }, /reviewerAccreditation/],
+      ['an undecided question', { dropLast: true }, /every question/],
+      ['a rejection without a reason', { rejectFirst: '' }, /reason/],
+      ['approval with a rejected question', { rejectFirst: 'Boundary evidence incomplete.' }, /cannot be approved/],
+    ])('rejects a review with %s', async (_label, variant, message) => {
+      const v = variant as { reviewerAccreditation?: string; dropLast?: boolean; rejectFirst?: string };
+      let decisions = approveAll();
+      if (v.dropLast) decisions = decisions.slice(0, -1);
+      if (v.rejectFirst !== undefined) {
+        decisions = decisions.map((d, i) => (i === 0 ? { ...d, accepted: false, reasonIfRejected: v.rejectFirst || null } : d));
+      }
+
+      const res = await request(app)
+        .post(`/api/workflow/submissions/${subId}/review`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          overallDecision: 'APPROVED',
+          overallScore: 90,
+          reviewerAccreditation: v.reviewerAccreditation ?? 'IEMA Lead Auditor 12345',
+          perQuestionDecisions: decisions,
+        })
+        .expect(400);
+      expect(res.body.error).toMatch(message);
+
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: subId } });
+      expect(row!.status).toBe(WorkflowStatus.AI_SCREENED);
+    });
+
+    it("keeps the AI pre-screen after the Lead Auditor's decision", async () => {
+      await request(app)
+        .post(`/api/workflow/submissions/${subId}/review`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          overallDecision: 'APPROVED',
+          overallScore: 92,
+          reviewerAccreditation: 'IEMA Lead Auditor 12345',
+          perQuestionDecisions: approveAll(),
+        })
+        .expect(200);
+
+      const row = await prisma.workflowSubmission.findUnique({
+        where: { id: subId },
+        include: { reviewDecision: true, transitions: { orderBy: { timestamp: 'asc' } } },
+      });
+      expect(row!.status).toBe(WorkflowStatus.APPROVED);
+      expect(row!.complianceScore).toBe(92);
+      expect(row!.aiReviewer).toBe(RULES_ENGINE_REVIEWER);
+      expect(row!.aiClauseFindings).not.toBeNull();
+      expect(row!.reviewDecision!.reviewerId).toBe(adminUser.id);
+      expect(row!.reviewDecision!.reviewerName).toBe(adminUser.email);
+      const last = row!.transitions[row!.transitions.length - 1];
+      expect(last.previousStatus).toBe(WorkflowStatus.AI_SCREENED);
+      expect(last.newStatus).toBe(WorkflowStatus.APPROVED);
     });
   });
 });
