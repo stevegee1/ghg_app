@@ -28,7 +28,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * GET /api/workflow/frameworks
-   * Lists supported frameworks and their ordered questions parameterized by workflowType ('CARBON' | 'JOB').
+   * Lists supported frameworks from the DB registry, optionally filtered by workflowType (GHG | CARBON | JOB).
    */
   router.get('/api/workflow/frameworks', async (req: Request, res: Response) => {
     try {
@@ -37,10 +37,10 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
       if (type && typeof type === 'string') {
         const upper = type.toUpperCase();
-        if (upper === 'CARBON' || upper === 'JOB') {
+        if (upper === 'GHG' || upper === 'CARBON' || upper === 'JOB') {
           workflowType = upper as WorkflowType;
         } else {
-          return res.status(400).json({ error: `Invalid workflow type: ${type}. Must be 'CARBON' or 'JOB'.` });
+          return res.status(400).json({ error: `Invalid workflow type: ${type}. Must be 'GHG', 'CARBON', or 'JOB'.` });
         }
       }
 
@@ -49,6 +49,42 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     } catch (err: any) {
       console.error('[WORKFLOW FRAMEWORKS GET ERROR]', err);
       return res.status(500).json({ error: 'Failed to retrieve workflow frameworks.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/frameworks/:code/questions
+   * Admin-only: Returns the full question set for a framework from the DB registry.
+   * Used by the admin framework registry UI to inspect and validate question content.
+   */
+  router.get('/api/workflow/frameworks/:code/questions', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    const { code } = req.params;
+    try {
+      const fw = await prisma.workflowFramework.findFirst({
+        where: { code },
+        include: { questions: { orderBy: { orderIndex: 'asc' } } },
+      });
+
+      if (!fw) {
+        return res.status(404).json({ error: `Framework '${code}' not found in registry.` });
+      }
+
+      return res.status(200).json({
+        framework: {
+          id: fw.id,
+          code: fw.code,
+          name: fw.name,
+          workflowType: fw.workflowType,
+          governingBody: fw.governingBody,
+          jurisdiction: fw.jurisdiction,
+          description: fw.description,
+        },
+        questions: fw.questions,
+        totalQuestions: fw.questions.length,
+      });
+    } catch (err: any) {
+      console.error('[FRAMEWORK QUESTIONS GET ERROR]', err);
+      return res.status(500).json({ error: 'Failed to retrieve framework questions.' });
     }
   });
 

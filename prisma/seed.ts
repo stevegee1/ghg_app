@@ -1,13 +1,14 @@
 import 'dotenv/config';
 import { PrismaClient, Vertical, TransactionStatus, VerificationSource, PortalRole, DeliveryType, CharityStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { seedFrameworks } from './seeds/framework-seed';
 
 const prisma = new PrismaClient();
 
 export async function seed() {
   console.log('Seeding database...');
 
-  // Ensure ghg_app_user role exists and has permissions for RLS testing
+  // Ensure ghg_app_user role exists for RLS
   try {
     await prisma.$executeRawUnsafe(`
       DO $$
@@ -22,6 +23,9 @@ export async function seed() {
   } catch (e) {
     console.error('Seed RLS role setup error:', e);
   }
+
+  // Framework registry (idempotent - safe on every deploy)
+  await seedFrameworks(prisma);
 
   // 0. Seed Charities
   const charitiesData = [

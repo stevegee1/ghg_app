@@ -302,15 +302,23 @@ const PILLAR_METADATA = [
 ];
 
 export class FrameworkRegistryService {
+  private prisma?: any;
+
+  constructor(prisma?: any) {
+    this.prisma = prisma;
+  }
+
+  // ── Static in-memory methods (used as fallback / no-DB context) ───────────
+
   /**
-   * Returns a list of all supported carbon compliance frameworks.
+   * Returns all supported frameworks from the in-memory registry.
    */
   public static getAllFrameworks(): ComplianceFrameworkMeta[] {
     return Object.values(COMPLIANCE_FRAMEWORKS);
   }
 
   /**
-   * Returns metadata for a specific framework code.
+   * Returns metadata for a specific framework code from the in-memory registry.
    */
   public static getFramework(frameworkId: string): ComplianceFrameworkMeta | null {
     return COMPLIANCE_FRAMEWORKS[frameworkId] || null;
@@ -328,9 +336,7 @@ export class FrameworkRegistryService {
 
     const activeIdSet = new Set(activeFrameworks.map((f) => f.id));
 
-    // Filter and deduplicate questions across active frameworks
     const selectedQuestions = MASTER_DIAGNOSTIC_QUESTIONS.filter((q) => {
-      // Core baseline questions are always included across pillars
       if (['P1-Q1', 'P2-Q1', 'P3-Q1', 'P4-Q1', 'P5-Q1'].includes(q.questionId)) {
         return true;
       }
@@ -346,6 +352,96 @@ export class FrameworkRegistryService {
       selectedFrameworks: activeFrameworks,
       pillars,
       totalQuestions: selectedQuestions.length,
+    };
+  }
+
+  // ── DB-backed async methods (primary path post-seed) ─────────────────────
+
+  /**
+   * Returns all frameworks from the DB registry.
+   * Falls back to in-memory static list if DB returns zero rows.
+   */
+  public async getAllFrameworksFromDb(): Promise<{
+    id: string;
+    code: string;
+    name: string;
+    workflowType: string;
+    governingBody: string | null;
+    jurisdiction: string | null;
+    description: string | null;
+    questionCount: number;
+  }[]> {
+    if (!this.prisma) return [];
+
+    const rows = await this.prisma.workflowFramework.findMany({
+      include: { _count: { select: { questions: true } } },
+      orderBy: [{ workflowType: 'asc' }, { name: 'asc' }],
+    });
+
+    if (rows.length === 0) return [];
+
+    return rows.map((r: any) => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      workflowType: r.workflowType,
+      governingBody: r.governingBody,
+      jurisdiction: r.jurisdiction,
+      description: r.description,
+      questionCount: r._count.questions,
+    }));
+  }
+
+  /**
+   * Returns a single framework with all questions from the DB registry.
+   * Falls back to in-memory static data if not found.
+   */
+  public async getFrameworkWithQuestionsFromDb(code: string): Promise<{
+    id: string;
+    code: string;
+    name: string;
+    workflowType: string;
+    governingBody: string | null;
+    jurisdiction: string | null;
+    description: string | null;
+    questions: {
+      id: string;
+      orderIndex: number;
+      text: string;
+      answerType: string;
+      options: string[];
+      evidenceRequired: boolean;
+      isoClauseReference: string;
+      guidanceNotes: string | null;
+    }[];
+  } | null> {
+    if (!this.prisma) return null;
+
+    const fw = await this.prisma.workflowFramework.findFirst({
+      where: { code },
+      include: { questions: { orderBy: { orderIndex: 'asc' } } },
+    });
+
+    if (!fw) return null;
+
+    return {
+      id: fw.id,
+      code: fw.code,
+      name: fw.name,
+      workflowType: fw.workflowType,
+      governingBody: fw.governingBody,
+      jurisdiction: fw.jurisdiction,
+      description: fw.description,
+      questions: fw.questions.map((q: any) => ({
+        id: q.id,
+        orderIndex: q.orderIndex,
+        text: q.text,
+        answerType: q.answerType,
+        options: q.options,
+        evidenceRequired: q.evidenceRequired,
+        isoClauseReference: q.isoClauseReference,
+        guidanceNotes: q.guidanceNotes,
+      })),
     };
   }
 }

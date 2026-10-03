@@ -278,6 +278,9 @@ export class PreparationChecklistService {
 
   /**
    * Provisions a PreparationChecklist and its individual items for an accepted recommendation.
+   * Template source priority:
+   *   1. WorkflowFramework.questions from the DB registry (seeded via prisma/seeds/framework-seed.ts)
+   *   2. FRAMEWORK_CHECKLIST_TEMPLATES TypeScript fallback (legacy / non-DB frameworks)
    */
   async createChecklistForRecommendation(
     recommendationId: string,
@@ -293,7 +296,36 @@ export class PreparationChecklistService {
       return existing;
     }
 
-    const templates = FRAMEWORK_CHECKLIST_TEMPLATES[frameworkCode] || FRAMEWORK_CHECKLIST_TEMPLATES.ISO_14064_1;
+    // ── 1. Resolve templates from DB registry ────────────────────────────────
+    const dbFramework = await this.prisma.workflowFramework.findFirst({
+      where: { code: frameworkCode },
+      include: {
+        questions: { orderBy: { orderIndex: 'asc' } },
+      },
+    });
+
+    // ── 2. Build ChecklistItemTemplate[] from DB or TS fallback ──────────────
+    let templates: ChecklistItemTemplate[];
+
+    if (dbFramework && dbFramework.questions.length > 0) {
+      // Map WorkflowQuestion → ChecklistItemTemplate
+      templates = dbFramework.questions.map((q) => ({
+        itemCode: q.id,
+        plainEnglishLabel: q.text,
+        plainEnglishGuidance: q.guidanceNotes || '',
+        isoClauseReference: q.isoClauseReference,
+        dataType: q.evidenceRequired
+          ? ChecklistItemDataType.DOCUMENT_UPLOAD
+          : ChecklistItemDataType.FREE_TEXT,
+        isMandatory: q.evidenceRequired,
+      }));
+    } else {
+      // Fallback: TypeScript in-memory templates (used until framework is seeded)
+      templates = FRAMEWORK_CHECKLIST_TEMPLATES[frameworkCode] || FRAMEWORK_CHECKLIST_TEMPLATES.ISO_14064_1;
+      if (!FRAMEWORK_CHECKLIST_TEMPLATES[frameworkCode]) {
+        console.warn(`[CHECKLIST] No DB or TS template found for frameworkCode="${frameworkCode}". Using ISO_14064_1 default.`);
+      }
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const checklist = await tx.preparationChecklist.create({
@@ -319,12 +351,10 @@ export class PreparationChecklistService {
         })),
       });
 
-      const fullChecklist = await tx.preparationChecklist.findUniqueOrThrow({
+      return tx.preparationChecklist.findUniqueOrThrow({
         where: { id: checklist.id },
         include: { items: { orderBy: { createdAt: 'asc' } } },
       });
-
-      return fullChecklist;
     });
   }
 
