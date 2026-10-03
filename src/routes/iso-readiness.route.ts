@@ -10,7 +10,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient, IsoReadinessStatus } from '@prisma/client';
 import { CheckoutService } from '../services/checkout.service';
-import { authenticateToken } from '../middleware/auth.middleware';
+import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { FrameworkRegistryService } from '../services/framework-registry.service';
 import { runWithRls } from '../db/rls';
 
@@ -414,23 +414,30 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
     }
   });
 
-  // POST /api/iso-readiness/review (Auditor / Admin Verification Sign-off)
-  router.post('/api/iso-readiness/review', authenticateToken, async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  // POST /api/iso-readiness/review (Lead Auditor sign-off, admin only)
+  router.post('/api/iso-readiness/review', requireAdmin, async (req: Request, res: Response) => {
+    const user = req.user!;
     const { submissionId, decision, targetStatus, reviewerNotes, complianceScore, auditorNotes } = req.body as {
-      submissionId: string;
+      submissionId?: string;
       decision?: 'APPROVE' | 'REQUIRE_REVISION';
       targetStatus?: 'AUDIT_READY' | 'REVISION_REQUIRED';
       reviewerNotes?: string;
       auditorNotes?: string;
-      complianceScore?: number;
+      complianceScore?: unknown;
     };
 
     const isApproved = decision === 'APPROVE' || targetStatus === 'AUDIT_READY';
     const isRevision = decision === 'REQUIRE_REVISION' || targetStatus === 'REVISION_REQUIRED';
+    const notes = (auditorNotes || reviewerNotes || '').trim();
 
-    if (!submissionId || (!isApproved && !isRevision)) {
-      return res.status(400).json({ error: 'submissionId and valid decision (APPROVE | REQUIRE_REVISION) or targetStatus (AUDIT_READY) are required.' });
+    if (!submissionId || isApproved === isRevision) {
+      return res.status(400).json({ error: 'submissionId and exactly one decision (APPROVE or REQUIRE_REVISION) are required.' });
+    }
+    if (typeof complianceScore !== 'number' || !Number.isInteger(complianceScore) || complianceScore < 0 || complianceScore > 100) {
+      return res.status(400).json({ error: 'complianceScore must be an integer between 0 and 100.' });
+    }
+    if (!notes) {
+      return res.status(400).json({ error: 'Reviewer notes are required for every review decision.' });
     }
 
     try {
@@ -441,14 +448,17 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
         return res.status(404).json({ error: 'Submission not found.' });
       }
 
-      // Allow admin or licensee account owner
-      if (user.role !== 'ADMIN' && submission.licenseeId !== user.licenseeId) {
-        return res.status(403).json({ error: 'Forbidden: Access denied to review this submission.' });
+      // An approval may be reversed by the auditor until the fee is paid.
+      const reviewable: IsoReadinessStatus[] = [
+        IsoReadinessStatus.SUBMITTED,
+        IsoReadinessStatus.UNDER_REVIEW,
+        IsoReadinessStatus.AUDIT_READY,
+      ];
+      if (!reviewable.includes(submission.status) || submission.paidAt) {
+        return res.status(409).json({ error: `Submission in ${submission.status} status cannot be reviewed.` });
       }
 
       const newStatus = isApproved ? IsoReadinessStatus.AUDIT_READY : IsoReadinessStatus.REVISION_REQUIRED;
-      const score = typeof complianceScore === 'number' ? complianceScore : (isApproved ? 95 : 60);
-      const notes = auditorNotes || reviewerNotes || (isApproved ? 'Audit verified conformant. Audit-Ready certified.' : 'Additional evidence required.');
 
       const updated = await runWithRls(prisma, user, async (tx) => {
         return tx.isoReadinessSubmission.update({
@@ -456,7 +466,7 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
           data: {
             status: newStatus,
             reviewerNotes: notes,
-            complianceScore: score,
+            complianceScore,
             auditReadyAt: isApproved ? new Date() : null,
           },
         });
@@ -468,8 +478,9 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
         submission: updated,
         message: isApproved ? 'Submission approved as AUDIT_READY. Checkout unlocked.' : 'Revisions requested.',
       });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message || 'Failed to review submission.' });
+    } catch (err: unknown) {
+      console.error('[ISO READINESS REVIEW ERROR]', err);
+      return res.status(500).json({ error: 'Failed to review submission.' });
     }
   });
 

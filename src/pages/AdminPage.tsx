@@ -111,7 +111,7 @@ export const AdminPage: React.FC = () => {
   const [loadingSubDetail, setLoadingSubDetail] = useState<boolean>(false);
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
   const [auditorNotesInput, setAuditorNotesInput] = useState<string>('');
-  const [complianceScoreInput, setComplianceScoreInput] = useState<number>(95);
+  const [complianceScoreInput, setComplianceScoreInput] = useState<string>('');
   const [reviewingLoading, setReviewingLoading] = useState<boolean>(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
@@ -201,11 +201,10 @@ export const AdminPage: React.FC = () => {
       const res = await api.getAdminIsoSubmissionDetail(token, submissionId);
       setSelectedSubDetail(res.submission);
       setSelectedSubEvidence(res.evidenceDocuments || []);
-      setComplianceScoreInput(res.submission.complianceScore || 90);
-      setAuditorNotesInput(
-        res.submission.reviewerNotes ||
-          'ISO 19011:2026 Annex A remote verification completed. 80%+ conformance threshold verified across selected frameworks.'
+      setComplianceScoreInput(
+        typeof res.submission.complianceScore === 'number' ? String(res.submission.complianceScore) : ''
       );
+      setAuditorNotesInput(res.submission.reviewerNotes || '');
 
       // Attempt to load AI screening findings
       try {
@@ -213,8 +212,8 @@ export const AdminPage: React.FC = () => {
         const aiRes = await api.getAiScreenFindings(token, submissionId);
         if (aiRes?.aiFindings) {
           setAiFindings(aiRes.aiFindings);
-          if (aiRes.complianceScore && !res.submission.complianceScore) {
-            setComplianceScoreInput(aiRes.complianceScore);
+          if (typeof aiRes.complianceScore === 'number' && typeof res.submission.complianceScore !== 'number') {
+            setComplianceScoreInput(String(aiRes.complianceScore));
           }
         }
       } catch {
@@ -242,8 +241,8 @@ export const AdminPage: React.FC = () => {
           const aiRes = await api.getAiScreenFindings(token, submissionId);
           if (aiRes?.aiFindings) {
             setAiFindings(aiRes.aiFindings);
-            if (aiRes.complianceScore) {
-              setComplianceScoreInput(aiRes.complianceScore);
+            if (typeof aiRes.complianceScore === 'number') {
+              setComplianceScoreInput(String(aiRes.complianceScore));
             }
           }
           await loadSubmissions();
@@ -261,6 +260,15 @@ export const AdminPage: React.FC = () => {
 
   const handleSubmitReview = async (decision: 'APPROVE' | 'REQUIRE_REVISION') => {
     if (!token || !selectedSubDetail) return;
+    const score = Number(complianceScoreInput);
+    if (complianceScoreInput.trim() === '' || !Number.isInteger(score) || score < 0 || score > 100) {
+      setReviewError('Enter a conformance score between 0 and 100 before recording a decision.');
+      return;
+    }
+    if (!auditorNotesInput.trim()) {
+      setReviewError('Auditor findings are required before recording a decision.');
+      return;
+    }
     setReviewingLoading(true);
     setReviewError(null);
     setReviewSuccess(null);
@@ -271,7 +279,7 @@ export const AdminPage: React.FC = () => {
         decision,
         targetStatus: decision === 'APPROVE' ? 'AUDIT_READY' : 'REVISION_REQUIRED',
         auditorNotes: statutoryStamp,
-        complianceScore: Number(complianceScoreInput) || 90,
+        complianceScore: score,
       });
       setReviewSuccess(
         res.message || (decision === 'APPROVE' ? 'Approved as AUDIT_READY. Gate 1 cleared.' : 'Revision requested.')
@@ -281,7 +289,7 @@ export const AdminPage: React.FC = () => {
         ...selectedSubDetail,
         status: decision === 'APPROVE' ? 'AUDIT_READY' : 'REVISION_REQUIRED',
         reviewerNotes: auditorNotesInput,
-        complianceScore: Number(complianceScoreInput) || 90,
+        complianceScore: score,
       });
     } catch (err: any) {
       setReviewError(err.message || 'Failed to apply review decision');
@@ -2979,7 +2987,7 @@ export const AdminPage: React.FC = () => {
                           min="0"
                           max="100"
                           value={complianceScoreInput}
-                          onChange={(e) => setComplianceScoreInput(Number(e.target.value))}
+                          onChange={(e) => setComplianceScoreInput(e.target.value)}
                           className="form-input"
                           style={{ width: '100%' }}
                         />
@@ -3043,7 +3051,7 @@ export const AdminPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleSubmitReview('APPROVE')}
-                        disabled={reviewingLoading || complianceScoreInput < 80 || !attestationAccepted}
+                        disabled={reviewingLoading || complianceScoreInput.trim() === '' || Number(complianceScoreInput) < 80 || !attestationAccepted}
                         className="btn btn-primary"
                         style={{ fontWeight: 700 }}
                       >

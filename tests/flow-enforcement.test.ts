@@ -12,15 +12,17 @@ import Stripe from 'stripe';
 import path from 'path';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, IsoReadinessStatus, CredentialStatus } from '@prisma/client';
+import { PrismaClient, IsoReadinessStatus, CredentialStatus, WorkflowType } from '@prisma/client';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
+import { grantPipelineAccess } from './helpers/pipelineAccess';
 
 const prisma = new PrismaClient();
 
 let testApp: any;
 let testLicenseeId: string;
 let testAuthToken: string;
+let adminAuthToken: string;
 let testSubmissionId: string;
 
 const LOGO_PATH = path.join(process.cwd(), 'public', 'images', 'nfty-logs-logo.png');
@@ -54,6 +56,13 @@ beforeAll(async () => {
     JWT_SECRET,
     { expiresIn: '2h' }
   );
+  adminAuthToken = jwt.sign(
+    { userId: 'test-gate-admin', licenseeId: '', role: 'ADMIN' },
+    JWT_SECRET,
+    { expiresIn: '2h' }
+  );
+
+  await grantPipelineAccess(prisma, testLicenseeId, WorkflowType.GHG, 'ISO 14064-1');
 });
 
 afterAll(async () => {
@@ -116,13 +125,44 @@ describe('3-Gate Strict Workflow Enforcement', () => {
       expect(res.body.error).toContain('AUDIT_READY');
     });
 
-    it('clears Gate 1 after Lead Auditor verification sign-off sets status to AUDIT_READY', async () => {
-      const reviewRes = await request(testApp)
+    it('rejects a licensee attempting to approve their own submission', async () => {
+      const res = await request(testApp)
         .post('/api/iso-readiness/review')
         .set('Authorization', `Bearer ${testAuthToken}`)
         .send({
           submissionId: testSubmissionId,
+          decision: 'APPROVE',
+          complianceScore: 100,
+          auditorNotes: 'Self-approval attempt',
+        });
+
+      expect(res.status).toBe(403);
+      const row = await prisma.isoReadinessSubmission.findUnique({ where: { id: testSubmissionId } });
+      expect(row!.status).toBe(IsoReadinessStatus.SUBMITTED);
+    });
+
+    it('rejects a review decision without an explicit conformance score', async () => {
+      const res = await request(testApp)
+        .post('/api/iso-readiness/review')
+        .set('Authorization', `Bearer ${adminAuthToken}`)
+        .send({
+          submissionId: testSubmissionId,
+          decision: 'APPROVE',
+          auditorNotes: 'Missing score',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/complianceScore/);
+    });
+
+    it('clears Gate 1 after Lead Auditor verification sign-off sets status to AUDIT_READY', async () => {
+      const reviewRes = await request(testApp)
+        .post('/api/iso-readiness/review')
+        .set('Authorization', `Bearer ${adminAuthToken}`)
+        .send({
+          submissionId: testSubmissionId,
           targetStatus: 'AUDIT_READY',
+          complianceScore: 88,
           auditorNotes: 'Lead Auditor review confirmed: 80%+ conformance threshold achieved.',
         });
 

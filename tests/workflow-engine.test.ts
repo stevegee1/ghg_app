@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { WorkflowEngineService } from '../src/services/workflow-engine.service';
+import { grantPipelineAccess } from './helpers/pipelineAccess';
 
 const prisma = new PrismaClient();
 
@@ -94,6 +95,10 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       JWT_SECRET,
       { expiresIn: '2h' }
     );
+
+    await grantPipelineAccess(prisma, licenseeA.id, WorkflowType.CARBON, 'ISO 14064-1');
+    await grantPipelineAccess(prisma, licenseeA.id, WorkflowType.JOB, 'UK Section 106');
+    await grantPipelineAccess(prisma, licenseeB.id, WorkflowType.CARBON, 'ISO 14064-1');
 
     // Create sample evidence document for Licensee A
     evidenceDocA = await prisma.auditEvidenceDocument.create({
@@ -330,28 +335,28 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body.error).toContain('Cannot edit answers while submission is in SUBMITTED status');
     });
 
-    it('Illegal status leap (e.g. SUBMITTED -> BADGE_ISSUED) fails with 400 InvalidWorkflowTransitionError', async () => {
+    it('Illegal status leap (e.g. SUBMITTED -> SUBMITTED) fails with 400 InvalidWorkflowTransitionError', async () => {
       const res = await request(app)
         .post(`/api/workflow/submissions/${submissionId}/transition`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          targetStatus: WorkflowStatus.BADGE_ISSUED,
+          targetStatus: WorkflowStatus.SUBMITTED,
         })
         .expect(400);
 
-      expect(res.body.error).toContain('Invalid workflow transition from SUBMITTED to BADGE_ISSUED');
+      expect(res.body.error).toContain('Invalid workflow transition from SUBMITTED to SUBMITTED');
     });
 
-    it('Non-admin user cannot transition submission to UNDER_REVIEW (400 Forbidden)', async () => {
+    it('Non-admin user cannot transition submission to UNDER_REVIEW (403 Forbidden)', async () => {
       const res = await request(app)
         .post(`/api/workflow/submissions/${submissionId}/transition`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
           targetStatus: WorkflowStatus.UNDER_REVIEW,
         })
-        .expect(400);
+        .expect(403);
 
-      expect(res.body.error).toContain('Only an authorized Lead Auditor can transition');
+      expect(res.body.error).toContain('Only a Lead Auditor');
     });
 
     it('Lead Auditor (ADMIN) transitions submission to UNDER_REVIEW', async () => {
@@ -554,29 +559,27 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       expect(res.body.submission.complianceScore).toBe(100);
     });
 
-    it('Completes lifecycle: APPROVED -> PAID -> BADGE_ISSUED with complete audit log', async () => {
-      // 1. APPROVED -> PAID
+    it('PAID and BADGE_ISSUED cannot be forced through /transition, even by an admin', async () => {
+      const paid = await request(app)
+        .post(`/api/workflow/submissions/${submissionId}/transition`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ targetStatus: WorkflowStatus.PAID, reason: 'Manual payment override attempt' })
+        .expect(403);
+      expect(paid.body.error).toContain('dedicated');
+
       await request(app)
         .post(`/api/workflow/submissions/${submissionId}/transition`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ targetStatus: WorkflowStatus.PAID, reason: 'Stripe flat fee checkout completed' })
-        .expect(200);
+        .send({ targetStatus: WorkflowStatus.BADGE_ISSUED })
+        .expect(403);
 
-      // 2. PAID -> BADGE_ISSUED
-      await request(app)
-        .post(`/api/workflow/submissions/${submissionId}/transition`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({ targetStatus: WorkflowStatus.BADGE_ISSUED, reason: 'Dual logo composite badge generated' })
-        .expect(200);
-
-      // Verify the final submission state and complete log
       const dossier = await request(app)
         .get(`/api/workflow/submissions/${submissionId}`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .expect(200);
 
-      expect(dossier.body.submission.status).toBe(WorkflowStatus.BADGE_ISSUED);
-      expect(dossier.body.submission.paidAt).toBeDefined();
+      expect(dossier.body.submission.status).toBe(WorkflowStatus.APPROVED);
+      expect(dossier.body.submission.paidAt).toBeNull();
 
       const logStatuses = dossier.body.submission.transitions.map((l: any) => l.newStatus);
       expect(logStatuses).toEqual([
@@ -584,9 +587,9 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         WorkflowStatus.SUBMITTED,
         WorkflowStatus.UNDER_REVIEW,
         WorkflowStatus.APPROVED,
-        WorkflowStatus.PAID,
-        WorkflowStatus.BADGE_ISSUED,
       ]);
+      const approvalLog = dossier.body.submission.transitions[3];
+      expect(approvalLog.previousStatus).toBe(WorkflowStatus.UNDER_REVIEW);
     });
   });
 
@@ -760,6 +763,68 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
 
       expect(res.body.success).toBe(true);
       expect(res.body.key.apiKey).toMatch(/^ghg_live_carbon_/);
+    });
+  });
+
+  describe('8. State Machine Access Control', () => {
+    let screenedId: string;
+    let draftAId: string;
+
+    beforeAll(async () => {
+      const screened = await prisma.workflowSubmission.create({
+        data: {
+          licenseeId: licenseeA.id,
+          workflowType: WorkflowType.CARBON,
+          frameworkId: 'ISO_14064_1',
+          status: WorkflowStatus.AI_SCREENED,
+          submittedAt: new Date(),
+        },
+      });
+      screenedId = screened.id;
+
+      const draft = await prisma.workflowSubmission.create({
+        data: {
+          licenseeId: licenseeA.id,
+          workflowType: WorkflowType.CARBON,
+          frameworkId: 'ISO_14064_1',
+          status: WorkflowStatus.DRAFT,
+        },
+      });
+      draftAId = draft.id;
+    });
+
+    it.each([WorkflowStatus.APPROVED, WorkflowStatus.REJECTED, WorkflowStatus.UNDER_REVIEW])(
+      'licensee cannot move their own AI_SCREENED submission to %s',
+      async (targetStatus) => {
+        await request(app)
+          .post(`/api/workflow/submissions/${screenedId}/transition`)
+          .set('Authorization', `Bearer ${partnerTokenA}`)
+          .send({ targetStatus })
+          .expect(403);
+
+        const row = await prisma.workflowSubmission.findUnique({ where: { id: screenedId } });
+        expect(row!.status).toBe(WorkflowStatus.AI_SCREENED);
+      }
+    );
+
+    it('admin cannot approve through /transition and must use the structured review', async () => {
+      const res = await request(app)
+        .post(`/api/workflow/submissions/${screenedId}/transition`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ targetStatus: WorkflowStatus.APPROVED })
+        .expect(403);
+      expect(res.body.error).toContain('dedicated');
+    });
+
+    it('licensee cannot submit another licensee draft', async () => {
+      await request(app)
+        .post(`/api/workflow/submissions/${draftAId}/transition`)
+        .set('Authorization', `Bearer ${partnerTokenB}`)
+        .send({ targetStatus: WorkflowStatus.SUBMITTED })
+        .expect(403);
+
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: draftAId } });
+      expect(row!.status).toBe(WorkflowStatus.DRAFT);
     });
   });
 });

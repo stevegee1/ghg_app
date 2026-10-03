@@ -16,8 +16,9 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, IsoReadinessStatus, CredentialStatus } from '@prisma/client';
+import { PrismaClient, IsoReadinessStatus, CredentialStatus, WorkflowType } from '@prisma/client';
 import { createApp } from '../src/expressApp';
+import { grantPipelineAccess } from './helpers/pipelineAccess';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
 const prisma = new PrismaClient();
@@ -50,6 +51,7 @@ let testApp: any;
 let testLicenseeId: string;
 let testPortalUserId: string;
 let testAuthToken: string;
+let adminAuthToken: string;
 let testSubmissionId: string;
 let testCredentialId: string;
 
@@ -93,6 +95,13 @@ beforeAll(async () => {
     JWT_SECRET,
     { expiresIn: '24h' }
   );
+  adminAuthToken = jwt.sign(
+    { userId: 'iso-test-admin', role: 'ADMIN', licenseeId: '' },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  await grantPipelineAccess(prisma, testLicenseeId, WorkflowType.GHG, 'ISO 14064-1');
 });
 
 afterAll(async () => {
@@ -281,10 +290,11 @@ describe('3. POST /api/iso-readiness/checkout', () => {
   it('allows auditor review sign-off to transition submission to AUDIT_READY', async () => {
     const res = await request(testApp)
       .post('/api/iso-readiness/review')
-      .set('Authorization', `Bearer ${testAuthToken}`)
+      .set('Authorization', `Bearer ${adminAuthToken}`)
       .send({
         submissionId: testSubmissionId,
         targetStatus: 'AUDIT_READY',
+        complianceScore: 92,
         auditorNotes: 'ISO 19011:2026 Annex A remote verification completed. 80%+ conformance threshold verified.',
       });
     expect(res.status).toBe(200);

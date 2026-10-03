@@ -6,6 +6,7 @@ import {
   WorkflowEngineService,
   InvalidWorkflowTransitionError,
   MissingRequiredEvidenceError,
+  WorkflowForbiddenError,
 } from '../services/workflow-engine.service';
 import { CheckoutService } from '../services/checkout.service';
 import { runWithRls } from '../db/rls';
@@ -344,7 +345,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return workflowService.transitionStatus(
           id,
           WorkflowStatus.SUBMITTED,
-          { userId: user.userId, role: user.role },
+          { userId: user.userId, role: user.role, licenseeId: user.licenseeId },
           'Client finalized and submitted questionnaire for review'
         );
       });
@@ -378,6 +379,9 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       }
       if (err instanceof InvalidWorkflowTransitionError) {
         return res.status(400).json({ error: err.message });
+      }
+      if (err instanceof WorkflowForbiddenError) {
+        return res.status(403).json({ error: err.message });
       }
       console.error('[WORKFLOW SUBMIT ERROR]', err);
       return res.status(400).json({ error: err.message || 'Failed to submit questionnaire.' });
@@ -506,7 +510,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       const updated = await workflowService.transitionStatus(
         id,
         targetStatus as WorkflowStatus,
-        { userId: user.userId, role: user.role },
+        { userId: user.userId, role: user.role, licenseeId: user.licenseeId },
         triggerReason
       );
 
@@ -514,6 +518,9 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     } catch (err: any) {
       if (err instanceof InvalidWorkflowTransitionError) {
         return res.status(400).json({ error: err.message });
+      }
+      if (err instanceof WorkflowForbiddenError) {
+        return res.status(403).json({ error: err.message });
       }
       console.error('[WORKFLOW TRANSITION ERROR]', err);
       return res.status(400).json({ error: err.message || 'Failed to transition workflow status.' });

@@ -1,4 +1,5 @@
 import {
+  Prisma,
   PrismaClient,
   WorkflowType,
   WorkflowStatus,
@@ -26,6 +27,19 @@ export class MissingRequiredEvidenceError extends Error {
     );
     this.name = 'MissingRequiredEvidenceError';
   }
+}
+
+export class WorkflowForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WorkflowForbiddenError';
+  }
+}
+
+export interface WorkflowActor {
+  userId: string;
+  role: string;
+  licenseeId?: string | null;
 }
 
 export interface AnswerInput {
@@ -59,6 +73,16 @@ export const VALID_TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
   [WorkflowStatus.APPROVED]: [WorkflowStatus.PAID],
   [WorkflowStatus.PAID]: [WorkflowStatus.BADGE_ISSUED],
   [WorkflowStatus.BADGE_ISSUED]: [],
+};
+
+/**
+ * Targets reachable through the generic transitionStatus path, and who may request them.
+ * All other targets have a dedicated flow: AI_SCREENED (AI reviewer), APPROVED and REJECTED
+ * (submitReview), PAID (verified Stripe webhook) and BADGE_ISSUED (setupBadge).
+ */
+const MANUAL_TRANSITION_ROLES: Partial<Record<WorkflowStatus, 'OWNER_OR_ADMIN' | 'ADMIN'>> = {
+  [WorkflowStatus.SUBMITTED]: 'OWNER_OR_ADMIN',
+  [WorkflowStatus.UNDER_REVIEW]: 'ADMIN',
 };
 
 export class WorkflowEngineService {
@@ -360,9 +384,17 @@ export class WorkflowEngineService {
   async transitionStatus(
     submissionId: string,
     targetStatus: WorkflowStatus,
-    actor: { userId: string; role: string },
+    actor: WorkflowActor,
     triggerReason?: string
   ) {
+    const requiredRole = MANUAL_TRANSITION_ROLES[targetStatus];
+    if (!requiredRole) {
+      throw new WorkflowForbiddenError(`Status ${targetStatus} can only be set by its dedicated review, payment or badge flow.`);
+    }
+    if (requiredRole === 'ADMIN' && actor.role !== 'ADMIN') {
+      throw new WorkflowForbiddenError(`Only a Lead Auditor can move a submission to ${targetStatus}.`);
+    }
+
     const submission = await this.prisma.workflowSubmission.findUnique({
       where: { id: submissionId },
       include: {
@@ -375,6 +407,10 @@ export class WorkflowEngineService {
 
     if (!submission) {
       throw new Error('Submission not found.');
+    }
+
+    if (actor.role !== 'ADMIN' && submission.licenseeId !== actor.licenseeId) {
+      throw new WorkflowForbiddenError('You do not have access to this submission.');
     }
 
     const currentStatus = submission.status;
@@ -402,25 +438,11 @@ export class WorkflowEngineService {
       }
     }
 
-    // 2. Moving to UNDER_REVIEW: Requires Lead Auditor or Admin role.
-    //    Also accepts transition from AI_SCREENED (AI agent pre-screen completed).
-    if (targetStatus === WorkflowStatus.UNDER_REVIEW && actor.role !== 'ADMIN') {
-      throw new Error('Forbidden: Only an authorized Lead Auditor can transition a submission to UNDER_REVIEW.');
-    }
-
     return this.prisma.$transaction(async (tx) => {
-      const updateData: any = {
+      const updateData: Prisma.WorkflowSubmissionUpdateInput = {
         status: targetStatus,
+        ...(targetStatus === WorkflowStatus.SUBMITTED ? { submittedAt: new Date() } : {}),
       };
-
-      if (targetStatus === WorkflowStatus.SUBMITTED) {
-        updateData.submittedAt = new Date();
-      } else if (targetStatus === WorkflowStatus.APPROVED || targetStatus === WorkflowStatus.REJECTED) {
-        updateData.reviewedAt = new Date();
-        updateData.reviewerId = actor.userId;
-      } else if (targetStatus === WorkflowStatus.PAID) {
-        updateData.paidAt = new Date();
-      }
 
       const updated = await tx.workflowSubmission.update({
         where: { id: submissionId },
@@ -503,7 +525,7 @@ export class WorkflowEngineService {
       await tx.workflowTransitionLog.create({
         data: {
           submissionId,
-          previousStatus: WorkflowStatus.UNDER_REVIEW,
+          previousStatus: submission.status,
           newStatus: targetStatus,
           triggeredBy: actor.userId,
           triggerReason: `Lead Auditor review completed: ${decision.overallDecision} (Score: ${decision.overallScore}%)`,
