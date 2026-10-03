@@ -560,7 +560,7 @@ export class AssessmentService {
    * Admin view: Aggregated client readiness and assessment progress tracker.
    */
   async getAdminReadinessOverview() {
-    const licensees = await this.prisma.licensee.findMany({
+    const licensees: any[] = await this.prisma.licensee.findMany({
       include: {
         clientAssessments: {
           orderBy: { createdAt: 'desc' },
@@ -577,6 +577,14 @@ export class AssessmentService {
             },
           },
         },
+        entitlements: {
+          select: {
+            serviceLine: true,
+            status: true,
+            grantedAt: true,
+          },
+          orderBy: { serviceLine: 'asc' },
+        },
         portalUsers: {
           select: {
             id: true,
@@ -590,7 +598,7 @@ export class AssessmentService {
         },
       },
       orderBy: { createdAt: 'desc' },
-    });
+    } as any);
 
     return licensees.map((lic) => {
       const latestAssessment = lic.clientAssessments[0] || null;
@@ -625,7 +633,8 @@ export class AssessmentService {
         totalChecklistItems: totalItems,
         completedChecklistItems: completedItems,
         readinessPercentage,
-        primaryContact: lic.portalUsers[0] || null,
+        primaryContact: (lic as any).portalUsers?.[0] || null,
+        serviceEntitlements: (lic as any).entitlements ?? [],
         frameworks: recommendations.map((r: any) => ({
           frameworkCode: r.frameworkCode,
           frameworkName: r.frameworkName,
