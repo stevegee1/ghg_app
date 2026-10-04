@@ -59,7 +59,7 @@ export const FleetDashboard: React.FC<Props> = ({ token, onSubscribe }) => {
     const range = presetRange(preset);
     setDownloading(true);
     try {
-      const { blob, fileName } = await api.downloadFleetFile(
+      const { blob, fileName } = await api.downloadFile(
         token,
         `/api/fleet/report.pdf?from=${range.from}&to=${range.to}`
       );

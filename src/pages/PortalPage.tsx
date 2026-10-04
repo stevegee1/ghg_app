@@ -5,9 +5,9 @@ import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
 import { WorkflowWizard } from '../components/workflow/WorkflowWizard';
+import { PipelineWorkspace } from '../components/pipeline/PipelineWorkspace';
 import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
 import { PortalOverviewView } from '../components/portal/PortalOverviewView';
-import { PortalWorkflowContainer } from '../components/portal/PortalWorkflowContainer';
 import { FleetWorkspace } from '../components/fleet/FleetWorkspace';
 import { PortalCredentialsView } from '../components/portal/PortalCredentialsView';
 import { PortalJobsView } from '../components/portal/PortalJobsView';
@@ -438,7 +438,7 @@ export const PortalPage: React.FC = () => {
       targetView: DashboardView,
       options?: { scope?: AuditScope; step?: WorkflowStep; submissionId?: string }
     ) => {
-      let resolvedView = targetView;
+      const resolvedView = targetView;
       const nextScope = options?.scope || auditScope;
       const nextStep = options?.step || activeStep;
 
@@ -448,10 +448,7 @@ export const PortalPage: React.FC = () => {
           navigate('/portal/onboarding');
           return;
         }
-        const isPrepReady = nextScope === 'JOB_REPORTING' ? isJobPrepReady : isCarbonPrepReady;
-        if (!isPrepReady) {
-          resolvedView = 'checklist';
-        }
+        // Preparation is checked per framework inside the pipeline workspace.
       }
 
       setActiveViewState(resolvedView);
@@ -482,7 +479,7 @@ export const PortalPage: React.FC = () => {
         { replace: true }
       );
     },
-    [auditScope, activeStep, user?.hasCompletedAssessment, isJobPrepReady, isCarbonPrepReady, setSearchParams, navigate]
+    [auditScope, activeStep, user?.hasCompletedAssessment, setSearchParams, navigate]
   );
 
   const setActiveView = useCallback(
@@ -1331,8 +1328,6 @@ export const PortalPage: React.FC = () => {
   // ── Status and Gate Enforcement flags ────────────────────────────────────
   const currentSubmissionStatus = isoStatus?.status || (submissionId ? 'SUBMITTED' : 'NOT_STARTED');
   const isAuditReady = currentSubmissionStatus === 'AUDIT_READY' || currentSubmissionStatus === 'APPROVED';
-  const isRevisionRequired = currentSubmissionStatus === 'REVISION_REQUIRED';
-  const isSubmittedPendingReview = currentSubmissionStatus === 'SUBMITTED' || currentSubmissionStatus === 'UNDER_REVIEW';
   const isPaid = Boolean(isoStatus?.paidAt || currentSubmissionStatus === 'APPROVED');
 
   const totalVerifiedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
@@ -1441,15 +1436,7 @@ export const PortalPage: React.FC = () => {
               <span className="portal-nav-label">Carbon Assurance Engine</span>
               {!user?.hasCompletedAssessment ? (
                 <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
-              ) : !isCarbonPrepReady ? (
-                <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Prep Pending</span>
-              ) : (
-                activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? (
-                  <span className="portal-nav-badge">Step {activeStep}/5</span>
-                ) : (
-                  <span className="portal-nav-badge count">Ready</span>
-                )
-              )}
+              ) : null}
             </button>
           </>
         )}
@@ -1487,15 +1474,7 @@ export const PortalPage: React.FC = () => {
               <span className="portal-nav-label">Workforce Assurance Engine</span>
               {!user?.hasCompletedAssessment ? (
                 <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
-              ) : !isJobPrepReady ? (
-                <span className="portal-nav-badge" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem', padding: '1px 6px' }}>Prep Pending</span>
-              ) : (
-                activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? (
-                  <span className="portal-nav-badge">Step {activeStep}/5</span>
-                ) : (
-                  <span className="portal-nav-badge count">Ready</span>
-                )
-              )}
+              ) : null}
             </button>
           </>
         )}
@@ -1830,39 +1809,6 @@ export const PortalPage: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {activeView === 'workflow' && (
-              <span
-                className={
-                  isAuditReady
-                    ? 'badge badge-settled'
-                    : isRevisionRequired
-                    ? 'badge badge-failed'
-                    : isSubmittedPendingReview
-                    ? 'badge badge-pending'
-                    : 'badge'
-                }
-                onClick={() => {
-                  if (isSubmittedPendingReview || isAuditReady || isRevisionRequired) {
-                    setShowSubmissionSuccessModal(true);
-                  }
-                }}
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: isSubmittedPendingReview || isAuditReady || isRevisionRequired ? 'pointer' : 'default',
-                }}
-                title={isSubmittedPendingReview || isAuditReady ? 'Click to inspect Lead Auditor review determination status' : undefined}
-              >
-                {isAuditReady
-                  ? 'Gate 1 Cleared (View Status)'
-                  : isRevisionRequired
-                  ? 'Revisions Requested (View Notice)'
-                  : isSubmittedPendingReview
-                  ? 'In Auditor Review (View Status)'
-                  : `Stage ${activeStep} of 5 In Progress`}
-              </span>
-            )}
           </div>
         </div>
 
@@ -1900,11 +1846,7 @@ export const PortalPage: React.FC = () => {
             {activeView === 'workflow' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.95rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '9999px', fontSize: '0.78rem', color: '#1e293b', fontWeight: 600 }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: auditScope === 'CARBON_EMISSION' ? '#16a34a' : '#2563eb', display: 'inline-block' }} />
-                <span>
-                  {auditScope === 'CARBON_EMISSION'
-                    ? 'ISO 14064-1 & GHG Protocol Assurance'
-                    : 'Section 106 & CSRD ESRS S1 Social Value Assurance'}
-                </span>
+                <span>{auditScope === 'CARBON_EMISSION' ? 'GHG Assurance' : 'Workforce Assurance'}</span>
               </div>
             )}
 
@@ -2043,26 +1985,12 @@ export const PortalPage: React.FC = () => {
         )}
 
         {/* ── Sovereign Assurance Workflows: GHG Carbon or Workforce Social Value ─────────── */}
-        {activeView === 'workflow' && (
-          <PortalWorkflowContainer
-            checklistsLoading={checklistsLoading}
-            user={user}
-            auditScope={auditScope}
-            isCurrentScopePrepReady={isCurrentScopePrepReady}
-            jobChecklists={jobChecklists}
-            carbonChecklists={carbonChecklists}
-            activeStep={activeStep}
-            submissionId={submissionId}
+        {activeView === 'workflow' && token && (
+          <PipelineWorkspace
+            key={auditScope}
             token={token}
-            onNavigateToOnboarding={() => navigate('/portal/onboarding')}
-            onNavigateToOverview={() => setActiveView('overview')}
-            onNavigateToChecklist={() => navigateToView('checklist', { scope: auditScope })}
-            fetchIsoStatus={fetchIsoStatus}
-            onNavigateTab={(tab) => {
-              if (tab === 'overview') setActiveView('overview');
-              if (tab === 'embed') setActiveView('embed');
-              if (tab === 'credentials') setActiveView('credentials');
-            }}
+            service={auditScope === 'JOB_REPORTING' ? 'WORKFORCE' : 'GHG'}
+            onPrepare={() => navigateToView('checklist', { scope: auditScope })}
           />
         )}
 

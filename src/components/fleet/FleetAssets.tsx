@@ -106,7 +106,7 @@ export const FleetAssets: React.FC<Props> = ({ token, onChanged }) => {
 
   const downloadTemplate = async () => {
     try {
-      const { blob, fileName } = await api.downloadFleetFile(token, '/api/fleet/templates/assets');
+      const { blob, fileName } = await api.downloadFile(token, '/api/fleet/templates/assets');
       saveBlob(blob, fileName);
     } catch (err) {
       setError((err as Error).message);

@@ -20,6 +20,18 @@ import { getAssuranceFee, validateAssuranceFeeConfig } from '../src/services/ass
 import { AiAuditReviewer, RULES_ENGINE_REVIEWER } from '../src/services/review-pipeline/ai-audit-reviewer.service';
 
 const prisma = new PrismaClient();
+
+/** An answer for every question in a framework, typed to each question's answer type. */
+function answerAll(
+  questions: Array<{ id: string; answerType: string; options: string[] }>,
+  evidenceDocumentId: string | null
+) {
+  return questions.map((q) => ({
+    questionId: q.id,
+    value: q.answerType === 'BOOLEAN' ? 'true' : q.answerType === 'NUMBER' ? '1000' : q.answerType === 'SELECT' ? q.options[0] : 'Documented and verified',
+    evidenceDocumentId,
+  }));
+}
 const LOGO_PATH = path.join(process.cwd(), 'public', 'images', 'nfty-logs-logo.png');
 
 describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
@@ -281,16 +293,16 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
     let submissionId: string;
     let q1: any;
     let q2: any;
-    let q3: any;
+    let questions: any[];
 
     beforeAll(async () => {
       const framework = await prisma.workflowFramework.findUnique({
         where: { id: 'fwk_iso_14064' },
         include: { questions: { orderBy: { orderIndex: 'asc' } } },
       });
-      q1 = framework!.questions[0];
-      q2 = framework!.questions[1];
-      q3 = framework!.questions[2];
+      questions = framework!.questions;
+      q1 = questions[0];
+      q2 = questions[1];
 
       const res = await request(app)
         .post('/api/workflow/draft')
@@ -302,17 +314,35 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       submissionId = res.body.submission.id;
     });
 
-    it('POST /api/workflow/submissions/:id/submit fails with 422 if evidenceRequired question lacks evidence', async () => {
-      // Save answer without evidenceDocumentId for required question
+    it('POST /api/workflow/submissions/:id/submit fails with 422 until every question is answered', async () => {
       await request(app)
         .patch(`/api/workflow/submissions/${submissionId}/answers`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .send({
           answers: [
             { questionId: q1.id, value: 'true', evidenceDocumentId: null },
-            { questionId: q2.id, value: '1000', evidenceDocumentId: null },
+            { questionId: q2.id, value: '   ', evidenceDocumentId: null },
           ],
-        });
+        })
+        .expect(200);
+
+      const res = await request(app)
+        .post(`/api/workflow/submissions/${submissionId}/submit`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .expect(422);
+
+      expect(res.body.error).toContain('Answer every question');
+      const missingIds = res.body.missingQuestions.map((m: any) => m.questionId);
+      expect(missingIds).toEqual(questions.slice(1).map((q) => q.id));
+    });
+
+    it('POST /api/workflow/submissions/:id/submit fails with 422 if evidenceRequired question lacks evidence', async () => {
+      // Answer every question, without evidence
+      await request(app)
+        .patch(`/api/workflow/submissions/${submissionId}/answers`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .send({ answers: answerAll(questions, null) })
+        .expect(200);
 
       const res = await request(app)
         .post(`/api/workflow/submissions/${submissionId}/submit`)
@@ -329,13 +359,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       await request(app)
         .patch(`/api/workflow/submissions/${submissionId}/answers`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
-        .send({
-          answers: [
-            { questionId: q1.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
-            { questionId: q2.id, value: '12500', evidenceDocumentId: evidenceDocA.id },
-            { questionId: q3.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
-          ],
-        });
+        .send({ answers: answerAll(questions, evidenceDocA.id) })
+        .expect(200);
 
       const res = await request(app)
         .post(`/api/workflow/submissions/${submissionId}/submit`)
@@ -430,14 +455,8 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       await request(app)
         .patch(`/api/workflow/submissions/${submissionId}/answers`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
-        .send({
-          answers: [
-            { questionId: q1.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
-            { questionId: q2.id, value: '45', evidenceDocumentId: evidenceDocA.id },
-            { questionId: q3.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
-            { questionId: q4.id, value: 'true', evidenceDocumentId: evidenceDocA.id },
-          ],
-        });
+        .send({ answers: answerAll(framework!.questions, evidenceDocA.id) })
+        .expect(200);
 
       await request(app)
         .post(`/api/workflow/submissions/${submissionId}/submit`)
@@ -689,17 +708,12 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
       });
       const qIds = fw!.questions.map((q) => q.id);
 
-      // Add answers for all 3 questions with required evidence
+      // Answer every question with evidence attached
       await request(app)
         .patch(`/api/workflow/submissions/${lifecycleSubId}/answers`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
-        .send({
-          answers: [
-            { questionId: qIds[0], value: 'true', evidenceDocumentId: evidenceDocA.id },
-            { questionId: qIds[1], value: '450.5', evidenceDocumentId: evidenceDocA.id },
-            { questionId: qIds[2], value: 'true', evidenceDocumentId: evidenceDocA.id },
-          ],
-        });
+        .send({ answers: answerAll(fw!.questions, evidenceDocA.id) })
+        .expect(200);
 
       // Submit
       await request(app)

@@ -155,6 +155,7 @@ type SubmissionDossier = Prisma.WorkflowSubmissionGetPayload<{
     answers: { include: { evidenceDocument: true } };
     reviewDecision: true;
     transitions: true;
+    credential: { select: { id: true; status: true; verificationSeal: true; warrantyExpiresAt: true; createdAt: true } };
   };
 }>;
 
@@ -235,6 +236,17 @@ export function toClientSubmission(dossier: SubmissionDossier) {
         }
       : null,
     history: dossier.transitions.map((t) => ({ status: t.newStatus, at: t.timestamp })),
+    credential: dossier.credential
+      ? {
+          id: dossier.credential.id,
+          status: dossier.credential.status,
+          verificationSeal: dossier.credential.verificationSeal,
+          warrantyExpiresAt: dossier.credential.warrantyExpiresAt,
+          issuedAt: dossier.credential.createdAt,
+          verifyPath: `/api/credentials/${dossier.credential.id}/verify`,
+          badgePath: `/api/credentials/${dossier.credential.id}/badge.svg`,
+        }
+      : null,
   };
 }
 

@@ -29,6 +29,14 @@ export class MissingRequiredEvidenceError extends Error {
   }
 }
 
+/** Every question needs an answer before a submission goes to the Lead Auditor. */
+export class UnansweredQuestionsError extends Error {
+  constructor(public missingQuestions: { questionId: string; text: string; clause: string }[]) {
+    super(`Answer every question before submitting. ${missingQuestions.length} question(s) still need an answer.`);
+    this.name = 'UnansweredQuestionsError';
+  }
+}
+
 export const CREDENTIAL_MESSAGE_MAX_LENGTH = 100;
 
 export class ReviewValidationError extends Error {
@@ -281,6 +289,14 @@ export class WorkflowEngineService {
     // Gating checks per target status:
     // 1. Moving to SUBMITTED: Must satisfy evidence requirements
     if (targetStatus === WorkflowStatus.SUBMITTED) {
+      const answered = new Set(submission.answers.filter((a) => a.value.trim() !== '').map((a) => a.questionId));
+      const unanswered = submission.framework.questions
+        .filter((q) => !answered.has(q.id))
+        .map((q) => ({ questionId: q.id, text: q.text, clause: q.isoClauseReference }));
+      if (unanswered.length > 0) {
+        throw new UnansweredQuestionsError(unanswered);
+      }
+
       const requiredQuestions = submission.framework.questions.filter((q) => q.evidenceRequired);
       const answerMap = new Map(submission.answers.map((a) => [a.questionId, a]));
 
@@ -437,6 +453,9 @@ export class WorkflowEngineService {
         reviewDecision: true,
         transitions: {
           orderBy: { timestamp: 'asc' },
+        },
+        credential: {
+          select: { id: true, status: true, verificationSeal: true, warrantyExpiresAt: true, createdAt: true },
         },
       },
     });

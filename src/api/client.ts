@@ -11,6 +11,7 @@ import type {
   FleetOverview,
   FleetSummary,
 } from './fleet.types';
+import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
 
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -23,7 +24,7 @@ export class FleetApiError extends Error {
   }
 }
 
-async function fleetRequest<T>(
+async function apiRequest<T>(
   path: string,
   options: { method?: string; token?: string; body?: unknown; form?: FormData; acceptStatus?: number[] } = {}
 ): Promise<T> {
@@ -1138,26 +1139,77 @@ export const api = {
     return data;
   },
 
+  // ── GHG and Workforce pipelines (workflow engine) ───────────────────────
+
+  async getMyFrameworks(token: string, service: PipelineService): Promise<{ frameworks: ClientFramework[] }> {
+    return apiRequest(`/api/workflow/my-frameworks?service=${service}`, { token });
+  },
+
+  async getPipelineFees(token: string): Promise<{ fees: Record<PipelineService, PipelineFee> }> {
+    return apiRequest('/api/workflow/fees', { token });
+  },
+
+  async getClientSubmission(token: string, submissionId: string): Promise<{ submission: ClientSubmission }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/view`, { token });
+  },
+
+  async startPipelineDraft(token: string, workflowType: string, frameworkId: string): Promise<{ submission: { id: string } }> {
+    return apiRequest('/api/workflow/draft', { method: 'POST', token, body: { workflowType, frameworkId } });
+  },
+
+  async savePipelineAnswers(token: string, submissionId: string, answers: AnswerInput[]): Promise<{ success: boolean }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/answers`, {
+      method: 'PATCH',
+      token,
+      body: { answers },
+    });
+  },
+
+  async uploadPipelineEvidence(token: string, file: File): Promise<{ evidenceDocument: ClientEvidence & { createdAt: string } }> {
+    const form = new FormData();
+    form.append('file', file);
+    return apiRequest('/api/workflow/evidence/upload', { method: 'POST', token, form });
+  },
+
+  async submitPipeline(token: string, submissionId: string): Promise<{ success: boolean; missingQuestions?: { questionId: string; text: string; clause: string }[]; error?: string }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/submit`, {
+      method: 'POST',
+      token,
+      acceptStatus: [422],
+    });
+  },
+
+  async startPipelineCheckout(token: string, submissionId: string): Promise<{ checkoutUrl: string }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/checkout-session`, { method: 'POST', token });
+  },
+
+  async issuePipelineCredential(token: string, submissionId: string, logo: File, clientMessage: string): Promise<{ credentialId: string }> {
+    const form = new FormData();
+    form.append('clientLogo', logo);
+    form.append('clientMessage', clientMessage);
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/badge-setup`, { method: 'POST', token, form });
+  },
+
   // ── Fleet Emissions ─────────────────────────────────────────────────────
 
   async getFleetCalculatorFuelTypes(): Promise<{ fuelTypes: FleetFuelType[] }> {
-    return fleetRequest('/api/fleet/calculator/fuel-types');
+    return apiRequest('/api/fleet/calculator/fuel-types');
   },
 
   async estimateFleetEmissions(params: { fuelType: FleetFuelType; litres: string }): Promise<FleetEstimate> {
-    return fleetRequest('/api/fleet/calculator', { method: 'POST', body: params });
+    return apiRequest('/api/fleet/calculator', { method: 'POST', body: params });
   },
 
   async getFleetOverview(token: string): Promise<FleetOverview> {
-    return fleetRequest('/api/fleet/overview', { token });
+    return apiRequest('/api/fleet/overview', { token });
   },
 
   async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {
-    return fleetRequest('/api/fleet/assets', { token });
+    return apiRequest('/api/fleet/assets', { token });
   },
 
   async createFleetAsset(token: string, asset: FleetAssetInput): Promise<{ asset: FleetAsset; billingSynced: boolean }> {
-    return fleetRequest('/api/fleet/assets', { method: 'POST', token, body: asset });
+    return apiRequest('/api/fleet/assets', { method: 'POST', token, body: asset });
   },
 
   async updateFleetAsset(
@@ -1165,31 +1217,31 @@ export const api = {
     assetId: string,
     changes: Partial<Pick<FleetAsset, 'name' | 'siteName' | 'make' | 'model' | 'serialNumber' | 'active'>>
   ): Promise<{ asset: FleetAsset; billingSynced: boolean }> {
-    return fleetRequest(`/api/fleet/assets/${encodeURIComponent(assetId)}`, { method: 'PATCH', token, body: changes });
+    return apiRequest(`/api/fleet/assets/${encodeURIComponent(assetId)}`, { method: 'PATCH', token, body: changes });
   },
 
   async importFleetAssets(token: string, file: File): Promise<FleetAssetImportResult> {
     const form = new FormData();
     form.append('file', file);
-    return fleetRequest('/api/fleet/assets/import', { method: 'POST', token, form, acceptStatus: [422] });
+    return apiRequest('/api/fleet/assets/import', { method: 'POST', token, form, acceptStatus: [422] });
   },
 
   async importFleetReadings(token: string, file: File, format: 'readings' | 'fuel-card'): Promise<FleetImportResult> {
     const form = new FormData();
     form.append('format', format);
     form.append('file', file);
-    return fleetRequest('/api/fleet/readings/import', { method: 'POST', token, form, acceptStatus: [422] });
+    return apiRequest('/api/fleet/readings/import', { method: 'POST', token, form, acceptStatus: [422] });
   },
 
   async listFleetImports(token: string): Promise<{ batches: FleetImportBatch[] }> {
-    return fleetRequest('/api/fleet/imports', { token });
+    return apiRequest('/api/fleet/imports', { token });
   },
 
   async getFleetSummary(token: string, from: string, to: string): Promise<FleetSummary> {
-    return fleetRequest(`/api/fleet/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { token });
+    return apiRequest(`/api/fleet/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { token });
   },
 
-  async downloadFleetFile(token: string, path: string): Promise<{ blob: Blob; fileName: string }> {
+  async downloadFile(token: string, path: string): Promise<{ blob: Blob; fileName: string }> {
     const res = await fetch(path, { headers: getAuthHeader(token) });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Download failed' }));
@@ -1201,27 +1253,27 @@ export const api = {
   },
 
   async getFleetPricing(): Promise<{ unitAmount: number; currency: string; interval: string }> {
-    return fleetRequest('/api/fleet/pricing');
+    return apiRequest('/api/fleet/pricing');
   },
 
   async startFleetSubscription(token: string): Promise<{ checkoutUrl: string; quantity: number }> {
-    return fleetRequest('/api/fleet/subscription/checkout', { method: 'POST', token });
+    return apiRequest('/api/fleet/subscription/checkout', { method: 'POST', token });
   },
 
   async openFleetBillingPortal(token: string): Promise<{ url: string }> {
-    return fleetRequest('/api/fleet/subscription/portal', { method: 'POST', token });
+    return apiRequest('/api/fleet/subscription/portal', { method: 'POST', token });
   },
 
   async listEmissionFactors(token: string): Promise<{ factors: EmissionFactorRecord[] }> {
-    return fleetRequest('/api/admin/emission-factors', { token });
+    return apiRequest('/api/admin/emission-factors', { token });
   },
 
   async createEmissionFactor(token: string, factor: EmissionFactorInput): Promise<{ factor: EmissionFactorRecord }> {
-    return fleetRequest('/api/admin/emission-factors', { method: 'POST', token, body: factor });
+    return apiRequest('/api/admin/emission-factors', { method: 'POST', token, body: factor });
   },
 
   async retireEmissionFactor(token: string, factorId: string): Promise<{ factor: EmissionFactorRecord }> {
-    return fleetRequest(`/api/admin/emission-factors/${encodeURIComponent(factorId)}/retire`, { method: 'POST', token });
+    return apiRequest(`/api/admin/emission-factors/${encodeURIComponent(factorId)}/retire`, { method: 'POST', token });
   },
 };
 

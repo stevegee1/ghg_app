@@ -76,7 +76,7 @@ export const FleetUploads: React.FC<Props> = ({ token, onSubscribe, onImported }
 
   const downloadTemplate = async () => {
     try {
-      const { blob, fileName } = await api.downloadFleetFile(token, `/api/fleet/templates/${format}`);
+      const { blob, fileName } = await api.downloadFile(token, `/api/fleet/templates/${format}`);
       saveBlob(blob, fileName);
     } catch (err) {
       setUploadError((err as Error).message);

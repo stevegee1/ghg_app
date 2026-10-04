@@ -9,6 +9,7 @@ import {
   WorkflowEngineService,
   InvalidWorkflowTransitionError,
   MissingRequiredEvidenceError,
+  UnansweredQuestionsError,
   WorkflowForbiddenError,
   WorkflowNotFoundError,
   ReviewValidationError,
@@ -445,7 +446,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         submission: redactSubmissionForRole(submitted, user.role),
       });
     } catch (err: any) {
-      if (err instanceof MissingRequiredEvidenceError) {
+      if (err instanceof MissingRequiredEvidenceError || err instanceof UnansweredQuestionsError) {
         return res.status(422).json({
           error: err.message,
           missingQuestions: err.missingQuestions,
@@ -709,7 +710,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
       const fee = getAssuranceFee(submission.workflowType);
       const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
-      const pipeline = submission.workflowType === WorkflowType.JOB ? 'workforce' : 'ghg';
+      const scope = submission.workflowType === WorkflowType.JOB ? 'JOB_REPORTING' : 'CARBON_EMISSION';
+      const returnPath = `${baseUrl}/portal?tab=workflow&scope=${scope}&submission_id=${encodeURIComponent(id)}`;
 
       // The platform is the payee for assurance fees; the client licensee is recorded as the payer.
       const session = await checkoutService.createCheckoutSession({
@@ -719,8 +721,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         grossAmountCents: fee.amountPence,
         currency: fee.currency,
         deliveryType: DeliveryType.DIGITAL,
-        successUrl: `${baseUrl}/portal?view=workflow&pipeline=${pipeline}&submissionId=${id}&payment=success`,
-        cancelUrl: `${baseUrl}/portal?view=workflow&pipeline=${pipeline}&submissionId=${id}&payment=cancelled`,
+        successUrl: `${returnPath}&payment=success`,
+        cancelUrl: `${returnPath}&payment=cancelled`,
         metadata: { workflowSubmissionId: id, payerLicenseeId: submission.licenseeId },
       });
 
@@ -781,7 +783,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       return res.status(201).json({
         success: true,
         message: 'Dual-logo credential issued.',
-        submission: result.submission,
+        submission: redactSubmissionForRole(result.submission, user.role),
         credentialId: result.credential.id,
         verificationSeal: result.credential.verificationSeal,
         warrantyExpiresAt: result.credential.warrantyExpiresAt,
