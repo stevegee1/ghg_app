@@ -49,6 +49,7 @@ model Licensee {
   fleetFaultCodes          FleetFaultCode[]
   fleetApiKeys             FleetApiKey[]
   fleetSetupRequests       FleetSetupRequest[]
+  fleetDeviceBindings      FleetDeviceBinding[]
   fleetSubscription        FleetSubscription?
   routingEvents            ServiceRoutingEvent[]
 }
@@ -207,6 +208,7 @@ model PortalUser {
   fleetImportBatches  FleetImportBatch[]
   fleetApiKeys        FleetApiKey[]
   fleetSetupRequests  FleetSetupRequest[]
+  fleetDataProviders  FleetDataProvider[]
   emissionFactors     EmissionFactor[]
 
   @@index([licenseeId])
@@ -1264,6 +1266,24 @@ enum FleetConnectionBranch {
   MANUAL
 }
 
+enum FleetProviderKind {
+  /// Branch B: a tracking device that sends its readings to us
+  TRACKING_DEVICE
+  /// Branch A: a manufacturer or telematics cloud we pull from
+  OEM_CLOUD
+}
+
+/// How a provider proves who it is. Device kinds push to us; cloud kinds are called by us.
+enum FleetProviderAuthType {
+  /// The device sends a shared key in a header
+  DEVICE_SHARED_KEY
+  /// The device signs timestamp + "." + body with HMAC-SHA256 using the shared secret
+  DEVICE_HMAC_SHA256
+  OAUTH2_CLIENT_CREDENTIALS
+  HTTP_BASIC
+  API_KEY_HEADER
+}
+
 enum FleetSetupRequestStatus {
   REQUESTED
   SCHEDULED
@@ -1324,6 +1344,7 @@ model FleetAsset {
   readings  FleetReading[]
   snapshots FleetTelemetrySnapshot[]
   faults    FleetFaultCode[]
+  bindings  FleetDeviceBinding[]
 
   @@unique([licenseeId, assetTag])
   @@index([licenseeId, active])
@@ -1395,6 +1416,7 @@ model FleetSchemaVersion {
 
   snapshots FleetTelemetrySnapshot[]
   readings  FleetReading[]
+  providers FleetDataProvider[]
 }
 
 /// One machine's ISO 15143-3 readings at one moment. Meters are cumulative; fuel used over a
@@ -1468,6 +1490,53 @@ model FleetApiKey {
   revokedAt   DateTime?
 
   @@index([licenseeId, revokedAt])
+}
+
+/// A data source configured by an administrator: how it authenticates and how its fields map to
+/// the standard schema. New devices and providers are added here, never in code.
+model FleetDataProvider {
+  id               String                @id @default(cuid())
+  name             String                @unique
+  kind             FleetProviderKind
+  authType         FleetProviderAuthType
+  /// Non-secret settings, e.g. header names and timestamp tolerance
+  authConfig       Json
+  /// The shared secret, encrypted with FLEET_CREDENTIALS_KEY; never returned by the API
+  secretCiphertext String?
+  /// Where each standard-schema field is found in a message, and its unit
+  fieldMapping     Json
+  schemaVersionId  String
+  schemaVersion    FleetSchemaVersion    @relation(fields: [schemaVersionId], references: [id])
+  active           Boolean               @default(true)
+  createdById      String
+  createdBy        PortalUser            @relation(fields: [createdById], references: [id])
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  bindings FleetDeviceBinding[]
+}
+
+/// Links a device's own identifier to a client's asset, made when the tracker is fitted.
+model FleetDeviceBinding {
+  id               String            @id @default(cuid())
+  providerId       String
+  provider         FleetDataProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  externalDeviceId String
+  licenseeId       String
+  licensee         Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetId          String
+  asset            FleetAsset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  active           Boolean           @default(true)
+  /// "providerId:externalDeviceId" while active, null once released, so a device id is bound to
+  /// at most one asset at a time and released bindings keep their original id for the record
+  activeKey        String?           @unique
+  createdById      String
+  createdAt        DateTime          @default(now())
+  deactivatedAt    DateTime?
+
+  @@index([providerId, externalDeviceId])
+  @@index([licenseeId])
+  @@index([assetId])
 }
 
 /// A client's request for a call to set up tracking devices on Branch B assets.

@@ -10644,3 +10644,35 @@ a:not([class]):hover {
   border-top: 1px solid var(--border-light);
   font-size: 0.875rem;
 }
+
+/* Fleet device providers (admin) */
+
+.fleet-admin-head {
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.fleet-admin-head .fleet-panel-title {
+  margin: 0;
+}
+
+.fleet-json {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+}
+
+.fleet-bind-form select,
+.fleet-bind-form input {
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.8125rem;
+}

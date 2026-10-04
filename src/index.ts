@@ -11,6 +11,7 @@ import * as crypto from 'crypto';
 import { PortalRole } from '@prisma/client';
 import { validateAssuranceFeeConfig } from './services/assurance-fee.service';
 import { validateFileStorage } from './services/file-storage.service';
+import { validateSecretBoxKey } from './services/secret-box.service';
 import { validateLlmProviderConfig } from './services/review-pipeline/llm-provider.interface';
 import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './services/platform-account.service';
 
@@ -46,6 +47,13 @@ async function main() {
     validateFileStorage();
   } catch (err) {
     console.error(`FATAL: File storage is unavailable. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
+
+  try {
+    validateSecretBoxKey();
+  } catch (err) {
+    console.error(`FATAL: Fleet secret encryption is not configured. ${(err as Error).message} Refusing to start.`);
     process.exit(1);
   }
 

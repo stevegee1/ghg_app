@@ -16,6 +16,10 @@ import type {
   FleetConnectionOverview,
   FleetSetupRequestInput,
   AdminFleetSetupRequest,
+  AdminFleetProvider,
+  AdminFleetBinding,
+  AdminTrackingAsset,
+  MappingTestResult,
 } from './fleet.types';
 import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
@@ -1179,6 +1183,34 @@ export const api = {
     changes: { status: string; scheduledFor?: string | null; adminNotes?: string | null }
   ): Promise<{ request: AdminFleetSetupRequest }> {
     return apiRequest(`/api/admin/fleet/setup-requests/${encodeURIComponent(id)}`, { method: 'PATCH', token, body: changes });
+  },
+
+  async listAdminFleetProviders(token: string): Promise<{ providers: AdminFleetProvider[] }> {
+    return apiRequest('/api/admin/fleet/providers', { token });
+  },
+
+  async createAdminFleetProvider(token: string, body: Record<string, unknown>): Promise<{ provider: AdminFleetProvider }> {
+    return apiRequest('/api/admin/fleet/providers', { method: 'POST', token, body });
+  },
+
+  async updateAdminFleetProvider(token: string, id: string, body: Record<string, unknown>): Promise<{ provider: AdminFleetProvider }> {
+    return apiRequest(`/api/admin/fleet/providers/${encodeURIComponent(id)}`, { method: 'PATCH', token, body });
+  },
+
+  async testAdminFleetMapping(token: string, fieldMapping: unknown, sample: unknown): Promise<{ results: MappingTestResult[] }> {
+    return apiRequest('/api/admin/fleet/providers/test-mapping', { method: 'POST', token, body: { fieldMapping, sample } });
+  },
+
+  async listAdminFleetBindings(token: string): Promise<{ bindings: AdminFleetBinding[]; trackingDeviceAssets: AdminTrackingAsset[] }> {
+    return apiRequest('/api/admin/fleet/device-bindings', { token });
+  },
+
+  async createAdminFleetBinding(token: string, body: { providerId: string; assetId: string; externalDeviceId: string }): Promise<{ binding: AdminFleetBinding }> {
+    return apiRequest('/api/admin/fleet/device-bindings', { method: 'POST', token, body });
+  },
+
+  async deactivateAdminFleetBinding(token: string, id: string): Promise<{ binding: AdminFleetBinding }> {
+    return apiRequest(`/api/admin/fleet/device-bindings/${encodeURIComponent(id)}/deactivate`, { method: 'POST', token });
   },
 
   async listFleetApiKeys(token: string): Promise<{ keys: FleetApiKeyRecord[] }> {

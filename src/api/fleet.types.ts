@@ -232,3 +232,44 @@ export interface EmissionFactorInput {
   kgCo2ePerUnit: string;
   citation: string;
 }
+
+export type FleetProviderAuthType = 'DEVICE_SHARED_KEY' | 'DEVICE_HMAC_SHA256';
+
+export interface AdminFleetProvider {
+  id: string;
+  name: string;
+  kind: 'TRACKING_DEVICE' | 'OEM_CLOUD';
+  authType: FleetProviderAuthType;
+  authConfig: { headerName?: string; signatureHeader?: string; timestampHeader?: string; toleranceSeconds?: number };
+  fieldMapping: unknown;
+  schemaVersionId: string;
+  active: boolean;
+  hasSecret: boolean;
+  activeBindings?: number;
+  createdAt: string;
+}
+
+export interface AdminFleetBinding {
+  id: string;
+  externalDeviceId: string;
+  active: boolean;
+  createdAt: string;
+  deactivatedAt: string | null;
+  asset: { id: string; assetTag: string; name: string };
+  licensee: { id: string; name: string };
+  provider: { id: string; name: string };
+}
+
+export interface AdminTrackingAsset {
+  id: string;
+  assetTag: string;
+  name: string;
+  make: string | null;
+  model: string | null;
+  licensee: { id: string; name: string };
+  bindings: { id: string; externalDeviceId: string; provider: { name: string } }[];
+}
+
+export type MappingTestResult =
+  | { index: number; ok: true; externalDeviceId: string; snapshot: Record<string, unknown> }
+  | { index: number; ok: false; error: string };
