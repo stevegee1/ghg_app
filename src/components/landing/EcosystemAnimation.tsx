@@ -55,6 +55,13 @@ const STAGES: { label: string; caption: string; flows: FlowId[]; nodes: string[]
   },
 ];
 
+/** The hub in the middle of the diagram. */
+const HUB = { cx: 300, cy: 240, r: 76 };
+
+/** Where the round brand mark sits inside its 836 x 662 image: centre and radius, in image pixels. */
+const LOGO = { width: 836, height: 662, circleCx: 404, circleCy: 325, circleR: 296 };
+const LOGO_SCALE = HUB.r / LOGO.circleR;
+
 const STAGE_MS = 3800;
 const RESUME_AFTER_MS = 12000;
 
@@ -151,14 +158,24 @@ export const EcosystemAnimation: React.FC = () => {
         })}
 
         <g className={`eco-hub${activeNodes.has('hub') ? ' is-active' : ''}`}>
-          {!reducedMotion && <circle cx="300" cy="240" r="80" className="eco-hub-pulse" />}
-          <circle cx="300" cy="240" r="76" className="eco-hub-core" />
-          <text x="300" y="234" className="eco-hub-title" textAnchor="middle">
-            GHGEmissionLogs
-          </text>
-          <text x="300" y="256" className="eco-hub-sub" textAnchor="middle">
-            {stage === 1 ? 'Calculate & review' : 'One platform'}
-          </text>
+          <defs>
+            <clipPath id="eco-hub-clip">
+              <circle cx={HUB.cx} cy={HUB.cy} r={HUB.r} />
+            </clipPath>
+          </defs>
+          {!reducedMotion && <circle cx={HUB.cx} cy={HUB.cy} r={HUB.r + 4} className="eco-hub-pulse" />}
+          <circle cx={HUB.cx} cy={HUB.cy} r={HUB.r} className="eco-hub-core" />
+          {/* The brand mark is itself a circle; it is scaled so that circle fills the hub exactly. */}
+          <image
+            href="/images/nfty-logs-logo.png"
+            x={HUB.cx - LOGO.circleCx * LOGO_SCALE}
+            y={HUB.cy - LOGO.circleCy * LOGO_SCALE}
+            width={LOGO.width * LOGO_SCALE}
+            height={LOGO.height * LOGO_SCALE}
+            clipPath="url(#eco-hub-clip)"
+            preserveAspectRatio="xMidYMid meet"
+          />
+          <circle cx={HUB.cx} cy={HUB.cy} r={HUB.r} className="eco-hub-ring" />
         </g>
 
         {NODES.map((n) => (

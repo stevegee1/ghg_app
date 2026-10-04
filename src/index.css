@@ -11163,13 +11163,23 @@ a:not([class]):hover {
 }
 
 .eco-hub-core {
-  fill: var(--accent-primary);
-  transition: fill 0.3s ease;
+  fill: var(--bg-card);
+}
+
+.eco-hub-ring {
+  fill: none;
+  stroke: var(--bg-card);
+  stroke-width: 3;
+  filter: drop-shadow(0 2px 6px rgba(60, 64, 67, 0.25));
+}
+
+.eco-hub.is-active .eco-hub-ring {
+  stroke: var(--accent-primary);
 }
 
 .eco-hub-pulse {
   fill: none;
-  stroke: var(--accent-primary);
+  stroke: var(--color-green);
   stroke-width: 2;
   transform-origin: 300px 240px;
   animation: eco-pulse 2.4s ease-out infinite;
@@ -11178,17 +11188,6 @@ a:not([class]):hover {
 @keyframes eco-pulse {
   from { transform: scale(0.95); opacity: 0.6; }
   to { transform: scale(1.25); opacity: 0; }
-}
-
-.eco-hub-title {
-  font-size: 14px;
-  font-weight: 800;
-  fill: #ffffff;
-}
-
-.eco-hub-sub {
-  font-size: 13px;
-  fill: rgba(255, 255, 255, 0.85);
 }
 
 .eco-caption {
