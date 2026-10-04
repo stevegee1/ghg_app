@@ -25,7 +25,7 @@ async function main() {
     }
   }
 
-  for (const name of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PLATFORM_ACCOUNT_ID']) {
+  for (const name of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PLATFORM_ACCOUNT_ID', 'STRIPE_FLEET_PRICE_ID']) {
     if (!process.env[name]) {
       console.error(`FATAL: ${name} environment variable must be set. Refusing to start.`);
       process.exit(1);

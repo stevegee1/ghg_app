@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { PrismaClient, TransactionStatus, CharityStatus } from '@prisma/client';
 import { alertComplianceOfficer } from '../services/compliance.service';
 import { runWithRls } from '../db/rls';
+import { applyFleetSubscriptionEvent, recordPaidFleetInvoice } from '../services/fleet/fleet-billing.service';
 
 export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe): Router {
   const router = Router();
@@ -576,6 +577,20 @@ export function createStripeWebhookRouter(prisma: PrismaClient, stripe: Stripe):
               }
             });
           }
+          break;
+        }
+
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted': {
+          // Fleet per-asset subscriptions: status, quantity and entitlement follow Stripe.
+          await applyFleetSubscriptionEvent(prisma, event.data.object as Stripe.Subscription);
+          break;
+        }
+
+        case 'invoice.paid': {
+          // Fleet subscription invoices are recorded with the charity split and paid out.
+          await recordPaidFleetInvoice(prisma, stripe, event.data.object as Stripe.Invoice);
           break;
         }
 

@@ -12,6 +12,19 @@ import {
   FleetImportFileError,
 } from '../src/services/fleet/fleet-import.service';
 import { runWithRls } from '../src/db/rls';
+import Stripe from 'stripe';
+import request from 'supertest';
+import {
+  createFleetSubscriptionCheckout,
+  applyFleetSubscriptionEvent,
+  syncFleetQuantity,
+  recordPaidFleetInvoice,
+  FleetBillingError,
+} from '../src/services/fleet/fleet-billing.service';
+import { PLATFORM_LICENSEE_ID } from '../src/services/platform-account.service';
+import { ensurePlatformSplitConfig } from './helpers/platformSplit';
+import { resolveActiveSplitConfig } from '../src/services/split-config.service';
+import { createApp } from '../src/expressApp';
 
 const prisma = new PrismaClient();
 
@@ -208,3 +221,184 @@ describe('Fleet Emissions: factors, imports and isolation', () => {
     expect(seenWithoutLicensee).toBe(0);
   });
 });
+
+describe('Fleet Emissions: per-asset subscription billing', () => {
+  let licensee: { id: string };
+  let user: { id: string };
+  const stripeMock = {
+    customers: { create: jest.fn() },
+    checkout: { sessions: { create: jest.fn() } },
+    billingPortal: { sessions: { create: jest.fn() } },
+    subscriptions: { retrieve: jest.fn() },
+    subscriptionItems: { update: jest.fn() },
+    transfers: { create: jest.fn() },
+    paymentIntents: { create: jest.fn(), retrieve: jest.fn() },
+    webhooks: { constructEvent: jest.fn() },
+  };
+  const stripe = stripeMock as unknown as Stripe;
+
+  const subscriptionEvent = (status: Stripe.Subscription.Status, quantity: number, service = 'FLEET') =>
+    ({
+      id: 'sub_fleet_test',
+      status,
+      customer: 'cus_fleet_test',
+      current_period_end: 1893456000,
+      metadata: { service, licenseeId: licensee.id },
+      items: { data: [{ id: 'si_fleet_test', quantity }] },
+    }) as unknown as Stripe.Subscription;
+
+  beforeAll(async () => {
+    const suffix = Date.now().toString(36);
+    licensee = await prisma.licensee.create({ data: { name: `Fleet Billing ${suffix}`, vertical: Vertical.B2B_HEAVY_MANUFACTURING } });
+    user = await prisma.portalUser.create({ data: { email: `fleet.billing.${suffix}@test.example`, passwordHash: 'x', role: 'PARTNER', licenseeId: licensee.id } });
+    await prisma.licensee.upsert({
+      where: { id: PLATFORM_LICENSEE_ID },
+      update: {},
+      create: { id: PLATFORM_LICENSEE_ID, name: 'Platform', vertical: Vertical.B2C_SPORTS_MERCH, stripeConnectedAccountId: 'acct_jest_offline_platform' },
+    });
+    await ensurePlatformSplitConfig(prisma);
+  });
+
+  afterAll(async () => {
+    await prisma.serviceEntitlement.deleteMany({ where: { licenseeId: licensee.id } });
+    await prisma.fleetSubscription.deleteMany({ where: { licenseeId: licensee.id } });
+    await prisma.fleetAsset.deleteMany({ where: { licenseeId: licensee.id } });
+    await prisma.portalUser.deleteMany({ where: { id: user.id } });
+    await prisma.licensee.deleteMany({ where: { id: licensee.id } });
+  });
+
+  const checkoutParams = () => ({
+    licenseeId: licensee.id,
+    customerEmail: 'billing@test.example',
+    successUrl: 'https://app.test/portal?fleet=subscribed',
+    cancelUrl: 'https://app.test/portal?fleet=cancelled',
+  });
+
+  it('requires at least one active asset before subscribing', async () => {
+    await expect(createFleetSubscriptionCheckout(prisma, stripe, checkoutParams())).rejects.toBeInstanceOf(FleetBillingError);
+    expect(stripeMock.customers.create).not.toHaveBeenCalled();
+  });
+
+  it('opens a subscription checkout billed per active asset', async () => {
+    await prisma.fleetAsset.createMany({
+      data: ['A1', 'A2', 'A3'].map((tag) => ({
+        licenseeId: licensee.id,
+        assetTag: tag,
+        name: tag,
+        category: 'EXCAVATOR' as const,
+        fuelType: FleetFuelType.DIESEL_AVERAGE_BIOFUEL_BLEND,
+        ownership: 'OWNED' as const,
+        operationalControl: true,
+        active: tag !== 'A3',
+      })),
+    });
+    stripeMock.customers.create.mockResolvedValue({ id: 'cus_fleet_test' });
+    stripeMock.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe.com/c/pay/cs_fleet' });
+
+    const result = await createFleetSubscriptionCheckout(prisma, stripe, checkoutParams());
+    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_fleet', quantity: 2 });
+
+    const params = stripeMock.checkout.sessions.create.mock.calls[0][0];
+    expect(params.mode).toBe('subscription');
+    expect(params.customer).toBe('cus_fleet_test');
+    expect(params.line_items).toEqual([{ price: process.env.STRIPE_FLEET_PRICE_ID, quantity: 2 }]);
+    expect(params.subscription_data.metadata).toEqual({ licenseeId: licensee.id, service: 'FLEET' });
+
+    stripeMock.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe.com/c/pay/cs_fleet_2' });
+    await createFleetSubscriptionCheckout(prisma, stripe, checkoutParams());
+    expect(stripeMock.customers.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('activates the FLEET entitlement from the subscription webhook and suspends it on cancellation', async () => {
+    expect(await applyFleetSubscriptionEvent(prisma, subscriptionEvent('active', 2, 'OTHER'))).toBe(false);
+
+    await applyFleetSubscriptionEvent(prisma, subscriptionEvent('active', 2));
+    let entitlement = await prisma.serviceEntitlement.findUnique({
+      where: { licenseeId_serviceLine: { licenseeId: licensee.id, serviceLine: 'FLEET' } },
+    });
+    expect(entitlement!.status).toBe('ACTIVE');
+    const sub = await prisma.fleetSubscription.findUnique({ where: { licenseeId: licensee.id } });
+    expect(sub).toMatchObject({ status: 'ACTIVE', quantity: 2, stripeSubscriptionId: 'sub_fleet_test' });
+
+    await expect(createFleetSubscriptionCheckout(prisma, stripe, checkoutParams())).rejects.toThrow(/already active/);
+
+    await applyFleetSubscriptionEvent(prisma, subscriptionEvent('past_due', 2));
+    entitlement = await prisma.serviceEntitlement.findUnique({
+      where: { licenseeId_serviceLine: { licenseeId: licensee.id, serviceLine: 'FLEET' } },
+    });
+    expect(entitlement!.status).toBe('ACTIVE');
+
+    await applyFleetSubscriptionEvent(prisma, subscriptionEvent('canceled', 2));
+    entitlement = await prisma.serviceEntitlement.findUnique({
+      where: { licenseeId_serviceLine: { licenseeId: licensee.id, serviceLine: 'FLEET' } },
+    });
+    expect(entitlement!.status).toBe('SUSPENDED');
+    expect(await prisma.fleetAsset.count({ where: { licenseeId: licensee.id } })).toBe(3);
+
+    await applyFleetSubscriptionEvent(prisma, subscriptionEvent('active', 2));
+  });
+
+  it('syncs the Stripe quantity to the active asset count', async () => {
+    stripeMock.subscriptions.retrieve.mockResolvedValue({ items: { data: [{ id: 'si_fleet_test' }] } });
+    await prisma.fleetAsset.updateMany({ where: { licenseeId: licensee.id, assetTag: 'A3' }, data: { active: true } });
+
+    await syncFleetQuantity(prisma, stripe, licensee.id);
+    expect(stripeMock.subscriptionItems.update).toHaveBeenCalledWith('si_fleet_test', { quantity: 3 });
+    expect((await prisma.fleetSubscription.findUnique({ where: { licenseeId: licensee.id } }))!.quantity).toBe(3);
+
+    await syncFleetQuantity(prisma, stripe, licensee.id);
+    expect(stripeMock.subscriptionItems.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('records each paid invoice once with the active charity split and pays the charities', async () => {
+    stripeMock.transfers.create.mockResolvedValue({ id: 'tr_fleet_test' });
+    const invoice = {
+      id: `in_fleet_${Date.now()}`,
+      amount_paid: 9999,
+      currency: 'gbp',
+      payment_intent: 'pi_fleet_test',
+      subscription_details: { metadata: { service: 'FLEET', licenseeId: licensee.id } },
+    } as unknown as Stripe.Invoice;
+
+    expect(await recordPaidFleetInvoice(prisma, stripe, { ...invoice, subscription_details: { metadata: {} } } as unknown as Stripe.Invoice)).toBe(false);
+    expect(await recordPaidFleetInvoice(prisma, stripe, invoice)).toBe(true);
+    expect(await recordPaidFleetInvoice(prisma, stripe, invoice)).toBe(true);
+
+    const transactions = await prisma.transaction.findMany({
+      where: { checkoutReferenceId: `fleet_invoice_${invoice.id}` },
+      include: { financialSplit: { include: { charityAllocations: true } }, triggerEvent: true },
+    });
+    expect(transactions).toHaveLength(1);
+    const tx = transactions[0];
+    const split = await resolveActiveSplitConfig(prisma, PLATFORM_LICENSEE_ID);
+    const expectedRoyalty = Math.round((9999 * split.royaltyBps) / 10000);
+    expect(tx.licenseeId).toBe(PLATFORM_LICENSEE_ID);
+    expect(tx.status).toBe('SETTLED');
+    expect(tx.financialSplit!.licensorRoyaltyCents).toBe(expectedRoyalty);
+    expect(tx.financialSplit!.charityGiftCents).toBe(9999 - expectedRoyalty);
+    expect(tx.financialSplit!.charityAllocations.reduce((sum, a) => sum + a.amountCents, 0)).toBe(9999 - expectedRoyalty);
+    expect(stripeMock.transfers.create).toHaveBeenCalledTimes(tx.financialSplit!.charityAllocations.length);
+  });
+
+  it('processes Fleet subscription events through the signed webhook', async () => {
+    const app = createApp(stripe);
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: 'customer.subscription.updated',
+      data: { object: subscriptionEvent('unpaid', 3) },
+    });
+
+    await request(app)
+      .post('/webhooks/stripe')
+      .set('stripe-signature', 't=1,v1=test')
+      .set('Content-Type', 'application/json')
+      .send('{}')
+      .expect(200);
+
+    const entitlement = await prisma.serviceEntitlement.findUnique({
+      where: { licenseeId_serviceLine: { licenseeId: licensee.id, serviceLine: 'FLEET' } },
+    });
+    expect(entitlement!.status).toBe('SUSPENDED');
+    expect((await prisma.fleetSubscription.findUnique({ where: { licenseeId: licensee.id } }))!.status).toBe('UNPAID');
+  });
+});
+
