@@ -142,4 +142,4 @@ If the client already has the needed fleet data, continue GHG without Fleet.
 - Merch stays as a separate shop. It is not one of the three pipelines and is not part of onboarding routing.
 - A client can subscribe to several services. Each runs in its own isolated pipeline; onboarding picks the first, more can be added later.
 - The Fleet standard data schema follows ISO 15143-3 (AEMP 2.0), the published standard OEMs and Hiboo.ai build on. The schema is versioned and the version is recorded with every calculation.
-- Branch B uses a partner tracking device until in-house hardware exists.
+- Branch B uses a partner tracking device until in-house hardware exists. No partner is chosen yet, so device ingestion must be configurable: any tracker is added through configuration (device type, authentication, field mapping to the ISO 15143-3 schema), never through code written for one device.
