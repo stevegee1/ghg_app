@@ -75,6 +75,14 @@ describe('Fleet Emissions: factors, imports and isolation', () => {
   });
 
   afterAll(async () => {
+    // Fleet audit records block deletion of the users who created them, so remove them first.
+    const licenseeIds = [licenseeA.id, licenseeB.id];
+    await prisma.fleetReading.deleteMany({ where: { licenseeId: { in: licenseeIds } } });
+    await prisma.fleetImportBatch.deleteMany({ where: { licenseeId: { in: licenseeIds } } });
+    await prisma.fleetAsset.deleteMany({ where: { licenseeId: { in: licenseeIds } } });
+    await prisma.emissionFactor.deleteMany({ where: { createdByUserId: admin.id } });
+    await prisma.portalUser.deleteMany({ where: { id: { in: [userA.id, userB.id, admin.id] } } });
+    await prisma.licensee.deleteMany({ where: { id: { in: licenseeIds } } });
     await prisma.$disconnect();
   });
 
