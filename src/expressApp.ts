@@ -17,6 +17,7 @@ import { createEvidenceFileRouter } from './routes/evidence-file.route';
 import { createFleetApiRouter } from './routes/fleet-api.route';
 import { createFleetConnectionRouter } from './routes/fleet-connection.route';
 import { createFleetProviderRouter } from './routes/fleet-provider.route';
+import { createPublicSiteRouter } from './routes/public-site.route';
 import { createIsoLegalRouter } from './routes/iso-legal.route';
 import { createJobReportingRouter } from './routes/job-reporting.route';
 import { createOrdersRouter } from './routes/orders.route';
@@ -133,6 +134,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use('/api/fleet/assets/import', uploadLimiter);
   app.use('/api/fleet/readings/import', uploadLimiter);
   app.use('/api/fleet/calculator', calculatorLimiter);
+  app.use('/api/newsletter/subscribe', calculatorLimiter);
 
   // Use raw body parsing strictly for the webhook route
   app.use('/webhooks/stripe', express.raw({ type: '*/*' }));
@@ -176,6 +178,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createFleetApiRouter(prisma));
   app.use(createFleetConnectionRouter(prisma));
   app.use(createFleetProviderRouter(prisma));
+  app.use(createPublicSiteRouter(prisma));
   app.use(createMerchEnquiryRouter(prisma));
   app.use(createPartnerNetworkRouter(prisma));
   app.use(createAssessmentRouter(prisma));

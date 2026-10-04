@@ -1,81 +1,88 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [consentText, setConsentText] = useState('I agree to receive the GHGEmissionLogs newsletter by email. I can unsubscribe at any time.');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/newsletter/consent')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.consentText && setConsentText(d.consentText))
+      .catch(() => undefined);
+  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes('@')) return;
-    setSubmitting(true);
+    if (!consent) {
+      setStatus('error');
+      setMessage('Tick the box to agree to receive the newsletter.');
+      return;
+    }
+    setStatus('sending');
+    setMessage(null);
     try {
-      const res = await fetch('/api/v1/auth/newsletter', {
+      const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ email: email.trim(), consent }),
       });
-      if (res.ok || res.status === 200 || res.status === 201) {
-        setSubscribed(true);
-      } else {
-        // Fallback for standalone demo mode
-        setSubscribed(true);
-      }
-    } catch {
-      setSubscribed(true);
-    } finally {
-      setSubmitting(false);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'The subscription could not be started. Please try again later.');
+      setStatus('sent');
+      setMessage(data.message || 'Check your inbox to confirm your subscription.');
+    } catch (err) {
+      setStatus('error');
+      setMessage((err as Error).message);
     }
   };
 
   return (
     <footer className="cerebrium-footer" role="contentinfo" aria-label="Site Footer">
       <div className="cerebrium-footer-container">
-        
-        {/* Top Section: Brand + Newsletter on Left | 5 Columns on Right */}
         <div className="cerebrium-footer-top">
-          
-          {/* Brand & Newsletter Column (Persefoni Standard Benchmark) */}
           <div className="persefoni-footer-brand-col">
             <Link to="/" className="persefoni-footer-brand" aria-label="GHGEmissionLogs Home">
-              <img
-                src="/images/nfty-logs-logo.png"
-                alt="GHGEmissionLogs Official Logo"
-                style={{ width: '28px', height: '28px', objectFit: 'contain' }}
-              />
+              <img src="/images/nfty-logs-logo.png" alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
               <span>GHGEmissionLogs</span>
             </Link>
 
             <div className="persefoni-footer-newsletter">
-              <h3>Subscribe to our newsletter.</h3>
-              <p>
-                Stay ahead of the curve. With every edition, you will receive the latest news, updates, and insights from our experts.
-              </p>
+              <h3>Newsletter</h3>
+              <p>Product updates and practical guidance on emissions, fleet and workforce compliance. Occasional, never shared.</p>
 
-              {subscribed ? (
-                <div className="persefoni-newsletter-success">
-                  <span style={{ color: '#059669', fontWeight: 600 }}>Thank you for subscribing.</span>
-                </div>
+              {status === 'sent' ? (
+                <p className="persefoni-newsletter-success" role="status">
+                  {message}
+                </p>
               ) : (
-                <form className="persefoni-footer-form" onSubmit={handleSubscribe}>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your work email"
-                    className="persefoni-footer-input"
-                    aria-label="Work email address for newsletter"
-                  />
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="persefoni-footer-btn"
-                  >
-                    <span>{submitting ? 'Subscribing...' : 'Subscribe'}</span>
-                    <span className="btn-arrow" aria-hidden="true">→</span>
-                  </button>
+                <form className="persefoni-footer-form footer-newsletter-form" onSubmit={handleSubscribe} noValidate>
+                  <div className="footer-newsletter-row">
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Work email"
+                      className="persefoni-footer-input"
+                      aria-label="Work email address"
+                    />
+                    <button type="submit" disabled={status === 'sending'} className="persefoni-footer-btn">
+                      <span>{status === 'sending' ? 'Sending...' : 'Subscribe'}</span>
+                    </button>
+                  </div>
+                  <label className="footer-consent">
+                    <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+                    <span>{consentText}</span>
+                  </label>
+                  {status === 'error' && message && (
+                    <p className="footer-newsletter-error" role="alert">
+                      {message}
+                    </p>
+                  )}
                 </form>
               )}
             </div>
@@ -132,96 +139,61 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Column 1: Product */}
           <div>
-            <div className="cerebrium-footer-col-title">Product</div>
+            <div className="cerebrium-footer-col-title">Solutions</div>
             <ul className="cerebrium-footer-links">
-              <li><Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="cerebrium-footer-link">Scope 1-3 GHG Protocol</Link></li>
-              <li><Link to="/portal?tab=telemetry" className="cerebrium-footer-link">Carbon Management</Link></li>
-              <li><Link to="/portal?scope=JOB_REPORTING&tab=jobs" className="cerebrium-footer-link">Statutory Job Reporting</Link></li>
-              <li><Link to="/portal?tab=telemetry" className="cerebrium-footer-link">IoT Telemetry Ingestion</Link></li>
-              <li><Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="cerebrium-footer-link">Audit Diagnostic Stepper</Link></li>
-              <li><Link to="/licensing" className="cerebrium-footer-link">Pricing &amp; Licensing</Link></li>
+              <li><a href="/#ghg" className="cerebrium-footer-link">GHG &amp; Carbon Emissions</a></li>
+              <li><a href="/#fleet" className="cerebrium-footer-link">Fleet Emissions &amp; Telematics</a></li>
+              <li><a href="/#workforce" className="cerebrium-footer-link">Social &amp; Workforce</a></li>
+              <li><Link to="/merch" className="cerebrium-footer-link">Merch &amp; Custom Merch</Link></li>
             </ul>
           </div>
 
-          {/* Column 2: Resources */}
           <div>
-            <div className="cerebrium-footer-col-title">Resources</div>
+            <div className="cerebrium-footer-col-title">Partners</div>
             <ul className="cerebrium-footer-links">
-              <li><Link to="/blog" className="cerebrium-footer-link">Blog &amp; Field Guides</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">CMA Green Claims Code</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">ISO 14064 Methodology</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">ISO 50001 Energy Protocol</Link></li>
-              <li><Link to="/portal?tab=telemetry" className="cerebrium-footer-link">Developer Telemetry API</Link></li>
-              <li><Link to="/portal?tab=studio" className="cerebrium-footer-link">Dual-Logo Trust Studio</Link></li>
+              <li><Link to="/partners" className="cerebrium-footer-link">Delivery &amp; production partners</Link></li>
+              <li><Link to="/partners#charities" className="cerebrium-footer-link">Charity partners</Link></li>
+              <li><Link to="/track" className="cerebrium-footer-link">Track a merch order</Link></li>
             </ul>
           </div>
 
-          {/* Column 3: Company */}
           <div>
             <div className="cerebrium-footer-col-title">Company</div>
             <ul className="cerebrium-footer-links">
-              <li><Link to="/transparency" className="cerebrium-footer-link">About GHGEmissionLogs</Link></li>
-              <li><Link to="/partners" className="cerebrium-footer-link">Partners &amp; Ecosystem</Link></li>
-              <li><Link to="/charities/apply" className="cerebrium-footer-link">15% Direct Charity Split</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">Transparency Ledger</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">Security &amp; Architecture</Link></li>
+              <li><Link to="/transparency" className="cerebrium-footer-link">Transparency &amp; legal</Link></li>
+              <li><Link to="/blog" className="cerebrium-footer-link">Blog</Link></li>
               <li>
-                <Link
-                  to="/book-demo"
+                <a
+                  href="/#contact"
                   className="cerebrium-footer-link"
                   onClick={(e) => {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent('open-book-demo-modal'));
                   }}
                 >
-                  Book Compliance Demo
-                </Link>
+                  Book a demo
+                </a>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Disclosures */}
           <div>
-            <div className="cerebrium-footer-col-title">Disclosures</div>
+            <div className="cerebrium-footer-col-title">Account</div>
             <ul className="cerebrium-footer-links">
-              <li><Link to="/portal?scope=JOB_REPORTING&tab=jobs" className="cerebrium-footer-link">Section 106 Compliance</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">Social Value Act 2012</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">SECR Guidelines</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">CSRD / ESRS Disclosures</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">UKIPO Mark UK00003980004</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">Public Audit Trails</Link></li>
+              <li><Link to="/create-account" className="cerebrium-footer-link">Create account</Link></li>
+              <li><Link to="/portal/login" className="cerebrium-footer-link">Sign in</Link></li>
             </ul>
           </div>
-
-          {/* Column 5: Customers */}
-          <div>
-            <div className="cerebrium-footer-col-title">Customers</div>
-            <ul className="cerebrium-footer-links">
-              <li><Link to="/portal?scope=CARBON_EMISSION&tab=diagnostic" className="cerebrium-footer-link">Energy &amp; Utilities</Link></li>
-              <li><Link to="/portal?tab=telemetry" className="cerebrium-footer-link">Commercial Real Estate</Link></li>
-              <li><Link to="/portal?scope=JOB_REPORTING&tab=jobs" className="cerebrium-footer-link">Municipal Contractors</Link></li>
-              <li><Link to="/transparency" className="cerebrium-footer-link">Independent Auditors</Link></li>
-              <li><Link to="/licensing" className="cerebrium-footer-link">Enterprise Assurance</Link></li>
-            </ul>
-          </div>
-
         </div>
 
-        {/* Sub-footer: Copyright & Legal */}
         <div className="cerebrium-footer-bottom">
-          <div>
-            © 2026 GHGEmissionLogs (NFTY LOGS LABS LTD). UK Corporation No. 15230476. Registered UKIPO Trade Mark UK00003980004.
-          </div>
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-            <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.8125rem' }}>Legal &amp; Compliance</Link>
-            <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.8125rem' }}>Security</Link>
-            <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.8125rem' }}>Privacy Policy</Link>
-            <Link to="/transparency" className="cerebrium-footer-link" style={{ fontSize: '0.8125rem' }}>System Status</Link>
+          <div>© {new Date().getFullYear()} GHGEmissionLogs (NFTY LOGS LABS LTD). UK company no. 15230476. UKIPO trade mark UK00003980004.</div>
+          <div className="footer-legal-links">
+            <Link to="/transparency" className="cerebrium-footer-link">Legal</Link>
+            <Link to="/transparency" className="cerebrium-footer-link">Privacy</Link>
           </div>
         </div>
-
       </div>
     </footer>
   );

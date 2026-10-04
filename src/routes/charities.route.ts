@@ -215,7 +215,6 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
           status: c.status,
           contractStartDate: c.contractStartDate,
           contractEndDate: c.contractEndDate,
-          stripeConnectedAccountId: c.stripeConnectedAccountId,
         })),
       });
     } catch (err: any) {

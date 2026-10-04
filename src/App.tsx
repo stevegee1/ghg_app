@@ -20,6 +20,7 @@ import { CertificateViewPage } from './pages/CertificateViewPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { NewsletterStatusPage } from './pages/NewsletterStatusPage';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -76,6 +77,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="compliance" element={<Navigate to="/transparency" replace />} />
         <Route path="contract" element={<Navigate to="/transparency" replace />} />
         <Route path="blog" element={<BlogPage />} />
+        <Route path="newsletter" element={<NewsletterStatusPage />} />
         
         {/* Canonical Authentication Routes */}
         <Route path="create-account" element={<SignUpPage />} />

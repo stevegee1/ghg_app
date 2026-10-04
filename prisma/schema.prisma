@@ -1607,3 +1607,34 @@ model ServiceRoutingEvent {
 
   @@index([licenseeId, createdAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NEWSLETTER: double opt-in subscriptions with a consent record (UK GDPR / PECR)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum NewsletterStatus {
+  PENDING
+  CONFIRMED
+  UNSUBSCRIBED
+}
+
+model NewsletterSubscriber {
+  id                   String           @id @default(cuid())
+  email                String           @unique
+  status               NewsletterStatus @default(PENDING)
+  /// The wording the person agreed to, kept with the time they agreed
+  consentText          String
+  consentAt            DateTime
+  /// SHA-256 of the confirmation token; cleared once confirmed
+  confirmTokenHash     String?          @unique
+  confirmTokenExpires  DateTime?
+  /// SHA-256 of the unsubscribe token sent in every email
+  unsubscribeTokenHash String           @unique
+  confirmedAt          DateTime?
+  unsubscribedAt       DateTime?
+  source               String           @default("FOOTER")
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([status])
+}

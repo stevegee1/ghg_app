@@ -227,6 +227,70 @@ export class EmailService {
 
     return { success: true, provider: 'LOCAL_LOG' };
   }
+
+  /**
+   * Sends one email through the configured provider (Resend, then SendGrid). In development
+   * without a provider the message is logged instead. Returns the provider used.
+   */
+  private async deliver(toEmail: string, subject: string, html: string, logLine: string): Promise<{ success: boolean; provider: string }> {
+    const from = process.env.EMAIL_FROM || 'security@ghgemissionlogs.com';
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+          body: JSON.stringify({ from, to: [toEmail], subject, html }),
+        });
+        if (response.ok) return { success: true, provider: 'RESEND' };
+        console.error('[EMAIL RESEND ERROR]', await response.text());
+      } catch (err) {
+        console.error('[EMAIL RESEND EXCEPTION]', err);
+      }
+    }
+    if (process.env.SENDGRID_API_KEY) {
+      try {
+        const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.SENDGRID_API_KEY}` },
+          body: JSON.stringify({
+            personalizations: [{ to: [{ email: toEmail }] }],
+            from: { email: from, name: 'GHGEmissionLogs' },
+            subject,
+            content: [{ type: 'text/html', value: html }],
+          }),
+        });
+        if (response.ok || response.status === 202) return { success: true, provider: 'SENDGRID' };
+        console.error('[EMAIL SENDGRID ERROR]', response.status);
+      } catch (err) {
+        console.error('[EMAIL SENDGRID EXCEPTION]', err);
+      }
+    }
+    if (process.env.NODE_ENV === 'production') return { success: false, provider: 'NONE' };
+    console.log(`[EMAIL - LOCAL LOG] To: ${toEmail} | ${logLine}`);
+    return { success: true, provider: 'LOCAL_LOG' };
+  }
+
+  /** Double opt-in: the subscription only starts when the recipient follows the confirmation link. */
+  async sendNewsletterConfirmationEmail(params: { toEmail: string; confirmUrl: string; unsubscribeUrl: string }) {
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">Confirm your subscription</h2>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+          Someone, hopefully you, asked to receive the GHGEmissionLogs newsletter at <strong>${params.toEmail}</strong>:
+          product updates and guidance on emissions, fleet and workforce compliance.
+        </p>
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${params.confirmUrl}" style="background-color: #1a73e8; color: #ffffff; padding: 12px 24px; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 6px; display: inline-block;">Confirm subscription</a>
+        </p>
+        <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
+          If you did not ask for this, ignore this email and you will not be subscribed. The link expires in 7 days.
+        </p>
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">
+          <a href="${params.unsubscribeUrl}" style="color: #64748b;">Unsubscribe</a> · NFTY LOGS LABS LTD, UK company no. 15230476
+        </p>
+      </div>`;
+    return this.deliver(params.toEmail, 'Confirm your GHGEmissionLogs newsletter subscription', html, `Newsletter confirm: ${params.confirmUrl}`);
+  }
 }
 
 export const emailService = EmailService.getInstance();
