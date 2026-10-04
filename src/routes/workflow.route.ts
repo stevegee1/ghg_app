@@ -18,6 +18,14 @@ import { CheckoutService } from '../services/checkout.service';
 import { runWithRls } from '../db/rls';
 import { getAssuranceFee } from '../services/assurance-fee.service';
 import { PLATFORM_LICENSEE_ID } from '../services/platform-account.service';
+import {
+  isPipelineService,
+  listClientFrameworks,
+  pipelineFees,
+  redactSubmissionForRole,
+  toClientSubmission,
+  toClientSubmissionSummary,
+} from '../services/workflow-client-view.service';
 
 export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: CheckoutService): Router {
   const router = Router();
@@ -202,6 +210,44 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
   });
 
   /**
+   * GET /api/workflow/my-frameworks?service=GHG|WORKFORCE
+   * The client's frameworks in one pipeline, from their current accepted recommendations, with
+   * preparation readiness and the latest submission for each so they can start or resume.
+   */
+  router.get('/api/workflow/my-frameworks', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    const service = typeof req.query.service === 'string' ? req.query.service.toUpperCase() : '';
+
+    if (!isPipelineService(service)) {
+      return res.status(400).json({ error: "service must be 'GHG' or 'WORKFORCE'." });
+    }
+    if (!user.licenseeId) {
+      return res.status(403).json({ error: 'A client organisation account is required.' });
+    }
+
+    try {
+      const frameworks = await runWithRls(prisma, user, (tx) => listClientFrameworks(tx, user.licenseeId!, service));
+      return res.status(200).json({ service, frameworks });
+    } catch (err: unknown) {
+      console.error('[WORKFLOW MY FRAMEWORKS ERROR]', err);
+      return res.status(500).json({ error: 'Failed to load your frameworks.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/fees
+   * The assurance fee for each pipeline, as configured in env.
+   */
+  router.get('/api/workflow/fees', authenticateToken, (_req: Request, res: Response) => {
+    try {
+      return res.status(200).json({ fees: pipelineFees() });
+    } catch (err: unknown) {
+      console.error('[WORKFLOW FEES ERROR]', err);
+      return res.status(500).json({ error: 'Fees are temporarily unavailable.' });
+    }
+  });
+
+  /**
    * GET /api/workflow/submissions
    * Lists submissions scoped to the tenant (or all for Admin).
    */
@@ -238,7 +284,9 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         });
       });
 
-      return res.status(200).json({ submissions });
+      return res.status(200).json({
+        submissions: user.role === 'ADMIN' ? submissions : submissions.map(toClientSubmissionSummary),
+      });
     } catch (err: any) {
       console.error('[WORKFLOW SUBMISSIONS LIST ERROR]', err);
       return res.status(500).json({ error: 'Failed to list submissions.' });
@@ -262,14 +310,35 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return res.status(404).json({ error: 'Submission not found.' });
       }
 
-      if (user.role !== 'ADMIN' && user.licenseeId && dossier.licenseeId !== user.licenseeId) {
-        return res.status(403).json({ error: 'Forbidden: You do not have access to this submission.' });
+      if (user.role !== 'ADMIN' && dossier.licenseeId !== user.licenseeId) {
+        return res.status(404).json({ error: 'Submission not found.' });
       }
 
-      return res.status(200).json({ submission: dossier });
+      return res.status(200).json({ submission: redactSubmissionForRole(dossier, user.role) });
     } catch (err: any) {
       console.error('[WORKFLOW DOSSIER GET ERROR]', err);
       return res.status(500).json({ error: 'Failed to retrieve submission dossier.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/submissions/:id/view
+   * The client's view of a submission: questions with their answers and evidence, the Lead
+   * Auditor's decision and per-question revision reasons, and the status history. The AI
+   * pre-screen is advice to the auditor and is not included.
+   */
+  router.get('/api/workflow/submissions/:id/view', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+
+    try {
+      const dossier = await runWithRls(prisma, user, (tx) => new WorkflowEngineService(tx).getSubmissionDossier(req.params.id));
+      if (!dossier || (user.role !== 'ADMIN' && dossier.licenseeId !== user.licenseeId)) {
+        return res.status(404).json({ error: 'Submission not found.' });
+      }
+      return res.status(200).json({ submission: toClientSubmission(dossier) });
+    } catch (err: unknown) {
+      console.error('[WORKFLOW CLIENT VIEW ERROR]', err);
+      return res.status(500).json({ error: 'Failed to load the submission.' });
     }
   });
 
@@ -295,7 +364,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return new WorkflowEngineService(tx).saveAnswers(id, effectiveLicenseeId, answers);
       });
 
-      return res.status(200).json({ success: true, submission: updated });
+      return res.status(200).json({ success: true, submission: updated && redactSubmissionForRole(updated, user.role) });
     } catch (err: any) {
       console.error('[WORKFLOW ANSWERS SAVE ERROR]', err);
       return res.status(400).json({ error: err.message || 'Failed to save answers.' });
@@ -373,7 +442,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       return res.status(200).json({
         success: true,
         message: 'Submission successfully submitted for Lead Auditor review.',
-        submission: submitted,
+        submission: redactSubmissionForRole(submitted, user.role),
       });
     } catch (err: any) {
       if (err instanceof MissingRequiredEvidenceError) {
@@ -502,7 +571,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         );
       });
 
-      return res.status(200).json({ success: true, submission: updated });
+      return res.status(200).json({ success: true, submission: redactSubmissionForRole(updated, user.role) });
     } catch (err: any) {
       if (err instanceof InvalidWorkflowTransitionError) {
         return res.status(400).json({ error: err.message });
