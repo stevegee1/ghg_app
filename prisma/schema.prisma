@@ -42,6 +42,10 @@ model Licensee {
   workflowSubmissions      WorkflowSubmission[]
   workflowApiKeys          WorkflowApiKey[]
   clientAssessments        ClientAssessment[]
+  fleetAssets              FleetAsset[]
+  fleetReadings            FleetReading[]
+  fleetImportBatches       FleetImportBatch[]
+  fleetSubscription        FleetSubscription?
 }
 
 enum Vertical {
@@ -195,6 +199,8 @@ model PortalUser {
 
   splitConfigs        SplitConfigHistory[]
   submittedJobReports JobCreationReport[]
+  fleetImportBatches  FleetImportBatch[]
+  emissionFactors     EmissionFactor[]
 
   @@index([licenseeId])
   @@index([passwordResetToken])
@@ -732,6 +738,7 @@ enum ServiceLine {
   CARBON
   JOB
   MERCH
+  FLEET
 }
 
 /// Alias used on WorkflowFramework and WorkflowSubmission.
@@ -1146,3 +1153,162 @@ model PreparationChecklistItem {
   @@index([checklistId, status])
   @@index([itemCode])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FLEET EMISSIONS SERVICE: Scope 1 mobile combustion from equipment and vehicles
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum FleetAssetCategory {
+  EXCAVATOR
+  DUMPER
+  DUMP_TRUCK
+  WHEEL_LOADER
+  CRANE
+  TELEHANDLER
+  ROLLER
+  GENERATOR
+  HGV
+  LIGHT_COMMERCIAL_VEHICLE
+  CAR
+  OTHER
+}
+
+/// Ownership decides the GHG Protocol boundary: with operational control, fuel is Scope 1.
+enum FleetOwnership {
+  OWNED
+  LEASED
+  RENTED_IN
+  RENTED_OUT
+}
+
+/// Combustion fuels as categorised in the UK DESNZ conversion factors.
+enum FleetFuelType {
+  DIESEL_AVERAGE_BIOFUEL_BLEND
+  DIESEL_MINERAL
+  PETROL_AVERAGE_BIOFUEL_BLEND
+  PETROL_MINERAL
+  HVO
+  LPG
+}
+
+enum FleetReadingSource {
+  CSV_UPLOAD
+  FUEL_CARD
+  ISO_15143_3
+  PARTNER_API
+}
+
+enum FleetSubscriptionStatus {
+  INCOMPLETE
+  ACTIVE
+  PAST_DUE
+  UNPAID
+  CANCELED
+}
+
+/// Published emission factor entered by an administrator from the cited source. Never inferred.
+model EmissionFactor {
+  id              String        @id @default(cuid())
+  source          String
+  publicationYear Int
+  fuelType        FleetFuelType
+  unit            String
+  kgCo2ePerUnit   Decimal       @db.Decimal(12, 6)
+  citation        String
+  createdByUserId String
+  createdBy       PortalUser    @relation(fields: [createdByUserId], references: [id])
+  createdAt       DateTime      @default(now())
+  retiredAt       DateTime?
+
+  readings FleetReading[]
+
+  @@unique([source, publicationYear, fuelType])
+  @@index([fuelType, publicationYear])
+}
+
+model FleetAsset {
+  id                 String             @id @default(cuid())
+  licenseeId         String
+  licensee           Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetTag           String
+  name               String
+  category           FleetAssetCategory
+  make               String?
+  model              String?
+  serialNumber       String?
+  fuelType           FleetFuelType
+  ownership          FleetOwnership
+  /// True when the licensee has operational control (GHG Protocol). Fuel then counts as Scope 1.
+  operationalControl Boolean
+  siteName           String?
+  active             Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  readings FleetReading[]
+
+  @@unique([licenseeId, assetTag])
+  @@index([licenseeId, active])
+}
+
+model FleetImportBatch {
+  id             String             @id @default(cuid())
+  licenseeId     String
+  licensee       Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  source         FleetReadingSource
+  fileName       String
+  fileSha256     String
+  rowsReceived   Int
+  rowsAccepted   Int
+  rowsRejected   Int
+  /// Rejected rows with line numbers and reasons
+  rejections     Json
+  uploadedById   String
+  uploadedBy     PortalUser         @relation(fields: [uploadedById], references: [id])
+  createdAt      DateTime           @default(now())
+
+  readings FleetReading[]
+
+  @@index([licenseeId, createdAt])
+}
+
+model FleetReading {
+  id               String             @id @default(cuid())
+  licenseeId       String
+  licensee         Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetId          String
+  asset            FleetAsset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  importBatchId    String?
+  importBatch      FleetImportBatch?  @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  source           FleetReadingSource
+  periodStart      DateTime
+  periodEnd        DateTime
+  fuelQuantity     Decimal            @db.Decimal(14, 3)
+  fuelUnit         String
+  engineHours      Decimal?           @db.Decimal(12, 2)
+  idleHours        Decimal?           @db.Decimal(12, 2)
+  distanceKm       Decimal?           @db.Decimal(14, 2)
+  /// Factor applied and its result, fixed at import so later factor updates never rewrite history
+  emissionFactorId String
+  emissionFactor   EmissionFactor     @relation(fields: [emissionFactorId], references: [id])
+  kgCo2e           Decimal            @db.Decimal(16, 3)
+  createdAt        DateTime           @default(now())
+
+  @@unique([assetId, periodStart, periodEnd, source])
+  @@index([licenseeId, periodStart])
+}
+
+model FleetSubscription {
+  id                   String                  @id @default(cuid())
+  licenseeId           String                  @unique
+  licensee             Licensee                @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String                  @unique
+  stripeSubscriptionId String?                 @unique
+  status               FleetSubscriptionStatus @default(INCOMPLETE)
+  /// Billed quantity: the number of active assets last synced to Stripe
+  quantity             Int                     @default(0)
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+}
+
