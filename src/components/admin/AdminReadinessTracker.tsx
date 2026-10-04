@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type EntitlementStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REVOKED';
-type ServiceLine = 'GHG' | 'CARBON' | 'JOB' | 'MERCH';
+type ServiceLine = 'GHG' | 'CARBON' | 'JOB' | 'MERCH' | 'FLEET';
 
 interface ServiceEntitlement {
   serviceLine: ServiceLine;
@@ -73,6 +73,12 @@ const SERVICE_LINE_META: Record<ServiceLine, { label: string; color: string; bg:
     color: '#b45309',
     bg: '#fef3c7',
     description: 'Commercial Participator / Charity Split',
+  },
+  FLEET: {
+    label: 'Fleet Emissions',
+    color: '#15803d',
+    bg: '#dcfce7',
+    description: 'Scope 1 mobile combustion, per-asset subscription',
   },
 };
 
@@ -233,7 +239,7 @@ export const AdminReadinessTracker: React.FC = () => {
   ).length;
 
   const activeEntitlementsByLine: Record<ServiceLine, number> = {
-    GHG: 0, CARBON: 0, JOB: 0, MERCH: 0,
+    GHG: 0, CARBON: 0, JOB: 0, MERCH: 0, FLEET: 0,
   };
   licensees.forEach((l) => {
     l.serviceEntitlements.forEach((e) => {
