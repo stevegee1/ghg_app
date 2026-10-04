@@ -160,14 +160,15 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
     const user = req.user!;
     try {
       const overview = await runWithRls(prisma, user, async (tx) => {
-        const [activeAssets, totalAssets, subscription, lastImport, lastSnapshot] = await Promise.all([
+        const [activeAssets, totalAssets, subscription, lastImport, lastSnapshot, unconfirmedAssets] = await Promise.all([
           tx.fleetAsset.count({ where: { licenseeId: user.licenseeId!, active: true } }),
           tx.fleetAsset.count({ where: { licenseeId: user.licenseeId! } }),
           tx.fleetSubscription.findUnique({ where: { licenseeId: user.licenseeId! } }),
           tx.fleetImportBatch.findFirst({ where: { licenseeId: user.licenseeId! }, orderBy: { createdAt: 'desc' } }),
           tx.fleetTelemetrySnapshot.findFirst({ where: { licenseeId: user.licenseeId! }, orderBy: { receivedAt: 'desc' }, select: { receivedAt: true } }),
+          tx.fleetAsset.count({ where: { licenseeId: user.licenseeId!, active: true, connectionBranch: 'UNCONFIRMED' } }),
         ]);
-        return { activeAssets, totalAssets, subscription, lastImport, lastSnapshot };
+        return { activeAssets, totalAssets, subscription, lastImport, lastSnapshot, unconfirmedAssets };
       });
       const entitlement = await prisma.serviceEntitlement.findUnique({
         where: { licenseeId_serviceLine: { licenseeId: user.licenseeId!, serviceLine: ServiceLine.FLEET } },
@@ -185,6 +186,7 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
           : null,
         lastImportAt: overview.lastImport?.createdAt ?? null,
         lastTelemetryAt: overview.lastSnapshot?.receivedAt ?? null,
+        unconfirmedAssets: overview.unconfirmedAssets,
       });
     } catch (err) {
       return sendError(res, err, '[FLEET OVERVIEW ERROR]');

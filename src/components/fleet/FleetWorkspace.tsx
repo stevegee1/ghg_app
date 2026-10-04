@@ -47,6 +47,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
   const steps = overview
     ? [
         { done: overview.activeAssets > 0, label: 'Register your assets', tab: 'assets' as FleetTab },
+        { done: overview.activeAssets > 0 && overview.unconfirmedAssets === 0, label: 'Confirm how each machine connects', tab: 'assets' as FleetTab },
         { done: isActive, label: 'Subscribe per active asset', tab: 'subscription' as FleetTab },
         { done: overview.lastImportAt !== null || overview.lastTelemetryAt !== null, label: 'Send fuel data (upload or API)', tab: 'uploads' as FleetTab },
       ]

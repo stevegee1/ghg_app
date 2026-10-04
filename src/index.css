@@ -10561,3 +10561,86 @@ a:not([class]):hover {
   overflow-x: auto;
   max-width: 100%;
 }
+
+/* Fleet asset connections */
+
+.fleet-connection-alert,
+.fleet-panel p.fleet-connection-alert {
+  margin: 0 0 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: #fef7e0;
+  color: #6b4100;
+  font-size: 0.875rem;
+}
+
+.fleet-connection-options {
+  margin: 0.75rem 0 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.fleet-connection-options dt {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.fleet-connection-options dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.fleet-connection-select {
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.fleet-connection-select.needs-choice {
+  border-color: #f2c94c;
+  background: #fffbeb;
+}
+
+.fleet-setup-form,
+.fleet-setup-requests {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.fleet-setup-form h4,
+.fleet-setup-requests h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+@media (min-width: 768px) {
+  .fleet-connection-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* A list of rows with a label on the left and detail on the right. */
+.fleet-split-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.fleet-split-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.875rem;
+}

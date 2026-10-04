@@ -1,17 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import {
+  FLEET_CONNECTION_OPTIONS,
   FLEET_CATEGORY_LABELS,
   FLEET_FUEL_LABELS,
   FLEET_OWNERSHIP_LABELS,
   type FleetAsset,
   type FleetAssetCategory,
   type FleetAssetInput,
+  type FleetConnectionBranch,
   type FleetFuelType,
   type FleetOwnership,
   type RowRejection,
 } from '../../api/fleet.types';
 import { saveBlob } from './fleetFormat';
+import { FleetConnectionPanel } from './FleetConnectionPanel';
 
 interface Props {
   token: string;
@@ -41,6 +44,8 @@ export const FleetAssets: React.FC<Props> = ({ token, onChanged }) => {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ created: number; rejections: RowRejection[] } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [connectionKey, setConnectionKey] = useState(0);
+  const [savingConnection, setSavingConnection] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,6 +91,22 @@ export const FleetAssets: React.FC<Props> = ({ token, onChanged }) => {
       afterChange(result.billingSynced);
     } catch (err) {
       setError((err as Error).message);
+    }
+  };
+
+  const setConnection = async (asset: FleetAsset, branch: FleetConnectionBranch) => {
+    if (branch === 'UNCONFIRMED') return;
+    setSavingConnection(asset.id);
+    setError(null);
+    try {
+      await api.setFleetAssetConnection(token, [asset.id], branch);
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, connectionBranch: branch } : a)));
+      setConnectionKey((k) => k + 1);
+      onChanged();
+    } catch (err) {
+      setNotice((err as Error).message);
+    } finally {
+      setSavingConnection(null);
     }
   };
 
@@ -226,6 +247,8 @@ export const FleetAssets: React.FC<Props> = ({ token, onChanged }) => {
         </form>
       )}
 
+      {!loading && !error && assets.length > 0 && <FleetConnectionPanel token={token} assets={assets} refreshKey={connectionKey} />}
+
       {loading && <div className="fleet-panel fleet-state">Loading assets...</div>}
       {!loading && error && (
         <div className="fleet-panel fleet-state fleet-state-error" role="alert">
@@ -249,6 +272,7 @@ export const FleetAssets: React.FC<Props> = ({ token, onChanged }) => {
                 <th>Fuel</th>
                 <th>Ownership</th>
                 <th>Scope</th>
+                <th>Connection</th>
                 <th>Status</th>
                 <th aria-label="Actions" />
               </tr>
@@ -266,6 +290,22 @@ export const FleetAssets: React.FC<Props> = ({ token, onChanged }) => {
                   <td data-label="Fuel">{FLEET_FUEL_LABELS[a.fuelType]}</td>
                   <td data-label="Ownership">{FLEET_OWNERSHIP_LABELS[a.ownership]}</td>
                   <td data-label="Scope">{a.operationalControl ? 'Scope 1' : 'Scope 3'}</td>
+                  <td data-label="Connection">
+                    <select
+                      className={`fleet-connection-select${a.connectionBranch === 'UNCONFIRMED' ? ' needs-choice' : ''}`}
+                      aria-label={`Connection for ${a.assetTag}`}
+                      value={a.connectionBranch}
+                      disabled={!a.active || savingConnection === a.id}
+                      onChange={(e) => setConnection(a, e.target.value as FleetConnectionBranch)}
+                    >
+                      {a.connectionBranch === 'UNCONFIRMED' && <option value="UNCONFIRMED">Choose...</option>}
+                      {FLEET_CONNECTION_OPTIONS.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   <td data-label="Status">{a.active ? 'Active' : 'Inactive'}</td>
                   <td className="fleet-row-actions">
                     <button type="button" className="btn btn-secondary btn-small" onClick={() => toggleActive(a)}>

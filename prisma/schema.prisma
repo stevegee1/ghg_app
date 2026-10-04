@@ -48,6 +48,7 @@ model Licensee {
   fleetSnapshots           FleetTelemetrySnapshot[]
   fleetFaultCodes          FleetFaultCode[]
   fleetApiKeys             FleetApiKey[]
+  fleetSetupRequests       FleetSetupRequest[]
   fleetSubscription        FleetSubscription?
   routingEvents            ServiceRoutingEvent[]
 }
@@ -205,6 +206,7 @@ model PortalUser {
   submittedJobReports JobCreationReport[]
   fleetImportBatches  FleetImportBatch[]
   fleetApiKeys        FleetApiKey[]
+  fleetSetupRequests  FleetSetupRequest[]
   emissionFactors     EmissionFactor[]
 
   @@index([licenseeId])
@@ -1251,6 +1253,24 @@ enum FleetReadingSource {
   TRACKING_DEVICE
 }
 
+/// How an asset's data reaches us, confirmed per asset by the client. Never assumed.
+enum FleetConnectionBranch {
+  UNCONFIRMED
+  /// Branch A: the machine already reports to a manufacturer or telematics cloud
+  CLOUD_CONNECTED
+  /// Branch B: the machine needs a tracking device fitted
+  TRACKING_DEVICE
+  /// Fuel cards or CSV uploads only
+  MANUAL
+}
+
+enum FleetSetupRequestStatus {
+  REQUESTED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
 enum FleetSubscriptionStatus {
   INCOMPLETE
   ACTIVE
@@ -1280,23 +1300,26 @@ model EmissionFactor {
 }
 
 model FleetAsset {
-  id                 String             @id @default(cuid())
-  licenseeId         String
-  licensee           Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  assetTag           String
-  name               String
-  category           FleetAssetCategory
-  make               String?
-  model              String?
-  serialNumber       String?
-  fuelType           FleetFuelType
-  ownership          FleetOwnership
+  id                      String                @id @default(cuid())
+  licenseeId              String
+  licensee                Licensee              @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetTag                String
+  name                    String
+  category                FleetAssetCategory
+  make                    String?
+  model                   String?
+  serialNumber            String?
+  fuelType                FleetFuelType
+  ownership               FleetOwnership
   /// True when the licensee has operational control (GHG Protocol). Fuel then counts as Scope 1.
-  operationalControl Boolean
-  siteName           String?
-  active             Boolean            @default(true)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  operationalControl      Boolean
+  siteName                String?
+  active                  Boolean               @default(true)
+  connectionBranch        FleetConnectionBranch @default(UNCONFIRMED)
+  connectionConfirmedAt   DateTime?
+  connectionConfirmedById String?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
 
   readings  FleetReading[]
   snapshots FleetTelemetrySnapshot[]
@@ -1447,6 +1470,30 @@ model FleetApiKey {
   @@index([licenseeId, revokedAt])
 }
 
+/// A client's request for a call to set up tracking devices on Branch B assets.
+model FleetSetupRequest {
+  id             String                  @id @default(cuid())
+  licenseeId     String
+  licensee       Licensee                @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  requestedById  String
+  requestedBy    PortalUser              @relation(fields: [requestedById], references: [id])
+  /// The tracking-device assets the call is about
+  assetIds       String[]
+  contactName    String
+  contactEmail   String
+  contactPhone   String?
+  preferredTimes String?
+  notes          String?
+  status         FleetSetupRequestStatus @default(REQUESTED)
+  scheduledFor   DateTime?
+  adminNotes     String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([licenseeId, status])
+  @@index([status, createdAt])
+}
+
 model FleetSubscription {
   id                   String                  @id @default(cuid())
   licenseeId           String                  @unique
@@ -1473,6 +1520,8 @@ enum RoutingEventType {
   SERVICE_SUSPENDED
   HANDOFF_STARTED
   HANDOFF_COMPLETED
+  /// A client confirmed how one or more Fleet assets connect (Branch A, Branch B or manual)
+  FLEET_ASSET_BRANCH_SET
 }
 
 model ServiceRoutingEvent {

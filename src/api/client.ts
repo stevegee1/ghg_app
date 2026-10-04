@@ -12,6 +12,10 @@ import type {
   FleetSummary,
   FleetApiKeyRecord,
   FleetApiScope,
+  FleetConnectionBranch,
+  FleetConnectionOverview,
+  FleetSetupRequestInput,
+  AdminFleetSetupRequest,
 } from './fleet.types';
 import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
@@ -1151,6 +1155,30 @@ export const api = {
 
   async openFleetBillingPortal(token: string): Promise<{ url: string }> {
     return apiRequest('/api/fleet/subscription/portal', { method: 'POST', token });
+  },
+
+  async getFleetConnections(token: string): Promise<FleetConnectionOverview> {
+    return apiRequest('/api/fleet/connections', { token });
+  },
+
+  async setFleetAssetConnection(token: string, assetIds: string[], branch: Exclude<FleetConnectionBranch, 'UNCONFIRMED'>): Promise<{ updated: number }> {
+    return apiRequest('/api/fleet/assets/connection', { method: 'POST', token, body: { assetIds, branch } });
+  },
+
+  async requestFleetSetupCall(token: string, input: FleetSetupRequestInput): Promise<{ request: { id: string } }> {
+    return apiRequest('/api/fleet/setup-requests', { method: 'POST', token, body: input });
+  },
+
+  async listAdminFleetSetupRequests(token: string): Promise<{ requests: AdminFleetSetupRequest[] }> {
+    return apiRequest('/api/admin/fleet/setup-requests', { token });
+  },
+
+  async updateAdminFleetSetupRequest(
+    token: string,
+    id: string,
+    changes: { status: string; scheduledFor?: string | null; adminNotes?: string | null }
+  ): Promise<{ request: AdminFleetSetupRequest }> {
+    return apiRequest(`/api/admin/fleet/setup-requests/${encodeURIComponent(id)}`, { method: 'PATCH', token, body: changes });
   },
 
   async listFleetApiKeys(token: string): Promise<{ keys: FleetApiKeyRecord[] }> {

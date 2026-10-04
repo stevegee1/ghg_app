@@ -15,6 +15,7 @@ import { createCustomKeepsakeRouter } from './routes/custom-keepsake.route';
 import { createIsoEvidenceRouter } from './routes/iso-evidence.route';
 import { createEvidenceFileRouter } from './routes/evidence-file.route';
 import { createFleetApiRouter } from './routes/fleet-api.route';
+import { createFleetConnectionRouter } from './routes/fleet-connection.route';
 import { createIsoLegalRouter } from './routes/iso-legal.route';
 import { createJobReportingRouter } from './routes/job-reporting.route';
 import { createOrdersRouter } from './routes/orders.route';
@@ -168,6 +169,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createWorkflowRouter(prisma, checkoutService));
   app.use(createFleetRouter(prisma, stripe));
   app.use(createFleetApiRouter(prisma));
+  app.use(createFleetConnectionRouter(prisma));
   app.use(createMerchEnquiryRouter(prisma));
   app.use(createPartnerNetworkRouter(prisma));
   app.use(createAssessmentRouter(prisma));

@@ -68,7 +68,56 @@ export interface FleetAsset {
   operationalControl: boolean;
   siteName: string | null;
   active: boolean;
+  connectionBranch: FleetConnectionBranch;
+  connectionConfirmedAt: string | null;
   _count?: { readings: number };
+}
+
+export type FleetConnectionBranch = 'UNCONFIRMED' | 'CLOUD_CONNECTED' | 'TRACKING_DEVICE' | 'MANUAL';
+
+export const FLEET_CONNECTION_OPTIONS: { id: Exclude<FleetConnectionBranch, 'UNCONFIRMED'>; label: string; help: string }[] = [
+  { id: 'CLOUD_CONNECTED', label: 'Connected to a cloud', help: 'It already reports to the manufacturer or a telematics provider. We pull its data from there.' },
+  { id: 'TRACKING_DEVICE', label: 'Needs a tracking device', help: 'It does not report anywhere yet. We fit a tracker and book a short set-up call.' },
+  { id: 'MANUAL', label: 'Fuel cards or uploads only', help: 'You send its fuel through fuel-card files or CSV uploads.' },
+];
+
+export const FLEET_CONNECTION_LABELS: Record<FleetConnectionBranch, string> = {
+  UNCONFIRMED: 'Not confirmed',
+  CLOUD_CONNECTED: 'Cloud connected',
+  TRACKING_DEVICE: 'Tracking device',
+  MANUAL: 'Uploads only',
+};
+
+export type FleetSetupRequestStatus = 'REQUESTED' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+
+export interface FleetConnectionOverview {
+  counts: Record<FleetConnectionBranch, number>;
+  onboardingCloudConnection: 'ALL' | 'SOME' | 'NONE' | 'NOT_SURE' | null;
+  setupRequests: { id: string; assetIds: string[]; status: FleetSetupRequestStatus; scheduledFor: string | null; preferredTimes: string | null; createdAt: string }[];
+}
+
+export interface FleetSetupRequestInput {
+  assetIds: string[];
+  contactName: string;
+  contactEmail: string;
+  contactPhone?: string;
+  preferredTimes?: string;
+  notes?: string;
+}
+
+export interface AdminFleetSetupRequest {
+  id: string;
+  licensee: { id: string; name: string };
+  assets: { id: string; assetTag: string; name: string; make: string | null; model: string | null }[];
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string | null;
+  preferredTimes: string | null;
+  notes: string | null;
+  status: FleetSetupRequestStatus;
+  scheduledFor: string | null;
+  adminNotes: string | null;
+  createdAt: string;
 }
 
 export interface FleetAssetInput {
@@ -91,6 +140,7 @@ export interface FleetOverview {
   subscription: { status: FleetSubscriptionStatus; quantity: number; currentPeriodEnd: string | null } | null;
   lastImportAt: string | null;
   lastTelemetryAt: string | null;
+  unconfirmedAssets: number;
 }
 
 export type FleetApiScope = 'telemetry:write' | 'fleet:read';
