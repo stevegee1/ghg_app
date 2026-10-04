@@ -98,7 +98,7 @@ export const LandingPage: React.FC = () => {
 
       <section className="landing-section landing-reveal" aria-labelledby="calculator-title" hidden={!calculatorAvailable}>
         <div className="container-x landing-demo">
-          <div>
+          <div className="landing-demo-copy">
             <p className="landing-eyebrow">Try it</p>
             <h2 id="calculator-title">Estimate your fleet&apos;s CO2e</h2>
             <p>
@@ -106,6 +106,17 @@ export const LandingPage: React.FC = () => {
               account needed.
             </p>
           </div>
+          <img
+            className="landing-demo-photo"
+            src="/images/landing/fleet-plant-700.jpg"
+            srcSet="/images/landing/fleet-plant-700.jpg 700w, /images/landing/fleet-plant-1400.jpg 1400w"
+            sizes="(min-width: 900px) 40vw, 100vw"
+            width={700}
+            height={1050}
+            loading="lazy"
+            decoding="async"
+            alt="A road roller, excavator and dump truck working on an earthworks site"
+          />
           <div className="landing-demo-card">
             <FleetCalculator compact onAvailabilityChange={setCalculatorAvailable} />
           </div>

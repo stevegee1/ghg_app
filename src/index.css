@@ -11429,6 +11429,48 @@ a:not([class]):hover {
   align-items: start;
 }
 
+.landing-demo-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: 50% 62%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-subtle);
+}
+
+@media (min-width: 900px) {
+  .landing-demo {
+    grid-template-areas:
+      'copy photo'
+      'card photo';
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 3rem;
+    row-gap: 1.5rem;
+  }
+
+  .landing-demo-copy {
+    grid-area: copy;
+  }
+
+  .landing-demo-card {
+    grid-area: card;
+    align-self: start;
+  }
+
+  .landing-demo-photo {
+    grid-area: photo;
+    height: 100%;
+    min-height: 420px;
+    max-height: 560px;
+    aspect-ratio: auto;
+  }
+}
+
 .landing-demo-card {
   min-width: 0;
   padding: 1.25rem;
@@ -11503,11 +11545,6 @@ a:not([class]):hover {
   .landing-steps {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
-  }
-
-  .landing-demo {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-    gap: 3rem;
   }
 
   .landing-section {
