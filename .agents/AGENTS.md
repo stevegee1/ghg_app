@@ -73,3 +73,73 @@ Enterprise compliance SaaS. Production code only. Every change must be shippable
 - For anything touching more than 3 files, write the plan first and wait for approval.
 - Follow the nearest existing pattern. Name the file you copied the pattern from.
 - Keep each change small and committable on its own.
+
+# GHG Platform: Agent Knowledge Brief
+
+## What the platform is
+Three services, each with its own isolated pipeline:
+1. Workforce
+2. Fleet
+3. GHG
+
+The pipelines are separate workflows. They share nothing except the one
+Fleet → GHG handoff described below.
+
+## Onboarding
+Every client starts with onboarding: a set of questions and preferences.
+Their answers determine which service they are subscribing to. Route the
+client to that service's pipeline and nothing else.
+
+## Workforce pipeline
+Questions → compliance standard → compliance engine review → output.
+Compliance standards are versioned and kept up to date. Always record which
+standard version was applied.
+
+## Fleet pipeline
+Fleet follows the Hiboo.ai model: the client gets a dedicated dashboard and an
+API, fed by their equipment data. All data from all sources is normalized to
+one standard schema (location, runtime, fuel/energy use, idling, fault codes),
+and emissions are calculated from actual consumption. We mirror Hiboo.ai's
+standards and keep them updated; record the standard version used in every
+calculation.
+
+Fleet has two onboarding branches, decided per asset by asking whether the
+machine already reports to a cloud (OEM or telematics provider):
+
+Branch A, machine already cloud-connected:
+- Collect the client's access/credentials for that provider.
+- Pull the machine's data into the client's dashboard via our own connector.
+
+Branch B, machine not connected (e.g. an old generator):
+- The machine has no cloud source, so it must first be connected.
+- Use our in-house hardware to track the machine (fuel, runtime, emissions)
+  and send data to our cloud.
+- Where needed, a demo/consultation is booked to learn how to configure the
+  machine to connect to the cloud.
+- Once it reports data, it follows the same path as Branch A.
+
+A single client can have both kinds of machines. Handle each asset on its own
+branch.
+
+## GHG pipeline
+GHG runs its own independent workflow.
+
+## The only intersection: Fleet → GHG
+If a GHG client needs fleet data and does not have it:
+1. Pause the GHG pipeline and save its state.
+2. Run the client through the complete Fleet onboarding (both branches as needed).
+3. Use the Fleet output as input to the GHG pipeline.
+4. Resume GHG.
+If the client already has the needed fleet data, continue GHG without Fleet.
+
+## Rules
+- Never merge or blend pipelines outside the Fleet → GHG handoff.
+- A Fleet run triggered from GHG is the standard, complete Fleet pipeline.
+- Never assume a machine is connected; confirm per asset.
+- Log all routing decisions and handoffs.
+
+## Clarifications (confirmed 2026-10-04)
+- Merch stays as a separate shop. It is not one of the three pipelines and is not part of onboarding routing.
+- A client can subscribe to several services. Each runs in its own isolated pipeline; onboarding picks the first, more can be added later.
+- The Fleet standard data schema follows ISO 15143-3 (AEMP 2.0), the published standard OEMs and Hiboo.ai build on. The schema is versioned and the version is recorded with every calculation.
+- Branch B uses a partner tracking device until in-house hardware exists.
