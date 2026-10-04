@@ -24,9 +24,9 @@ model Licensee {
   industrySector           IndustrySector? // Set during onboarding
   hasCompletedAssessment   Boolean         @default(false)
 
-  entitlements             ServiceEntitlement[]
-  createdAt                DateTime        @default(now())
-  updatedAt                DateTime        @updatedAt
+  entitlements ServiceEntitlement[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 
   transactions             Transaction[]
   portalUsers              PortalUser[]
@@ -680,29 +680,29 @@ enum CredentialStatus {
 }
 
 model AuditWarrantyCredential {
-  id                 String                 @id @default(cuid())
-  licenseeId         String
-  licensee           Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  id                   String                  @id @default(cuid())
+  licenseeId           String
+  licensee             Licensee                @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
   /// Legacy ISO readiness submission (retired pipeline). Exactly one submission link is set.
-  submissionId       String?                 @unique
-  submission         IsoReadinessSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId         String?                 @unique
+  submission           IsoReadinessSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   /// Workflow engine submission (GHG and Workforce pipelines)
-  workflowSubmissionId String?             @unique
-  workflowSubmission   WorkflowSubmission? @relation(fields: [workflowSubmissionId], references: [id], onDelete: Cascade)
+  workflowSubmissionId String?                 @unique
+  workflowSubmission   WorkflowSubmission?     @relation(fields: [workflowSubmissionId], references: [id], onDelete: Cascade)
   /// Client's attestation message, up to 200 characters, embedded in the badge
-  clientMessage      String
-  clientLogoUrl      String
-  compositeBadgeUrl  String?
-  selectedFrameworks String[]               @default([])
-  operationalHealth  String                 @default("ACTIVE")
-  allowedOrigins     String[]               @default([])
+  clientMessage        String
+  clientLogoUrl        String
+  compositeBadgeUrl    String?
+  selectedFrameworks   String[]                @default([])
+  operationalHealth    String                  @default("ACTIVE")
+  allowedOrigins       String[]                @default([])
   /// 1 year from issuance
-  warrantyExpiresAt  DateTime?
+  warrantyExpiresAt    DateTime?
   /// SHA-256 of (licenseeId + clientMessage + compositeBadgeUrl + issuedAt)
-  verificationSeal   String?
-  status             CredentialStatus       @default(PENDING)
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  verificationSeal     String?
+  status               CredentialStatus        @default(PENDING)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
   @@index([licenseeId, status])
 }
@@ -793,54 +793,88 @@ model WorkflowFramework {
 
   questions   WorkflowQuestion[]
   submissions WorkflowSubmission[]
+  versions    WorkflowFrameworkVersion[]
 
   @@index([workflowType])
 }
 
+/// One published edition of a compliance standard. Published versions are never edited: a change
+/// to the standard is a new version with new questions, so every submission keeps the exact
+/// questions it was assessed against.
+model WorkflowFrameworkVersion {
+  id                String            @id
+  frameworkId       String
+  framework         WorkflowFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  /// Our version label, e.g. "2026.1"
+  version           String
+  /// The edition of the external standard this version reflects
+  standardReference String
+  effectiveFrom     DateTime
+  changeSummary     String?
+  /// SHA-256 of the canonical question set, sealed by the framework seed
+  contentHash       String?
+  publishedAt       DateTime          @default(now())
+  /// Retired versions cannot start new submissions; existing submissions keep them
+  retiredAt         DateTime?
+  createdAt         DateTime          @default(now())
+
+  questions   WorkflowQuestion[]
+  submissions WorkflowSubmission[]
+
+  @@unique([frameworkId, version])
+  @@index([frameworkId, effectiveFrom])
+}
+
 model WorkflowQuestion {
-  id                 String             @id @default(cuid())
+  id                 String                   @id @default(cuid())
   frameworkId        String
-  framework          WorkflowFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  framework          WorkflowFramework        @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  versionId          String
+  version            WorkflowFrameworkVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   orderIndex         Int
   text               String
-  answerType         WorkflowAnswerType @default(TEXT)
-  options            String[]           @default([])
-  evidenceRequired   Boolean            @default(false)
+  answerType         WorkflowAnswerType       @default(TEXT)
+  options            String[]                 @default([])
+  evidenceRequired   Boolean                  @default(false)
   isoClauseReference String
   guidanceNotes      String?
-  createdAt          DateTime           @default(now())
+  createdAt          DateTime                 @default(now())
 
   answers WorkflowAnswer[]
 
   @@index([frameworkId, orderIndex])
+  @@index([versionId, orderIndex])
 }
 
 model WorkflowSubmission {
-  id                String            @id @default(cuid())
-  licenseeId        String
-  licensee          Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  workflowType      WorkflowType
-  frameworkId       String
-  framework         WorkflowFramework @relation(fields: [frameworkId], references: [id])
-  status            WorkflowStatus    @default(DRAFT)
-  submittedAt       DateTime?
-  reviewedAt        DateTime?
-  reviewerId        String?
-  complianceScore   Int?
+  id                 String                   @id @default(cuid())
+  licenseeId         String
+  licensee           Licensee                 @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  workflowType       WorkflowType
+  frameworkId        String
+  framework          WorkflowFramework        @relation(fields: [frameworkId], references: [id])
+  /// The standard version this submission is assessed against, fixed when the draft is created
+  frameworkVersionId String
+  frameworkVersion   WorkflowFrameworkVersion @relation(fields: [frameworkVersionId], references: [id])
+  status             WorkflowStatus           @default(DRAFT)
+  submittedAt        DateTime?
+  reviewedAt         DateTime?
+  reviewerId         String?
+  complianceScore    Int?
   /// AI pre-screen results, kept separate from the Lead Auditor's decision
-  aiScreenedAt      DateTime?
-  aiReviewer        String?
-  aiScore           Int?
-  aiRecommendation  String?
-  aiSummary         String?
-  aiClauseFindings  Json?
-  paidAt            DateTime?
-  stripeSessionId   String?
-  clientMessage     String?
-  clientLogoUrl     String?
-  compositeBadgeUrl String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  aiScreenedAt       DateTime?
+  aiReviewer         String?
+  aiScore            Int?
+  aiRecommendation   String?
+  aiSummary          String?
+  aiClauseFindings   Json?
+  paidAt             DateTime?
+  stripeSessionId    String?
+  clientMessage      String?
+  clientLogoUrl      String?
+  compositeBadgeUrl  String?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
 
   answers                  WorkflowAnswer[]
   credential               AuditWarrantyCredential?
@@ -850,6 +884,7 @@ model WorkflowSubmission {
 
   @@index([licenseeId, status])
   @@index([workflowType, status])
+  @@index([frameworkVersionId])
 }
 
 model WorkflowAnswer {
@@ -869,18 +904,18 @@ model WorkflowAnswer {
 }
 
 model WorkflowReviewDecision {
-  id                   String                @id @default(cuid())
-  submissionId         String                @unique
-  submission           WorkflowSubmission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  reviewerId           String?
+  id                    String                @id @default(cuid())
+  submissionId          String                @unique
+  submission            WorkflowSubmission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  reviewerId            String?
   /// Lead Auditor identity at sign-off, snapshotted from their account
   reviewerName          String?
   reviewerAccreditation String?
-  overallDecision      ReviewOverallDecision
-  overallScore         Int
-  perQuestionDecisions Json
-  reviewerNotes        String?
-  createdAt            DateTime              @default(now())
+  overallDecision       ReviewOverallDecision
+  overallScore          Int
+  perQuestionDecisions  Json
+  reviewerNotes         String?
+  createdAt             DateTime              @default(now())
 }
 
 model WorkflowTransitionLog {
@@ -1029,11 +1064,11 @@ model ClientAssessment {
   hasGreenHydrogen       Boolean @default(false) // Produce or operate green hydrogen?
 
   // Service lines the client selected during intake (drives pipeline routing)
-  serviceLinesRequested  ServiceLine[] @default([])
+  serviceLinesRequested ServiceLine[] @default([])
   /// Fleet onboarding answers: asset count band, categories and cloud connection status
-  fleetProfile           Json?
+  fleetProfile          Json?
   /// Set when a newer assessment replaces this one; history is kept, never deleted
-  supersededAt           DateTime?
+  supersededAt          DateTime?
 
   // Metadata
   assessmentVersion String    @default("v1.0")
@@ -1090,25 +1125,25 @@ model ComplianceRecommendation {
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum EntitlementStatus {
-  PENDING    // Assessment submitted, awaiting admin review
-  ACTIVE     // Pipeline access granted
-  SUSPENDED  // Temporarily blocked (payment lapse, non-conformance hold)
-  REVOKED    // Permanently withdrawn
+  PENDING // Assessment submitted, awaiting admin review
+  ACTIVE // Pipeline access granted
+  SUSPENDED // Temporarily blocked (payment lapse, non-conformance hold)
+  REVOKED // Permanently withdrawn
 }
 
 model ServiceEntitlement {
-  id          String            @id @default(cuid())
-  licenseeId  String
-  licensee    Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  serviceLine ServiceLine
-  status      EntitlementStatus @default(PENDING)
-  grantedAt   DateTime?
-  grantedBy   String?           // PortalUser.id of the admin who approved
-  revokedAt   DateTime?
-  revokedBy   String?
+  id           String            @id @default(cuid())
+  licenseeId   String
+  licensee     Licensee          @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  serviceLine  ServiceLine
+  status       EntitlementStatus @default(PENDING)
+  grantedAt    DateTime?
+  grantedBy    String? // PortalUser.id of the admin who approved
+  revokedAt    DateTime?
+  revokedBy    String?
   revokeReason String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@unique([licenseeId, serviceLine])
   @@index([licenseeId, status])
@@ -1260,20 +1295,20 @@ model FleetAsset {
 }
 
 model FleetImportBatch {
-  id             String             @id @default(cuid())
-  licenseeId     String
-  licensee       Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
-  source         FleetReadingSource
-  fileName       String
-  fileSha256     String
-  rowsReceived   Int
-  rowsAccepted   Int
-  rowsRejected   Int
+  id           String             @id @default(cuid())
+  licenseeId   String
+  licensee     Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  source       FleetReadingSource
+  fileName     String
+  fileSha256   String
+  rowsReceived Int
+  rowsAccepted Int
+  rowsRejected Int
   /// Rejected rows with line numbers and reasons
-  rejections     Json
-  uploadedById   String
-  uploadedBy     PortalUser         @relation(fields: [uploadedById], references: [id])
-  createdAt      DateTime           @default(now())
+  rejections   Json
+  uploadedById String
+  uploadedBy   PortalUser         @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime           @default(now())
 
   readings FleetReading[]
 
@@ -1348,4 +1383,3 @@ model ServiceRoutingEvent {
 
   @@index([licenseeId, createdAt])
 }
-

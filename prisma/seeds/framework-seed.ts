@@ -5,7 +5,9 @@
  *   WorkflowFramework  - one row per compliance standard
  *   WorkflowQuestion   - one row per question per standard
  *
- * Idempotent: every upsert is keyed on a stable ID so this is safe on redeploy.
+ *   WorkflowFrameworkVersion - one row per published edition; questions belong to a version
+ *
+ * Safe to rerun: an unchanged published version is left as it is, and a changed one stops the seed.
  * Covers all four service pipelines: GHG | CARBON | JOB | (MERCH uses GHG/CARBON)
  *
  * WorkflowType mapping:
@@ -15,9 +17,21 @@
  */
 
 import { PrismaClient, WorkflowType, WorkflowAnswerType } from '@prisma/client';
+import { questionSetHash } from '../../src/services/framework-version.service';
 
-interface FrameworkSeedRecord {
+export interface FrameworkVersionSeed {
+  /** Our version label, e.g. "2026.1". Never reuse a label for different questions. */
+  version: string;
+  /** The edition of the external standard these questions reflect */
+  standardReference: string;
+  effectiveFrom: Date;
+  changeSummary: string;
+}
+
+export interface FrameworkSeedRecord {
   id: string;
+  /** The framework's current version. Omitted means the initial version 2026.1. */
+  version?: FrameworkVersionSeed;
   workflowType: WorkflowType;
   code: string;
   name: string;
@@ -34,6 +48,16 @@ interface FrameworkSeedRecord {
     isoClauseReference: string;
     guidanceNotes: string;
   }[];
+}
+
+/** The version every framework was first published under; matches the migration backfill. */
+function initialVersion(fw: FrameworkSeedRecord): FrameworkVersionSeed {
+  return {
+    version: '2026.1',
+    standardReference: fw.name,
+    effectiveFrom: new Date('2026-01-01T00:00:00Z'),
+    changeSummary: 'Initial published version.',
+  };
 }
 
 export const FRAMEWORK_SEED_DATA: FrameworkSeedRecord[] = [
@@ -433,11 +457,27 @@ export const FRAMEWORK_SEED_DATA: FrameworkSeedRecord[] = [
   },
 ];
 
-export async function seedFrameworks(prisma: PrismaClient): Promise<void> {
+/** Raised when the seed would change a published version instead of publishing a new one. */
+export class PublishedVersionChangedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PublishedVersionChangedError';
+  }
+}
+
+/**
+ * Publishes each framework's current version. A published version is never edited: if its
+ * questions in the database differ from this file, seeding stops. To change a standard, give the
+ * framework a new version label and new question ids; earlier versions stay as they are.
+ */
+export async function seedFrameworks(prisma: PrismaClient, data: FrameworkSeedRecord[] = FRAMEWORK_SEED_DATA): Promise<void> {
   console.log('[SEED] Seeding framework registry...');
 
-  for (const fw of FRAMEWORK_SEED_DATA) {
-    const { questions, ...frameworkFields } = fw;
+  for (const fw of data) {
+    const { questions, version: declared, ...frameworkFields } = fw;
+    const meta = declared ?? initialVersion(fw);
+    const versionId = `${fw.id}_v${meta.version.replace(/[^A-Za-z0-9]/g, '_')}`;
+    const seedHash = questionSetHash(questions);
 
     await prisma.workflowFramework.upsert({
       where: { id: fw.id },
@@ -451,34 +491,51 @@ export async function seedFrameworks(prisma: PrismaClient): Promise<void> {
       create: frameworkFields,
     });
 
-    for (const q of questions) {
-      await prisma.workflowQuestion.upsert({
-        where: { id: q.id },
-        update: {
-          orderIndex: q.orderIndex,
-          text: q.text,
-          answerType: q.answerType,
-          options: q.options,
-          evidenceRequired: q.evidenceRequired,
-          isoClauseReference: q.isoClauseReference,
-          guidanceNotes: q.guidanceNotes,
-        },
-        create: {
-          id: q.id,
-          frameworkId: fw.id,
-          orderIndex: q.orderIndex,
-          text: q.text,
-          answerType: q.answerType,
-          options: q.options,
-          evidenceRequired: q.evidenceRequired,
-          isoClauseReference: q.isoClauseReference,
-          guidanceNotes: q.guidanceNotes,
-        },
-      });
+    const existing = await prisma.workflowFrameworkVersion.findUnique({
+      where: { frameworkId_version: { frameworkId: fw.id, version: meta.version } },
+      include: { questions: true },
+    });
+
+    if (existing) {
+      const storedHash = questionSetHash(existing.questions);
+      if (storedHash !== seedHash) {
+        throw new PublishedVersionChangedError(
+          `${fw.code} version ${meta.version} is published and its questions differ from the seed. Publish a new version label with new question ids instead of editing it.`
+        );
+      }
+      if (existing.contentHash && existing.contentHash !== storedHash) {
+        throw new PublishedVersionChangedError(`${fw.code} version ${meta.version} no longer matches its sealed content hash.`);
+      }
+      if (!existing.contentHash) {
+        await prisma.workflowFrameworkVersion.update({ where: { id: existing.id }, data: { contentHash: storedHash } });
+      }
+      console.log(`[SEED]   ${fw.code} ${meta.version}: published, unchanged`);
+      continue;
     }
 
-    console.log(`[SEED]   ${fw.code}: ${questions.length} questions seeded`);
+    const reused = await prisma.workflowQuestion.findMany({ where: { id: { in: questions.map((q) => q.id) } }, select: { id: true } });
+    if (reused.length > 0) {
+      throw new PublishedVersionChangedError(
+        `${fw.code} version ${meta.version} reuses question ids from an earlier version (${reused.map((q) => q.id).join(', ')}). New versions need new question ids.`
+      );
+    }
+
+    await prisma.workflowFrameworkVersion.create({
+      data: {
+        id: versionId,
+        frameworkId: fw.id,
+        version: meta.version,
+        standardReference: meta.standardReference,
+        effectiveFrom: meta.effectiveFrom,
+        changeSummary: meta.changeSummary,
+        contentHash: seedHash,
+        questions: {
+          create: questions.map((q) => ({ ...q, frameworkId: fw.id })),
+        },
+      },
+    });
+    console.log(`[SEED]   ${fw.code} ${meta.version}: published with ${questions.length} questions`);
   }
 
-  console.log(`[SEED] Framework registry complete: ${FRAMEWORK_SEED_DATA.length} frameworks seeded`);
+  console.log(`[SEED] Framework registry complete: ${data.length} frameworks`);
 }

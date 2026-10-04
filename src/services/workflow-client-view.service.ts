@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient, ServiceLine, WorkflowStatus, WorkflowType } from '@prisma/client';
 import { currentRecommendationWhere } from './assessment-scope';
+import { currentVersionInclude } from './framework-version.service';
 import { AssuranceFee, getAssuranceFee } from './assurance-fee.service';
 import { ClientService, SERVICE_LINES } from './service-routing.service';
 
@@ -61,11 +62,17 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
   const [frameworks, submissions] = await Promise.all([
     db.workflowFramework.findMany({
       where: { code: { in: codes }, retiredAt: null },
-      include: { _count: { select: { questions: true } } },
+      include: { versions: currentVersionInclude() },
     }),
     db.workflowSubmission.findMany({
       where: { licenseeId, workflowType: { in: workflowTypes }, framework: { code: { in: codes } } },
-      select: { id: true, status: true, frameworkId: true, updatedAt: true },
+      select: {
+        id: true,
+        status: true,
+        frameworkId: true,
+        updatedAt: true,
+        frameworkVersion: { select: { id: true, version: true } },
+      },
       orderBy: { createdAt: 'desc' },
     }),
   ]);
@@ -74,9 +81,10 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
   const entitledLines = new Set<ServiceLine>(entitlements.map((e) => e.serviceLine));
 
   return recommendations
-    .filter((r) => frameworkByCode.has(r.frameworkCode))
+    .filter((r) => frameworkByCode.get(r.frameworkCode)?.versions.length)
     .map((r) => {
       const framework = frameworkByCode.get(r.frameworkCode)!;
+      const current = framework.versions[0];
       const latest = submissions.find((s) => s.frameworkId === framework.id) ?? null;
       return {
         frameworkId: framework.id,
@@ -84,7 +92,8 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
         name: framework.name,
         governingBody: framework.governingBody,
         workflowType: framework.workflowType,
-        questionCount: framework._count.questions,
+        questionCount: current.questions.length,
+        currentVersion: { version: current.version, standardReference: current.standardReference, effectiveFrom: current.effectiveFrom },
         isLegallyMandatory: r.isLegallyMandatory,
         plainEnglishWhy: r.plainEnglishWhy,
         consequenceIfSkipped: r.consequenceIfSkipped,
@@ -99,7 +108,14 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
             }
           : null,
         latestSubmission: latest
-          ? { id: latest.id, status: latest.status, updatedAt: latest.updatedAt, open: OPEN_STATUSES.includes(latest.status) }
+          ? {
+              id: latest.id,
+              status: latest.status,
+              updatedAt: latest.updatedAt,
+              open: OPEN_STATUSES.includes(latest.status),
+              version: latest.frameworkVersion.version,
+              newerVersionAvailable: latest.frameworkVersion.id !== current.id,
+            }
           : null,
       };
     });
@@ -151,7 +167,8 @@ function readDecisions(value: Prisma.JsonValue): PerQuestionDecision[] {
 
 type SubmissionDossier = Prisma.WorkflowSubmissionGetPayload<{
   include: {
-    framework: { include: { questions: true } };
+    framework: true;
+    frameworkVersion: { include: { questions: { orderBy: { orderIndex: 'asc' } } } };
     answers: { include: { evidenceDocument: true } };
     reviewDecision: true;
     transitions: true;
@@ -191,7 +208,13 @@ export function toClientSubmission(dossier: SubmissionDossier) {
       governingBody: dossier.framework.governingBody,
       description: dossier.framework.description,
     },
-    questions: dossier.framework.questions
+    version: {
+      id: dossier.frameworkVersion.id,
+      version: dossier.frameworkVersion.version,
+      standardReference: dossier.frameworkVersion.standardReference,
+      effectiveFrom: dossier.frameworkVersion.effectiveFrom,
+    },
+    questions: dossier.frameworkVersion.questions
       .slice()
       .sort((a, b) => a.orderIndex - b.orderIndex)
       .map((q) => {

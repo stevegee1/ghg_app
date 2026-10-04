@@ -860,6 +860,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
           licenseeId: licenseeA.id,
           workflowType: WorkflowType.GHG,
           frameworkId: 'fwk_iso_14064',
+          frameworkVersionId: 'fwk_iso_14064_v2026_1',
           status: WorkflowStatus.AI_SCREENED,
           submittedAt: new Date(),
         },
@@ -871,6 +872,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
           licenseeId: licenseeA.id,
           workflowType: WorkflowType.GHG,
           frameworkId: 'fwk_iso_14064',
+          frameworkVersionId: 'fwk_iso_14064_v2026_1',
           status: WorkflowStatus.DRAFT,
         },
       });
@@ -924,6 +926,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
           licenseeId: licenseeA.id,
           workflowType: WorkflowType.GHG,
           frameworkId: 'fwk_iso_14064',
+          frameworkVersionId: 'fwk_iso_14064_v2026_1',
           status: WorkflowStatus.APPROVED,
           submittedAt: new Date(),
           reviewedAt: new Date(),
@@ -1094,6 +1097,7 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
           licenseeId: licenseeA.id,
           workflowType: WorkflowType.GHG,
           frameworkId: 'fwk_iso_14064',
+          frameworkVersionId: 'fwk_iso_14064_v2026_1',
           status: WorkflowStatus.SUBMITTED,
           submittedAt: new Date(),
           answers: {

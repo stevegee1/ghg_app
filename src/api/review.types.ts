@@ -48,6 +48,7 @@ export interface ReviewDossier {
   canRerunAi: boolean;
   licensee: { id: string; name: string };
   framework: { id: string; code: string; name: string; governingBody: string | null };
+  version: { id: string; version: string; standardReference: string };
   ai: { screenedAt: string; reviewer: string | null; score: number | null; recommendation: string | null; summary: string | null } | null;
   questions: ReviewQuestion[];
   review: {

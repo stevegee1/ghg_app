@@ -14,6 +14,13 @@ export type WorkflowStatus =
 
 export type WorkflowAnswerType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT';
 
+/** A published edition of a compliance standard. */
+export interface StandardVersion {
+  version: string;
+  standardReference: string;
+  effectiveFrom: string;
+}
+
 export interface PipelineFee {
   amountPence: number;
   currency: string;
@@ -26,6 +33,7 @@ export interface ClientFramework {
   governingBody: string | null;
   workflowType: 'GHG' | 'CARBON' | 'JOB';
   questionCount: number;
+  currentVersion: StandardVersion;
   isLegallyMandatory: boolean;
   plainEnglishWhy: string;
   consequenceIfSkipped: string | null;
@@ -33,7 +41,14 @@ export interface ClientFramework {
   estimatedEffort: string;
   entitled: boolean;
   preparation: { totalItems: number; completedItems: number; ready: boolean } | null;
-  latestSubmission: { id: string; status: WorkflowStatus; updatedAt: string; open: boolean } | null;
+  latestSubmission: {
+    id: string;
+    status: WorkflowStatus;
+    updatedAt: string;
+    open: boolean;
+    version: string;
+    newerVersionAvailable: boolean;
+  } | null;
 }
 
 export interface ClientEvidence {
@@ -71,6 +86,7 @@ export interface ClientSubmission {
   createdAt: string;
   updatedAt: string;
   framework: { id: string; code: string; name: string; governingBody: string | null; description: string | null };
+  version: StandardVersion & { id: string };
   questions: ClientQuestion[];
   review: {
     decision: 'APPROVED' | 'REJECTED';

@@ -8,6 +8,7 @@ import {
   EvidenceCategory,
 } from '@prisma/client';
 import crypto from 'crypto';
+import { currentVersionInclude, describeVersion, getCurrentVersion } from './framework-version.service';
 import PDFDocument from 'pdfkit';
 import { compositeAuditBadge } from './dual-logo-composite.service';
 
@@ -130,15 +131,18 @@ export class WorkflowEngineService {
    * Lists active (non-retired) frameworks, optionally filtered by workflowType.
    */
   async listFrameworks(workflowType?: WorkflowType) {
-    return this.prisma.workflowFramework.findMany({
+    const frameworks = await this.prisma.workflowFramework.findMany({
       where: { retiredAt: null, ...(workflowType ? { workflowType } : {}) },
-      include: {
-        questions: {
-          orderBy: { orderIndex: 'asc' },
-        },
-      },
+      include: { versions: currentVersionInclude() },
       orderBy: { code: 'asc' },
     });
+    // Each framework is listed with the questions of its current version only.
+    return frameworks
+      .filter((f) => f.versions.length > 0)
+      .map(({ versions, ...f }) => {
+        const { questions, ...version } = versions[0];
+        return { ...f, currentVersion: version, questions };
+      });
   }
 
   /**
@@ -161,12 +165,18 @@ export class WorkflowEngineService {
       throw new Error(`Framework ${frameworkId} does not match workflowType ${workflowType}.`);
     }
 
+    const version = await getCurrentVersion(this.prisma, frameworkId);
+    if (!version) {
+      throw new Error(`Framework ${frameworkId} has no published version in effect.`);
+    }
+
     return this.atomic(async (tx) => {
       const submission = await tx.workflowSubmission.create({
         data: {
           licenseeId,
           workflowType,
           frameworkId,
+          frameworkVersionId: version.id,
           status: WorkflowStatus.DRAFT,
         },
       });
@@ -177,7 +187,7 @@ export class WorkflowEngineService {
           previousStatus: null,
           newStatus: WorkflowStatus.DRAFT,
           triggeredBy: actorId,
-          triggerReason: 'Initialized draft questionnaire',
+          triggerReason: `Initialized draft questionnaire on version ${describeVersion(version)}`,
         },
       });
 
@@ -264,9 +274,7 @@ export class WorkflowEngineService {
     const submission = await this.prisma.workflowSubmission.findUnique({
       where: { id: submissionId },
       include: {
-        framework: {
-          include: { questions: true },
-        },
+        frameworkVersion: { include: { questions: true } },
         answers: true,
       },
     });
@@ -290,14 +298,14 @@ export class WorkflowEngineService {
     // 1. Moving to SUBMITTED: Must satisfy evidence requirements
     if (targetStatus === WorkflowStatus.SUBMITTED) {
       const answered = new Set(submission.answers.filter((a) => a.value.trim() !== '').map((a) => a.questionId));
-      const unanswered = submission.framework.questions
+      const unanswered = submission.frameworkVersion.questions
         .filter((q) => !answered.has(q.id))
         .map((q) => ({ questionId: q.id, text: q.text, clause: q.isoClauseReference }));
       if (unanswered.length > 0) {
         throw new UnansweredQuestionsError(unanswered);
       }
 
-      const requiredQuestions = submission.framework.questions.filter((q) => q.evidenceRequired);
+      const requiredQuestions = submission.frameworkVersion.questions.filter((q) => q.evidenceRequired);
       const answerMap = new Map(submission.answers.map((a) => [a.questionId, a]));
 
       const missing = requiredQuestions
@@ -348,7 +356,7 @@ export class WorkflowEngineService {
 
     const submission = await this.prisma.workflowSubmission.findUnique({
       where: { id: submissionId },
-      include: { framework: { include: { questions: true } } },
+      include: { frameworkVersion: { include: { questions: true } } },
     });
 
     if (!submission) {
@@ -363,8 +371,8 @@ export class WorkflowEngineService {
     }
 
     const decisionsByQuestion = new Map(decision.perQuestionDecisions.map((d) => [d.questionId, d]));
-    const questionIds = new Set(submission.framework.questions.map((q) => q.id));
-    const undecided = submission.framework.questions.filter((q) => !decisionsByQuestion.has(q.id));
+    const questionIds = new Set(submission.frameworkVersion.questions.map((q) => q.id));
+    const undecided = submission.frameworkVersion.questions.filter((q) => !decisionsByQuestion.has(q.id));
     const unknown = decision.perQuestionDecisions.filter((d) => !questionIds.has(d.questionId));
     if (undecided.length > 0 || unknown.length > 0) {
       throw new ReviewValidationError('A decision is required for every question in the framework, and only those questions.');
@@ -438,13 +446,8 @@ export class WorkflowEngineService {
     return this.prisma.workflowSubmission.findUnique({
       where: { id: submissionId },
       include: {
-        framework: {
-          include: {
-            questions: {
-              orderBy: { orderIndex: 'asc' },
-            },
-          },
-        },
+        framework: true,
+        frameworkVersion: { include: { questions: { orderBy: { orderIndex: 'asc' } } } },
         answers: {
           include: {
             evidenceDocument: true,
@@ -555,6 +558,7 @@ export class WorkflowEngineService {
       where: { id: submissionId },
       include: {
         framework: true,
+        frameworkVersion: true,
         licensee: true,
         answers: { include: { question: true, evidenceDocument: true } },
         reviewDecision: true,
@@ -624,7 +628,8 @@ export class WorkflowEngineService {
           .text(`Submission ID: ${submission.id}`)
           .text(`Workflow Type: ${submission.workflowType}`)
           .text(`Audited Framework: ${submission.framework.name} (${submission.framework.code})`)
-          .text(`Compliance Score: ${submission.complianceScore ?? 100}% Conformance`)
+          .text(`Standard Version: ${describeVersion(submission.frameworkVersion)}`)
+          .text(`Compliance Score: ${submission.complianceScore !== null ? `${submission.complianceScore}% Conformance` : 'Not recorded'}`)
           .text(`Audit Status: ${submission.status}`);
         doc.moveDown(1);
 

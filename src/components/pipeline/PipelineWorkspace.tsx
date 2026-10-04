@@ -114,6 +114,11 @@ export const PipelineWorkspace: React.FC<Props> = ({ token, service, onPrepare }
         )}
         <h2 id="pipeline-title">{submission ? submission.framework.name : copy.title}</h2>
         <p className="pipeline-muted">{submission ? submission.framework.description ?? copy.summary : copy.summary}</p>
+        {submission && (
+          <p className="pipeline-muted">
+            Assessed against version {submission.version.version} ({submission.version.standardReference})
+          </p>
+        )}
       </header>
 
       {error && (

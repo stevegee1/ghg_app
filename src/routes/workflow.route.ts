@@ -27,6 +27,7 @@ import {
   toClientSubmission,
   toClientSubmissionSummary,
 } from '../services/workflow-client-view.service';
+import { currentVersionInclude } from '../services/framework-version.service';
 import { getReviewDossier, getReviewerProfile, isReviewQueueStage, listReviewQueue } from '../services/workflow-review-view.service';
 
 export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: CheckoutService): Router {
@@ -74,10 +75,12 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
   router.get('/api/workflow/frameworks/:code/questions', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     const { code } = req.params;
     try {
-      const fw = await prisma.workflowFramework.findFirst({
+      const found = await prisma.workflowFramework.findFirst({
         where: { code },
-        include: { questions: { orderBy: { orderIndex: 'asc' } } },
+        include: { versions: currentVersionInclude() },
       });
+      const current = found?.versions[0];
+      const fw = found && current ? { ...found, version: current, questions: current.questions } : null;
 
       if (!fw) {
         return res.status(404).json({ error: `Framework '${code}' not found in registry.` });
@@ -93,6 +96,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
           jurisdiction: fw.jurisdiction,
           description: fw.description,
         },
+        version: { id: fw.version.id, version: fw.version.version, standardReference: fw.version.standardReference },
         questions: fw.questions,
         totalQuestions: fw.questions.length,
       });

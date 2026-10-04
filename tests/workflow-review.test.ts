@@ -55,6 +55,7 @@ describe('Lead Auditor review queue and dossier', () => {
           licenseeId: licensee.id,
           workflowType: WorkflowType.GHG,
           frameworkId: 'fwk_iso_14064',
+          frameworkVersionId: 'fwk_iso_14064_v2026_1',
           status,
           submittedAt,
           ...(ai

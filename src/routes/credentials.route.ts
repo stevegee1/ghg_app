@@ -199,13 +199,22 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
     try {
       const credential = await prisma.auditWarrantyCredential.findUnique({
         where: { id: req.params.id },
-        include: { licensee: { select: { name: true } } },
+        include: {
+          licensee: { select: { name: true } },
+          workflowSubmission: {
+            select: {
+              framework: { select: { code: true, name: true } },
+              frameworkVersion: { select: { version: true, standardReference: true, effectiveFrom: true } },
+            },
+          },
+        },
       });
 
       if (!credential) {
         return res.status(404).json({ error: 'Credential not found.' });
       }
 
+      const assessed = credential.workflowSubmission;
       res.setHeader('Cache-Control', 'public, max-age=300');
       return res.status(200).json({
         credentialId: credential.id,
@@ -217,6 +226,15 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
         issuedAt: credential.updatedAt.toISOString(),
         warrantyExpiresAt: credential.warrantyExpiresAt ? credential.warrantyExpiresAt.toISOString() : null,
         verificationSeal: credential.verificationSeal,
+        assessedAgainst: assessed
+          ? {
+              frameworkCode: assessed.framework.code,
+              frameworkName: assessed.framework.name,
+              version: assessed.frameworkVersion.version,
+              standardReference: assessed.frameworkVersion.standardReference,
+              versionEffectiveFrom: assessed.frameworkVersion.effectiveFrom.toISOString(),
+            }
+          : null,
         scopeStatement:
           'This credential records that the organisation completed a GHGEmissionLogs readiness review. It is not a third-party verification or certification under any ISO standard.',
       });

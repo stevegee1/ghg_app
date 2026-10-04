@@ -5,6 +5,7 @@ import {
   PreparationChecklist,
   PreparationChecklistItem,
 } from '@prisma/client';
+import { currentVersionInclude } from './framework-version.service';
 
 export interface ChecklistItemTemplate {
   itemCode: string;
@@ -297,12 +298,12 @@ export class PreparationChecklistService {
     }
 
     // ── 1. Resolve templates from DB registry ────────────────────────────────
-    const dbFramework = await this.prisma.workflowFramework.findFirst({
+    const registered = await this.prisma.workflowFramework.findFirst({
       where: { code: frameworkCode },
-      include: {
-        questions: { orderBy: { orderIndex: 'asc' } },
-      },
+      include: { versions: currentVersionInclude() },
     });
+    // Checklist items come from the questions of the framework's current version.
+    const dbFramework = registered?.versions[0] ? { questions: registered.versions[0].questions } : null;
 
     // ── 2. Build ChecklistItemTemplate[] from DB or TS fallback ──────────────
     let templates: ChecklistItemTemplate[];

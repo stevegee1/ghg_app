@@ -147,7 +147,8 @@ export const ReviewDossierView: React.FC<Props> = ({ token, submissionId, onBack
         </button>
         <h2 id="review-dossier-title">{dossier.licensee.name}</h2>
         <p className="pipeline-muted">
-          {dossier.framework.name} · {WORKFLOW_TYPE_LABELS[dossier.workflowType]}
+          {dossier.framework.name} · version {dossier.version.version} ({dossier.version.standardReference}) ·{' '}
+          {WORKFLOW_TYPE_LABELS[dossier.workflowType]}
           {dossier.submittedAt ? ` · submitted ${formatDate(dossier.submittedAt)}` : ''}
         </p>
         <p>

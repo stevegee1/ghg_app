@@ -89,7 +89,8 @@ export async function getReviewDossier(db: Db, submissionId: string) {
     where: { id: submissionId },
     include: {
       licensee: { select: { id: true, name: true } },
-      framework: { include: { questions: { orderBy: { orderIndex: 'asc' } } } },
+      framework: true,
+      frameworkVersion: { include: { questions: { orderBy: { orderIndex: 'asc' } } } },
       answers: { include: { evidenceDocument: true } },
       reviewDecision: true,
       transitions: { orderBy: { timestamp: 'asc' } },
@@ -115,7 +116,8 @@ export async function getReviewDossier(db: Db, submissionId: string) {
     ai: s.aiScreenedAt
       ? { screenedAt: s.aiScreenedAt, reviewer: s.aiReviewer, score: s.aiScore, recommendation: s.aiRecommendation, summary: s.aiSummary }
       : null,
-    questions: s.framework.questions.map((q) => {
+    version: { id: s.frameworkVersion.id, version: s.frameworkVersion.version, standardReference: s.frameworkVersion.standardReference },
+    questions: s.frameworkVersion.questions.map((q) => {
       const a = answerByQuestion.get(q.id);
       const e = a?.evidenceDocument;
       return {

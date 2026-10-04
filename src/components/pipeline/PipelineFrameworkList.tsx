@@ -33,7 +33,7 @@ export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starti
                 <h3>{f.name}</h3>
                 <p className="pipeline-muted">
                   {f.governingBody ? `${f.governingBody} · ` : ''}
-                  {f.questionCount} questions
+                  Version {f.currentVersion.version} · {f.questionCount} questions
                 </p>
               </div>
               <span className={`pipeline-chip ${f.isLegallyMandatory ? 'tone-attention' : 'tone-neutral'}`}>
@@ -47,6 +47,12 @@ export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starti
               <p className="pipeline-framework-status">
                 <span className={`pipeline-chip tone-${statusTone(latest.status)}`}>{STATUS_LABELS[latest.status]}</span>
                 <span className="pipeline-muted">Updated {formatDate(latest.updatedAt)}</span>
+              </p>
+            )}
+            {latest?.open && latest.newerVersionAvailable && (
+              <p className="pipeline-muted">
+                This submission is on version {latest.version}. Version {f.currentVersion.version} is now current and applies to your next
+                submission.
               </p>
             )}
 

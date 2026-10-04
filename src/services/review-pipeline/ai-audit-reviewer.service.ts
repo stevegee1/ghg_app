@@ -219,9 +219,8 @@ export class AiAuditReviewer implements IAuditReviewer {
     const submission = await this.prisma.workflowSubmission.findUnique({
       where: { id: submissionId },
       include: {
-        framework: {
-          include: { questions: { orderBy: { orderIndex: 'asc' } } },
-        },
+        framework: true,
+        frameworkVersion: { include: { questions: { orderBy: { orderIndex: 'asc' } } } },
         answers: {
           include: {
             question: true,
@@ -238,7 +237,7 @@ export class AiAuditReviewer implements IAuditReviewer {
 
     // 2. Build answer index
     const answerMap = new Map(submission.answers.map((a) => [a.questionId, a]));
-    const questions = submission.framework.questions;
+    const questions = submission.frameworkVersion.questions;
 
     // 3. Determine which provider to use
     const activeProvider = resolveActiveProvider(this.providers);
@@ -337,6 +336,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     const lines: string[] = [
       `Organisation: ${submission.licensee.name}`,
       `Framework: ${submission.framework.name} (${submission.framework.code})`,
+      `Standard version assessed against: ${submission.frameworkVersion.version} (${submission.frameworkVersion.standardReference})`,
       `Submission ID: ${submission.id}`,
       `Submitted At: ${submission.submittedAt?.toISOString() ?? 'Unknown'}`,
       '',
