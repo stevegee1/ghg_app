@@ -27,6 +27,7 @@ import {
   toClientSubmission,
   toClientSubmissionSummary,
 } from '../services/workflow-client-view.service';
+import { getReviewDossier, getReviewerProfile, isReviewQueueStage, listReviewQueue } from '../services/workflow-review-view.service';
 
 export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: CheckoutService): Router {
   const router = Router();
@@ -588,6 +589,54 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     }
   });
 
+
+  /**
+   * GET /api/workflow/review-queue?stage=awaiting|decided|all
+   * Admin-only: the Lead Auditor's queue across every client and pipeline.
+   */
+  router.get('/api/workflow/review-queue', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    const stage = req.query.stage ?? 'awaiting';
+    if (!isReviewQueueStage(stage)) {
+      return res.status(400).json({ error: "stage must be 'awaiting', 'decided' or 'all'." });
+    }
+    try {
+      const submissions = await runWithRls(prisma, req.user!, (tx) => listReviewQueue(tx, stage));
+      return res.status(200).json({ stage, submissions });
+    } catch (err: unknown) {
+      console.error('[WORKFLOW REVIEW QUEUE ERROR]', err);
+      return res.status(500).json({ error: 'Failed to load the review queue.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/submissions/:id/review-dossier
+   * Admin-only: each question with the client's answer, evidence and the AI pre-screen finding.
+   */
+  router.get('/api/workflow/submissions/:id/review-dossier', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const dossier = await runWithRls(prisma, req.user!, (tx) => getReviewDossier(tx, req.params.id));
+      if (!dossier) return res.status(404).json({ error: 'Submission not found.' });
+      return res.status(200).json({ submission: dossier });
+    } catch (err: unknown) {
+      console.error('[WORKFLOW REVIEW DOSSIER ERROR]', err);
+      return res.status(500).json({ error: 'Failed to load the submission.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/reviewer-profile
+   * Admin-only: the name decisions are signed with and the accreditation last used.
+   */
+  router.get('/api/workflow/reviewer-profile', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const profile = await runWithRls(prisma, req.user!, (tx) => getReviewerProfile(tx, req.user!.userId));
+      if (!profile) return res.status(404).json({ error: 'Reviewer account not found.' });
+      return res.status(200).json({ profile });
+    } catch (err: unknown) {
+      console.error('[WORKFLOW REVIEWER PROFILE ERROR]', err);
+      return res.status(500).json({ error: 'Failed to load your reviewer profile.' });
+    }
+  });
 
   /**
    * POST /api/workflow/submissions/:id/review

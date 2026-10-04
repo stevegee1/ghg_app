@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 import { EmissionFactorsAdmin } from '../components/admin/EmissionFactorsAdmin';
 import { AdminReadinessTracker } from '../components/admin/AdminReadinessTracker';
+import { ReviewQueue } from '../components/admin/review/ReviewQueue';
 
 // Google SaaS Standard SVG Icons (Zero Emojis)
 const SvgClipboard = () => (
@@ -91,7 +92,7 @@ export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS'>('READINESS_TRACKER');
+  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'LEGACY_ISO' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS'>('READINESS_TRACKER');
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -186,7 +187,7 @@ export const AdminPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (activeAdminTab === 'SUBMISSIONS') {
+    if (activeAdminTab === 'LEGACY_ISO') {
       loadSubmissions();
     }
   }, [token, activeAdminTab, submissionStatusFilter]);
@@ -797,7 +798,8 @@ export const AdminPage: React.FC = () => {
         >
           {([
             { key: 'READINESS_TRACKER', label: 'Readiness Tracker', badge: null },
-            { key: 'SUBMISSIONS', label: 'Audit Queue', badge: submissions.filter((s) => s.status === 'SUBMITTED').length || submissions.length },
+            { key: 'SUBMISSIONS', label: 'Review Queue', badge: null },
+            { key: 'LEGACY_ISO', label: 'ISO Queue (legacy)', badge: null },
             { key: 'DEMOS', label: 'Demo Leads', badge: demoBookings.length },
             { key: 'MERCH_ENQUIRIES', label: 'Merch Enquiries', badge: merchEnquiries.filter((e) => e.status === 'PENDING').length },
             { key: 'MERCH_ORDERS', label: 'Merch Orders', badge: souvenirOrders.length },
@@ -861,7 +863,9 @@ export const AdminPage: React.FC = () => {
       )}
 
       {/* TAB: AUDIT REVIEW QUEUE (LEAD AUDITOR CONSOLE) */}
-      {activeAdminTab === 'SUBMISSIONS' && (
+      {activeAdminTab === 'SUBMISSIONS' && token && <ReviewQueue token={token} />}
+
+      {activeAdminTab === 'LEGACY_ISO' && (
         <div>
           {/* Tab Context Header */}
           <div className="admin-tab-section-header">

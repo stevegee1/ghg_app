@@ -11,6 +11,7 @@ import type {
   FleetOverview,
   FleetSummary,
 } from './fleet.types';
+import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
 
 function getAuthHeader(token?: string | null): Record<string, string> {
@@ -1188,6 +1189,36 @@ export const api = {
     form.append('clientLogo', logo);
     form.append('clientMessage', clientMessage);
     return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/badge-setup`, { method: 'POST', token, form });
+  },
+
+  // ── Lead Auditor review (workflow engine) ───────────────────────────────
+
+  async getReviewQueue(token: string, stage: ReviewQueueStage): Promise<{ submissions: ReviewQueueItem[] }> {
+    return apiRequest(`/api/workflow/review-queue?stage=${stage}`, { token });
+  },
+
+  async getReviewDossier(token: string, submissionId: string): Promise<{ submission: ReviewDossier }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/review-dossier`, { token });
+  },
+
+  async getReviewerProfile(token: string): Promise<{ profile: { name: string; lastAccreditation: string | null } }> {
+    return apiRequest('/api/workflow/reviewer-profile', { token });
+  },
+
+  async startReview(token: string, submissionId: string): Promise<{ success: boolean }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/transition`, {
+      method: 'POST',
+      token,
+      body: { targetStatus: 'UNDER_REVIEW', reason: 'Lead Auditor started the review' },
+    });
+  },
+
+  async rerunAiPrescreen(token: string, submissionId: string): Promise<{ success: boolean }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/ai-screen`, { method: 'POST', token });
+  },
+
+  async recordReviewDecision(token: string, submissionId: string, decision: ReviewDecisionPayload): Promise<{ success: boolean }> {
+    return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/review`, { method: 'POST', token, body: decision });
   },
 
   // ── Fleet Emissions ─────────────────────────────────────────────────────
