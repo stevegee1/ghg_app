@@ -26,6 +26,7 @@ import {
   FleetBillingError,
   createFleetSubscriptionCheckout,
   createFleetBillingPortal,
+  getFleetPricing,
   syncFleetQuantity,
 } from '../services/fleet/fleet-billing.service';
 
@@ -318,6 +319,14 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
       return res.status(200).send(pdf);
     } catch (err) {
       return sendError(res, err, '[FLEET REPORT ERROR]');
+    }
+  });
+
+  router.get('/api/fleet/pricing', async (_req: Request, res: Response) => {
+    try {
+      return res.status(200).json(await getFleetPricing(stripe));
+    } catch (err) {
+      return sendError(res, err, '[FLEET PRICING ERROR]');
     }
   });
 

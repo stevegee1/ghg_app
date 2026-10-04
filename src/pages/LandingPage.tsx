@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CerebriumAnimatedHeroBackground } from '../components/CerebriumAnimatedHeroBackground';
+import { FleetCalculator } from '../components/fleet/FleetCalculator';
 import { ContinuousAssuranceFlow } from '../components/ContinuousAssuranceFlow';
 
 export const LandingPage: React.FC = () => {
@@ -480,6 +481,8 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <FleetCalculator />
 
       {/* 2.5 Cerebrium "Why Continuous Assurance" Feature Showcase (Image 4 Exact Spec) */}
       <section className="cerebrium-why-section">

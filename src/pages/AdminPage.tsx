@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
+import { EmissionFactorsAdmin } from '../components/admin/EmissionFactorsAdmin';
 import { AdminReadinessTracker } from '../components/admin/AdminReadinessTracker';
 
 // Google SaaS Standard SVG Icons (Zero Emojis)
@@ -90,7 +91,7 @@ export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES'>('READINESS_TRACKER');
+  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS'>('READINESS_TRACKER');
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -802,6 +803,7 @@ export const AdminPage: React.FC = () => {
             { key: 'MERCH_ORDERS', label: 'Merch Orders', badge: souvenirOrders.length },
             { key: 'KEEPSAKE_ORDERS', label: 'Keepsake Fulfil', badge: keepsakeOrders.length },
             { key: 'CHARITIES', label: 'Charities', badge: charityDashboard?.committedCount ?? (charityDashboard?.slots ? charityDashboard.slots.filter((s: any) => s.status === 'ACTIVE').length : 0) },
+            { key: 'EMISSION_FACTORS', label: 'Emission Factors', badge: null },
             { key: 'SPLITS', label: 'Royalty Splits', badge: null },
           ] as const).map(({ key, label, badge }) => {
             const isActive = activeAdminTab === key;
@@ -2415,6 +2417,8 @@ export const AdminPage: React.FC = () => {
       )}
 
       {/* TAB: CHARITY PORTFOLIO & APPLICATION QUEUE */}
+      {activeAdminTab === 'EMISSION_FACTORS' && token && <EmissionFactorsAdmin token={token} />}
+
       {activeAdminTab === 'CHARITIES' && (
         <div>
           {/* Tab Context Header */}

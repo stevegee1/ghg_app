@@ -84,6 +84,15 @@ export async function createFleetSubscriptionCheckout(
   return { checkoutUrl: session.url, quantity };
 }
 
+/** The per-asset price as configured in Stripe, so the UI never hardcodes it. */
+export async function getFleetPricing(stripe: Stripe): Promise<{ unitAmount: number; currency: string; interval: string }> {
+  const price = await stripe.prices.retrieve(getFleetPriceId());
+  if (price.unit_amount === null || !price.recurring) {
+    throw new Error('The Fleet Stripe Price must be a recurring per-unit price.');
+  }
+  return { unitAmount: price.unit_amount, currency: price.currency.toUpperCase(), interval: price.recurring.interval };
+}
+
 export async function createFleetBillingPortal(
   prisma: PrismaClient,
   stripe: Stripe,

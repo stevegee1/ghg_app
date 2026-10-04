@@ -1,5 +1,44 @@
+import type {
+  EmissionFactorInput,
+  EmissionFactorRecord,
+  FleetAsset,
+  FleetAssetImportResult,
+  FleetAssetInput,
+  FleetEstimate,
+  FleetFuelType,
+  FleetImportBatch,
+  FleetImportResult,
+  FleetOverview,
+  FleetSummary,
+} from './fleet.types';
+
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export class FleetApiError extends Error {
+  constructor(message: string, public status: number, public code?: string) {
+    super(message);
+    this.name = 'FleetApiError';
+  }
+}
+
+async function fleetRequest<T>(
+  path: string,
+  options: { method?: string; token?: string; body?: unknown; form?: FormData; acceptStatus?: number[] } = {}
+): Promise<T> {
+  const headers: Record<string, string> = { ...getAuthHeader(options.token) };
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await fetch(path, {
+    method: options.method || 'GET',
+    headers,
+    body: options.form ?? (options.body !== undefined ? JSON.stringify(options.body) : undefined),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok && !(options.acceptStatus || []).includes(res.status)) {
+    throw new FleetApiError(data.error || `HTTP ${res.status}`, res.status, data.code);
+  }
+  return data as T;
 }
 
 export const api = {
@@ -1074,6 +1113,92 @@ export const api = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
+  },
+
+  // ── Fleet Emissions ─────────────────────────────────────────────────────
+
+  async getFleetCalculatorFuelTypes(): Promise<{ fuelTypes: FleetFuelType[] }> {
+    return fleetRequest('/api/fleet/calculator/fuel-types');
+  },
+
+  async estimateFleetEmissions(params: { fuelType: FleetFuelType; litres: string }): Promise<FleetEstimate> {
+    return fleetRequest('/api/fleet/calculator', { method: 'POST', body: params });
+  },
+
+  async getFleetOverview(token: string): Promise<FleetOverview> {
+    return fleetRequest('/api/fleet/overview', { token });
+  },
+
+  async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {
+    return fleetRequest('/api/fleet/assets', { token });
+  },
+
+  async createFleetAsset(token: string, asset: FleetAssetInput): Promise<{ asset: FleetAsset; billingSynced: boolean }> {
+    return fleetRequest('/api/fleet/assets', { method: 'POST', token, body: asset });
+  },
+
+  async updateFleetAsset(
+    token: string,
+    assetId: string,
+    changes: Partial<Pick<FleetAsset, 'name' | 'siteName' | 'make' | 'model' | 'serialNumber' | 'active'>>
+  ): Promise<{ asset: FleetAsset; billingSynced: boolean }> {
+    return fleetRequest(`/api/fleet/assets/${encodeURIComponent(assetId)}`, { method: 'PATCH', token, body: changes });
+  },
+
+  async importFleetAssets(token: string, file: File): Promise<FleetAssetImportResult> {
+    const form = new FormData();
+    form.append('file', file);
+    return fleetRequest('/api/fleet/assets/import', { method: 'POST', token, form, acceptStatus: [422] });
+  },
+
+  async importFleetReadings(token: string, file: File, format: 'readings' | 'fuel-card'): Promise<FleetImportResult> {
+    const form = new FormData();
+    form.append('format', format);
+    form.append('file', file);
+    return fleetRequest('/api/fleet/readings/import', { method: 'POST', token, form, acceptStatus: [422] });
+  },
+
+  async listFleetImports(token: string): Promise<{ batches: FleetImportBatch[] }> {
+    return fleetRequest('/api/fleet/imports', { token });
+  },
+
+  async getFleetSummary(token: string, from: string, to: string): Promise<FleetSummary> {
+    return fleetRequest(`/api/fleet/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { token });
+  },
+
+  async downloadFleetFile(token: string, path: string): Promise<{ blob: Blob; fileName: string }> {
+    const res = await fetch(path, { headers: getAuthHeader(token) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Download failed' }));
+      throw new FleetApiError(err.error || `HTTP ${res.status}`, res.status, err.code);
+    }
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = /filename="([^"]+)"/.exec(disposition);
+    return { blob: await res.blob(), fileName: match ? match[1] : 'download' };
+  },
+
+  async getFleetPricing(): Promise<{ unitAmount: number; currency: string; interval: string }> {
+    return fleetRequest('/api/fleet/pricing');
+  },
+
+  async startFleetSubscription(token: string): Promise<{ checkoutUrl: string; quantity: number }> {
+    return fleetRequest('/api/fleet/subscription/checkout', { method: 'POST', token });
+  },
+
+  async openFleetBillingPortal(token: string): Promise<{ url: string }> {
+    return fleetRequest('/api/fleet/subscription/portal', { method: 'POST', token });
+  },
+
+  async listEmissionFactors(token: string): Promise<{ factors: EmissionFactorRecord[] }> {
+    return fleetRequest('/api/admin/emission-factors', { token });
+  },
+
+  async createEmissionFactor(token: string, factor: EmissionFactorInput): Promise<{ factor: EmissionFactorRecord }> {
+    return fleetRequest('/api/admin/emission-factors', { method: 'POST', token, body: factor });
+  },
+
+  async retireEmissionFactor(token: string, factorId: string): Promise<{ factor: EmissionFactorRecord }> {
+    return fleetRequest(`/api/admin/emission-factors/${encodeURIComponent(factorId)}/retire`, { method: 'POST', token });
   },
 };
 

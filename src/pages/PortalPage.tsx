@@ -8,6 +8,7 @@ import { WorkflowWizard } from '../components/workflow/WorkflowWizard';
 import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
 import { PortalOverviewView } from '../components/portal/PortalOverviewView';
 import { PortalWorkflowContainer } from '../components/portal/PortalWorkflowContainer';
+import { FleetWorkspace } from '../components/fleet/FleetWorkspace';
 import { PortalCredentialsView } from '../components/portal/PortalCredentialsView';
 import { PortalJobsView } from '../components/portal/PortalJobsView';
 import { PortalTransactionsView } from '../components/portal/PortalTransactionsView';
@@ -230,7 +231,7 @@ const JOB_TIERS = [
   },
 ];
 
-export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'assurance-wizard';
+export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'assurance-wizard' | 'fleet';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -271,6 +272,7 @@ export const PortalPage: React.FC = () => {
     if (tab === 'legal') return 'legal';
     if (tab === 'jobs' || tab === 'job-reporting') return 'jobs';
     if (tab === 'embed') return 'embed';
+    if (tab === 'fleet') return 'fleet';
     return 'overview';
   });
 
@@ -766,7 +768,7 @@ export const PortalPage: React.FC = () => {
   useEffect(() => {
     const tabParam = searchParams.get('tab') || searchParams.get('view');
     if (tabParam) {
-      const validViews: DashboardView[] = ['overview', 'checklist', 'workflow', 'credentials', 'jobs', 'transactions', 'profile', 'embed', 'legal'];
+      const validViews: DashboardView[] = ['overview', 'checklist', 'workflow', 'credentials', 'jobs', 'transactions', 'profile', 'embed', 'legal', 'fleet'];
       if (validViews.includes(tabParam as DashboardView)) {
         setActiveViewState(tabParam as DashboardView);
       }
@@ -1590,6 +1592,16 @@ export const PortalPage: React.FC = () => {
         )}
 
         {/* VERIFICATION & GOVERNANCE */}
+        <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>FLEET EMISSIONS</div>
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'fleet' ? 'active' : ''}`}
+          onClick={() => { setActiveView('fleet'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Leaf /></span>
+          <span className="portal-nav-label">Fleet Emissions</span>
+        </button>
+
         <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>VERIFICATION &amp; GOVERNANCE</div>
         <button
           type="button"
@@ -2162,6 +2174,10 @@ export const PortalPage: React.FC = () => {
 
       {/* ── VIEW 8: Legal & Statutory Covenants ───────────────────────────── */}
       {activeView === 'legal' && <PortalLegalView />}
+
+      {activeView === 'fleet' && token && (
+        <FleetWorkspace token={token} returnedFromCheckout={searchParams.get('subscription') === 'success'} />
+      )}
 
       {/* ── VIEW: Assurance Workflow Engine (Part B Screens 1–11) ────────── */}
       {activeView === 'assurance-wizard' && (

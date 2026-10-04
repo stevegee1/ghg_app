@@ -419,6 +419,7 @@ describe('Fleet Emissions: HTTP API', () => {
     transfers: { create: jest.fn() },
     paymentIntents: { create: jest.fn(), retrieve: jest.fn() },
     webhooks: { constructEvent: jest.fn() },
+    prices: { retrieve: jest.fn() },
   };
 
   const makeClient = async (label: string) => {
@@ -584,6 +585,13 @@ describe('Fleet Emissions: HTTP API', () => {
     expect(template.text).toBe('asset_tag,transaction_date,litres\r\n');
     await request(app).get('/api/fleet/templates/other').set('Authorization', `Bearer ${clientA.token}`).expect(404);
     await request(app).get('/api/fleet/summary?from=2026-12-31&to=2026-01-01').set('Authorization', `Bearer ${clientA.token}`).expect(400);
+  });
+
+  it('publishes the per-asset price from Stripe', async () => {
+    stripeMock.prices.retrieve.mockResolvedValue({ unit_amount: 1500, currency: 'gbp', recurring: { interval: 'month' } });
+    const res = await request(app).get('/api/fleet/pricing').expect(200);
+    expect(res.body).toEqual({ unitAmount: 1500, currency: 'GBP', interval: 'month' });
+    expect(stripeMock.prices.retrieve).toHaveBeenCalledWith(process.env.STRIPE_FLEET_PRICE_ID);
   });
 
   it('starts a subscription checkout for the client account', async () => {

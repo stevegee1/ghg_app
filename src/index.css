@@ -8822,3 +8822,684 @@ a:not([class]):hover {
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 }
+
+/* ── Fleet Emissions service ─────────────────────────────────────────────── */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.btn-small {
+  min-height: 32px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8125rem;
+}
+
+.fleet-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.fleet-header h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.fleet-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.fleet-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  min-width: 0;
+}
+
+.fleet-panel-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.fleet-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.fleet-state {
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.fleet-state-error {
+  border-color: rgba(217, 48, 37, 0.35);
+  color: var(--text-main);
+  background: #fdf3f2;
+}
+
+.fleet-inline-error {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(217, 48, 37, 0.35);
+  border-radius: var(--radius-sm);
+}
+
+.fleet-error-text {
+  color: var(--google-red);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+.fleet-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-green-light);
+  color: var(--color-green-dark);
+  font-size: 0.875rem;
+}
+
+.fleet-warning {
+  background: #fef7e0;
+  border-color: #f9e2a7;
+  color: #6b4100;
+  font-size: 0.875rem;
+}
+
+.fleet-panel.fleet-notice {
+  margin-top: 0;
+  border-color: transparent;
+}
+
+.fleet-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.fleet-empty h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.fleet-empty p {
+  margin: 0 auto 1rem;
+  max-width: 460px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.fleet-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fleet-toolbar-group,
+.fleet-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fleet-form-actions {
+  margin-top: 0.75rem;
+}
+
+.fleet-segmented {
+  display: flex;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  padding: 2px;
+  gap: 2px;
+}
+
+.fleet-segment {
+  flex: 1 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.45rem 0.75rem;
+  border-radius: 3px;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.fleet-segment.is-selected {
+  background: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: var(--shadow-xs);
+}
+
+.fleet-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.fleet-tab {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.fleet-tab.is-selected {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+.fleet-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.fleet-steps button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: left;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.fleet-step-number {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-sky-light);
+  color: var(--accent-primary);
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.fleet-steps li.is-done .fleet-step-number {
+  background: var(--color-green-light);
+  color: var(--color-green);
+}
+
+.fleet-steps li.is-done span:not(.fleet-step-number) {
+  color: var(--text-muted);
+}
+
+.fleet-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fleet-hero-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.fleet-hero-value {
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text-main);
+  font-variant-numeric: proportional-nums;
+}
+
+.fleet-hero-value small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.fleet-hero-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.fleet-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.fleet-tile {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.fleet-tile-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.fleet-tile-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-main);
+  overflow-wrap: anywhere;
+}
+
+.fleet-chart {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.fleet-chart svg {
+  display: block;
+}
+
+.fleet-chart-grid {
+  stroke: var(--border-light);
+  stroke-width: 1;
+}
+
+.fleet-chart-axis {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.fleet-chart-value {
+  fill: var(--text-main);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.fleet-chart-bar {
+  fill: var(--accent-primary);
+}
+
+.fleet-chart-bar.is-active {
+  fill: var(--color-sky-dark);
+}
+
+.fleet-chart-hit {
+  fill: transparent;
+}
+
+.fleet-chart-column {
+  outline: none;
+  cursor: default;
+}
+
+.fleet-chart-column:focus-visible .fleet-chart-hit {
+  fill: var(--color-sky-light);
+}
+
+.fleet-chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  background: var(--text-main);
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+}
+
+.fleet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.fleet-table thead {
+  display: none;
+}
+
+.fleet-table tr {
+  display: block;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.fleet-table tr.is-inactive {
+  color: var(--text-muted);
+}
+
+.fleet-table td {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.2rem 0;
+  overflow-wrap: anywhere;
+}
+
+.fleet-table td > span {
+  text-align: right;
+  min-width: 0;
+}
+
+.fleet-table td[data-label]::before {
+  content: attr(data-label);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.fleet-table .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.fleet-row-actions {
+  justify-content: flex-end;
+}
+
+.fleet-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.fleet-form input:not([type='checkbox']):not([type='file']),
+.fleet-form select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 400;
+  font-size: 0.875rem;
+}
+
+.fleet-form input:focus,
+.fleet-form select:focus {
+  outline: none;
+  border-color: var(--color-sky);
+  box-shadow: 0 0 0 2px var(--color-sky-light);
+}
+
+.fleet-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.fleet-form label.fleet-checkbox {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-weight: 400;
+}
+
+.fleet-checkbox input {
+  margin-top: 0.2rem;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.fleet-file-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.fleet-file-button input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fleet-rejections,
+.fleet-plain-list,
+.fleet-factor-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.fleet-price {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.fleet-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.fleet-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+.fleet-status-badge.status-active {
+  background: var(--color-green-light);
+  color: var(--color-green-dark);
+}
+
+.fleet-status-badge.status-past_due,
+.fleet-status-badge.status-unpaid {
+  background: #fef7e0;
+  color: #8a5300;
+}
+
+@media (min-width: 640px) {
+  .fleet-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fleet-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .fleet-panel {
+    padding: 1.25rem;
+  }
+
+  .fleet-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .fleet-segmented {
+    flex: 0 1 auto;
+  }
+
+  .fleet-tabs {
+    display: flex;
+  }
+
+  .fleet-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .fleet-hero-value {
+    font-size: 3rem;
+  }
+
+  .fleet-table thead {
+    display: table-header-group;
+  }
+
+  .fleet-table tr {
+    display: table-row;
+    padding: 0;
+  }
+
+  .fleet-table th,
+  .fleet-table td {
+    display: table-cell;
+    padding: 0.6rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+  }
+
+  .fleet-table th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .fleet-table td[data-label]::before {
+    content: none;
+  }
+
+  .fleet-table td {
+    overflow-wrap: break-word;
+  }
+
+  .fleet-table td > span {
+    text-align: left;
+  }
+
+  .fleet-table .nowrap,
+  .fleet-row-actions {
+    white-space: nowrap;
+  }
+
+  .fleet-table .num {
+    text-align: right;
+  }
+
+  .fleet-row-actions {
+    text-align: right;
+  }
+}
+
+@media (min-width: 1024px) {
+  .fleet-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.fleet-calculator-section {
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border-light);
+  padding: 3rem 1rem;
+}
+
+.fleet-calculator {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fleet-calculator-intro h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: var(--text-main);
+}
+
+.fleet-calculator-intro p {
+  margin: 0;
+  color: var(--text-muted);
+  max-width: 600px;
+}
+
+.fleet-calculator-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.fleet-calculator-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .fleet-calculator-section {
+    padding: 4rem 1.5rem;
+  }
+
+  .fleet-calculator-form {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  }
+}

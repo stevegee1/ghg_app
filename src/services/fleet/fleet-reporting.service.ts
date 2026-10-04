@@ -14,6 +14,7 @@ export interface FleetTotals {
 }
 
 export interface FleetSummary {
+  /** Inclusive calendar dates (UTC). */
   period: { from: string; to: string };
   /** Assets under the licensee's operational control (GHG Protocol Scope 1). */
   scope1: FleetTotals;
@@ -94,7 +95,7 @@ export async function getFleetSummary(db: Db, licenseeId: string, from: Date, to
   const activeAssets = await db.fleetAsset.count({ where: { licenseeId, active: true } });
 
   return {
-    period: { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) },
+    period: { from: from.toISOString().slice(0, 10), to: new Date(to.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10) },
     scope1: scope1.totals(),
     scope3: scope3.totals(),
     byAsset: [...assets.values()].map(({ acc, meta }) => ({
@@ -137,7 +138,7 @@ export function buildFleetReportPdf(summary: FleetSummary, organisationName: str
     doc.font('Helvetica-Bold').fontSize(16).text('Fleet Emissions Report: Mobile Combustion');
     doc.moveDown(0.3).font('Helvetica').fontSize(10).fillColor('#334155');
     doc.text(`Organisation: ${organisationName}`);
-    doc.text(`Period: ${summary.period.from} to ${summary.period.to} (end date exclusive)`);
+    doc.text(`Period: ${summary.period.from} to ${summary.period.to} inclusive`);
     doc.text(`Generated: ${new Date().toISOString().slice(0, 10)}`);
     doc.moveDown();
 
