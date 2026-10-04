@@ -90,6 +90,19 @@ export interface FleetOverview {
   entitlementStatus: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REVOKED' | null;
   subscription: { status: FleetSubscriptionStatus; quantity: number; currentPeriodEnd: string | null } | null;
   lastImportAt: string | null;
+  lastTelemetryAt: string | null;
+}
+
+export type FleetApiScope = 'telemetry:write' | 'fleet:read';
+
+export interface FleetApiKeyRecord {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  scopes: FleetApiScope[];
+  createdAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
 }
 
 export interface RowRejection {

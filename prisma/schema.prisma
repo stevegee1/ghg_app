@@ -45,6 +45,9 @@ model Licensee {
   fleetAssets              FleetAsset[]
   fleetReadings            FleetReading[]
   fleetImportBatches       FleetImportBatch[]
+  fleetSnapshots           FleetTelemetrySnapshot[]
+  fleetFaultCodes          FleetFaultCode[]
+  fleetApiKeys             FleetApiKey[]
   fleetSubscription        FleetSubscription?
   routingEvents            ServiceRoutingEvent[]
 }
@@ -201,6 +204,7 @@ model PortalUser {
   splitConfigs        SplitConfigHistory[]
   submittedJobReports JobCreationReport[]
   fleetImportBatches  FleetImportBatch[]
+  fleetApiKeys        FleetApiKey[]
   emissionFactors     EmissionFactor[]
 
   @@index([licenseeId])
@@ -1239,6 +1243,12 @@ enum FleetReadingSource {
   FUEL_CARD
   ISO_15143_3
   PARTNER_API
+  /// Telemetry sent by the client through the Fleet API
+  CLIENT_API
+  /// Branch A: pulled from a manufacturer or telematics cloud
+  OEM_CLOUD
+  /// Branch B: sent by a tracking device fitted to the machine
+  TRACKING_DEVICE
 }
 
 enum FleetSubscriptionStatus {
@@ -1288,7 +1298,9 @@ model FleetAsset {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  readings FleetReading[]
+  readings  FleetReading[]
+  snapshots FleetTelemetrySnapshot[]
+  faults    FleetFaultCode[]
 
   @@unique([licenseeId, assetTag])
   @@index([licenseeId, active])
@@ -1335,10 +1347,104 @@ model FleetReading {
   emissionFactorId String
   emissionFactor   EmissionFactor     @relation(fields: [emissionFactorId], references: [id])
   kgCo2e           Decimal            @db.Decimal(16, 3)
+  /// Version of the standard data schema the figures were normalised to
+  schemaVersionId  String
+  schemaVersion    FleetSchemaVersion @relation(fields: [schemaVersionId], references: [id])
+  /// For telemetry-derived readings: the two cumulative snapshots the period was calculated from
+  startSnapshotId  String?
+  endSnapshotId    String?
   createdAt        DateTime           @default(now())
 
   @@unique([assetId, periodStart, periodEnd, source])
   @@index([licenseeId, periodStart])
+}
+
+/// A published version of the standard Fleet data schema (ISO 15143-3 / AEMP 2.0 data elements).
+/// Recorded on every snapshot and calculation; a changed field set is a new version.
+model FleetSchemaVersion {
+  id          String    @id
+  standard    String
+  version     String
+  /// The fields of the version with their units
+  fieldSpec   Json
+  publishedAt DateTime  @default(now())
+  retiredAt   DateTime?
+
+  snapshots FleetTelemetrySnapshot[]
+  readings  FleetReading[]
+}
+
+/// One machine's ISO 15143-3 readings at one moment. Meters are cumulative; fuel used over a
+/// period is the difference between consecutive snapshots from the same source.
+model FleetTelemetrySnapshot {
+  id                       String             @id @default(cuid())
+  licenseeId               String
+  licensee                 Licensee           @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetId                  String
+  asset                    FleetAsset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  schemaVersionId          String
+  schemaVersion            FleetSchemaVersion @relation(fields: [schemaVersionId], references: [id])
+  source                   FleetReadingSource
+  observedAt               DateTime
+  cumulativeOperatingHours Decimal?           @db.Decimal(12, 2)
+  cumulativeIdleHours      Decimal?           @db.Decimal(12, 2)
+  cumulativeFuelUsedLitres Decimal?           @db.Decimal(14, 3)
+  fuelRemainingPercent     Decimal?           @db.Decimal(5, 2)
+  odometerKm               Decimal?           @db.Decimal(14, 2)
+  engineRunning            Boolean?
+  /// Location is kept for 90 days, then cleared on all but the latest snapshot per asset
+  latitude                 Decimal?           @db.Decimal(9, 6)
+  longitude                Decimal?           @db.Decimal(9, 6)
+  altitudeM                Decimal?           @db.Decimal(8, 2)
+  /// Set when a meter went backwards against the previous snapshot; no period is calculated across it
+  counterReset             Boolean            @default(false)
+  payloadSha256            String
+  receivedAt               DateTime           @default(now())
+
+  faults FleetFaultCode[]
+
+  @@unique([assetId, source, observedAt])
+  @@index([licenseeId, observedAt])
+  @@index([assetId, source, observedAt])
+}
+
+/// A fault or caution code reported by a machine.
+model FleetFaultCode {
+  id          String                  @id @default(cuid())
+  licenseeId  String
+  licensee    Licensee                @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetId     String
+  asset       FleetAsset              @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  snapshotId  String?
+  snapshot    FleetTelemetrySnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  source      FleetReadingSource
+  observedAt  DateTime
+  code        String
+  severity    String?
+  description String?
+  createdAt   DateTime                @default(now())
+
+  @@unique([assetId, observedAt, code])
+  @@index([licenseeId, observedAt])
+}
+
+/// A client's key for the Fleet API. Only a SHA-256 of the key is stored; the key is shown once.
+model FleetApiKey {
+  id          String     @id @default(cuid())
+  licenseeId  String
+  licensee    Licensee   @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  name        String
+  keyHash     String     @unique
+  /// First characters of the key, so clients can tell keys apart
+  keyPrefix   String
+  scopes      String[]
+  createdById String
+  createdBy   PortalUser @relation(fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+
+  @@index([licenseeId, revokedAt])
 }
 
 model FleetSubscription {

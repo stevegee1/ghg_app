@@ -8,6 +8,7 @@ import {
   PrismaClient,
 } from '@prisma/client';
 import { parseCsv, CsvParseError } from '../../utils/csv';
+import { FLEET_SCHEMA_VERSION_ID } from './fleet-schema';
 import { FLEET_FUEL_UNIT, calculateKgCo2e, resolveEmissionFactor, EmissionFactorMissingError } from './emission-factor.service';
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -278,6 +279,7 @@ async function persistReadings(
           distanceKm: p.distanceKm,
           emissionFactorId: factor.id,
           kgCo2e,
+          schemaVersionId: FLEET_SCHEMA_VERSION_ID,
         });
       } catch (err) {
         if (err instanceof EmissionFactorMissingError) {

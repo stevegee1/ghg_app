@@ -51,7 +51,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RANGE_DAYS = 3 * 366;
 
-function parseRange(req: Request): { from: Date; to: Date } | null {
+export function parseRange(req: Request): { from: Date; to: Date } | null {
   const { from, to } = req.query;
   if (typeof from !== 'string' || typeof to !== 'string' || !DATE_PATTERN.test(from) || !DATE_PATTERN.test(to)) return null;
   const start = new Date(`${from}T00:00:00.000Z`);
@@ -160,13 +160,14 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
     const user = req.user!;
     try {
       const overview = await runWithRls(prisma, user, async (tx) => {
-        const [activeAssets, totalAssets, subscription, lastImport] = await Promise.all([
+        const [activeAssets, totalAssets, subscription, lastImport, lastSnapshot] = await Promise.all([
           tx.fleetAsset.count({ where: { licenseeId: user.licenseeId!, active: true } }),
           tx.fleetAsset.count({ where: { licenseeId: user.licenseeId! } }),
           tx.fleetSubscription.findUnique({ where: { licenseeId: user.licenseeId! } }),
           tx.fleetImportBatch.findFirst({ where: { licenseeId: user.licenseeId! }, orderBy: { createdAt: 'desc' } }),
+          tx.fleetTelemetrySnapshot.findFirst({ where: { licenseeId: user.licenseeId! }, orderBy: { receivedAt: 'desc' }, select: { receivedAt: true } }),
         ]);
-        return { activeAssets, totalAssets, subscription, lastImport };
+        return { activeAssets, totalAssets, subscription, lastImport, lastSnapshot };
       });
       const entitlement = await prisma.serviceEntitlement.findUnique({
         where: { licenseeId_serviceLine: { licenseeId: user.licenseeId!, serviceLine: ServiceLine.FLEET } },
@@ -183,6 +184,7 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
             }
           : null,
         lastImportAt: overview.lastImport?.createdAt ?? null,
+        lastTelemetryAt: overview.lastSnapshot?.receivedAt ?? null,
       });
     } catch (err) {
       return sendError(res, err, '[FLEET OVERVIEW ERROR]');

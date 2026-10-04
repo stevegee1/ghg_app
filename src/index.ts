@@ -4,6 +4,8 @@ import { TransactionService } from './services/transaction.service';
 import { CheckoutService } from './services/checkout.service';
 import { createApp } from './expressApp';
 import { scheduleReconciliationJob } from './jobs/reconcile.job';
+import { scheduleFleetRetentionJob } from './jobs/fleet-retention.job';
+import { LOCATION_RETENTION_DAYS } from './services/fleet/fleet-retention.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PortalRole } from '@prisma/client';
@@ -172,6 +174,9 @@ async function main() {
     const transactionCount = await prisma.transaction.count();
     console.log(`[INFO] Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
     console.log(`[INFO] Default Admin user initialized: ${adminEmail}`);
+
+    scheduleFleetRetentionJob(prisma);
+    console.log(`[INFO] Fleet location retention scheduled: ${LOCATION_RETENTION_DAYS} days.`);
   } catch (e: any) {
     console.error('[ERROR] DB connection failed (check DATABASE_URL):', e?.message ?? e);
     // Do not exit: server remains up to handle health checks and API errors gracefully

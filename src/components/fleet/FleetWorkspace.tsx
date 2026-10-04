@@ -5,13 +5,15 @@ import { FleetDashboard } from './FleetDashboard';
 import { FleetAssets } from './FleetAssets';
 import { FleetUploads } from './FleetUploads';
 import { FleetSubscription } from './FleetSubscription';
+import { FleetApiAccess } from './FleetApiAccess';
 
-export type FleetTab = 'dashboard' | 'assets' | 'uploads' | 'subscription';
+export type FleetTab = 'dashboard' | 'assets' | 'uploads' | 'api' | 'subscription';
 
 const TABS: { id: FleetTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'assets', label: 'Assets' },
   { id: 'uploads', label: 'Data uploads' },
+  { id: 'api', label: 'API access' },
   { id: 'subscription', label: 'Subscription' },
 ];
 
@@ -46,7 +48,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
     ? [
         { done: overview.activeAssets > 0, label: 'Register your assets', tab: 'assets' as FleetTab },
         { done: isActive, label: 'Subscribe per active asset', tab: 'subscription' as FleetTab },
-        { done: overview.lastImportAt !== null, label: 'Upload fuel data', tab: 'uploads' as FleetTab },
+        { done: overview.lastImportAt !== null || overview.lastTelemetryAt !== null, label: 'Send fuel data (upload or API)', tab: 'uploads' as FleetTab },
       ]
     : [];
   const setupComplete = steps.length > 0 && steps.every((s) => s.done);
@@ -110,6 +112,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
         {overview && tab === 'dashboard' && <FleetDashboard key={refreshKey} token={token} onSubscribe={() => setTab('subscription')} />}
         {overview && tab === 'assets' && <FleetAssets token={token} onChanged={refresh} />}
         {overview && tab === 'uploads' && <FleetUploads token={token} onSubscribe={() => setTab('subscription')} onImported={refresh} />}
+        {overview && tab === 'api' && <FleetApiAccess token={token} />}
         {overview && tab === 'subscription' && <FleetSubscription token={token} overview={overview} />}
       </div>
     </section>

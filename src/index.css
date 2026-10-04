@@ -9025,6 +9025,11 @@ a:not([class]):hover {
   border-bottom-color: var(--accent-primary);
 }
 
+/* On phones the tabs sit in two columns; an odd last tab takes the full row. */
+.fleet-tab:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 .fleet-steps {
   list-style: none;
   margin: 0;
@@ -10503,4 +10508,56 @@ a:not([class]):hover {
   justify-content: space-between;
   gap: 0.5rem;
   font-size: 0.875rem;
+}
+
+/* Fleet API access */
+
+.fleet-api-scopes {
+  border: 0;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fleet-api-scopes legend {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.35rem;
+}
+
+.fleet-api-key-value,
+.fleet-api-prefix {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.fleet-api-key-value {
+  display: block;
+  padding: 0.6rem 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  user-select: all;
+}
+
+.fleet-api-created p {
+  margin: 0;
+}
+
+.fleet-api-example {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-terminal);
+  color: #e8eaed;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  max-width: 100%;
 }

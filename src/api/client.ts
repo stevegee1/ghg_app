@@ -10,6 +10,8 @@ import type {
   FleetImportResult,
   FleetOverview,
   FleetSummary,
+  FleetApiKeyRecord,
+  FleetApiScope,
 } from './fleet.types';
 import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
@@ -1149,6 +1151,18 @@ export const api = {
 
   async openFleetBillingPortal(token: string): Promise<{ url: string }> {
     return apiRequest('/api/fleet/subscription/portal', { method: 'POST', token });
+  },
+
+  async listFleetApiKeys(token: string): Promise<{ keys: FleetApiKeyRecord[] }> {
+    return apiRequest('/api/fleet/api-keys', { token });
+  },
+
+  async createFleetApiKey(token: string, name: string, scopes: FleetApiScope[]): Promise<{ key: FleetApiKeyRecord & { key: string } }> {
+    return apiRequest('/api/fleet/api-keys', { method: 'POST', token, body: { name, scopes } });
+  },
+
+  async revokeFleetApiKey(token: string, keyId: string): Promise<{ key: FleetApiKeyRecord }> {
+    return apiRequest(`/api/fleet/api-keys/${encodeURIComponent(keyId)}/revoke`, { method: 'POST', token });
   },
 
   async listEmissionFactors(token: string): Promise<{ factors: EmissionFactorRecord[] }> {

@@ -569,7 +569,9 @@ export const PortalPage: React.FC = () => {
       case 'legal':
         return 'ISO 19011:2026 Annex A Remote Auditing Guarantee';
       case 'profile':
-        return 'Client Profile & API Ingestion';
+        return 'Client Profile';
+      case 'fleet':
+        return 'Fleet Emissions';
       default:
         return 'Client Profile Dashboard';
     }
