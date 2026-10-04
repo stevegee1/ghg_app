@@ -3,6 +3,14 @@ import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Footer } from './Footer';
 
+/** The four solutions, in the order the landing page presents them. */
+const SOLUTION_LINKS = [
+  { href: '/#ghg', title: 'GHG & Carbon Emissions', description: 'Scope 1 to 3 reporting, reviewed and credentialed', colour: 'var(--color-green)' },
+  { href: '/#fleet', title: 'Fleet Emissions & Telematics', description: 'One dashboard for every machine and vehicle', colour: 'var(--accent-primary)' },
+  { href: '/#workforce', title: 'Social & Workforce', description: 'Section 106 and social value evidence', colour: 'var(--google-amber)' },
+  { href: '/merch', title: 'Merch & Custom Merch', description: 'Printed merch, delivered by local partners', colour: '#9334e6' },
+];
+
 export const Layout: React.FC = () => {
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -31,17 +39,6 @@ export const Layout: React.FC = () => {
       setCopiedId(true);
       setTimeout(() => setCopiedId(false), 2000);
     }
-  };
-
-  // Solutions URLs lead to login if no active session, else user's dashboard
-  const getSolutionPath = (portalPath = '/portal') => {
-    if (!isAuthenticated) {
-      return '/portal/login';
-    }
-    if (isAdmin) {
-      return '/admin';
-    }
-    return portalPath;
   };
 
   // Close menus on route changes
@@ -147,358 +144,60 @@ export const Layout: React.FC = () => {
             <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
               <ul className="nav-links cerebrium-capsule-inner">
                 
-                {/* Solutions Dropdown / Mobile Accordion */}
+                {/* Solutions: the four services, as a dropdown on desktop and an accordion on mobile */}
                 <li className="nav-item-dropdown">
-                {/* Desktop Trigger */}
-                <button
-                  className={`cerebrium-capsule-link mega-menu-trigger-btn desktop-only-solutions ${activeDropdown === 'SOLUTIONS' ? 'active' : ''}`}
-                  onClick={() => toggleDropdown('SOLUTIONS')}
-                  aria-expanded={activeDropdown === 'SOLUTIONS'}
-                  aria-haspopup="true"
-                >
-                  <span>SOLUTIONS</span>
-                  <span className="capsule-dot">•</span>
-                </button>
+                  <button
+                    className={`cerebrium-capsule-link mega-menu-trigger-btn desktop-only-solutions ${activeDropdown === 'SOLUTIONS' ? 'active' : ''}`}
+                    onClick={() => toggleDropdown('SOLUTIONS')}
+                    aria-expanded={activeDropdown === 'SOLUTIONS'}
+                    aria-haspopup="true"
+                  >
+                    <span>Solutions</span>
+                  </button>
 
-                {/* Mobile Accordion Trigger */}
-                <button
-                  className="mobile-accordion-toggle mobile-only-solutions"
-                  onClick={() => setMobileSolutionsOpen(!mobileSolutionsOpen)}
-                >
-                  <span>Solutions</span>
-                  <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{mobileSolutionsOpen ? '−' : '+'}</span>
-                </button>
+                  <button className="mobile-accordion-toggle mobile-only-solutions" onClick={() => setMobileSolutionsOpen(!mobileSolutionsOpen)} aria-expanded={mobileSolutionsOpen}>
+                    <span>Solutions</span>
+                    <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{mobileSolutionsOpen ? '−' : '+'}</span>
+                  </button>
 
-                {/* Mobile Accordion Expanded Content */}
-                {mobileSolutionsOpen && (
-                  <div className="mobile-accordion-content mobile-only-solutions">
-                    <div>
-                      <div className="mobile-subheading">01 Software</div>
-                      <Link to={getSolutionPath('/portal?tab=telemetry')} className="mobile-sublink" onClick={closeDropdowns}>
-                        <div className="mobile-sublink-title">Telemetry Ingestion</div>
-                        <div className="mobile-sublink-desc">Real-time IoT & meter streams</div>
-                      </Link>
-                      <Link to={getSolutionPath('/portal?tab=telemetry')} className="mobile-sublink" onClick={closeDropdowns}>
-                        <div className="mobile-sublink-title">Calibration Gatekeeper</div>
-                        <div className="mobile-sublink-desc">Tamper-resistant screening</div>
-                      </Link>
+                  {mobileSolutionsOpen && (
+                    <div className="mobile-accordion-content mobile-only-solutions">
+                      {SOLUTION_LINKS.map((item) => (
+                        <a key={item.href} href={item.href} className="mobile-sublink" onClick={closeDropdowns}>
+                          <div className="mobile-sublink-title">{item.title}</div>
+                          <div className="mobile-sublink-desc">{item.description}</div>
+                        </a>
+                      ))}
                     </div>
+                  )}
 
-                    <div>
-                      <div className="mobile-subheading">02 Assurance</div>
-                      <Link to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')} className="mobile-sublink" onClick={closeDropdowns}>
-                        <div className="mobile-sublink-title">ISO Diagnostic Scorecard</div>
-                        <div className="mobile-sublink-desc">5-pillar readiness evaluation</div>
-                      </Link>
-                      <Link to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')} className="mobile-sublink" onClick={closeDropdowns}>
-                        <div className="mobile-sublink-title">Section 106 Workforce</div>
-                        <div className="mobile-sublink-desc">Council planning audit dossiers</div>
-                      </Link>
-                    </div>
-
-                    <div>
-                      <div className="mobile-subheading">03 Provenance</div>
-                      <Link to={getSolutionPath('/portal?tab=credentials')} className="mobile-sublink" onClick={closeDropdowns}>
-                        <div className="mobile-sublink-title">Verified Credentials</div>
-                        <div className="mobile-sublink-desc">Publicly verifiable audit warranty</div>
-                      </Link>
-                      <Link to={getSolutionPath('/portal?tab=studio')} className="mobile-sublink" onClick={closeDropdowns}>
-                        <div className="mobile-sublink-title">Dual-Logo Studio</div>
-                        <div className="mobile-sublink-desc">Co-brand statutory credentials</div>
-                      </Link>
-                    </div>
-                  </div>
-                )}
-
-                {/* Desktop Mega-Menu Container */}
-                {activeDropdown === 'SOLUTIONS' && (
-                  <div className="mega-menu-panel desktop-only-solutions" role="region" aria-label="Solutions Overview">
-                    <div className="mega-menu-grid">
-                      
-                      {/* Column 01: Continuous Telemetry (Software) */}
-                      <div>
-                        <div className="mega-col-header">
-                          <div className="mega-col-number">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                              <line x1="8" y1="21" x2="16" y2="21"></line>
-                              <line x1="12" y1="17" x2="12" y2="21"></line>
-                            </svg>
-                            <span>01</span>
-                          </div>
-                          <h4 className="mega-col-title">Software</h4>
-                          <p className="mega-col-subtitle">Measure and report</p>
-                        </div>
-
-                        <ul className="mega-link-list">
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Telemetry Ingestion</span>
-                              </div>
-                              <div className="mega-item-desc">Real-time IoT & meter streams</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Calibration Gatekeeper</span>
-                              </div>
-                              <div className="mega-item-desc">Tamper-resistant data screening</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Anomaly Lock Engine</span>
-                              </div>
-                              <div className="mega-item-desc">Autonomous export freeze on &gt;15% drift</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Telemetry Ingestion API</span>
-                              </div>
-                              <div className="mega-item-desc">Continuous high-frequency API gateway</div>
-                            </Link>
-                          </li>
-                        </ul>
-                      </div>
-
-                      {/* Column 02: Statutory Assurance (Assurance & Verification) */}
-                      <div>
-                        <div className="mega-col-header">
-                          <div className="mega-col-number">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                              <polyline points="17 6 23 6 23 12"></polyline>
-                            </svg>
-                            <span>02</span>
-                          </div>
-                          <h4 className="mega-col-title">Assurance</h4>
-                          <p className="mega-col-subtitle">Strategy and verification</p>
-                        </div>
-
-                        <ul className="mega-link-list">
-                          <li>
-                            <Link to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>ISO 14001 / 50001 Diagnostic</span>
-                              </div>
-                              <div className="mega-item-desc">Statutory 5-pillar readiness scorecard</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Section 106 Workforce</span>
-                              </div>
-                              <div className="mega-item-desc">Local hiring & wage covenant audit</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=evidence')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Executive Audit Dossiers</span>
-                              </div>
-                              <div className="mega-item-desc">Boardroom-ready sealed PDF evidence</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=studio')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Statutory Trademark Licensing</span>
-                              </div>
-                              <div className="mega-item-desc">UKIPO statutory brand governance</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal')} className="mega-item-link" onClick={closeDropdowns} style={{ fontWeight: 600 }}>
-                              <div className="mega-item-name">
-                                <span>See all assurance →</span>
-                              </div>
-                            </Link>
-                          </li>
-                        </ul>
-                      </div>
-
-                      {/* Column 03: Provenance (Governance & Social Endowment) */}
-                      <div>
-                        <div className="mega-col-header">
-                          <div className="mega-col-number">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                            </svg>
-                            <span>03</span>
-                          </div>
-                          <h4 className="mega-col-title">Provenance</h4>
-                          <p className="mega-col-subtitle">Endowment & credentials</p>
-                        </div>
-
-                        <ul className="mega-link-list">
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=credentials')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Verified Credentials</span>
-                              </div>
-                              <div className="mega-item-desc">Publicly verifiable audit warranty</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=studio')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Dual-Logo Studio</span>
-                              </div>
-                              <div className="mega-item-desc">Co-brand with statutory trade mark</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=transactions')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>15% Relief Endowment</span>
-                              </div>
-                              <div className="mega-item-desc">Immutable humanitarian giving split</div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to={getSolutionPath('/portal?tab=evidence')} className="mega-item-link" onClick={closeDropdowns}>
-                              <div className="mega-item-name">
-                                <span>Transparency Ledger</span>
-                              </div>
-                              <div className="mega-item-desc">Public SHA-256 transaction explorer</div>
-                            </Link>
-                          </li>
-                        </ul>
-                      </div>
-
-                      {/* Column 04: "Where are you starting?" Intent Card */}
-                      <div className="mega-intent-card">
-                        <div>
-                          <h4 className="mega-intent-title">Where are you starting?</h4>
-                          <ul className="mega-intent-list">
-                            <li>
-                              <Link
-                                to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')}
-                                className="mega-intent-item"
-                                onClick={closeDropdowns}
-                              >
-                                <span>I&apos;m preparing for an ISO audit</span>
-                                <span>→</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')}
-                                className="mega-intent-item"
-                                onClick={closeDropdowns}
-                              >
-                                <span>I need Section 106 filing</span>
-                                <span>→</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to={getSolutionPath('/portal?tab=telemetry')}
-                                className="mega-intent-item"
-                                onClick={closeDropdowns}
-                              >
-                                <span>I want continuous IoT telemetry</span>
-                                <span>→</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to={getSolutionPath('/portal?tab=credentials')}
-                                className="mega-intent-item"
-                                onClick={closeDropdowns}
-                              >
-                                <span>I want a verified audit credential</span>
-                                <span>→</span>
-                              </Link>
-                            </li>
-                          </ul>
-                        </div>
-
-                        <div className="mega-intent-footer">
-                          Two statutory scopes. One platform.
-                        </div>
-                      </div>
-
-                    </div>
-
-                    {/* Bottom Ribbon */}
-                    <div className="mega-menu-ribbon">
-                      <div className="mega-ribbon-title">
-                        BY REPORTING REQUIREMENT - CONTINUOUS CLIMATE TELEMETRY & SECTION 106 WORKFORCE COMBINED
-                      </div>
-                      <div className="mega-ribbon-chips">
-                        <Link to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')} className="mega-ribbon-chip" onClick={closeDropdowns}>
-                          ISO 14001 / 50001
-                        </Link>
-                        <Link to={getSolutionPath('/portal?tab=telemetry')} className="mega-ribbon-chip" onClick={closeDropdowns}>
-                          Scope 1-3 GHG Protocol
-                        </Link>
-                        <Link to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')} className="mega-ribbon-chip" onClick={closeDropdowns}>
-                          Section 106 Planning Act
-                        </Link>
-                        <Link to={getSolutionPath('/portal?tab=studio')} className="mega-ribbon-chip" onClick={closeDropdowns}>
-                          Statutory Registered Trade Mark
-                        </Link>
+                  {activeDropdown === 'SOLUTIONS' && (
+                    <div className="mega-menu-panel desktop-only-solutions nav-solutions-panel" role="region" aria-label="Solutions">
+                      <div className="nav-solutions-grid">
+                        {SOLUTION_LINKS.map((item) => (
+                          <a key={item.href} href={item.href} className="nav-solution-link" onClick={closeDropdowns}>
+                            <span className="nav-solution-dot" style={{ background: item.colour }} aria-hidden="true" />
+                            <span>
+                              <span className="nav-solution-title">{item.title}</span>
+                              <span className="nav-solution-desc">{item.description}</span>
+                            </span>
+                          </a>
+                        ))}
                       </div>
                     </div>
+                  )}
+                </li>
 
-                  </div>
-                )}
-              </li>
-
-              {/* Direct Nav Links Matching User Specification */}
-              <li>
-                <NavLink
-                  to={getSolutionPath('/portal?scope=JOB_REPORTING&tab=jobs')}
-                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
-                  onClick={closeDropdowns}
-                >
-                  WORKFORCE &amp; JOBS
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to={getSolutionPath('/portal?scope=CARBON_EMISSION&tab=diagnostic')}
-                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
-                  onClick={closeDropdowns}
-                >
-                  CARBON EMISSION
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/merch"
-                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
-                  onClick={closeDropdowns}
-                >
-                  SUPPORT EXTREME WEATHER SURVIVOR
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/licensing"
-                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
-                  onClick={closeDropdowns}
-                >
-                  PRICING
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/blog"
-                  className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')}
-                  onClick={closeDropdowns}
-                >
-                  BLOGS
-                </NavLink>
-              </li>
-
+                <li>
+                  <NavLink to="/partners" className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')} onClick={closeDropdowns}>
+                    Partners
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/merch" className={({ isActive }) => (isActive ? 'cerebrium-capsule-link active' : 'cerebrium-capsule-link')} onClick={closeDropdowns}>
+                    Merch
+                  </NavLink>
+                </li>
 
               {/* Mobile Only: Auth Links */}
               <li className="mobile-only-auth">
@@ -883,18 +582,12 @@ export const Layout: React.FC = () => {
           <div className="console-minimal-footer-inner">
             <div className="console-footer-left">
               <span className="console-status-dot" />
-              <span>GHGEmissionLogs Telemetry & Assurance Infrastructure</span>
+              <span>GHGEmissionLogs</span>
               <span className="console-footer-sep">•</span>
-              <span>Node UK-01 Operational</span>
-              <span className="console-footer-sep">•</span>
-              <span>UKIPO Trade Mark UK00003980004</span>
+              <span>UKIPO trade mark UK00003980004</span>
             </div>
             <div className="console-footer-right">
-              <span>ISO 14064-1:2018 Attested</span>
-              <span className="console-footer-sep">•</span>
-              <span>ISO 19011:2026 Audit Ready</span>
-              <span className="console-footer-sep">•</span>
-              <span>© 2026 NFTY LOGS LABS LTD</span>
+              <span>© {new Date().getFullYear()} NFTY LOGS LABS LTD, UK company no. 15230476</span>
             </div>
           </div>
         </footer>

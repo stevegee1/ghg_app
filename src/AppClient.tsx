@@ -20,7 +20,7 @@ import { TransparencyPage } from './pages/TransparencyPage';
 import { BlogPage } from './pages/BlogPage';
 import { BookDemoPage } from './pages/BookDemoPage';
 import { BookDemoModal } from './components/BookDemoModal';
-import { CharityApplicationPage } from './pages/CharityApplicationPage';
+import { NewsletterStatusPage } from './pages/NewsletterStatusPage';
 import { PartnersPage } from './pages/PartnersPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -81,8 +81,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="track/:orderNumber" element={<PublicTrackerPage />} />
         <Route path="track" element={<PublicTrackerPage />} />
         <Route path="merch" element={<MerchStorePage />} />
-        <Route path="charities/apply" element={<CharityApplicationPage />} />
-        <Route path="charity/apply" element={<CharityApplicationPage />} />
+        <Route path="charities/apply" element={<Navigate to="/partners#charities" replace />} />
+        <Route path="charity/apply" element={<Navigate to="/partners#charities" replace />} />
+        <Route path="newsletter" element={<NewsletterStatusPage />} />
         <Route path="partners" element={<PartnersPage />} />
         <Route path="partnerships" element={<PartnersPage />} />
         <Route path="partner" element={<PartnersPage />} />

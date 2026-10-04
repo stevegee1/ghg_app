@@ -3,6 +3,22 @@ import { PrismaClient, FulfillmentPartnerStatus, CharityPartnerStatus } from '@p
 import { authenticateToken } from '../middleware/auth.middleware';
 import { validateWorkEmail } from '../utils/emailValidation';
 
+/** Services a delivery or production partner can offer. Delivery first: local delivery cuts merch emissions. */
+export const PARTNER_CAPABILITIES = [
+  'DELIVERY_CARGO_BIKE',
+  'DELIVERY_EV_VAN',
+  'DELIVERY_VAN',
+  'DELIVERY_SAME_DAY',
+  'LOCAL_DISPATCH',
+  'DTG',
+  'WATER_BASED_SCREEN',
+  'EMBROIDERY',
+  'CUT_SEW',
+  'ECO_WAREHOUSING',
+];
+export const PARTNER_CERTIFICATIONS = ['GOTS', 'OEKO_TEX', 'B_CORP', 'ISO_14001', 'FAIR_WEAR', 'SUSTAINABLE_IN_PROGRESS'];
+export const PARTNER_CAPACITY_BANDS = ['UNDER_500', '500_2000', '2000_10000', 'OVER_10000'];
+
 export function createPartnerNetworkRouter(prisma: PrismaClient): Router {
   const router = Router();
 
@@ -36,13 +52,17 @@ export function createPartnerNetworkRouter(prisma: PrismaClient): Router {
         });
       }
 
-      const validCapabilities = Array.isArray(capabilities)
-        ? capabilities.map((c: any) => String(c).trim()).filter(Boolean)
-        : [];
-
-      const validCertifications = Array.isArray(certifications)
-        ? certifications.map((c: any) => String(c).trim()).filter(Boolean)
-        : [];
+      const validCapabilities = Array.isArray(capabilities) ? [...new Set(capabilities.map((c: unknown) => String(c).trim()))] : [];
+      if (validCapabilities.length === 0 || validCapabilities.some((c) => !PARTNER_CAPABILITIES.includes(c))) {
+        return res.status(400).json({ error: `Choose at least one service from: ${PARTNER_CAPABILITIES.join(', ')}.` });
+      }
+      const validCertifications = Array.isArray(certifications) ? [...new Set(certifications.map((c: unknown) => String(c).trim()))] : [];
+      if (validCertifications.some((c) => !PARTNER_CERTIFICATIONS.includes(c))) {
+        return res.status(400).json({ error: `certifications must be from: ${PARTNER_CERTIFICATIONS.join(', ')}.` });
+      }
+      if (!PARTNER_CAPACITY_BANDS.includes(String(monthlyCapacityUnits))) {
+        return res.status(400).json({ error: `monthlyCapacityUnits must be one of: ${PARTNER_CAPACITY_BANDS.join(', ')}.` });
+      }
 
       const application = await prisma.fulfillmentPartnerApplication.create({
         data: {
