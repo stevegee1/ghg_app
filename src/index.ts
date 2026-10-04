@@ -79,7 +79,7 @@ async function main() {
     try {
       console.log('🔄 Running database migrations on startup...');
       const { execSync } = require('child_process');
-      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+      execSync('npx --no-install prisma migrate deploy', { stdio: 'inherit' });
       console.log('✅ Database schema and migrations up to date.');
     } catch (migErr: unknown) {
       // Never fall back to db push in a deployed environment: it can rewrite or drop schema.

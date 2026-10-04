@@ -1,1 +1,1 @@
-web: npx prisma migrate deploy && node dist/index.js
+web: npx --no-install prisma migrate deploy && node dist/index.js
