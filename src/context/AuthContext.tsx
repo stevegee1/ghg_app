@@ -14,7 +14,8 @@ export interface User {
   industrySector?: string;
   hasCompletedAssessment?: boolean;
   isOnboardingComplete?: boolean;
-  assuranceIntent?: 'CARBON' | 'JOB' | 'DUAL';
+  /** Active service entitlements, used to show each service's pipeline. */
+  serviceEntitlements?: { serviceLine: 'GHG' | 'CARBON' | 'JOB' | 'MERCH' | 'FLEET'; status: string }[];
   emailVerified?: boolean;
   logoUrl?: string | null;
   websiteUrl?: string | null;
@@ -26,6 +27,8 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (updatedUser: Partial<User>) => void;
+  /** Reloads the user, including active services, from the server. */
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -72,32 +75,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  React.useEffect(() => {
+  const refreshUser = React.useCallback(async () => {
     if (!token) return;
-    fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (res.ok) return res.json();
-        return null;
-      })
-      .then((data) => {
-        if (data?.user) {
-          setUser((prev) => {
-            const updated = { ...prev, ...data.user };
-            try {
-              localStorage.setItem('ghg_auth_user', JSON.stringify(updated));
-            } catch {
-              // Ignore storage errors
-            }
-            return updated;
-          });
-        }
-      })
-      .catch(() => {
-        // Network resilience: keep existing cached user if offline
-      });
+    try {
+      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.user) {
+        setUser((prev) => {
+          const updated = { ...prev, ...data.user };
+          try {
+            localStorage.setItem('ghg_auth_user', JSON.stringify(updated));
+          } catch {
+            // Ignore storage errors
+          }
+          return updated;
+        });
+      }
+    } catch {
+      // Network resilience: keep existing cached user if offline
+    }
   }, [token]);
+
+  React.useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   const logout = () => {
     setToken(null);
@@ -118,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         updateUser,
+        refreshUser,
         isAuthenticated: !!token && !!user,
         isAdmin: user?.role === 'ADMIN',
       }}

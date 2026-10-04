@@ -406,7 +406,7 @@ export class PreparationChecklistService {
    */
   async getChecklistsForLicensee(licenseeId: string) {
     let lists = await this.prisma.preparationChecklist.findMany({
-      where: { licenseeId },
+      where: currentChecklistWhere(licenseeId),
       include: {
         recommendation: true,
         items: {
@@ -418,7 +418,7 @@ export class PreparationChecklistService {
 
     if (lists.length === 0) {
       const recs = await this.prisma.complianceRecommendation.findMany({
-        where: { licenseeId },
+        where: currentRecommendationWhere(licenseeId),
       });
       if (recs.length > 0) {
         for (const rec of recs) {
@@ -429,7 +429,7 @@ export class PreparationChecklistService {
           }
         }
         lists = await this.prisma.preparationChecklist.findMany({
-          where: { licenseeId },
+          where: currentChecklistWhere(licenseeId),
           include: {
             recommendation: true,
             items: {
@@ -574,3 +574,4 @@ export class PreparationChecklistService {
     return this.attachEvidenceDocuments(updated);
   }
 }
+import { currentChecklistWhere, currentRecommendationWhere } from './assessment-scope';

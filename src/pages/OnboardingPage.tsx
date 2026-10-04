@@ -1,69 +1,100 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { ServicePicker } from '../components/onboarding/ServicePicker';
+import { ServiceQuestions, type YesNoAnswers } from '../components/onboarding/ServiceQuestions';
+import {
+  GHG_QUESTIONS,
+  SERVICE_OPTIONS,
+  WORKFORCE_QUESTIONS,
+  type ClientService,
+  type FleetProfileAnswers,
+} from '../components/onboarding/onboardingServices';
+
+const SERVICE_DESTINATIONS: Record<ClientService, string> = {
+  GHG: '/portal?tab=checklist&scope=CARBON_EMISSION',
+  WORKFORCE: '/portal?tab=checklist&scope=JOB_REPORTING',
+  FLEET: '/portal?tab=fleet',
+};
+
+const SERVICE_INTRO: Record<ClientService, { title: string; detail: string }> = {
+  GHG: {
+    title: 'GHG questions',
+    detail: 'These answers decide which greenhouse gas reporting and carbon frameworks apply to you.',
+  },
+  WORKFORCE: {
+    title: 'Workforce questions',
+    detail: 'These answers decide which planning and Social Value obligations apply to you.',
+  },
+  FLEET: {
+    title: 'Fleet questions',
+    detail: 'These answers set up your Fleet dashboard and how each machine will be connected.',
+  },
+};
 
 export type OnboardingStep = 1 | 2 | 3;
 
 export const OnboardingPage: React.FC = () => {
-  const { user, token, updateUser } = useAuth();
+  const { user, token, updateUser, refreshUser } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState<OnboardingStep>(1);
+  const [searchParams] = useSearchParams();
+  const addParam = searchParams.get('add');
+  const addService: ClientService | null =
+    user?.hasCompletedAssessment && (addParam === 'GHG' || addParam === 'WORKFORCE' || addParam === 'FLEET') ? addParam : null;
+
+  const [step, setStep] = useState<OnboardingStep>(addService ? 2 : 1);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Step 1: Entity & Contact Confirmation ─────────────────────────────────
+  // ── Step 1: Entity, contact and service ───────────────────────────────────
   const [companyName, setCompanyName] = useState<string>(user?.companyName || '');
   const [jobTitle, setJobTitle] = useState<string>(user?.jobTitle || '');
   const [primaryRole, setPrimaryRole] = useState<string>(user?.primaryRole || 'COMPLIANCE_OFFICER');
   const [organisationCountry, setOrganisationCountry] = useState<string>(user?.organisationCountry || 'GB');
   const [industrySector, setIndustrySector] = useState<string>(user?.industrySector || 'MANUFACTURING');
-  const [assuranceIntent, setAssuranceIntent] = useState<'CARBON' | 'JOB' | 'DUAL'>(
-    user?.assuranceIntent || 'CARBON'
-  );
+  const [service, setService] = useState<ClientService | null>(addService);
 
-  // ── Step 2: Intake Diagnostic Assessment ──────────────────────────────────
+  // ── Step 2: Scale and the chosen service's questions ──────────────────────
   const [organisationSize, setOrganisationSize] = useState<string>('MEDIUM_50_249');
   const [annualRevenueBand, setAnnualRevenueBand] = useState<string>('BAND_10M_36M');
+  const [answers, setAnswers] = useState<YesNoAnswers>({});
+  const [fleet, setFleet] = useState<FleetProfileAnswers>({ assetCountBand: '', categories: [], cloudConnection: '' });
 
-  // Operational Questions (Block B)
-  const [hasPhysicalSites, setHasPhysicalSites] = useState<boolean>(true);
-  const [hasProductionProcess, setHasProductionProcess] = useState<boolean>(false);
-  const [hasFleet, setHasFleet] = useState<boolean>(false);
-  const [hasIoTMeters, setHasIoTMeters] = useState<boolean>(false);
-
-  // Regulatory & Commercial Context (Block C)
-  const [isUKPublicContractor, setIsUKPublicContractor] = useState<boolean>(false);
-  const [hasPlanningConsent, setHasPlanningConsent] = useState<boolean>(false);
-  const [makesPublicGreenClaims, setMakesPublicGreenClaims] = useState<boolean>(true);
-  const [hasGreenHydrogen, setHasGreenHydrogen] = useState<boolean>(false);
-
-  // ── Step 3: Generated Recommendations State ───────────────────────────────
+  // ── Step 3: Generated recommendations and where the client goes next ──────
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [decidingId, setDecidingId] = useState<string | null>(null);
+  const [destination, setDestination] = useState<string | null>(null);
 
-  // If user has already completed assessment, check existing assessment
+  const serviceTitle = SERVICE_OPTIONS.find((o) => o.id === service)?.title ?? '';
+
+  // A client who has already onboarded sees their roadmap, unless they are adding a service.
   useEffect(() => {
-    if (token) {
-      api.getAssessment(token).then((res) => {
-        if (res.assessment && res.assessment.recommendations && res.assessment.recommendations.length > 0) {
-          setRecommendations(res.assessment.recommendations);
-          if (res.assessment.assuranceIntent) {
-            setAssuranceIntent(res.assessment.assuranceIntent as 'CARBON' | 'JOB' | 'DUAL');
-          }
-          setStep(3);
-        }
-      }).catch(() => {
+    if (!token || addService) return;
+    api
+      .getAssessment(token)
+      .then((res) => {
+        const lines: string[] = res.assessment?.serviceLinesRequested || [];
+        if (!res.assessment) return;
+        const existing: ClientService = lines.includes('GHG') || lines.includes('CARBON') ? 'GHG' : lines.includes('JOB') ? 'WORKFORCE' : 'FLEET';
+        setService(existing);
+        setRecommendations(res.assessment.recommendations || []);
+        setStep(3);
+      })
+      .catch(() => {
         // Fresh onboarding, proceed at Step 1
       });
-    }
-  }, [token]);
+  }, [token, addService]);
 
   const handleStep1Next = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyName.trim()) {
       setError('Company name is required');
+      return;
+    }
+    if (!service) {
+      setError('Choose the service you need.');
       return;
     }
     setError(null);
@@ -81,7 +112,8 @@ export const OnboardingPage: React.FC = () => {
           updateUser(res.user);
         }
       } catch (err: any) {
-        console.warn('Profile update warning:', err.message);
+        setError(err.message || 'Failed to save your profile.');
+        return;
       } finally {
         setLoading(false);
       }
@@ -89,41 +121,55 @@ export const OnboardingPage: React.FC = () => {
     setStep(2);
   };
 
+  /** Validates that every question for the chosen service has an answer. */
+  const collectAnswers = (): { error: string } | { value: Record<string, unknown> } => {
+    if (!service) return { error: 'Choose the service you need.' };
+    if (service === 'FLEET') {
+      if (!fleet.assetCountBand || !fleet.cloudConnection || fleet.categories.length === 0) {
+        return { error: 'Answer every Fleet question, including at least one equipment type.' };
+      }
+      return { value: { fleetProfile: fleet } };
+    }
+    const questions = service === 'GHG' ? GHG_QUESTIONS : WORKFORCE_QUESTIONS;
+    const unanswered = questions.filter((q) => typeof answers[q.key] !== 'boolean');
+    if (unanswered.length > 0) {
+      return { error: `Answer every question before continuing (${unanswered.length} left).` };
+    }
+    return { value: Object.fromEntries(questions.map((q) => [q.key, answers[q.key]])) };
+  };
+
   const handleAssessmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token || !service) return;
+    const collected = collectAnswers();
+    if ('error' in collected) {
+      setError(collected.error);
+      return;
+    }
     setLoading(true);
     setError(null);
 
     try {
+      if (addService) {
+        const res = await api.addClientService(token, { service, ...collected.value });
+        await refreshUser();
+        navigate(res.destination);
+        return;
+      }
       const res = await api.submitAssessment(token, {
-        assuranceIntent,
+        service,
         organisationCountry,
         organisationSize,
         annualRevenueBand,
         industrySector,
-        hasPhysicalSites,
-        hasProductionProcess: assuranceIntent === 'JOB' ? false : hasProductionProcess,
-        hasFleet: assuranceIntent === 'JOB' ? false : hasFleet,
-        hasIoTMeters: assuranceIntent === 'JOB' ? false : hasIoTMeters,
-        isUKPublicContractor: assuranceIntent === 'CARBON' ? false : isUKPublicContractor,
-        hasPlanningConsent: assuranceIntent === 'CARBON' ? false : hasPlanningConsent,
-        makesPublicGreenClaims: assuranceIntent === 'JOB' ? false : makesPublicGreenClaims,
-        hasGreenHydrogen: assuranceIntent === 'JOB' ? false : hasGreenHydrogen,
+        ...collected.value,
       });
-
       setRecommendations(res.recommendations || []);
-      if (res.assessment && updateUser) {
-        updateUser({
-          ...user,
-          assuranceIntent,
-          hasCompletedAssessment: true,
-          isOnboardingComplete: true,
-        });
-      }
+      setDestination(res.destination);
+      await refreshUser();
       setStep(3);
     } catch (err: any) {
-      setError(err.message || 'Failed to submit intake assessment');
+      setError(err.message || 'Failed to complete onboarding');
     } finally {
       setLoading(false);
     }
@@ -153,13 +199,7 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleLaunchChecklist = () => {
-    const hasCarbon = recommendations.some((r) => r.workflowType === 'CARBON' && r.clientAccepted !== false);
-    const hasJob = recommendations.some((r) => r.workflowType === 'JOB' && r.clientAccepted !== false);
-    if (!hasCarbon && hasJob) {
-      navigate('/portal?tab=checklist&scope=JOB_REPORTING');
-    } else {
-      navigate('/portal?tab=checklist&scope=CARBON_EMISSION');
-    }
+    navigate(destination || SERVICE_DESTINATIONS[service || 'GHG']);
   };
 
   return (
@@ -210,7 +250,7 @@ export const OnboardingPage: React.FC = () => {
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
           }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+          <div className="onb-progress">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div
                 style={{
@@ -269,9 +309,9 @@ export const OnboardingPage: React.FC = () => {
               </div>
               <div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 2 ? '#090d1a' : '#64748b', fontFamily: 'var(--font-heading)' }}>
-                  Intake Assessment
+                  Your answers
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>12 operational parameters</div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Questions for your service</div>
               </div>
             </div>
 
@@ -305,7 +345,7 @@ export const OnboardingPage: React.FC = () => {
           </div>
         </div>
 
-        {error && (
+        {error && step !== 2 && (
           <div
             style={{
               padding: '0.85rem 1.25rem',
@@ -373,7 +413,7 @@ export const OnboardingPage: React.FC = () => {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="onb-two-col">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Your Job Title
@@ -425,7 +465,7 @@ export const OnboardingPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="onb-two-col">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Headquarters Country
@@ -490,117 +530,8 @@ export const OnboardingPage: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ marginTop: '1.75rem', marginBottom: '1.75rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-                  Primary Assurance Mandate
-                </label>
-                <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem', lineHeight: 1.45 }}>
-                  Select the compliance stream your organization requires. The statutory intake diagnostic and preparation checklists will be customized strictly for this mandate.
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
-                  {/* Card 1: CARBON */}
-                  <div
-                    onClick={() => setAssuranceIntent('CARBON')}
-                    style={{
-                      border: assuranceIntent === 'CARBON' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                      background: assuranceIntent === 'CARBON' ? '#f0f9ff' : '#ffffff',
-                      borderRadius: '10px',
-                      padding: '1.25rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      boxShadow: assuranceIntent === 'CARBON' ? '0 4px 12px rgba(2, 132, 199, 0.1)' : 'none',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0284c7', display: 'inline-block' }} />
-                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>GHG &amp; Carbon Emissions</span>
-                      </div>
-                      <input
-                        type="radio"
-                        name="assuranceIntent"
-                        checked={assuranceIntent === 'CARBON'}
-                        onChange={() => setAssuranceIntent('CARBON')}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0369a1', marginBottom: '0.4rem' }}>
-                      ISO 14064 · ISO 50001 · UK SECR · EU CSRD
-                    </div>
-                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0, lineHeight: 1.45 }}>
-                      Corporate Scope 1, 2, and 3 emissions accounting, energy management telemetry, and digital warranty dockets.
-                    </p>
-                  </div>
-
-                  {/* Card 2: JOB */}
-                  <div
-                    onClick={() => setAssuranceIntent('JOB')}
-                    style={{
-                      border: assuranceIntent === 'JOB' ? '2px solid #059669' : '1px solid #cbd5e1',
-                      background: assuranceIntent === 'JOB' ? '#f0fdf4' : '#ffffff',
-                      borderRadius: '10px',
-                      padding: '1.25rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      boxShadow: assuranceIntent === 'JOB' ? '0 4px 12px rgba(5, 150, 105, 0.1)' : 'none',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#059669', display: 'inline-block' }} />
-                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>Workforce &amp; Social Value</span>
-                      </div>
-                      <input
-                        type="radio"
-                        name="assuranceIntent"
-                        checked={assuranceIntent === 'JOB'}
-                        onChange={() => setAssuranceIntent('JOB')}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#047857', marginBottom: '0.4rem' }}>
-                      UK Section 106 · Social Value Act · Apprentice Quotas
-                    </div>
-                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0, lineHeight: 1.45 }}>
-                      Audit Section 106 planning covenants, Real Living Wage compliance, local community hiring, and public tender credits.
-                    </p>
-                  </div>
-
-                  {/* Card 3: DUAL */}
-                  <div
-                    onClick={() => setAssuranceIntent('DUAL')}
-                    style={{
-                      border: assuranceIntent === 'DUAL' ? '2px solid #7c3aed' : '1px solid #cbd5e1',
-                      background: assuranceIntent === 'DUAL' ? '#faf5ff' : '#ffffff',
-                      borderRadius: '10px',
-                      padding: '1.25rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      boxShadow: assuranceIntent === 'DUAL' ? '0 4px 12px rgba(124, 58, 237, 0.1)' : 'none',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#7c3aed', display: 'inline-block' }} />
-                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>Dual Enterprise Assurance</span>
-                      </div>
-                      <input
-                        type="radio"
-                        name="assuranceIntent"
-                        checked={assuranceIntent === 'DUAL'}
-                        onChange={() => setAssuranceIntent('DUAL')}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6d28d9', marginBottom: '0.4rem' }}>
-                      Full Enterprise ESG &amp; Statutory Coverage
-                    </div>
-                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0, lineHeight: 1.45 }}>
-                      Comprehensive unified assurance covering both environmental greenhouse gas emissions and workforce social impact.
-                    </p>
-                  </div>
-                </div>
+              <div className="onb-section">
+                <ServicePicker value={service} onChange={setService} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.75rem' }}>
@@ -620,7 +551,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  Continue to Intake Assessment
+                  Continue
                 </button>
               </div>
             </form>
@@ -638,58 +569,24 @@ export const OnboardingPage: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div className="onb-step-header">
               <div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
-                  {assuranceIntent === 'JOB'
-                    ? 'Section 106 & Workforce Intake Diagnostic'
-                    : assuranceIntent === 'CARBON'
-                    ? 'GHG & Carbon Emissions Intake Diagnostic'
-                    : 'Dual Enterprise ESG Intake Diagnostic'}
-                </h2>
-                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                  {assuranceIntent === 'JOB'
-                    ? 'Answer these workforce and planning parameters. Our statutory engine calculates Section 106 covenant compliance and apprentice verification dockets.'
-                    : assuranceIntent === 'CARBON'
-                    ? 'Answer these operational parameters. Our statutory engine calculates your corporate Scope 1, 2 & 3 reporting duties and lead auditor assurance dockets.'
-                    : 'Answer these operational and planning parameters for unified greenhouse gas emissions and Section 106 workforce social value assurance.'}
-                </div>
+                <h2 className="onb-step-title">{service ? SERVICE_INTRO[service].title : ''}</h2>
+                <p className="onb-help">{service ? SERVICE_INTRO[service].detail : ''}</p>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '6px',
-                    background: assuranceIntent === 'JOB' ? '#f0fdf4' : assuranceIntent === 'CARBON' ? '#f0f9ff' : '#faf5ff',
-                    color: assuranceIntent === 'JOB' ? '#047857' : assuranceIntent === 'CARBON' ? '#0369a1' : '#6d28d9',
-                    fontWeight: 700,
-                    border: `1px solid ${assuranceIntent === 'JOB' ? '#bbf7d0' : assuranceIntent === 'CARBON' ? '#bae6fd' : '#e9d5ff'}`,
-                  }}
-                >
-                  {assuranceIntent === 'JOB' ? 'Workforce Mandate' : assuranceIntent === 'CARBON' ? 'Carbon Mandate' : 'Dual ESG Mandate'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#0284c7',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  Change
-                </button>
+              <div className="onb-step-badges">
+                <span className="onb-service-badge">{addService ? `Adding ${serviceTitle}` : serviceTitle}</span>
+                {!addService && (
+                  <button type="button" className="onb-link-button" onClick={() => setStep(1)}>
+                    Change service
+                  </button>
+                )}
               </div>
             </div>
 
             <form onSubmit={handleAssessmentSubmit}>
-              {/* Section A: Scale & Thresholds (Applies to All Mandates) */}
+              {/* Section A: scale and thresholds, asked once at onboarding */}
+              {!addService && (
               <div style={{ marginBottom: '2rem', marginTop: '1.5rem' }}>
                 <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span>Section A</span>
@@ -697,7 +594,7 @@ export const OnboardingPage: React.FC = () => {
                   <span style={{ color: '#475569' }}>Organizational Scale &amp; Entity Thresholds</span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="onb-two-col onb-two-col-spaced">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                       Headcount Size Band
@@ -749,525 +646,22 @@ export const OnboardingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Section B for JOB MANDATE: Planning Consent & Workforce Obligations */}
-              {assuranceIntent === 'JOB' && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>Section B</span>
-                    <span style={{ color: '#cbd5e1' }}>•</span>
-                    <span style={{ color: '#475569' }}>Planning Permission &amp; Public Tender Obligations</span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
-                    <div
-                      onClick={() => setHasPlanningConsent(!hasPlanningConsent)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${hasPlanningConsent ? '#059669' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s ease',
-                        boxShadow: hasPlanningConsent ? '0 4px 12px rgba(5, 150, 105, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Section 106 Planning Permission
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: hasPlanningConsent ? '#059669' : '#f8fafc',
-                            border: `1.5px solid ${hasPlanningConsent ? '#059669' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {hasPlanningConsent && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Development projects or construction permits subject to Section 106 local authority labor, apprentice, or community covenants.
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setIsUKPublicContractor(!isUKPublicContractor)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${isUKPublicContractor ? '#059669' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s ease',
-                        boxShadow: isUKPublicContractor ? '0 4px 12px rgba(5, 150, 105, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Public Sector Contractor / Social Value Tenders
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: isUKPublicContractor ? '#059669' : '#f8fafc',
-                            border: `1.5px solid ${isUKPublicContractor ? '#059669' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {isUKPublicContractor && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Hold or bid for public sector contracts under the Social Value Act 2012 evaluating Real Living Wage, local hiring, and apprentice training hours.
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setHasPhysicalSites(!hasPhysicalSites)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${hasPhysicalSites ? '#059669' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s ease',
-                        boxShadow: hasPhysicalSites ? '0 4px 12px rgba(5, 150, 105, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Active Sites &amp; Construction Projects
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: hasPhysicalSites ? '#059669' : '#f8fafc',
-                            border: `1.5px solid ${hasPhysicalSites ? '#059669' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {hasPhysicalSites && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Maintain physical property developments, operational depots, or project sites with direct and subcontracted labor hours.
-                      </div>
-                    </div>
-                  </div>
-                </div>
               )}
 
-              {/* Section B for CARBON or DUAL MANDATE: Operations & Energy Infrastructure */}
-              {(assuranceIntent === 'CARBON' || assuranceIntent === 'DUAL') && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>Section B</span>
-                    <span style={{ color: '#cbd5e1' }}>•</span>
-                    <span style={{ color: '#475569' }}>Operations &amp; Energy Infrastructure</span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
-                    <div
-                      onClick={() => setHasPhysicalSites(!hasPhysicalSites)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${hasPhysicalSites ? '#0284c7' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: hasPhysicalSites ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Physical Buildings or Facilities
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: hasPhysicalSites ? '#0284c7' : '#f8fafc',
-                            border: `1.5px solid ${hasPhysicalSites ? '#0284c7' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {hasPhysicalSites && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Own, lease, or occupy office buildings, warehouses, retail shops, or operational sites.
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setHasProductionProcess(!hasProductionProcess)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${hasProductionProcess ? '#0284c7' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: hasProductionProcess ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Manufacturing or Assembly
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: hasProductionProcess ? '#0284c7' : '#f8fafc',
-                            border: `1.5px solid ${hasProductionProcess ? '#0284c7' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {hasProductionProcess && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Fabricate, refine, assemble, or process physical goods or industrial materials.
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setHasFleet(!hasFleet)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${hasFleet ? '#0284c7' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: hasFleet ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Company Commercial Fleet
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: hasFleet ? '#0284c7' : '#f8fafc',
-                            border: `1.5px solid ${hasFleet ? '#0284c7' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {hasFleet && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Operate company-owned or leased delivery vans, trucks, forklifts, or service cars.
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setHasIoTMeters(!hasIoTMeters)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${hasIoTMeters ? '#0284c7' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: hasIoTMeters ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Smart Meters / SCADA / BMS
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: hasIoTMeters ? '#0284c7' : '#f8fafc',
-                            border: `1.5px solid ${hasIoTMeters ? '#0284c7' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {hasIoTMeters && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Automated energy sub-metering, Building Management Systems, or telemetry loggers.
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {service && (
+                <ServiceQuestions
+                  service={service}
+                  answers={answers}
+                  onAnswer={(key, value) => setAnswers((prev) => ({ ...prev, [key]: value }))}
+                  fleet={fleet}
+                  onFleetChange={setFleet}
+                />
               )}
 
-              {/* Section C for CARBON or DUAL MANDATE: Regulatory & Contractual Context */}
-              {(assuranceIntent === 'CARBON' || assuranceIntent === 'DUAL') && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>Section C</span>
-                    <span style={{ color: '#cbd5e1' }}>•</span>
-                    <span style={{ color: '#475569' }}>
-                      {assuranceIntent === 'DUAL'
-                        ? 'Regulatory, Planning & Commercial Context'
-                        : 'Regulatory & Environmental Claims'}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
-                    {assuranceIntent === 'DUAL' && (
-                      <>
-                        <div
-                          onClick={() => setIsUKPublicContractor(!isUKPublicContractor)}
-                          style={{
-                            padding: '1.2rem',
-                            borderRadius: '10px',
-                            background: '#ffffff',
-                            border: `1.5px solid ${isUKPublicContractor ? '#0284c7' : '#e2e8f0'}`,
-                            cursor: 'pointer',
-                            transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                            boxShadow: isUKPublicContractor ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                            <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                              Public Sector Contractor (UK)
-                            </span>
-                            <div
-                              style={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '6px',
-                                background: isUKPublicContractor ? '#0284c7' : '#f8fafc',
-                                border: `1.5px solid ${isUKPublicContractor ? '#0284c7' : '#cbd5e1'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#ffffff',
-                                flexShrink: 0,
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              {isUKPublicContractor && (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                            Hold or bid for UK Central Government tenders subject to PPN 06/21 carbon reduction plans.
-                          </div>
-                        </div>
-
-                        <div
-                          onClick={() => setHasPlanningConsent(!hasPlanningConsent)}
-                          style={{
-                            padding: '1.2rem',
-                            borderRadius: '10px',
-                            background: '#ffffff',
-                            border: `1.5px solid ${hasPlanningConsent ? '#0284c7' : '#e2e8f0'}`,
-                            cursor: 'pointer',
-                            transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                            boxShadow: hasPlanningConsent ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                            <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                              Section 106 Planning Permission
-                            </span>
-                            <div
-                              style={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '6px',
-                                background: hasPlanningConsent ? '#0284c7' : '#f8fafc',
-                                border: `1.5px solid ${hasPlanningConsent ? '#0284c7' : '#cbd5e1'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#ffffff',
-                                flexShrink: 0,
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              {hasPlanningConsent && (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                            Property development or building projects subject to Section 106 carbon offset or job creation quotas.
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    <div
-                      onClick={() => setMakesPublicGreenClaims(!makesPublicGreenClaims)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${makesPublicGreenClaims ? '#0284c7' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: makesPublicGreenClaims ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Public ESG or Green Claims
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: makesPublicGreenClaims ? '#0284c7' : '#f8fafc',
-                            border: `1.5px solid ${makesPublicGreenClaims ? '#0284c7' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {makesPublicGreenClaims && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Publish sustainability claims, net-zero badges, or carbon-neutral assertions subject to CMA Green Claims rules.
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setHasGreenHydrogen(!hasGreenHydrogen)}
-                      style={{
-                        padding: '1.2rem',
-                        borderRadius: '10px',
-                        background: '#ffffff',
-                        border: `1.5px solid ${hasGreenHydrogen ? '#0284c7' : '#e2e8f0'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: hasGreenHydrogen ? '0 4px 12px rgba(2, 132, 199, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.45rem', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#090d1a', fontFamily: 'var(--font-heading)' }}>
-                          Green Hydrogen Generation
-                        </span>
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '6px',
-                            background: hasGreenHydrogen ? '#0284c7' : '#f8fafc',
-                            border: `1.5px solid ${hasGreenHydrogen ? '#0284c7' : '#cbd5e1'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            flexShrink: 0,
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {hasGreenHydrogen && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>
-                        Produce, compress, or distribute electrolytic hydrogen requiring guarantee of origin and LCHS certification.
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {error && (
+                <p className="onb-error" role="alert">
+                  {error}
+                </p>
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2.5rem' }}>
@@ -1304,7 +698,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  {loading ? 'Evaluating Statutory Obligations...' : 'Generate Statutory Compliance Roadmap'}
+                  {loading ? 'Saving your answers...' : addService ? `Add ${serviceTitle}` : service === 'FLEET' ? 'Set up Fleet' : 'Show my compliance roadmap'}
                 </button>
               </div>
             </form>
@@ -1312,7 +706,20 @@ export const OnboardingPage: React.FC = () => {
         )}
 
         {/* ── STEP 3: COMPLIANCE ROADMAP & RECOMMENDATIONS ────────────────────── */}
-        {step === 3 && (
+        {step === 3 && service === 'FLEET' && (
+          <div className="onb-fleet-done">
+            <h2 className="onb-step-title">Your Fleet service is set up</h2>
+            <p className="onb-help">
+              Next, register your machines and vehicles, choose your subscription and connect your data. Your Fleet
+              dashboard walks you through each step.
+            </p>
+            <button type="button" className="btn btn-primary" onClick={handleLaunchChecklist}>
+              Go to Fleet
+            </button>
+          </div>
+        )}
+
+        {step === 3 && service !== 'FLEET' && (
           <div>
             <div
               style={{
@@ -1330,7 +737,7 @@ export const OnboardingPage: React.FC = () => {
                     Statutory Compliance Roadmap
                   </h2>
                   <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
-                    Based on your 12 operational parameters, our engine identified {recommendations.length} compliance frameworks applicable to your company.
+                    Based on your answers, {recommendations.length} compliance frameworks apply to your company.
                   </p>
                 </div>
 
@@ -1350,7 +757,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  Go to Preparation Console
+                  Go to preparation
                 </button>
               </div>
 
@@ -1533,11 +940,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  {assuranceIntent === 'JOB'
-                    ? 'Launch Job Audit Preparation Console'
-                    : assuranceIntent === 'CARBON'
-                    ? 'Launch Carbon Preparation Console'
-                    : 'Launch Dual Preparation Console'}
+                  {service === 'WORKFORCE' ? 'Start Workforce preparation' : 'Start GHG preparation'}
                 </button>
               </div>
             </div>

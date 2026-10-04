@@ -1,7 +1,88 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, OrganisationSize, RevenueBand, IndustrySector } from '@prisma/client';
-import { AssessmentService, IntakeAssessmentInput } from '../services/assessment.service';
+import { PrismaClient, OrganisationSize, RevenueBand, IndustrySector, FleetAssetCategory } from '@prisma/client';
+import {
+  AssessmentService,
+  AssessmentFlowError,
+  FLEET_ASSET_COUNT_BANDS,
+  FLEET_CLOUD_CONNECTION,
+  IntakeAssessmentInput,
+} from '../services/assessment.service';
+import { ClientService, isClientService } from '../services/service-routing.service';
 import { requireAuth, requireAdmin } from '../middleware/auth.middleware';
+
+type Parsed<T> = { value: T } | { error: string };
+
+/** Yes or no questions each service asks. Unasked questions are recorded as no. */
+const SERVICE_QUESTIONS: Record<ClientService, (keyof IntakeAssessmentInput)[]> = {
+  GHG: ['hasPhysicalSites', 'hasProductionProcess', 'hasFleet', 'hasIoTMeters', 'isUKPublicContractor', 'makesPublicGreenClaims', 'hasGreenHydrogen'],
+  WORKFORCE: ['isUKPublicContractor', 'hasPlanningConsent'],
+  FLEET: [],
+};
+
+function parseOrganisation(body: Record<string, unknown>): Parsed<Pick<IntakeAssessmentInput, 'organisationCountry' | 'organisationSize' | 'annualRevenueBand' | 'industrySector'>> {
+  if (typeof body.organisationCountry !== 'string' || !/^[A-Za-z]{2}$/.test(body.organisationCountry.trim())) {
+    return { error: 'organisationCountry must be a 2-letter ISO country code.' };
+  }
+  if (!Object.values(OrganisationSize).includes(body.organisationSize as OrganisationSize)) {
+    return { error: 'Valid organisationSize is required' };
+  }
+  if (!Object.values(RevenueBand).includes(body.annualRevenueBand as RevenueBand)) {
+    return { error: 'Valid annualRevenueBand is required' };
+  }
+  if (!Object.values(IndustrySector).includes(body.industrySector as IndustrySector)) {
+    return { error: 'Valid industrySector is required' };
+  }
+  return {
+    value: {
+      organisationCountry: body.organisationCountry.trim().toUpperCase(),
+      organisationSize: body.organisationSize as OrganisationSize,
+      annualRevenueBand: body.annualRevenueBand as RevenueBand,
+      industrySector: body.industrySector as IndustrySector,
+    },
+  };
+}
+
+function parseServiceAnswers(
+  service: ClientService,
+  body: Record<string, unknown>
+): Parsed<Partial<Omit<IntakeAssessmentInput, 'services' | 'organisationCountry' | 'organisationSize' | 'annualRevenueBand' | 'industrySector'>>> {
+  const value: Record<string, unknown> = {};
+  for (const question of SERVICE_QUESTIONS[service]) {
+    if (typeof body[question] !== 'boolean') {
+      return { error: `${question} must be answered yes or no.` };
+    }
+    value[question] = body[question];
+  }
+
+  if (service === 'FLEET') {
+    const profile = body.fleetProfile as Record<string, unknown> | undefined;
+    if (!profile || typeof profile !== 'object') {
+      return { error: 'fleetProfile is required for Fleet.' };
+    }
+    if (!(FLEET_ASSET_COUNT_BANDS as readonly unknown[]).includes(profile.assetCountBand)) {
+      return { error: `fleetProfile.assetCountBand must be one of: ${FLEET_ASSET_COUNT_BANDS.join(', ')}.` };
+    }
+    if (!(FLEET_CLOUD_CONNECTION as readonly unknown[]).includes(profile.cloudConnection)) {
+      return { error: `fleetProfile.cloudConnection must be one of: ${FLEET_CLOUD_CONNECTION.join(', ')}.` };
+    }
+    const categories = profile.categories;
+    if (
+      !Array.isArray(categories) ||
+      categories.length === 0 ||
+      !categories.every((c) => (Object.values(FleetAssetCategory) as unknown[]).includes(c))
+    ) {
+      return { error: 'fleetProfile.categories must list at least one equipment category.' };
+    }
+    value.hasFleet = true;
+    value.fleetProfile = {
+      assetCountBand: profile.assetCountBand,
+      categories: [...new Set(categories as FleetAssetCategory[])],
+      cloudConnection: profile.cloudConnection,
+    };
+  }
+
+  return { value };
+}
 
 export function createAssessmentRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -9,97 +90,67 @@ export function createAssessmentRouter(prisma: PrismaClient): Router {
 
   /**
    * POST /api/assessment
-   * Submits the 12-question intake assessment for the authenticated licensee.
+   * Completes onboarding: the organisation questions, one chosen service and that service's
+   * questions. Routes the client to the service's pipeline and returns where they land.
    */
   router.post('/api/assessment', requireAuth, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user?.licenseeId) {
+      return res.status(403).json({ error: 'Licensee context required' });
+    }
+    const body = (req.body || {}) as Record<string, unknown>;
+
+    const org = parseOrganisation(body);
+    if ('error' in org) return res.status(400).json({ error: org.error });
+    if (!isClientService(body.service)) {
+      return res.status(400).json({ error: 'service must be one of GHG, WORKFORCE or FLEET.' });
+    }
+    const answers = parseServiceAnswers(body.service, body);
+    if ('error' in answers) return res.status(400).json({ error: answers.error });
+
     try {
-      const user = (req as any).user;
-      if (!user || !user.licenseeId) {
-        return res.status(403).json({ error: 'Licensee context required' });
-      }
-
-      const {
-        organisationCountry,
-        organisationSize,
-        annualRevenueBand,
-        industrySector,
-        hasPhysicalSites,
-        hasProductionProcess,
-        hasFleet,
-        hasIoTMeters,
-        isUKPublicContractor,
-        hasPlanningConsent,
-        makesPublicGreenClaims,
-        hasGreenHydrogen,
-        assuranceIntent,
-      } = req.body || {};
-
-      // Validate required enum & country fields
-      if (!organisationCountry || typeof organisationCountry !== 'string') {
-        return res.status(400).json({ error: 'Valid ISO country code is required' });
-      }
-      if (!Object.values(OrganisationSize).includes(organisationSize)) {
-        return res.status(400).json({ error: 'Valid organisationSize is required' });
-      }
-      if (!Object.values(RevenueBand).includes(annualRevenueBand)) {
-        return res.status(400).json({ error: 'Valid annualRevenueBand is required' });
-      }
-      if (!Object.values(IndustrySector).includes(industrySector)) {
-        return res.status(400).json({ error: 'Valid industrySector is required' });
-      }
-
-      const input: IntakeAssessmentInput = {
-        assuranceIntent: ['CARBON', 'JOB', 'DUAL'].includes(assuranceIntent) ? assuranceIntent : 'DUAL',
-        organisationCountry: organisationCountry.trim().toUpperCase().slice(0, 2),
-        organisationSize,
-        annualRevenueBand,
-        industrySector,
-        hasPhysicalSites: Boolean(hasPhysicalSites),
-        hasProductionProcess: Boolean(hasProductionProcess),
-        hasFleet: Boolean(hasFleet),
-        hasIoTMeters: Boolean(hasIoTMeters),
-        isUKPublicContractor: Boolean(isUKPublicContractor),
-        hasPlanningConsent: Boolean(hasPlanningConsent),
-        makesPublicGreenClaims: Boolean(makesPublicGreenClaims),
-        hasGreenHydrogen: Boolean(hasGreenHydrogen),
-      };
-
-      const result = await assessmentService.submitAssessment(user.licenseeId, input, user.id || user.userId);
-
+      const result = await assessmentService.submitAssessment(
+        user.licenseeId,
+        { ...org.value, ...answers.value, services: [body.service] },
+        user.userId
+      );
       return res.status(200).json({
-        message: 'Assessment completed and compliance roadmap generated',
+        message: 'Onboarding completed',
         assessment: result.assessment,
         recommendations: result.recommendations,
+        destination: result.destination,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[ASSESSMENT SUBMIT ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to submit intake assessment' });
+      return res.status(500).json({ error: 'Failed to complete onboarding.' });
     }
   });
 
   /**
-   * POST /api/assessment/activate-pipeline
-   * Seamlessly activates an additional compliance stream (e.g. adding JOB to an existing CARBON client).
+   * POST /api/assessment/services
+   * Adds another service for an onboarded client, with that service's questions.
    */
-  router.post('/api/assessment/activate-pipeline', requireAuth, async (req: Request, res: Response) => {
-    try {
-      const user = (req as any).user;
-      if (!user || !user.licenseeId) {
-        return res.status(403).json({ error: 'Licensee context required' });
-      }
-      const { pipeline } = req.body || {};
-      if (!['CARBON', 'JOB', 'DUAL'].includes(pipeline)) {
-        return res.status(400).json({ error: 'Invalid pipeline: must be CARBON, JOB, or DUAL' });
-      }
+  router.post('/api/assessment/services', requireAuth, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user?.licenseeId) {
+      return res.status(403).json({ error: 'Licensee context required' });
+    }
+    const body = (req.body || {}) as Record<string, unknown>;
+    if (!isClientService(body.service)) {
+      return res.status(400).json({ error: 'service must be one of GHG, WORKFORCE or FLEET.' });
+    }
+    const answers = parseServiceAnswers(body.service, body);
+    if ('error' in answers) return res.status(400).json({ error: answers.error });
 
-      const updated = await assessmentService.activatePipeline(user.licenseeId, pipeline);
-      return res.status(200).json({
-        message: 'Pipeline activated successfully',
-        assessment: updated,
-      });
-    } catch (err: any) {
-      console.error('[PIPELINE ACTIVATION ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to activate pipeline' });
+    try {
+      const result = await assessmentService.addService(user.licenseeId, body.service, answers.value, user.userId);
+      return res.status(200).json({ message: 'Service added', destination: result.destination });
+    } catch (err: unknown) {
+      if (err instanceof AssessmentFlowError) {
+        return res.status(err.status).json({ error: err.message });
+      }
+      console.error('[ADD SERVICE ERROR]', err);
+      return res.status(500).json({ error: 'Failed to add the service.' });
     }
   });
 

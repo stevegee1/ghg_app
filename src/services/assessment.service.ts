@@ -7,13 +7,34 @@ import {
   ComplianceEffort,
   ClientAssessment,
   ComplianceRecommendation,
+  FleetAssetCategory,
+  Prisma,
+  RoutingEventType,
+  ServiceLine,
 } from '@prisma/client';
 import { PreparationChecklistService } from './preparation-checklist.service';
+import {
+  ClientService,
+  SERVICE_DESTINATIONS,
+  SERVICE_LINES,
+  enableClientService,
+  recordRoutingEvent,
+} from './service-routing.service';
+import { currentRecommendationWhere } from './assessment-scope';
+
+export interface FleetProfile {
+  assetCountBand: (typeof FLEET_ASSET_COUNT_BANDS)[number];
+  categories: FleetAssetCategory[];
+  /** Whether machines already report to an OEM or telematics cloud; decides Branch A or B per asset later. */
+  cloudConnection: (typeof FLEET_CLOUD_CONNECTION)[number];
+}
+
+export const FLEET_ASSET_COUNT_BANDS = ['1_10', '11_50', '51_200', '200_PLUS'] as const;
+export const FLEET_CLOUD_CONNECTION = ['ALL', 'SOME', 'NONE', 'NOT_SURE'] as const;
 
 export interface IntakeAssessmentInput {
-  serviceLines?: ('GHG' | 'CARBON' | 'JOB' | 'MERCH')[]; // Which pipelines the client is purchasing
-  /** @deprecated use serviceLines. Kept for backward compatibility during migration. */
-  assuranceIntent?: 'CARBON' | 'JOB' | 'DUAL';
+  /** Client services this assessment covers. Each runs in its own isolated pipeline. */
+  services: ClientService[];
   organisationCountry: string; // ISO 3166-1 alpha-2 e.g. "GB", "DE", "US"
   organisationSize: OrganisationSize;
   annualRevenueBand: RevenueBand;
@@ -28,6 +49,8 @@ export interface IntakeAssessmentInput {
   hasPlanningConsent?: boolean;
   makesPublicGreenClaims?: boolean;
   hasGreenHydrogen?: boolean;
+
+  fleetProfile?: FleetProfile | null;
 }
 
 export interface ComputedRecommendation {
@@ -173,9 +196,8 @@ export class AssessmentDecisionEngine {
     }
 
     // 8. Social Value Act & Fair Work Job Verification
-    const intent = input.assuranceIntent || 'DUAL';
     if (
-      intent === 'JOB' ||
+      input.services.includes('WORKFORCE') ||
       input.hasPlanningConsent ||
       input.isUKPublicContractor ||
       input.industrySector === IndustrySector.CONSTRUCTION ||
@@ -195,18 +217,17 @@ export class AssessmentDecisionEngine {
       });
     }
 
-    // Derive effective service lines from new field, falling back to legacy assuranceIntent
-    const selectedLines: string[] = input.serviceLines ?? [];
-    const legacyIntent = input.assuranceIntent || 'DUAL';
-    const wantsGhg = selectedLines.includes('GHG') || legacyIntent === 'CARBON' || legacyIntent === 'DUAL' || selectedLines.length === 0;
-    const wantsCarbon = selectedLines.includes('CARBON') || legacyIntent === 'CARBON' || legacyIntent === 'DUAL' || selectedLines.length === 0;
-    const wantsJob = selectedLines.includes('JOB') || legacyIntent === 'JOB' || legacyIntent === 'DUAL' || selectedLines.length === 0;
+    // Only frameworks for the services the client chose. Fleet has no compliance frameworks.
+    const lines = new Set(input.services.flatMap((service) => SERVICE_LINES[service]));
+    const wantsGhg = lines.has(ServiceLine.GHG);
+    const wantsCarbon = lines.has(ServiceLine.CARBON);
+    const wantsJob = lines.has(ServiceLine.JOB);
 
     const filteredList = list.filter((item) => {
       if (item.workflowType === WorkflowType.GHG) return wantsGhg;
       if (item.workflowType === WorkflowType.CARBON) return wantsCarbon;
       if (item.workflowType === WorkflowType.JOB) return wantsJob;
-      return true;
+      return false;
     });
 
     // Sort: Legally mandatory first, then by estimated effort (LOW first for quick wins)
@@ -229,6 +250,78 @@ export class AssessmentDecisionEngine {
   }
 }
 
+export class AssessmentFlowError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+    this.name = 'AssessmentFlowError';
+  }
+}
+
+function answerFields(input: IntakeAssessmentInput) {
+  return {
+    hasPhysicalSites: input.hasPhysicalSites ?? false,
+    hasProductionProcess: input.hasProductionProcess ?? false,
+    hasFleet: input.hasFleet ?? false,
+    hasIoTMeters: input.hasIoTMeters ?? false,
+    isUKPublicContractor: input.isUKPublicContractor ?? false,
+    hasPlanningConsent: input.hasPlanningConsent ?? false,
+    makesPublicGreenClaims: input.makesPublicGreenClaims ?? false,
+    hasGreenHydrogen: input.hasGreenHydrogen ?? false,
+  };
+}
+
+/** The answers recorded with a routing decision, so the log shows why the client was routed. */
+function routingAnswers(input: IntakeAssessmentInput): Record<string, unknown> {
+  return {
+    organisationCountry: input.organisationCountry,
+    organisationSize: input.organisationSize,
+    annualRevenueBand: input.annualRevenueBand,
+    industrySector: input.industrySector,
+    ...answerFields(input),
+    fleetProfile: input.fleetProfile ?? null,
+  };
+}
+
+function servicesFromLines(lines: ServiceLine[]): ClientService[] {
+  const services: ClientService[] = [];
+  if (lines.includes(ServiceLine.GHG) || lines.includes(ServiceLine.CARBON)) services.push('GHG');
+  if (lines.includes(ServiceLine.JOB)) services.push('WORKFORCE');
+  if (lines.includes(ServiceLine.FLEET)) services.push('FLEET');
+  return services;
+}
+
+async function createRecommendations(
+  tx: Prisma.TransactionClient,
+  assessmentId: string,
+  licenseeId: string,
+  computed: ComputedRecommendation[],
+  orderOffset = 0
+): Promise<ComplianceRecommendation[]> {
+  const created: ComplianceRecommendation[] = [];
+  for (const rec of computed) {
+    created.push(
+      await tx.complianceRecommendation.create({
+        data: {
+          assessmentId,
+          licenseeId,
+          frameworkCode: rec.frameworkCode,
+          frameworkName: rec.frameworkName,
+          workflowType: rec.workflowType,
+          isLegallyMandatory: rec.isLegallyMandatory,
+          plainEnglishWhy: rec.plainEnglishWhy,
+          consequenceIfSkipped: rec.consequenceIfSkipped,
+          enforcementBody: rec.enforcementBody,
+          estimatedEffort: rec.estimatedEffort,
+          clientAccepted: true,
+          clientReviewedAt: new Date(),
+          displayOrder: orderOffset + rec.displayOrder,
+        },
+      })
+    );
+  }
+  return created;
+}
+
 export class AssessmentService {
   private readonly checklistService: PreparationChecklistService;
 
@@ -237,149 +330,83 @@ export class AssessmentService {
   }
 
   /**
-   * Submits intake assessment, generates tailored recommendations, initiates checklists,
-   * and updates user and licensee onboarding state in one clean transaction.
+   * Completes onboarding: supersedes any previous assessment (history is kept), records the
+   * answers, routes the client to the chosen service, generates that service's recommendations
+   * and checklists, and logs the routing decision with the answers that drove it.
    */
   async submitAssessment(
     licenseeId: string,
     input: IntakeAssessmentInput,
-    userId?: string
+    userId: string
   ): Promise<{
     assessment: ClientAssessment;
-    recommendations: (ComplianceRecommendation & {
-      checklist: { id: string; totalItems: number; completedItems: number; isReadyToIngest: boolean } | null;
-    })[];
+    recommendations: Awaited<ReturnType<AssessmentService['listCurrentRecommendations']>>;
+    destination: string;
   }> {
-    // 1. Calculate recommendations deterministically
     const computedRecommendations = AssessmentDecisionEngine.evaluate(input);
+    const lines = [...new Set(input.services.flatMap((service) => SERVICE_LINES[service]))];
+    const country = input.organisationCountry.trim().toUpperCase().slice(0, 2);
 
-    return this.prisma.$transaction(async (tx) => {
-      // 2. Remove any previous assessment records for a fresh slate
-      await tx.clientAssessment.deleteMany({
-        where: { licenseeId },
+    const { assessment, created } = await this.prisma.$transaction(async (tx) => {
+      await tx.clientAssessment.updateMany({
+        where: { licenseeId, supersededAt: null },
+        data: { supersededAt: new Date() },
       });
 
-      // 3. Create ClientAssessment
       const assessment = await tx.clientAssessment.create({
         data: {
           licenseeId,
-          organisationCountry: input.organisationCountry.trim().toUpperCase().slice(0, 2),
+          organisationCountry: country,
           organisationSize: input.organisationSize,
           annualRevenueBand: input.annualRevenueBand,
           industrySector: input.industrySector,
-          hasPhysicalSites: input.hasPhysicalSites ?? false,
-          hasProductionProcess: input.hasProductionProcess ?? false,
-          hasFleet: input.hasFleet ?? false,
-          hasIoTMeters: input.hasIoTMeters ?? false,
-          isUKPublicContractor: input.isUKPublicContractor ?? false,
-          hasPlanningConsent: input.hasPlanningConsent ?? false,
-          makesPublicGreenClaims: input.makesPublicGreenClaims ?? false,
-          hasGreenHydrogen: input.hasGreenHydrogen ?? false,
-          serviceLinesRequested: (input.serviceLines as any) ?? [],
+          ...answerFields(input),
+          serviceLinesRequested: lines,
+          fleetProfile: input.fleetProfile ? (input.fleetProfile as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
           completedAt: new Date(),
         },
       });
 
-      // 4. Create ComplianceRecommendations
-      const createdRecommendations: ComplianceRecommendation[] = [];
-      for (const rec of computedRecommendations) {
-        const created = await tx.complianceRecommendation.create({
-          data: {
-            assessmentId: assessment.id,
-            licenseeId,
-            frameworkCode: rec.frameworkCode,
-            frameworkName: rec.frameworkName,
-            workflowType: rec.workflowType,
-            isLegallyMandatory: rec.isLegallyMandatory,
-            plainEnglishWhy: rec.plainEnglishWhy,
-            consequenceIfSkipped: rec.consequenceIfSkipped,
-            enforcementBody: rec.enforcementBody,
-            estimatedEffort: rec.estimatedEffort,
-            clientAccepted: true, // Default to accepted
-            clientReviewedAt: new Date(),
-            displayOrder: rec.displayOrder,
-          },
-        });
-        createdRecommendations.push(created);
-      }
+      const created = await createRecommendations(tx, assessment.id, licenseeId, computedRecommendations);
 
-      // 5. Update Licensee state
       await tx.licensee.update({
         where: { id: licenseeId },
-        data: {
-          hasCompletedAssessment: true,
-          organisationCountry: input.organisationCountry.trim().toUpperCase().slice(0, 2),
-          industrySector: input.industrySector,
-        },
+        data: { hasCompletedAssessment: true, organisationCountry: country, industrySector: input.industrySector },
       });
 
-      // 5b. Create ServiceEntitlement records (PENDING) for each selected service line
-      const selectedLines: ('GHG' | 'CARBON' | 'JOB' | 'MERCH')[] =
-        (input.serviceLines as any) ??
-        (input.assuranceIntent === 'CARBON' ? ['GHG', 'CARBON'] :
-         input.assuranceIntent === 'JOB' ? ['JOB'] :
-         ['GHG', 'CARBON', 'JOB']); // DUAL default
-
-      for (const line of selectedLines) {
-        await tx.serviceEntitlement.upsert({
-          where: { licenseeId_serviceLine: { licenseeId, serviceLine: line as any } },
-          update: { status: 'PENDING', updatedAt: new Date() },
-          create: {
-            licenseeId,
-            serviceLine: line as any,
-            status: 'PENDING',
-          },
-        });
-      }
-
-      // 6. Update PortalUser onboarding state if userId is provided
-      if (userId) {
-        await tx.portalUser.update({
-          where: { id: userId },
-          data: {
-            isOnboardingComplete: true,
-            onboardingCompletedAt: new Date(),
-          },
-        });
-      }
-
-      return { assessment, createdRecommendations };
-    }).then(async ({ assessment, createdRecommendations }) => {
-      // 7. Outside main TX: Initialize preparation checklists for accepted recommendations
-      for (const rec of createdRecommendations) {
-        await this.checklistService.createChecklistForRecommendation(
-          rec.id,
+      for (const service of input.services) {
+        await recordRoutingEvent(tx, {
           licenseeId,
-          rec.frameworkCode
-        );
+          eventType: RoutingEventType.SERVICE_SELECTED,
+          actor: userId,
+          detail: { service, assessmentId: assessment.id, answers: routingAnswers(input), frameworks: computedRecommendations.map((r) => r.frameworkCode) },
+        });
+        await enableClientService(tx, { licenseeId, service, actor: userId, reason: 'Selected during onboarding' });
       }
 
-      // 8. Fetch complete recommendation hierarchy
-      const recommendations = await this.prisma.complianceRecommendation.findMany({
-        where: { assessmentId: assessment.id },
-        include: {
-          checklist: {
-            select: {
-              id: true,
-              totalItems: true,
-              completedItems: true,
-              isReadyToIngest: true,
-            },
-          },
-        },
-        orderBy: { displayOrder: 'asc' },
+      await tx.portalUser.update({
+        where: { id: userId },
+        data: { isOnboardingComplete: true, onboardingCompletedAt: new Date() },
       });
 
-      return { assessment, recommendations };
+      return { assessment, created };
     });
+
+    for (const rec of created) {
+      await this.checklistService.createChecklistForRecommendation(rec.id, licenseeId, rec.frameworkCode);
+    }
+
+    return {
+      assessment,
+      recommendations: await this.listCurrentRecommendations(licenseeId),
+      destination: SERVICE_DESTINATIONS[input.services[0]],
+    };
   }
 
-  /**
-   * Retrieves the current intake assessment and recommendations for a licensee.
-   */
+  /** The licensee's current (not superseded) assessment with recommendations and checklists. */
   async getAssessment(licenseeId: string) {
-    const assessment = await this.prisma.clientAssessment.findFirst({
-      where: { licenseeId },
+    return this.prisma.clientAssessment.findFirst({
+      where: { licenseeId, supersededAt: null },
       include: {
         recommendations: {
           include: {
@@ -396,98 +423,88 @@ export class AssessmentService {
       },
       orderBy: { createdAt: 'desc' },
     });
-
-    return assessment;
   }
 
   /**
-   * Activates an additional compliance pipeline (e.g. adding Job Auditing to an existing Carbon licensee).
+   * Adds another service for an onboarded client. Merges that service's answers into the current
+   * assessment, adds its recommendations and checklists, activates it and logs the decision.
+   * Each service keeps its own isolated pipeline.
    */
-  async activatePipeline(licenseeId: string, pipeline: 'CARBON' | 'JOB' | 'DUAL' | 'GHG'): Promise<any> {
-    const existingAssessment = await this.prisma.clientAssessment.findFirst({
-      where: { licenseeId },
+  async addService(
+    licenseeId: string,
+    service: ClientService,
+    answers: Partial<Omit<IntakeAssessmentInput, 'services' | 'organisationCountry' | 'organisationSize' | 'annualRevenueBand' | 'industrySector'>>,
+    userId: string
+  ): Promise<{ destination: string }> {
+    const current = await this.prisma.clientAssessment.findFirst({
+      where: { licenseeId, supersededAt: null },
       orderBy: { createdAt: 'desc' },
+      include: { recommendations: { select: { frameworkCode: true } } },
     });
-
-    // Map legacy pipeline string to ServiceLine array
-    const newLines: ('GHG' | 'CARBON' | 'JOB')[] =
-      pipeline === 'GHG'    ? ['GHG'] :
-      pipeline === 'CARBON' ? ['GHG', 'CARBON'] :
-      pipeline === 'JOB'    ? ['JOB'] :
-                              ['GHG', 'CARBON', 'JOB']; // DUAL
-
-    // Upsert ServiceEntitlement records
-    for (const line of newLines) {
-      await this.prisma.serviceEntitlement.upsert({
-        where: { licenseeId_serviceLine: { licenseeId, serviceLine: line as any } },
-        update: { status: 'PENDING', updatedAt: new Date() },
-        create: { licenseeId, serviceLine: line as any, status: 'PENDING' },
-      });
+    if (!current) {
+      throw new AssessmentFlowError('Complete onboarding before adding a service.', 409);
+    }
+    if (SERVICE_LINES[service].every((line) => current.serviceLinesRequested.includes(line))) {
+      throw new AssessmentFlowError('This service is already part of your account.', 409);
     }
 
-    if (!existingAssessment) {
-      return { success: true, serviceLines: newLines };
-    }
-
-    // Evaluate with new service lines
-    const updatedInput: IntakeAssessmentInput = {
-      organisationCountry: existingAssessment.organisationCountry,
-      organisationSize: existingAssessment.organisationSize,
-      annualRevenueBand: existingAssessment.annualRevenueBand,
-      industrySector: existingAssessment.industrySector,
-      hasPhysicalSites: existingAssessment.hasPhysicalSites,
-      hasProductionProcess: existingAssessment.hasProductionProcess,
-      hasFleet: existingAssessment.hasFleet,
-      hasIoTMeters: existingAssessment.hasIoTMeters,
-      isUKPublicContractor: existingAssessment.isUKPublicContractor,
-      hasPlanningConsent: existingAssessment.hasPlanningConsent,
-      makesPublicGreenClaims: existingAssessment.makesPublicGreenClaims,
-      hasGreenHydrogen: existingAssessment.hasGreenHydrogen,
-      serviceLines: newLines,
+    const services = servicesFromLines(current.serviceLinesRequested);
+    const merged: IntakeAssessmentInput = {
+      services: [...new Set([...services, service])],
+      organisationCountry: current.organisationCountry,
+      organisationSize: current.organisationSize,
+      annualRevenueBand: current.annualRevenueBand,
+      industrySector: current.industrySector,
+      hasPhysicalSites: answers.hasPhysicalSites ?? current.hasPhysicalSites,
+      hasProductionProcess: answers.hasProductionProcess ?? current.hasProductionProcess,
+      hasFleet: answers.hasFleet ?? current.hasFleet,
+      hasIoTMeters: answers.hasIoTMeters ?? current.hasIoTMeters,
+      isUKPublicContractor: answers.isUKPublicContractor ?? current.isUKPublicContractor,
+      hasPlanningConsent: answers.hasPlanningConsent ?? current.hasPlanningConsent,
+      makesPublicGreenClaims: answers.makesPublicGreenClaims ?? current.makesPublicGreenClaims,
+      hasGreenHydrogen: answers.hasGreenHydrogen ?? current.hasGreenHydrogen,
+      fleetProfile: answers.fleetProfile ?? (current.fleetProfile as unknown as FleetProfile | null),
     };
 
-    const computed = AssessmentDecisionEngine.evaluate(updatedInput);
+    const existingCodes = new Set(current.recommendations.map((r) => r.frameworkCode));
+    const additions = AssessmentDecisionEngine.evaluate(merged).filter((r) => !existingCodes.has(r.frameworkCode));
+    const lines = [...new Set([...current.serviceLinesRequested, ...SERVICE_LINES[service]])];
 
-    // Existing recommendations
-    const existingRecs = await this.prisma.complianceRecommendation.findMany({
-      where: { assessmentId: existingAssessment.id },
+    const created = await this.prisma.$transaction(async (tx) => {
+      await tx.clientAssessment.update({
+        where: { id: current.id },
+        data: {
+          ...answerFields(merged),
+          serviceLinesRequested: lines,
+          fleetProfile: merged.fleetProfile ? (merged.fleetProfile as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+        },
+      });
+      const recs = await createRecommendations(tx, current.id, licenseeId, additions, existingCodes.size);
+      await recordRoutingEvent(tx, {
+        licenseeId,
+        eventType: RoutingEventType.SERVICE_ADDED,
+        actor: userId,
+        detail: { service, assessmentId: current.id, answers: routingAnswers(merged), frameworks: additions.map((r) => r.frameworkCode) },
+      });
+      await enableClientService(tx, { licenseeId, service, actor: userId, reason: 'Added by client' });
+      return recs;
     });
-    const existingCodes = new Set(existingRecs.map((r) => r.frameworkCode));
 
-    // Provision any newly matching recommendations
-    for (const rec of computed) {
-      if (!existingCodes.has(rec.frameworkCode)) {
-        const created = await this.prisma.complianceRecommendation.create({
-          data: {
-            assessmentId: existingAssessment.id,
-            licenseeId,
-            frameworkCode: rec.frameworkCode,
-            frameworkName: rec.frameworkName,
-            workflowType: rec.workflowType,
-            isLegallyMandatory: rec.isLegallyMandatory,
-            plainEnglishWhy: rec.plainEnglishWhy,
-            consequenceIfSkipped: rec.consequenceIfSkipped,
-            enforcementBody: rec.enforcementBody,
-            estimatedEffort: rec.estimatedEffort,
-            clientAccepted: true,
-            clientReviewedAt: new Date(),
-            displayOrder: rec.displayOrder,
-          },
-        });
-        await this.checklistService.createChecklistForRecommendation(
-          created.id,
-          licenseeId,
-          rec.frameworkCode
-        );
-      }
+    for (const rec of created) {
+      await this.checklistService.createChecklistForRecommendation(rec.id, licenseeId, rec.frameworkCode);
     }
 
-    await this.prisma.clientAssessment.update({
-      where: { id: existingAssessment.id },
-      data: { serviceLinesRequested: newLines as any },
-    });
+    return { destination: SERVICE_DESTINATIONS[service] };
+  }
 
-    return this.getAssessment(licenseeId);
+  async listCurrentRecommendations(licenseeId: string) {
+    return this.prisma.complianceRecommendation.findMany({
+      where: currentRecommendationWhere(licenseeId),
+      include: {
+        checklist: { select: { id: true, totalItems: true, completedItems: true, isReadyToIngest: true } },
+      },
+      orderBy: { displayOrder: 'asc' },
+    });
   }
 
   /**
@@ -495,7 +512,7 @@ export class AssessmentService {
    */
   async getRecommendations(licenseeId: string) {
     return this.prisma.complianceRecommendation.findMany({
-      where: { licenseeId },
+      where: currentRecommendationWhere(licenseeId),
       include: {
         checklist: {
           include: {

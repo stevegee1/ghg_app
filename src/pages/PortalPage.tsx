@@ -425,19 +425,13 @@ export const PortalPage: React.FC = () => {
   const isCurrentScopePrepReady =
     auditScope === 'JOB_REPORTING' ? isJobPrepReady : isCarbonPrepReady;
 
-  const isCarbonActive =
-    user?.assuranceIntent === 'CARBON' ||
-    user?.assuranceIntent === 'DUAL' ||
-    carbonChecklists.length > 0 ||
-    !user?.assuranceIntent;
-  const isJobActive =
-    user?.assuranceIntent === 'JOB' ||
-    user?.assuranceIntent === 'DUAL' ||
-    jobChecklists.length > 0;
+  // Each service's pipeline is shown only when the client holds that service.
+  const activeServiceLines = new Set((user?.serviceEntitlements || []).map((e) => e.serviceLine));
+  const isCarbonActive = activeServiceLines.has('GHG') || activeServiceLines.has('CARBON');
+  const isJobActive = activeServiceLines.has('JOB');
 
   // ── ISO Workflow & Framework State ─────────────────────────────────────────
   const [activeStep, setActiveStep] = useState<WorkflowStep>(1);
-  const [activatingPipeline, setActivatingPipeline] = useState<boolean>(false);
 
   const navigateToView = useCallback(
     (
@@ -505,28 +499,10 @@ export const PortalPage: React.FC = () => {
     [navigateToView, auditScope]
   );
 
-  const handleActivatePipeline = useCallback(
-    async (targetPipeline: 'CARBON' | 'JOB' | 'DUAL') => {
-      if (!token) return;
-      try {
-        setActivatingPipeline(true);
-        await api.activatePipeline(token, targetPipeline);
-        if (user && updateUser) {
-          updateUser({ ...user, assuranceIntent: targetPipeline });
-        }
-        await refreshChecklists();
-        if (targetPipeline === 'DUAL' || targetPipeline === 'JOB') {
-          navigateToView('checklist', { scope: 'JOB_REPORTING' });
-        } else {
-          navigateToView('checklist', { scope: 'CARBON_EMISSION' });
-        }
-      } catch (err: any) {
-        console.error('Failed to activate pipeline:', err);
-      } finally {
-        setActivatingPipeline(false);
-      }
-    },
-    [token, user, updateUser, refreshChecklists, navigateToView]
+  /** Adding a service asks that service's onboarding questions first. */
+  const handleAddService = useCallback(
+    (service: 'GHG' | 'WORKFORCE') => navigate(`/portal/onboarding?add=${service}`),
+    [navigate]
   );
   const activeTiers = auditScope === 'CARBON_EMISSION' ? TIERS : JOB_TIERS;
   const [framework, setFramework] = useState<any | null>(null);
@@ -1538,8 +1514,7 @@ export const PortalPage: React.FC = () => {
             </div>
             <button
               type="button"
-              disabled={activatingPipeline}
-              onClick={() => handleActivatePipeline('DUAL')}
+              onClick={() => handleAddService('WORKFORCE')}
               style={{
                 width: '100%',
                 padding: '0.45rem 0.6rem',
@@ -1553,7 +1528,7 @@ export const PortalPage: React.FC = () => {
                 transition: 'all 0.15s ease',
               }}
             >
-              {activatingPipeline ? 'Activating...' : '+ Activate Module'}
+              + Add service
             </button>
           </div>
         )}
@@ -1571,8 +1546,7 @@ export const PortalPage: React.FC = () => {
             </div>
             <button
               type="button"
-              disabled={activatingPipeline}
-              onClick={() => handleActivatePipeline('DUAL')}
+              onClick={() => handleAddService('GHG')}
               style={{
                 width: '100%',
                 padding: '0.45rem 0.6rem',
@@ -1586,7 +1560,7 @@ export const PortalPage: React.FC = () => {
                 transition: 'all 0.15s ease',
               }}
             >
-              {activatingPipeline ? 'Activating...' : '+ Activate Module'}
+              + Add service
             </button>
           </div>
         )}

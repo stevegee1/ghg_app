@@ -46,6 +46,7 @@ model Licensee {
   fleetReadings            FleetReading[]
   fleetImportBatches       FleetImportBatch[]
   fleetSubscription        FleetSubscription?
+  routingEvents            ServiceRoutingEvent[]
 }
 
 enum Vertical {
@@ -1026,6 +1027,10 @@ model ClientAssessment {
 
   // Service lines the client selected during intake (drives pipeline routing)
   serviceLinesRequested  ServiceLine[] @default([])
+  /// Fleet onboarding answers: asset count band, categories and cloud connection status
+  fleetProfile           Json?
+  /// Set when a newer assessment replaces this one; history is kept, never deleted
+  supersededAt           DateTime?
 
   // Metadata
   assessmentVersion String    @default("v1.0")
@@ -1310,5 +1315,34 @@ model FleetSubscription {
   currentPeriodEnd     DateTime?
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICE ROUTING: every routing decision and pipeline handoff is logged
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum RoutingEventType {
+  SERVICE_SELECTED
+  SERVICE_ADDED
+  SERVICE_ACTIVATED
+  SERVICE_ACTIVATION_BLOCKED
+  SERVICE_SUSPENDED
+  HANDOFF_STARTED
+  HANDOFF_COMPLETED
+}
+
+model ServiceRoutingEvent {
+  id          String           @id @default(cuid())
+  licenseeId  String
+  licensee    Licensee         @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  eventType   RoutingEventType
+  serviceLine ServiceLine?
+  /// PortalUser ID, or a system actor such as STRIPE_SUBSCRIPTION
+  actor       String
+  /// Why the decision was made, for example the onboarding answers that routed the client
+  detail      Json
+  createdAt   DateTime         @default(now())
+
+  @@index([licenseeId, createdAt])
 }
 

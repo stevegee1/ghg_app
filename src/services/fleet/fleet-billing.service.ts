@@ -5,6 +5,7 @@ import {
   FleetSubscriptionStatus,
   Prisma,
   PrismaClient,
+  RoutingEventType,
   ServiceLine,
   TransactionStatus,
   VerificationSource,
@@ -14,6 +15,7 @@ import { computeCharityAllocations } from '../charity-allocation.service';
 import { TransactionService } from '../transaction.service';
 import { PLATFORM_LICENSEE_ID } from '../platform-account.service';
 import { payCharityAllocations } from '../settlement.service';
+import { recordRoutingEvent } from '../service-routing.service';
 
 export const FLEET_SERVICE_TAG = 'FLEET';
 const ENTITLEMENT_ACTOR = 'STRIPE_SUBSCRIPTION';
@@ -180,21 +182,58 @@ export async function applyFleetSubscriptionEvent(prisma: PrismaClient, subscrip
   });
 
   const now = new Date();
+  const previous = await prisma.serviceEntitlement.findUnique({
+    where: { licenseeId_serviceLine: { licenseeId, serviceLine: ServiceLine.FLEET } },
+  });
+  const detail = { subscriptionId: subscription.id, subscriptionStatus: subscription.status };
+
   if (status === FleetSubscriptionStatus.ACTIVE || status === FleetSubscriptionStatus.PAST_DUE) {
-    await prisma.serviceEntitlement.upsert({
+    // A suspension or revocation applied by an administrator is never lifted by a payment event.
+    const adminHold =
+      previous &&
+      (previous.status === EntitlementStatus.SUSPENDED || previous.status === EntitlementStatus.REVOKED) &&
+      previous.revokedBy !== ENTITLEMENT_ACTOR;
+    if (adminHold) {
+      await recordRoutingEvent(prisma, {
+        licenseeId,
+        eventType: RoutingEventType.SERVICE_ACTIVATION_BLOCKED,
+        serviceLine: ServiceLine.FLEET,
+        actor: ENTITLEMENT_ACTOR,
+        detail: { ...detail, entitlementStatus: previous.status },
+      });
+    } else if (previous?.status !== EntitlementStatus.ACTIVE) {
+      await prisma.serviceEntitlement.upsert({
+        where: { licenseeId_serviceLine: { licenseeId, serviceLine: ServiceLine.FLEET } },
+        update: { status: EntitlementStatus.ACTIVE, grantedAt: now, grantedBy: ENTITLEMENT_ACTOR, revokedAt: null, revokedBy: null, revokeReason: null },
+        create: { licenseeId, serviceLine: ServiceLine.FLEET, status: EntitlementStatus.ACTIVE, grantedAt: now, grantedBy: ENTITLEMENT_ACTOR },
+      });
+      await recordRoutingEvent(prisma, {
+        licenseeId,
+        eventType: RoutingEventType.SERVICE_ACTIVATED,
+        serviceLine: ServiceLine.FLEET,
+        actor: ENTITLEMENT_ACTOR,
+        detail,
+      });
+    }
+  } else if (
+    (status === FleetSubscriptionStatus.UNPAID || status === FleetSubscriptionStatus.CANCELED) &&
+    previous?.status === EntitlementStatus.ACTIVE
+  ) {
+    await prisma.serviceEntitlement.update({
       where: { licenseeId_serviceLine: { licenseeId, serviceLine: ServiceLine.FLEET } },
-      update: { status: EntitlementStatus.ACTIVE, grantedAt: now, grantedBy: ENTITLEMENT_ACTOR, revokedAt: null, revokedBy: null, revokeReason: null },
-      create: { licenseeId, serviceLine: ServiceLine.FLEET, status: EntitlementStatus.ACTIVE, grantedAt: now, grantedBy: ENTITLEMENT_ACTOR },
-    });
-  } else if (status === FleetSubscriptionStatus.UNPAID || status === FleetSubscriptionStatus.CANCELED) {
-    await prisma.serviceEntitlement.updateMany({
-      where: { licenseeId, serviceLine: ServiceLine.FLEET, status: EntitlementStatus.ACTIVE },
       data: {
         status: EntitlementStatus.SUSPENDED,
         revokedAt: now,
         revokedBy: ENTITLEMENT_ACTOR,
         revokeReason: `Fleet subscription ${status.toLowerCase()}`,
       },
+    });
+    await recordRoutingEvent(prisma, {
+      licenseeId,
+      eventType: RoutingEventType.SERVICE_SUSPENDED,
+      serviceLine: ServiceLine.FLEET,
+      actor: ENTITLEMENT_ACTOR,
+      detail,
     });
   }
   return true;

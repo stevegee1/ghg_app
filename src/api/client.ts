@@ -973,7 +973,7 @@ export const api = {
 
   // ── Assessment Layer ──────────────────────────────────────────────────────
   async submitAssessment(token: string, params: {
-    assuranceIntent?: 'CARBON' | 'JOB' | 'DUAL';
+    service: 'GHG' | 'WORKFORCE' | 'FLEET';
     organisationCountry: string;
     organisationSize: string;
     annualRevenueBand: string;
@@ -986,7 +986,8 @@ export const api = {
     hasPlanningConsent?: boolean;
     makesPublicGreenClaims?: boolean;
     hasGreenHydrogen?: boolean;
-  }): Promise<{ message: string; assessment: any; recommendations: any[] }> {
+    fleetProfile?: { assetCountBand: string; categories: string[]; cloudConnection: string };
+  }): Promise<{ message: string; assessment: any; recommendations: any[]; destination: string }> {
     const res = await fetch('/api/assessment', {
       method: 'POST',
       headers: {
@@ -1000,14 +1001,21 @@ export const api = {
     return data;
   },
 
-  async activatePipeline(token: string, pipeline: 'CARBON' | 'JOB' | 'DUAL'): Promise<{ message: string; assessment: any }> {
-    const res = await fetch('/api/assessment/activate-pipeline', {
+  /** Adds another service for an onboarded client, with that service's answers. */
+  async addClientService(
+    token: string,
+    params: {
+      service: 'GHG' | 'WORKFORCE' | 'FLEET';
+      [answer: string]: unknown;
+    }
+  ): Promise<{ message: string; destination: string }> {
+    const res = await fetch('/api/assessment/services', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ pipeline }),
+      body: JSON.stringify(params),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);

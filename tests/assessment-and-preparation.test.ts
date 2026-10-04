@@ -18,6 +18,7 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
   describe('AssessmentDecisionEngine.evaluate', () => {
     it('mandates UK SECR for large UK enterprises (>250 staff or >£36m turnover)', () => {
       const input: IntakeAssessmentInput = {
+        services: ['GHG'],
         organisationCountry: 'GB',
         organisationSize: OrganisationSize.LARGE_250_PLUS,
         annualRevenueBand: RevenueBand.BAND_36M_PLUS,
@@ -37,13 +38,14 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
 
       expect(secr).toBeDefined();
       expect(secr?.isLegallyMandatory).toBe(true);
-      expect(secr?.workflowType).toBe(WorkflowType.CARBON);
+      expect(secr?.workflowType).toBe(WorkflowType.GHG);
       expect(secr?.enforcementBody).toContain('Financial Reporting Council');
       expect(secr?.plainEnglishWhy).toContain('statutory duty under the Companies Act 2006');
     });
 
     it('does NOT mandate UK SECR for small non-UK companies', () => {
       const input: IntakeAssessmentInput = {
+        services: ['GHG'],
         organisationCountry: 'DE',
         organisationSize: OrganisationSize.SMALL_10_49,
         annualRevenueBand: RevenueBand.BAND_2M_10M,
@@ -63,8 +65,9 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
       expect(secr).toBeUndefined();
     });
 
-    it('mandates PPN 06/21 Carbon Reduction Plan for public sector contractors', () => {
+    it('mandates the PPN 006 Carbon Reduction Plan for public sector contractors', () => {
       const input: IntakeAssessmentInput = {
+        services: ['GHG'],
         organisationCountry: 'GB',
         organisationSize: OrganisationSize.MEDIUM_50_249,
         annualRevenueBand: RevenueBand.BAND_10M_36M,
@@ -80,7 +83,7 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
       };
 
       const recommendations = AssessmentDecisionEngine.evaluate(input);
-      const ppn = recommendations.find((r) => r.frameworkCode === 'UK_PPN_0621');
+      const ppn = recommendations.find((r) => r.frameworkCode === 'UK_PPN_006');
 
       expect(ppn).toBeDefined();
       expect(ppn?.isLegallyMandatory).toBe(true);
@@ -89,6 +92,7 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
 
     it('mandates Section 106 and Job Creation for UK planning consent developments', () => {
       const input: IntakeAssessmentInput = {
+        services: ['WORKFORCE'],
         organisationCountry: 'GB',
         organisationSize: OrganisationSize.SMALL_10_49,
         annualRevenueBand: RevenueBand.BAND_2M_10M,
@@ -114,6 +118,7 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
 
     it('mandates CMA Green Claims Code compliance when public claims are asserted', () => {
       const input: IntakeAssessmentInput = {
+        services: ['GHG'],
         organisationCountry: 'GB',
         organisationSize: OrganisationSize.MICRO_UNDER_10,
         annualRevenueBand: RevenueBand.UNDER_2M,
@@ -137,8 +142,9 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
       expect(cma?.consequenceIfSkipped).toContain('10% of worldwide turnover');
     });
 
-    it('mandates CertifHy & LCHS for Green Hydrogen producers', () => {
+    it('mandates the Low Carbon Hydrogen Standard for green hydrogen producers', () => {
       const input: IntakeAssessmentInput = {
+        services: ['GHG'],
         organisationCountry: 'GB',
         organisationSize: OrganisationSize.SMALL_10_49,
         annualRevenueBand: RevenueBand.BAND_2M_10M,
@@ -154,7 +160,7 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
       };
 
       const recommendations = AssessmentDecisionEngine.evaluate(input);
-      const h2 = recommendations.find((r) => r.frameworkCode === 'GREEN_HYDROGEN_CERTIFHY');
+      const h2 = recommendations.find((r) => r.frameworkCode === 'UK_LCHS');
 
       expect(h2).toBeDefined();
       expect(h2?.isLegallyMandatory).toBe(true);
@@ -164,6 +170,7 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
 
     it('always places legally mandatory frameworks first in displayOrder', () => {
       const input: IntakeAssessmentInput = {
+        services: ['GHG', 'WORKFORCE'],
         organisationCountry: 'GB',
         organisationSize: OrganisationSize.LARGE_250_PLUS,
         annualRevenueBand: RevenueBand.BAND_36M_PLUS,
@@ -201,10 +208,10 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
     it('provides exhaustive templates for all statutory frameworks', () => {
       const expectedCodes = [
         'UK_SECR',
-        'UK_PPN_0621',
+        'UK_PPN_006',
         'UK_SECTION_106',
         'UK_GREEN_CLAIMS_CODE',
-        'GREEN_HYDROGEN_CERTIFHY',
+        'UK_LCHS',
         'ISO_14064_1',
         'ISO_50001',
         'SOCIAL_VALUE_JOBS',
@@ -359,8 +366,9 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
       expect(res.body.error).toContain('Valid organisationSize is required');
     });
 
-    it('submits valid 12-question intake, generates recommendations and checklists, marks licensee completed', async () => {
+    it('submits the GHG onboarding, generates recommendations and checklists, marks licensee completed', async () => {
       const intakePayload = {
+        service: 'GHG',
         organisationCountry: 'GB',
         organisationSize: 'LARGE_250_PLUS',
         annualRevenueBand: 'BAND_36M_PLUS',
@@ -542,6 +550,181 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
       expect(typeof targetLicensee.readinessPercentage).toBe('number');
       expect(Array.isArray(targetLicensee.frameworks)).toBe(true);
     });
+  });
+});
+
+describe('Onboarding routes each client to isolated services', () => {
+  const prisma = new PrismaClient();
+  const app = createApp();
+  const created: { licenseeIds: string[]; userIds: string[] } = { licenseeIds: [], userIds: [] };
+
+  const org = {
+    organisationCountry: 'GB',
+    organisationSize: 'LARGE_250_PLUS',
+    annualRevenueBand: 'BAND_36M_PLUS',
+    industrySector: 'CONSTRUCTION',
+  };
+  const ghgAnswers = {
+    hasPhysicalSites: true,
+    hasProductionProcess: false,
+    hasFleet: true,
+    hasIoTMeters: false,
+    isUKPublicContractor: true,
+    makesPublicGreenClaims: false,
+    hasGreenHydrogen: false,
+  };
+
+  const makeClient = async (label: string) => {
+    const suffix = `${label}_${Date.now().toString(36)}`;
+    const licensee = await prisma.licensee.create({
+      data: { id: `lic_route_${suffix}`, name: `Routing ${suffix}`, vertical: 'B2B_HEAVY_MANUFACTURING' },
+    });
+    const user = await prisma.portalUser.create({
+      data: { email: `route.${suffix}@test.example`, passwordHash: 'x', role: 'PARTNER', licenseeId: licensee.id },
+    });
+    created.licenseeIds.push(licensee.id);
+    created.userIds.push(user.id);
+    const token = jwt.sign({ userId: user.id, licenseeId: licensee.id, role: 'PARTNER' }, JWT_SECRET, { expiresIn: '1h' });
+    return { licenseeId: licensee.id, userId: user.id, token };
+  };
+
+  const entitlement = (licenseeId: string, serviceLine: 'GHG' | 'CARBON' | 'JOB' | 'FLEET') =>
+    prisma.serviceEntitlement.findUnique({ where: { licenseeId_serviceLine: { licenseeId, serviceLine } } });
+
+  afterAll(async () => {
+    const where = { licenseeId: { in: created.licenseeIds } };
+    await prisma.preparationChecklistItem.deleteMany({ where: { checklist: where } });
+    await prisma.preparationChecklist.deleteMany({ where });
+    await prisma.complianceRecommendation.deleteMany({ where });
+    await prisma.clientAssessment.deleteMany({ where });
+    await prisma.serviceRoutingEvent.deleteMany({ where });
+    await prisma.serviceEntitlement.deleteMany({ where });
+    await prisma.portalUser.deleteMany({ where: { id: { in: created.userIds } } });
+    await prisma.licensee.deleteMany({ where: { id: { in: created.licenseeIds } } });
+    await prisma.$disconnect();
+  });
+
+  it('only recommends frameworks for the chosen service', () => {
+    const base = { ...org, organisationSize: OrganisationSize.LARGE_250_PLUS, annualRevenueBand: RevenueBand.BAND_36M_PLUS, industrySector: IndustrySector.CONSTRUCTION, hasPlanningConsent: true, ...ghgAnswers };
+    const ghg = AssessmentDecisionEngine.evaluate({ ...base, services: ['GHG'] });
+    expect(ghg.some((r) => r.workflowType === WorkflowType.JOB)).toBe(false);
+    expect(ghg.map((r) => r.frameworkCode)).toContain('UK_PPN_006');
+
+    const workforce = AssessmentDecisionEngine.evaluate({ ...base, services: ['WORKFORCE'] });
+    expect(workforce.every((r) => r.workflowType === WorkflowType.JOB)).toBe(true);
+    expect(workforce.map((r) => r.frameworkCode)).toContain('UK_SECTION_106');
+
+    expect(AssessmentDecisionEngine.evaluate({ ...base, services: ['FLEET'] })).toEqual([]);
+  });
+
+  it.each([
+    [{ ...org, ...ghgAnswers }, /service must be one of/],
+    [{ ...org, service: 'MERCH', ...ghgAnswers }, /service must be one of/],
+    [{ ...org, service: 'GHG', ...ghgAnswers, hasFleet: 'yes' }, /hasFleet must be answered yes or no/],
+    [{ ...org, service: 'WORKFORCE', isUKPublicContractor: true }, /hasPlanningConsent must be answered/],
+    [{ ...org, service: 'FLEET', fleetProfile: { assetCountBand: '11_50', categories: [], cloudConnection: 'SOME' } }, /categories/],
+    [{ ...org, service: 'FLEET', fleetProfile: { assetCountBand: 'LOTS', categories: ['EXCAVATOR'], cloudConnection: 'SOME' } }, /assetCountBand/],
+  ])('rejects invalid onboarding answers %#', async (body, message) => {
+    const client = await makeClient('invalid');
+    const res = await request(app).post('/api/assessment').set('Authorization', `Bearer ${client.token}`).send(body).expect(400);
+    expect(res.body.error).toMatch(message);
+  });
+
+  it('routes a GHG client, activates GHG and carbon frameworks only, and logs why', async () => {
+    const client = await makeClient('ghg');
+    const res = await request(app)
+      .post('/api/assessment')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ ...org, service: 'GHG', ...ghgAnswers })
+      .expect(200);
+
+    expect(res.body.destination).toBe('/portal?tab=checklist&scope=CARBON_EMISSION');
+    expect((await entitlement(client.licenseeId, 'GHG'))!.status).toBe('ACTIVE');
+    expect((await entitlement(client.licenseeId, 'CARBON'))!.status).toBe('ACTIVE');
+    expect(await entitlement(client.licenseeId, 'JOB')).toBeNull();
+    expect(await entitlement(client.licenseeId, 'FLEET')).toBeNull();
+
+    const events = await prisma.serviceRoutingEvent.findMany({ where: { licenseeId: client.licenseeId }, orderBy: { createdAt: 'asc' } });
+    expect(events.map((e) => e.eventType)).toEqual(['SERVICE_SELECTED', 'SERVICE_ACTIVATED', 'SERVICE_ACTIVATED']);
+    const selected = events[0].detail as { service: string; answers: { isUKPublicContractor: boolean } };
+    expect(selected.service).toBe('GHG');
+    expect(selected.answers.isUKPublicContractor).toBe(true);
+    expect(events.every((e) => e.actor === client.userId)).toBe(true);
+  });
+
+  it('keeps assessment history when onboarding is repeated and gates only on the current one', async () => {
+    const client = await makeClient('history');
+    const first = await request(app).post('/api/assessment').set('Authorization', `Bearer ${client.token}`).send({ ...org, service: 'GHG', ...ghgAnswers }).expect(200);
+    const second = await request(app).post('/api/assessment').set('Authorization', `Bearer ${client.token}`).send({ ...org, service: 'GHG', ...ghgAnswers, isUKPublicContractor: false }).expect(200);
+
+    const old = await prisma.clientAssessment.findUnique({ where: { id: first.body.assessment.id } });
+    expect(old!.supersededAt).not.toBeNull();
+
+    const current = await request(app).get('/api/assessment').set('Authorization', `Bearer ${client.token}`).expect(200);
+    expect(current.body.assessment.id).toBe(second.body.assessment.id);
+    expect(current.body.assessment.recommendations.map((r: { frameworkCode: string }) => r.frameworkCode)).not.toContain('UK_PPN_006');
+
+    const lists = await request(app).get('/api/checklists').set('Authorization', `Bearer ${client.token}`).expect(200);
+    const listed = (lists.body.checklists ?? lists.body) as { recommendation: { assessmentId: string } }[];
+    expect(listed.every((c) => c.recommendation.assessmentId === second.body.assessment.id)).toBe(true);
+  });
+
+  it('adds Workforce later as a separate service and refuses to add it twice', async () => {
+    const client = await makeClient('add');
+    await request(app).post('/api/assessment').set('Authorization', `Bearer ${client.token}`).send({ ...org, service: 'GHG', ...ghgAnswers }).expect(200);
+
+    const added = await request(app)
+      .post('/api/assessment/services')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ service: 'WORKFORCE', isUKPublicContractor: true, hasPlanningConsent: true })
+      .expect(200);
+    expect(added.body.destination).toBe('/portal?tab=checklist&scope=JOB_REPORTING');
+    expect((await entitlement(client.licenseeId, 'JOB'))!.status).toBe('ACTIVE');
+
+    const assessment = await prisma.clientAssessment.findFirst({
+      where: { licenseeId: client.licenseeId, supersededAt: null },
+      include: { recommendations: true },
+    });
+    expect(assessment!.serviceLinesRequested).toEqual(expect.arrayContaining(['GHG', 'CARBON', 'JOB']));
+    expect(assessment!.recommendations.map((r) => r.frameworkCode)).toContain('UK_SECTION_106');
+
+    const addedEvent = await prisma.serviceRoutingEvent.findFirst({ where: { licenseeId: client.licenseeId, eventType: 'SERVICE_ADDED' } });
+    expect((addedEvent!.detail as { service: string }).service).toBe('WORKFORCE');
+
+    await request(app)
+      .post('/api/assessment/services')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ service: 'WORKFORCE', isUKPublicContractor: true, hasPlanningConsent: true })
+      .expect(409);
+  });
+
+  it('routes a Fleet client to Fleet with its profile and leaves activation to the subscription', async () => {
+    const client = await makeClient('fleet');
+    const res = await request(app)
+      .post('/api/assessment')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ ...org, service: 'FLEET', fleetProfile: { assetCountBand: '11_50', categories: ['EXCAVATOR', 'GENERATOR', 'EXCAVATOR'], cloudConnection: 'SOME' } })
+      .expect(200);
+
+    expect(res.body.destination).toBe('/portal?tab=fleet');
+    expect(res.body.recommendations).toEqual([]);
+    expect((await entitlement(client.licenseeId, 'FLEET'))!.status).toBe('PENDING');
+    const assessment = await prisma.clientAssessment.findUnique({ where: { id: res.body.assessment.id } });
+    expect(assessment!.fleetProfile).toEqual({ assetCountBand: '11_50', categories: ['EXCAVATOR', 'GENERATOR'], cloudConnection: 'SOME' });
+  });
+
+  it('never reactivates a service an administrator suspended, and logs the attempt', async () => {
+    const client = await makeClient('hold');
+    await prisma.serviceEntitlement.create({
+      data: { licenseeId: client.licenseeId, serviceLine: 'CARBON', status: 'SUSPENDED', revokedBy: 'admin_user', revokeReason: 'Non-conformance hold' },
+    });
+
+    await request(app).post('/api/assessment').set('Authorization', `Bearer ${client.token}`).send({ ...org, service: 'GHG', ...ghgAnswers }).expect(200);
+
+    expect((await entitlement(client.licenseeId, 'CARBON'))!.status).toBe('SUSPENDED');
+    expect((await entitlement(client.licenseeId, 'GHG'))!.status).toBe('ACTIVE');
+    const blocked = await prisma.serviceRoutingEvent.findFirst({ where: { licenseeId: client.licenseeId, eventType: 'SERVICE_ACTIVATION_BLOCKED' } });
+    expect(blocked!.serviceLine).toBe('CARBON');
   });
 });
 

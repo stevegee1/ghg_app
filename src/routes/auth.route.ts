@@ -397,10 +397,8 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           primaryRole: user.primaryRole,
           isOnboardingComplete: user.isOnboardingComplete,
           hasCompletedAssessment: user.licensee?.hasCompletedAssessment ?? false,
-          // Active service entitlements — use these for pipeline access gating
+          // Active service entitlements, used for pipeline access gating
           serviceEntitlements: user.licensee?.entitlements ?? [],
-          // Deprecated: use serviceEntitlements[].serviceLine instead
-          assuranceIntent: 'DUAL' as const,
           companyName: user.licensee?.name || (user.role === 'ADMIN' ? 'GHG Platform Administration' : 'Authorized Entity'),
           organisationCountry: user.licensee?.organisationCountry || 'GB',
           industrySector: user.licensee?.industrySector || null,

@@ -13,6 +13,7 @@ import { CheckoutService } from '../services/checkout.service';
 import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { FrameworkRegistryService } from '../services/framework-registry.service';
 import { runWithRls } from '../db/rls';
+import { currentChecklistWhere } from '../services/assessment-scope';
 import { getAssuranceFee } from '../services/assurance-fee.service';
 import { PLATFORM_LICENSEE_ID } from '../services/platform-account.service';
 
@@ -278,7 +279,7 @@ export function createIsoReadinessRouter(prisma: PrismaClient, checkoutService: 
       }
 
       const checklists = await prisma.preparationChecklist.findMany({
-        where: { licenseeId: user.licenseeId },
+        where: currentChecklistWhere(user.licenseeId),
         include: { recommendation: true },
       });
 

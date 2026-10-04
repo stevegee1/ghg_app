@@ -150,6 +150,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
           licenseeId,
           recommendation: {
             workflowType: workflowType as WorkflowType,
+            assessment: { supersededAt: null },
           },
         },
         include: {
@@ -323,6 +324,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
               licenseeId: existing.licenseeId,
               recommendation: {
                 workflowType: existing.workflowType,
+                assessment: { supersededAt: null },
               },
             },
             include: { recommendation: true },
