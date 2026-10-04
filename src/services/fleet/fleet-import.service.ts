@@ -129,6 +129,45 @@ function parseFile(text: string, required: readonly string[]) {
   }
 }
 
+const MAX_TEXT = 120;
+
+function optionalText(raw: string | undefined, field: string): string | null {
+  const v = (raw ?? '').trim();
+  if (v.length > MAX_TEXT) throw new Error(`${field} must be ${MAX_TEXT} characters or fewer.`);
+  return v || null;
+}
+
+/**
+ * Validates one asset's fields, keyed by the CSV column names. Shared by CSV import and the
+ * single-asset API so both apply the same boundary rules.
+ */
+export function parseAssetFields(values: Record<string, string | undefined>): Omit<Prisma.FleetAssetCreateManyInput, 'licenseeId'> {
+  const assetTag = (values.asset_tag ?? '').trim();
+  if (!assetTag) throw new Error('asset_tag is required.');
+  if (assetTag.length > 64) throw new Error('asset_tag must be 64 characters or fewer.');
+  const name = optionalText(values.name, 'name');
+  if (!name) throw new Error('name is required.');
+
+  const ownership = parseEnum(values.ownership ?? '', 'ownership', FleetOwnership);
+  const operationalControl = parseYesNo(values.operational_control ?? '', 'operational_control');
+  if (ownership === FleetOwnership.RENTED_OUT && operationalControl) {
+    throw new Error('An asset rented out to another party cannot be under your operational control.');
+  }
+
+  return {
+    assetTag,
+    name,
+    category: parseEnum(values.category ?? '', 'category', FleetAssetCategory),
+    fuelType: parseEnum(values.fuel_type ?? '', 'fuel_type', FleetFuelType),
+    ownership,
+    operationalControl,
+    make: optionalText(values.make, 'make'),
+    model: optionalText(values.model, 'model'),
+    serialNumber: optionalText(values.serial_number, 'serial_number'),
+    siteName: optionalText(values.site_name, 'site_name'),
+  };
+}
+
 /**
  * Registers fleet assets from CSV. Every asset declares its fuel type, ownership and operational
  * control so the Scope 1 boundary is explicit. All rows are validated before any is saved.
@@ -152,32 +191,11 @@ export async function importFleetAssets(
   for (const { line, values } of table.rows) {
     try {
       const assetTag = values.asset_tag;
-      if (!assetTag) throw new Error('asset_tag is required.');
-      if (assetTag.length > 64) throw new Error('asset_tag must be 64 characters or fewer.');
       if (seen.has(assetTag)) throw new Error(`asset_tag ${assetTag} appears more than once in this file.`);
       if (existingTags.has(assetTag)) throw new Error(`asset_tag ${assetTag} is already registered.`);
       seen.add(assetTag);
-      if (!values.name) throw new Error('name is required.');
 
-      const ownership = parseEnum(values.ownership, 'ownership', FleetOwnership);
-      const operationalControl = parseYesNo(values.operational_control, 'operational_control');
-      if (ownership === FleetOwnership.RENTED_OUT && operationalControl) {
-        throw new Error('An asset rented out to another party cannot be under your operational control.');
-      }
-
-      data.push({
-        licenseeId: actor.licenseeId,
-        assetTag,
-        name: values.name,
-        category: parseEnum(values.category, 'category', FleetAssetCategory),
-        fuelType: parseEnum(values.fuel_type, 'fuel_type', FleetFuelType),
-        ownership,
-        operationalControl,
-        make: values.make || null,
-        model: values.model || null,
-        serialNumber: values.serial_number || null,
-        siteName: values.site_name || null,
-      });
+      data.push({ licenseeId: actor.licenseeId, ...parseAssetFields(values) });
     } catch (err) {
       rejections.push({ line, reason: (err as Error).message });
     }

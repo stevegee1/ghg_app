@@ -23,6 +23,7 @@ import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { createDemoBookingRouter } from './routes/demo-booking.route';
 import { createWorkflowRouter } from './routes/workflow.route';
+import { createFleetRouter } from './routes/fleet.route';
 import { createMerchEnquiryRouter } from './routes/merch-enquiry.route';
 import { createPartnerNetworkRouter } from './routes/partner-network.route';
 import { createAssessmentRouter } from './routes/assessment.route';
@@ -109,6 +110,15 @@ export function createApp(stripeInstance?: Stripe): Express {
     message: { error: 'File upload rate limit exceeded. Please wait before uploading more files.' },
   });
 
+  // Public, unauthenticated calculator: tighter limit to deter scraping and abuse.
+  const calculatorLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many calculations, please try again later.' },
+  });
+
   app.use('/api/', apiLimiter);
   app.use('/api/auth/', authLimiter);
   app.use('/webhooks/stripe', webhookLimiter);
@@ -117,6 +127,9 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use('/api/portal/iso/evidence/upload-file', uploadLimiter);
   app.use('/api/credentials/compose', uploadLimiter);
   app.use('/api/credentials/issue', uploadLimiter);
+  app.use('/api/fleet/assets/import', uploadLimiter);
+  app.use('/api/fleet/readings/import', uploadLimiter);
+  app.use('/api/fleet/calculator', calculatorLimiter);
 
   // Use raw body parsing strictly for the webhook route
   app.use('/webhooks/stripe', express.raw({ type: '*/*' }));
@@ -150,6 +163,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createBadgeEmbedRouter(prisma));
   app.use(createDemoBookingRouter(prisma));
   app.use(createWorkflowRouter(prisma, checkoutService));
+  app.use(createFleetRouter(prisma, stripe));
   app.use(createMerchEnquiryRouter(prisma));
   app.use(createPartnerNetworkRouter(prisma));
   app.use(createAssessmentRouter(prisma));

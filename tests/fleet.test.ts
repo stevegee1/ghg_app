@@ -25,6 +25,8 @@ import { PLATFORM_LICENSEE_ID } from '../src/services/platform-account.service';
 import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 import { resolveActiveSplitConfig } from '../src/services/split-config.service';
 import { createApp } from '../src/expressApp';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
 const prisma = new PrismaClient();
 
@@ -399,6 +401,199 @@ describe('Fleet Emissions: per-asset subscription billing', () => {
     });
     expect(entitlement!.status).toBe('SUSPENDED');
     expect((await prisma.fleetSubscription.findUnique({ where: { licenseeId: licensee.id } }))!.status).toBe('UNPAID');
+  });
+});
+
+describe('Fleet Emissions: HTTP API', () => {
+  let app: ReturnType<typeof createApp>;
+  let clientA: { licensee: { id: string }; user: { id: string }; token: string };
+  let clientB: { licensee: { id: string }; user: { id: string }; token: string };
+  let admin: { id: string };
+  let adminToken: string;
+  const stripeMock = {
+    customers: { create: jest.fn() },
+    checkout: { sessions: { create: jest.fn() } },
+    billingPortal: { sessions: { create: jest.fn() } },
+    subscriptions: { retrieve: jest.fn() },
+    subscriptionItems: { update: jest.fn() },
+    transfers: { create: jest.fn() },
+    paymentIntents: { create: jest.fn(), retrieve: jest.fn() },
+    webhooks: { constructEvent: jest.fn() },
+  };
+
+  const makeClient = async (label: string) => {
+    const suffix = `${label}.${Date.now().toString(36)}`;
+    const licensee = await prisma.licensee.create({ data: { name: `Fleet API ${suffix}`, vertical: Vertical.B2B_HEAVY_MANUFACTURING } });
+    const user = await prisma.portalUser.create({ data: { email: `fleet.api.${suffix}@test.example`, passwordHash: 'x', role: 'PARTNER', licenseeId: licensee.id } });
+    const token = jwt.sign({ userId: user.id, role: 'PARTNER', licenseeId: licensee.id }, JWT_SECRET, { expiresIn: '1h' });
+    return { licensee, user, token };
+  };
+
+  const activateFleet = (licenseeId: string) =>
+    prisma.serviceEntitlement.upsert({
+      where: { licenseeId_serviceLine: { licenseeId, serviceLine: 'FLEET' } },
+      update: { status: 'ACTIVE' },
+      create: { licenseeId, serviceLine: 'FLEET', status: 'ACTIVE' },
+    });
+
+  beforeAll(async () => {
+    app = createApp(stripeMock as unknown as Stripe);
+    clientA = await makeClient('a');
+    clientB = await makeClient('b');
+    admin = await prisma.portalUser.create({ data: { email: `fleet.api.admin.${Date.now().toString(36)}@test.example`, passwordHash: 'x', role: 'ADMIN' } });
+    adminToken = jwt.sign({ userId: admin.id, role: 'ADMIN', licenseeId: '' }, JWT_SECRET, { expiresIn: '1h' });
+  });
+
+  afterAll(async () => {
+    const ids = [clientA.licensee.id, clientB.licensee.id];
+    await prisma.fleetReading.deleteMany({ where: { licenseeId: { in: ids } } });
+    await prisma.fleetImportBatch.deleteMany({ where: { licenseeId: { in: ids } } });
+    await prisma.fleetAsset.deleteMany({ where: { licenseeId: { in: ids } } });
+    await prisma.fleetSubscription.deleteMany({ where: { licenseeId: { in: ids } } });
+    await prisma.serviceEntitlement.deleteMany({ where: { licenseeId: { in: ids } } });
+    await prisma.emissionFactor.deleteMany({ where: { createdByUserId: admin.id } });
+    await prisma.portalUser.deleteMany({ where: { id: { in: [clientA.user.id, clientB.user.id, admin.id] } } });
+    await prisma.licensee.deleteMany({ where: { id: { in: ids } } });
+  });
+
+  it('lets only administrators manage emission factors, with full validation', async () => {
+    const factor = {
+      source: 'TEST FIXTURE API',
+      publicationYear: new Date().getUTCFullYear(),
+      fuelType: 'DIESEL_MINERAL',
+      kgCo2ePerUnit: '2.700000',
+      citation: 'Test fixture table, diesel row',
+    };
+
+    await request(app).post('/api/admin/emission-factors').set('Authorization', `Bearer ${clientA.token}`).send(factor).expect(403);
+    await request(app).post('/api/admin/emission-factors').set('Authorization', `Bearer ${adminToken}`).send({ ...factor, kgCo2ePerUnit: 2.7 }).expect(400);
+    await request(app).post('/api/admin/emission-factors').set('Authorization', `Bearer ${adminToken}`).send({ ...factor, citation: 'short' }).expect(400);
+
+    const created = await request(app).post('/api/admin/emission-factors').set('Authorization', `Bearer ${adminToken}`).send(factor).expect(201);
+    expect(created.body.factor.unit).toBe('litre');
+    await request(app).post('/api/admin/emission-factors').set('Authorization', `Bearer ${adminToken}`).send(factor).expect(409);
+
+    const old = await request(app)
+      .post('/api/admin/emission-factors')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...factor, fuelType: 'LPG', kgCo2ePerUnit: '1.500000' })
+      .expect(201);
+    await request(app).post(`/api/admin/emission-factors/${old.body.factor.id}/retire`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+  });
+
+  it('serves a public calculator that labels results as estimates and cites the factor', async () => {
+    await request(app).post('/api/fleet/calculator').send({ fuelType: 'NOT_A_FUEL', litres: '10' }).expect(400);
+    await request(app).post('/api/fleet/calculator').send({ fuelType: 'DIESEL_MINERAL', litres: '-1' }).expect(400);
+    await request(app).post('/api/fleet/calculator').send({ fuelType: 'LPG', litres: '10' }).expect(409);
+
+    const res = await request(app).post('/api/fleet/calculator').send({ fuelType: 'DIESEL_MINERAL', litres: '100' }).expect(200);
+    expect(res.body).toMatchObject({ kgCo2e: '270.000', isEstimate: true });
+    expect(res.body.factor.citation).toBe('Test fixture table, diesel row');
+
+    const types = await request(app).get('/api/fleet/calculator/fuel-types').expect(200);
+    expect(types.body.fuelTypes).toContain('DIESEL_MINERAL');
+    expect(types.body.fuelTypes).not.toContain('LPG');
+  });
+
+  it('registers assets, isolates them by licensee and locks the boundary once data exists', async () => {
+    const owned = await request(app)
+      .post('/api/fleet/assets')
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .send({ assetTag: 'EX-1', name: 'Excavator', category: 'EXCAVATOR', fuelType: 'DIESEL_MINERAL', ownership: 'OWNED', operationalControl: true, siteName: 'North' })
+      .expect(201);
+    await request(app)
+      .post('/api/fleet/assets')
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .send({ assetTag: 'RO-2', name: 'Rented out crane', category: 'CRANE', fuelType: 'DIESEL_MINERAL', ownership: 'RENTED_OUT', operationalControl: false })
+      .expect(201);
+    await request(app)
+      .post('/api/fleet/assets')
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .send({ assetTag: 'EX-1', name: 'Duplicate', category: 'EXCAVATOR', fuelType: 'DIESEL_MINERAL', ownership: 'OWNED', operationalControl: true })
+      .expect(409);
+
+    await request(app).patch(`/api/fleet/assets/${owned.body.asset.id}`).set('Authorization', `Bearer ${clientB.token}`).send({ name: 'Taken' }).expect(404);
+    const listB = await request(app).get('/api/fleet/assets').set('Authorization', `Bearer ${clientB.token}`).expect(200);
+    expect(listB.body.assets).toHaveLength(0);
+
+    await request(app)
+      .patch(`/api/fleet/assets/${owned.body.asset.id}`)
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .send({ siteName: 'North Yard' })
+      .expect(200);
+  });
+
+  it('requires an active Fleet subscription for data features', async () => {
+    const csv = 'asset_tag,period_start,period_end,fuel_litres\nEX-1,2026-01-01,2026-01-31,1000';
+    await request(app)
+      .post('/api/fleet/readings/import')
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .field('format', 'readings')
+      .attach('file', Buffer.from(csv), 'jan.csv')
+      .expect(402);
+    await request(app).get('/api/fleet/summary?from=2026-01-01&to=2026-12-31').set('Authorization', `Bearer ${clientA.token}`).expect(402);
+  });
+
+  it('imports readings and reports Scope 1 and Scope 3 separately', async () => {
+    await activateFleet(clientA.licensee.id);
+    const csv = [
+      'asset_tag,period_start,period_end,fuel_litres,engine_hours,idle_hours',
+      `EX-1,${new Date().getUTCFullYear()}-01-01,${new Date().getUTCFullYear()}-01-31,1000,100,25`,
+      `RO-2,${new Date().getUTCFullYear()}-01-01,${new Date().getUTCFullYear()}-01-31,200,,`,
+    ].join('\n');
+
+    const imported = await request(app)
+      .post('/api/fleet/readings/import')
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .field('format', 'readings')
+      .attach('file', Buffer.from(csv), 'jan.csv')
+      .expect(201);
+    expect(imported.body.totalKgCo2e).toBe('3240.000');
+
+    const year = new Date().getUTCFullYear();
+    const summary = await request(app)
+      .get(`/api/fleet/summary?from=${year}-01-01&to=${year}-12-31`)
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .expect(200);
+    expect(summary.body.scope1).toMatchObject({ fuelLitres: '1000.000', kgCo2e: '2700.000', idleSharePct: '25.0' });
+    expect(summary.body.scope3).toMatchObject({ fuelLitres: '200.000', kgCo2e: '540.000' });
+    expect(summary.body.coverage).toEqual({ activeAssets: 2, assetsWithData: 2 });
+    expect(summary.body.factorsUsed[0].citation).toBe('Test fixture table, diesel row');
+
+    const assets = await request(app).get('/api/fleet/assets').set('Authorization', `Bearer ${clientA.token}`).expect(200);
+    const ex1 = assets.body.assets.find((a: { assetTag: string }) => a.assetTag === 'EX-1');
+    const locked = await request(app)
+      .patch(`/api/fleet/assets/${ex1.id}`)
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .send({ operationalControl: false })
+      .expect(409);
+    expect(locked.body.error).toMatch(/cannot change once an asset has data/);
+
+    const pdf = await request(app)
+      .get(`/api/fleet/report.pdf?from=${year}-01-01&to=${year}-12-31`)
+      .set('Authorization', `Bearer ${clientA.token}`)
+      .expect(200);
+    expect(pdf.headers['content-type']).toBe('application/pdf');
+
+    const imports = await request(app).get('/api/fleet/imports').set('Authorization', `Bearer ${clientB.token}`).expect(200);
+    expect(imports.body.batches).toHaveLength(0);
+  });
+
+  it('serves CSV templates and rejects bad date ranges', async () => {
+    const template = await request(app).get('/api/fleet/templates/fuel-card').set('Authorization', `Bearer ${clientA.token}`).expect(200);
+    expect(template.text).toBe('asset_tag,transaction_date,litres\r\n');
+    await request(app).get('/api/fleet/templates/other').set('Authorization', `Bearer ${clientA.token}`).expect(404);
+    await request(app).get('/api/fleet/summary?from=2026-12-31&to=2026-01-01').set('Authorization', `Bearer ${clientA.token}`).expect(400);
+  });
+
+  it('starts a subscription checkout for the client account', async () => {
+    stripeMock.customers.create.mockResolvedValue({ id: 'cus_fleet_api' });
+    stripeMock.checkout.sessions.create.mockResolvedValue({ url: 'https://checkout.stripe.com/c/pay/cs_api' });
+    await prisma.serviceEntitlement.deleteMany({ where: { licenseeId: clientA.licensee.id } });
+
+    const res = await request(app).post('/api/fleet/subscription/checkout').set('Authorization', `Bearer ${clientA.token}`).expect(200);
+    expect(res.body).toEqual({ checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_api', quantity: 2 });
+    await request(app).post('/api/fleet/subscription/checkout').set('Authorization', `Bearer ${adminToken}`).expect(403);
   });
 });
 
