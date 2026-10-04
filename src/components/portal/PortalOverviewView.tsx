@@ -3,7 +3,6 @@ import { SharedDashboardShell } from '../SharedDashboardShell';
 import { StatusBadge } from '../StatusBadge';
 
 type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
-type WorkflowStep = 1 | 2 | 3 | 4 | 5;
 
 interface KPIItem {
   label: string;
@@ -21,7 +20,7 @@ interface PortalOverviewViewProps {
   kpis: KPIItem[];
   credentials: any[];
   transactions: any[];
-  handleNavigateWorkflow: (step: WorkflowStep, scope: AuditScope) => void;
+  handleNavigateWorkflow: (scope: AuditScope) => void;
   setActiveView: (view: any) => void;
 }
 
@@ -43,9 +42,9 @@ export const PortalOverviewView: React.FC<PortalOverviewViewProps> = ({
         hideEmailBanner={true}
         onNavigateWorkflow={(type) => {
           if (type === 'JOB') {
-            handleNavigateWorkflow(1, 'JOB_REPORTING');
+            handleNavigateWorkflow('JOB_REPORTING');
           } else {
-            handleNavigateWorkflow(1, 'CARBON_EMISSION');
+            handleNavigateWorkflow('CARBON_EMISSION');
           }
         }}
       />
@@ -83,7 +82,7 @@ export const PortalOverviewView: React.FC<PortalOverviewViewProps> = ({
           </div>
           <button
             type="button"
-            onClick={() => handleNavigateWorkflow(1, 'CARBON_EMISSION')}
+            onClick={() => handleNavigateWorkflow('CARBON_EMISSION')}
             style={{
               backgroundColor: isCarbonPrepReady ? '#16a34a' : '#0f172a',
               color: '#ffffff',
@@ -138,7 +137,7 @@ export const PortalOverviewView: React.FC<PortalOverviewViewProps> = ({
           </div>
           <button
             type="button"
-            onClick={() => handleNavigateWorkflow(1, 'JOB_REPORTING')}
+            onClick={() => handleNavigateWorkflow('JOB_REPORTING')}
             style={{
               backgroundColor: isJobPrepReady ? '#2563eb' : '#0f172a',
               color: '#ffffff',
@@ -235,8 +234,8 @@ export const PortalOverviewView: React.FC<PortalOverviewViewProps> = ({
           {credentials.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No credentials issued yet.</p>
-              <button type="button" onClick={() => handleNavigateWorkflow(4, 'CARBON_EMISSION')} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
-                Open Credential Studio
+              <button type="button" onClick={() => handleNavigateWorkflow('CARBON_EMISSION')} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
+                Go to GHG Assurance
               </button>
             </div>
           ) : (
@@ -262,7 +261,7 @@ export const PortalOverviewView: React.FC<PortalOverviewViewProps> = ({
           {transactions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '0.82rem', margin: '0 0 0.75rem 0' }}>No transactions recorded yet.</p>
-              <button type="button" onClick={() => handleNavigateWorkflow(2, 'CARBON_EMISSION')} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
+              <button type="button" onClick={() => handleNavigateWorkflow('CARBON_EMISSION')} className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 1rem' }}>
                 Review Commercial Scope
               </button>
             </div>

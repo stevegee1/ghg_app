@@ -65,75 +65,41 @@ function buildBadgeSvg(credential: BadgeSource, licenseeName: string): string {
 export function createCredentialsRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.post(
-    '/api/credentials/compose',
-    authenticateToken,
-    logoUpload.single('clientLogo'),
-    async (req: Request, res: Response) => {
-      const user = req.user;
-      if (!user?.licenseeId) {
-        return res.status(403).json({ error: 'Licensee account required.' });
-      }
-      const licenseeId = user.licenseeId;
-
-      const { clientMessage, submissionId } = req.body as { clientMessage?: string; submissionId?: string };
-      const file = req.file;
-
-      if (!file) {
-        return res.status(400).json({ error: 'clientLogo file is required.' });
-      }
-      if (!clientMessage || clientMessage.trim().length === 0) {
-        return res.status(400).json({ error: 'clientMessage is required.' });
-      }
-      if (clientMessage.length > 200) {
-        return res.status(400).json({ error: 'clientMessage must not exceed 200 characters.' });
-      }
-
-      let selectedFrameworks: string[] | undefined;
-      if (user.role !== 'ADMIN') {
-        const paidSubmission = await runWithRls(prisma, user, async (tx) => {
-          return tx.isoReadinessSubmission.findFirst({
-            where: {
-              licenseeId,
-              paidAt: { not: null },
-              ...(submissionId ? { id: submissionId } : {}),
-            },
-          });
-        });
-        if (!paidSubmission) {
-          return res.status(403).json({
-            error: 'A paid readiness submission is required before generating a credential.',
-            code: 'PAYMENT_REQUIRED',
-          });
-        }
-        selectedFrameworks = paidSubmission.selectedFrameworks;
-      }
-
-      const licensee = await prisma.licensee.findUnique({ where: { id: licenseeId } });
-      const licenseeName = licensee?.name || licenseeId;
-
-      try {
-        const result = await compositeAuditBadge({
-          clientLogoPath: file.path,
-          clientMessage: clientMessage.trim(),
-          licenseeName,
-          selectedFrameworks,
-        });
-
-        return res.status(200).json({
-          success: true,
-          previewDataUri: result.dataUri,
-          format: result.format,
-          warrantyExpiresAt: result.warrantyExpiresAt,
-          verificationSeal: result.verificationSeal,
-        });
-      } catch (err: unknown) {
-        console.error('[CREDENTIALS COMPOSE ERROR]', err);
-        return res.status(500).json({ error: 'Failed to generate credential preview.' });
-      }
+  /**
+   * GET /api/credentials/legacy-pending
+   * Readiness submissions from the retired ISO pipeline that were approved and paid but never
+   * received their credential. These are the only submissions /api/credentials/issue accepts.
+   */
+  router.get('/api/credentials/legacy-pending', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user?.licenseeId) {
+      return res.status(403).json({ error: 'Licensee account required.' });
     }
-  );
+    try {
+      const submissions = await runWithRls(prisma, user, (tx) =>
+        tx.isoReadinessSubmission.findMany({
+          where: {
+            licenseeId: user.licenseeId!,
+            paidAt: { not: null },
+            status: { in: ['AUDIT_READY', 'APPROVED'] },
+            OR: [{ credential: null }, { credential: { status: { not: CredentialStatus.ISSUED } } }],
+          },
+          select: { id: true, selectedFrameworks: true, paidAt: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      );
+      return res.status(200).json({ submissions });
+    } catch (err: unknown) {
+      console.error('[CREDENTIALS LEGACY PENDING ERROR]', err);
+      return res.status(500).json({ error: 'Failed to load pending credentials.' });
+    }
+  });
 
+  /**
+   * POST /api/credentials/issue
+   * Issues the credential for a legacy readiness submission listed by /legacy-pending.
+   * GHG and Workforce submissions on the workflow engine use /api/workflow/submissions/:id/badge-setup.
+   */
   router.post(
     '/api/credentials/issue',
     authenticateToken,

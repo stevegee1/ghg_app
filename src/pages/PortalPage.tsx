@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
-import { WorkflowWizard } from '../components/workflow/WorkflowWizard';
 import { PipelineWorkspace } from '../components/pipeline/PipelineWorkspace';
 import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
 import { PortalOverviewView } from '../components/portal/PortalOverviewView';
@@ -15,28 +14,10 @@ import { PortalTransactionsView } from '../components/portal/PortalTransactionsV
 import { PortalProfileView } from '../components/portal/PortalProfileView';
 import { PortalLegalView } from '../components/portal/PortalLegalView';
 import { JobFilingModal } from '../components/portal/JobFilingModal';
-import { LeadAuditorSubmissionModal } from '../components/portal/LeadAuditorSubmissionModal';
+import { LegacyCredentialPanel } from '../components/portal/LegacyCredentialPanel';
 
 // ── Scope & Step definitions ────────────────────────────────────────────────
 type AuditScope = 'CARBON_EMISSION' | 'JOB_REPORTING';
-type WorkflowStep = 1 | 2 | 3 | 4 | 5;
-
-const STEP_LABELS: Record<AuditScope, Record<WorkflowStep, string>> = {
-  CARBON_EMISSION: {
-    1: 'ISO Diagnostic',
-    2: 'Checkout',
-    3: 'API Access',
-    4: 'Credential Studio',
-    5: 'Digital Asset',
-  },
-  JOB_REPORTING: {
-    1: 'Job Filing Audit',
-    2: 'Checkout',
-    3: 'Workforce API',
-    4: 'Credential Studio',
-    5: 'Digital Asset',
-  },
-};
 
 // ── Google Material Vector SVGs (Google SaaS Standard) ──────────────────────
 const GoogleIcons = {
@@ -154,84 +135,7 @@ const GoogleIcons = {
   ),
 };
 
-// ── Tier definitions ──────────────────────────────────────────────────────────
-const TIERS = [
-  {
-    id: 'TIER_1_READINESS',
-    name: 'Single-Site Remote Readiness',
-    price: '£1,250',
-    grossCents: 125000,
-    softwareCents: 106250,
-    charityCents: 18750,
-    turnaround: '72-Hour Expedited',
-    standards: 'ISO 14001 / ISO 50001 / ISO 19011:2026',
-    description: 'Single-site management system diagnostic and remote verification docket.',
-    features: [
-      'Automated ISO 14001, ISO 50001 & ISO 14064 diagnostic review',
-      'Remote ICT verification stamp under ISO 19011:2026 Annex A.16',
-      'Expedited 72-hour lead assurance review turnaround',
-      'Dual-logo readiness credential with public verification record',
-    ],
-  },
-  {
-    id: 'TIER_2_CONTINUOUS',
-    name: 'Continuous Assurance Protocol',
-    price: '£3,500',
-    grossCents: 350000,
-    softwareCents: 297500,
-    charityCents: 52500,
-    turnaround: 'Continuous Quarterly',
-    standards: 'ISO 14001 · ISO 50001 · UK SECR · UAE SCA · EU CSRD',
-    description: 'Continuous quarterly assurance protocol with automated telemetry monitoring and statutory filings.',
-    recommended: true,
-    features: [
-      'Continuous telemetry ingestion & real-time anomaly alerts',
-      'Quarterly UK SECR, UAE SCA & EU CSRD draft statutory dossiers',
-      'ISO 17025 equipment calibration gatekeeper protocol',
-      'Priority lead auditor consultation & assurance warranty badge',
-    ],
-  },
-];
-
-const JOB_TIERS = [
-  {
-    id: 'TIER_1_READINESS',
-    name: 'Section 106 Project Audit Readiness',
-    price: '£1,250',
-    grossCents: 125000,
-    softwareCents: 106250,
-    charityCents: 18750,
-    turnaround: '72-Hour Expedited',
-    standards: 'UK Section 106 / Social Value Act / ISO 19011:2026',
-    description: 'Single-project verified job creation docket and local authority covenant preparation.',
-    features: [
-      'Section 106 local authority workforce hours & apprentice validation',
-      'Remote statutory verification docket under ISO 19011:2026 Annex A.16',
-      'Direct 15% statutory endowment to local disaster relief / charity',
-      'Social Value readiness credential with public verification record',
-    ],
-  },
-  {
-    id: 'TIER_2_CONTINUOUS',
-    name: 'Continuous Workforce Assurance Protocol',
-    price: '£3,500',
-    grossCents: 350000,
-    softwareCents: 297500,
-    charityCents: 52500,
-    turnaround: 'Continuous Quarterly',
-    standards: 'UK Section 106 · Social Value Act · EU CSRD ESRS S1',
-    description: 'Ongoing quarterly workforce impact auditing with automated API telemetry and municipal covenants.',
-    recommended: true,
-    features: [
-      'Automated workforce telemetry ingestion & quarterly threshold alerts',
-      'Continuous Section 106 council covenant compliance verification',
-      'Draft statutory CSRD ESRS S1 social impact dossiers',
-      'Priority lead social auditor consultation & warranty badge',
-    ],
-  },
-];
-
-export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'assurance-wizard' | 'fleet';
+export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'fleet';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -280,10 +184,7 @@ export const PortalPage: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('scope') === 'JOB_REPORTING' ? 'JOB_REPORTING' : 'CARBON_EMISSION';
   });
-  const [workflowWizardType, setWorkflowWizardType] = useState<'CARBON' | 'JOB'>('CARBON');
-  const [workflowWizardSubmissionId, setWorkflowWizardSubmissionId] = useState<string | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
-  const [copiedApiKey, setCopiedApiKey] = useState<boolean>(false);
   const [copiedClientId, setCopiedClientId] = useState<boolean>(false);
 
   // ── Email verification state ──────────────────────────────────────────────
@@ -383,7 +284,6 @@ export const PortalPage: React.FC = () => {
 
   // ── Preparation Checklists State & Gating ────────────────────────────────
   const [checklists, setChecklists] = useState<any[]>([]);
-  const [checklistsLoading, setChecklistsLoading] = useState<boolean>(true);
 
   const refreshChecklists = useCallback(async () => {
     if (!token) return;
@@ -422,64 +322,39 @@ export const PortalPage: React.FC = () => {
     relevantJobChecklists.length > 0 &&
     relevantJobChecklists.every((c) => Boolean(c?.isReadyToIngest));
 
-  const isCurrentScopePrepReady =
-    auditScope === 'JOB_REPORTING' ? isJobPrepReady : isCarbonPrepReady;
-
   // Each service's pipeline is shown only when the client holds that service.
   const activeServiceLines = new Set((user?.serviceEntitlements || []).map((e) => e.serviceLine));
   const isCarbonActive = activeServiceLines.has('GHG') || activeServiceLines.has('CARBON');
   const isJobActive = activeServiceLines.has('JOB');
 
-  // ── ISO Workflow & Framework State ─────────────────────────────────────────
-  const [activeStep, setActiveStep] = useState<WorkflowStep>(1);
-
   const navigateToView = useCallback(
-    (
-      targetView: DashboardView,
-      options?: { scope?: AuditScope; step?: WorkflowStep; submissionId?: string }
-    ) => {
-      const resolvedView = targetView;
+    (targetView: DashboardView, options?: { scope?: AuditScope }) => {
       const nextScope = options?.scope || auditScope;
-      const nextStep = options?.step || activeStep;
 
-      // Statutory Lifecycle Router Guard
-      if (resolvedView === 'workflow') {
-        if (!user?.hasCompletedAssessment) {
-          navigate('/portal/onboarding');
-          return;
-        }
-        // Preparation is checked per framework inside the pipeline workspace.
+      if (targetView === 'workflow' && !user?.hasCompletedAssessment) {
+        navigate('/portal/onboarding');
+        return;
       }
 
-      setActiveViewState(resolvedView);
+      setActiveViewState(targetView);
       if (options?.scope) setAuditScope(options.scope);
-      if (options?.step) setActiveStep(options.step);
-      if (options?.submissionId) setSubmissionId(options.submissionId);
 
-      // Persist to URL query parameters so page refresh preserves view, scope, and step
+      // Persist view and scope to the URL so a refresh keeps them. The pipeline workspace owns submission_id.
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          next.set('tab', resolvedView);
-          if (resolvedView === 'workflow') {
-            next.set('scope', nextScope);
-            next.set('step', String(nextStep));
-            if (options?.submissionId) next.set('submission_id', options.submissionId);
-          } else if (resolvedView === 'checklist') {
-            next.set('scope', nextScope);
-            next.delete('step');
-            next.delete('submission_id');
-          } else {
-            next.delete('scope');
-            next.delete('step');
-            next.delete('submission_id');
-          }
+          next.set('tab', targetView);
+          next.delete('step');
+          next.delete('submission_id');
+          next.delete('payment');
+          if (targetView === 'workflow' || targetView === 'checklist') next.set('scope', nextScope);
+          else next.delete('scope');
           return next;
         },
         { replace: true }
       );
     },
-    [auditScope, activeStep, user?.hasCompletedAssessment, setSearchParams, navigate]
+    [auditScope, user?.hasCompletedAssessment, setSearchParams, navigate]
   );
 
   const setActiveView = useCallback(
@@ -490,8 +365,8 @@ export const PortalPage: React.FC = () => {
   );
 
   const handleNavigateWorkflow = useCallback(
-    (targetStep: WorkflowStep = 1, targetScope: AuditScope = auditScope) => {
-      navigateToView('workflow', { scope: targetScope, step: targetStep });
+    (targetScope: AuditScope = auditScope) => {
+      navigateToView('workflow', { scope: targetScope });
     },
     [navigateToView, auditScope]
   );
@@ -501,47 +376,10 @@ export const PortalPage: React.FC = () => {
     (service: 'GHG' | 'WORKFORCE') => navigate(`/portal/onboarding?add=${service}`),
     [navigate]
   );
-  const activeTiers = auditScope === 'CARBON_EMISSION' ? TIERS : JOB_TIERS;
-  const [framework, setFramework] = useState<any | null>(null);
-  const [frameworkLoading, setFrameworkLoading] = useState(false);
-  const [availableFrameworks, setAvailableFrameworks] = useState<any[]>([]);
-  const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(['ISO_14064_1', 'UK_SECR']);
-  const [diagnosticBundle, setDiagnosticBundle] = useState<any | null>(null);
-  const [bundleLoading, setBundleLoading] = useState(false);
-  const [auditorReviewLoading, setAuditorReviewLoading] = useState(false);
-  const [auditorReviewSuccess, setAuditorReviewSuccess] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [selectedTier, setSelectedTier] = useState<string>('TIER_1_READINESS');
-  const [submissionId, setSubmissionId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isoStatus, setIsoStatus] = useState<any | null>(null);
-  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
-  const [showRecentAudits, setShowRecentAudits] = useState<boolean>(true);
-  const [isoStatusLoading, setIsoStatusLoading] = useState(false);
-  const [evidenceByQuestion, setEvidenceByQuestion] = useState<Record<string, Array<{ fileName: string; sha256Hash: string; fileUrl: string; fileSizeBytes?: number }>>>({});
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<any[]>([]);
-  const [activeSectionFilter, setActiveSectionFilter] = useState<string>('ALL');
-  const [diagnosticViewMode, setDiagnosticViewMode] = useState<'GUIDED' | 'FULL_OVERVIEW'>('GUIDED');
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    P1_BOUNDARY: true,
-  });
-  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
-
-  // ── Credential Studio State ────────────────────────────────────────────────
-  const [clientMessage, setClientMessage] = useState<string>('');
-  const [clientLogoFile, setClientLogoFile] = useState<File | null>(null);
-  const [clientLogoPreview, setClientLogoPreview] = useState<string | null>(null);
-  const [compositePreview, setCompositePreview] = useState<string | null>(null);
-  const [compositeLoading, setCompositeLoading] = useState(false);
-  const [compositeError, setCompositeError] = useState<string | null>(null);
-  const [copiedSnippet, setCopiedSnippet] = useState(false);
 
   // ── Job filing modal ──────────────────────────────────────────────────────
   const [showJobModal, setShowJobModal] = useState<boolean>(false);
-  const [showSubmissionSuccessModal, setShowSubmissionSuccessModal] = useState<boolean>(false);
   const [periodType, setPeriodType] = useState<string>('QUARTERLY');
   const [periodStart, setPeriodStart] = useState<string>('2026-01-01');
   const [periodEnd, setPeriodEnd] = useState<string>('2026-03-31');
@@ -549,41 +387,6 @@ export const PortalPage: React.FC = () => {
   const [customNoteInput, setCustomNoteInput] = useState<string>('');
   const [submittingJob, setSubmittingJob] = useState<boolean>(false);
   const [jobFormError, setJobFormError] = useState<string | null>(null);
-
-  const logoDropRef = useRef<HTMLDivElement>(null);
-  const chipScrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  const updateScrollButtons = useCallback(() => {
-    if (chipScrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = chipScrollRef.current;
-      setCanScrollLeft(scrollLeft > 10);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-    }
-  }, []);
-
-  const scrollChips = (dir: 'left' | 'right') => {
-    if (chipScrollRef.current) {
-      chipScrollRef.current.scrollBy({
-        left: dir === 'left' ? -240 : 240,
-        behavior: 'smooth',
-      });
-      setTimeout(updateScrollButtons, 250);
-    }
-  };
-
-  const toggleFramework = (frameworkId: string) => {
-    setSelectedFrameworks((prev) => {
-      if (prev.includes(frameworkId)) {
-        if (prev.length <= 1) return prev; // Keep at least one
-        return prev.filter((id) => id !== frameworkId);
-      } else {
-        return [...prev, frameworkId];
-      }
-    });
-  };
-
 
   // ── Listen for global/top app bar drawer toggle ────────────────────────────
   useEffect(() => {
@@ -596,70 +399,6 @@ export const PortalPage: React.FC = () => {
     };
   }, []);
 
-  // ── Restore in-progress diagnostic answers from localStorage on mount ─────
-  useEffect(() => {
-    try {
-      const key = user?.licenseeId ? `ghg_draft_answers_${user.licenseeId}` : 'ghg_draft_answers_latest';
-      const saved = localStorage.getItem(key) || localStorage.getItem('ghg_draft_answers_latest');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-          setAnswers((prev) => ({ ...parsed, ...prev }));
-        }
-      }
-    } catch {
-      // Ignore storage errors
-    }
-  }, [user?.licenseeId]);
-
-  // ── Auto-save diagnostic draft answers to localStorage on change ──────────
-  useEffect(() => {
-    if (Object.keys(answers).length === 0) return;
-    try {
-      if (user?.licenseeId) {
-        localStorage.setItem(`ghg_draft_answers_${user.licenseeId}`, JSON.stringify(answers));
-      }
-      localStorage.setItem('ghg_draft_answers_latest', JSON.stringify(answers));
-    } catch {
-      // Ignore quota errors
-    }
-  }, [answers, user?.licenseeId]);
-
-  // ── Load available compliance frameworks on mount ──────────────────────────
-  useEffect(() => {
-    let isMounted = true;
-    api.getComplianceFrameworks()
-      .then((data) => {
-        if (isMounted && Array.isArray(data?.frameworks)) {
-          setAvailableFrameworks(data.frameworks);
-        }
-      })
-      .catch((err) => {
-        console.warn('[Compliance Frameworks Load Error]', err);
-      });
-    return () => { isMounted = false; };
-  }, []);
-
-  // ── Load diagnostic bundle when selectedFrameworks change ──────────────────
-  useEffect(() => {
-    let isMounted = true;
-    if (selectedFrameworks.length === 0) return;
-    setBundleLoading(true);
-    api.getDiagnosticBundle(selectedFrameworks)
-      .then((data) => {
-        if (isMounted && data?.bundle) {
-          setDiagnosticBundle(data.bundle);
-        }
-      })
-      .catch((err) => {
-        console.warn('[Diagnostic Bundle Load Error]', err);
-      })
-      .finally(() => {
-        if (isMounted) setBundleLoading(false);
-      });
-    return () => { isMounted = false; };
-  }, [selectedFrameworks]);
-
   // ── Fetch portal summary, transactions, jobs ───────────────────────────────
   useEffect(() => {
     let isMounted = true;
@@ -668,11 +407,10 @@ export const PortalPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const [sumRes, txRes, jobRes, evRes, checkRes] = await Promise.all([
+        const [sumRes, txRes, jobRes, checkRes] = await Promise.all([
           api.getPortalSummary(token),
           api.getPortalTransactions(token),
           api.getPortalJobReports(token).catch(() => ({ data: [] })),
-          api.getEvidenceDocuments(token, user?.licenseeId || undefined).catch(() => ({ documents: [] })),
           api.getChecklists(token).catch(() => ({ checklists: [] })),
         ]);
         if (isMounted) {
@@ -680,16 +418,6 @@ export const PortalPage: React.FC = () => {
           setTransactions(txRes?.transactions || txRes?.data || []);
           setJobReports(jobRes?.data || jobRes?.reports || []);
           setChecklists(checkRes?.checklists || []);
-          setChecklistsLoading(false);
-          if (Array.isArray(evRes?.documents)) {
-            const mapped: Record<string, any[]> = {};
-            for (const doc of evRes.documents) {
-              const qId = doc.matrixRowId || 'general';
-              if (!mapped[qId]) mapped[qId] = [];
-              mapped[qId].push(doc);
-            }
-            setEvidenceByQuestion((prev) => ({ ...mapped, ...prev }));
-          }
         }
       } catch (err: any) {
         if (isMounted) setError(err.message || 'Failed to load portal data');
@@ -700,42 +428,6 @@ export const PortalPage: React.FC = () => {
     fetchData();
     return () => { isMounted = false; };
   }, [token]);
-
-  // ── Load ISO framework fallback ───────────────────────────────────────────
-  useEffect(() => {
-    if (activeStep !== 1 || framework) return;
-    setFrameworkLoading(true);
-    api.getIsoFramework()
-      .then((res) => setFramework(res.framework))
-      .catch(() => setFramework(null))
-      .finally(() => setFrameworkLoading(false));
-  }, [activeStep, framework]);
-
-  // ── Load ISO status with callback ─────────────────────────────────────────
-  const fetchIsoStatus = useCallback(async () => {
-    if (!token || !user?.licenseeId) return;
-    setIsoStatusLoading(true);
-    try {
-      const res = await api.getIsoStatus(token, user.licenseeId);
-      setIsoStatus(res.latestSubmission);
-      setRecentSubmissions(res.recentSubmissions || []);
-      if (res.latestSubmission?.id) {
-        setSubmissionId(res.latestSubmission.id);
-        if (res.latestSubmission.selectedFrameworks && res.latestSubmission.selectedFrameworks.length > 0) {
-          setSelectedFrameworks(res.latestSubmission.selectedFrameworks);
-        }
-      }
-    } catch {
-      setIsoStatus(null);
-      setRecentSubmissions([]);
-    } finally {
-      setIsoStatusLoading(false);
-    }
-  }, [token, user?.licenseeId]);
-
-  useEffect(() => {
-    fetchIsoStatus();
-  }, [fetchIsoStatus]);
 
   // Synchronize state when URL search parameters change (back/forward navigation or Stripe checkout return)
   useEffect(() => {
@@ -759,28 +451,7 @@ export const PortalPage: React.FC = () => {
         { replace: true }
       );
     }
-    const stepParam = searchParams.get('step');
-    if (stepParam) {
-      const parsedStep = parseInt(stepParam, 10);
-      if (parsedStep >= 1 && parsedStep <= 5) {
-        setActiveStep(parsedStep as WorkflowStep);
-      }
-    }
-    const subIdParam = searchParams.get('submission_id');
-    if (subIdParam) {
-      setSubmissionId(subIdParam);
-    }
-    const tierParam = searchParams.get('tier');
-    if (tierParam) {
-      setSelectedTier(tierParam);
-    }
-    if (stepParam === '3' || stepParam === '4') {
-      const timer = setTimeout(() => {
-        fetchIsoStatus();
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams, fetchIsoStatus]);
+  }, [searchParams]);
 
   // ── Load credentials ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -789,276 +460,6 @@ export const PortalPage: React.FC = () => {
       .then((res) => setCredentials(res.credentials || []))
       .catch(() => setCredentials([]));
   }, [token]);
-
-  // ── Answer change ─────────────────────────────────────────────────────────
-  const handleAnswerChange = (questionId: string, value: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
-  };
-
-  // ── Start Fresh Carbon Audit Action ────────────────────────────────────────
-  const handleStartNewAudit = () => {
-    setSubmissionId(null);
-    setAnswers({});
-    setSelectedFrameworks(['ISO_14064_1', 'UK_SECR']);
-    setIsoStatus(null);
-    const elem = document.getElementById('iso-audit-stepper-anchor');
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  // ── Resume Workflow Action from Recent Audits ──────────────────────────────
-  const handleResumeWorkflow = (sub: any) => {
-    if (!sub) return;
-    setSubmissionId(sub.id);
-    setIsoStatus(sub);
-    if (Array.isArray(sub.selectedFrameworks) && sub.selectedFrameworks.length > 0) {
-      setSelectedFrameworks(sub.selectedFrameworks);
-    }
-    if (Array.isArray(sub.answers)) {
-      const loadedAnswers: Record<string, string> = {};
-      for (const item of sub.answers) {
-        if (item.questionId && item.answer) {
-          loadedAnswers[item.questionId] = item.answer;
-        }
-      }
-      setAnswers((prev) => ({ ...prev, ...loadedAnswers }));
-    }
-    const elem = document.getElementById('iso-audit-stepper-anchor');
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  // ── Evidence Proof Document Upload Handler ─────────────────────────────────
-  const handleUploadEvidence = async (questionId: string, file: File) => {
-    if (!token) throw new Error('Authentication required to upload proof documents.');
-    const res = await api.uploadEvidenceProofFile(token, {
-      file,
-      questionId,
-      licenseeId: user?.licenseeId || undefined,
-      category: 'OTHER_AUDIT_PROOF',
-    });
-    if (res?.evidenceDoc) {
-      setEvidenceByQuestion((prev) => ({
-        ...prev,
-        [questionId]: [...(prev[questionId] || []), res.evidenceDoc],
-      }));
-    }
-    return res?.evidenceDoc || null;
-  };
-
-  // ── Submit ISO answers ────────────────────────────────────────────────────
-  const handleIsoSubmit = async () => {
-    if (!token) {
-      setActiveStep(2);
-      return;
-    }
-    const questionsToSubmit = (diagnosticBundle?.pillars || []).length > 0
-      ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => {
-          const qId = q.questionId || q.id;
-          return {
-            questionId: qId,
-            questionText: q.questionText || q.text || `Clause ${qId}`,
-            answer: answers[qId] || answers[q.id] || answers[q.questionId] || 'Partially implemented',
-            isoClause: q.isoClause || q.applicableStandards?.[0] || 'ISO 14064-1',
-          };
-        }))
-      : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => {
-          const qId = q.questionId || q.id;
-          return {
-            questionId: qId,
-            questionText: q.questionText || q.text || `Clause ${qId}`,
-            answer: answers[qId] || answers[q.questionId] || answers[q.id] || 'Partially implemented',
-            isoClause: q.isoClause || 'ISO 14001',
-          };
-        }));
-
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const res = await api.submitIsoAnswers(token, {
-        answers: questionsToSubmit,
-        tierSelected: selectedTier,
-        selectedFrameworks,
-      });
-      setSubmissionId(res.submissionId);
-      await fetchIsoStatus();
-      setActiveStep(2);
-    } catch (err: any) {
-      // Allow proceeding to review pricing
-      setActiveStep(2);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // ── Submit Diagnostic Answers for Lead Auditor Review (Transition to SUBMITTED) ────────
-  const handleSubmitForAuditorReview = async () => {
-    if (!token) return;
-    setAuditorReviewLoading(true);
-    setSubmitError(null);
-    setAuditorReviewSuccess(null);
-    try {
-      let activeSubId = submissionId;
-      const questionsToSubmit = (diagnosticBundle?.pillars || []).length > 0
-        ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => {
-            const qId = q.questionId || q.id;
-            return {
-              questionId: qId,
-              questionText: q.questionText || q.text || `Clause ${qId}`,
-              answer: answers[qId] || answers[q.id] || answers[q.questionId] || 'Fully compliant & documented',
-              isoClause: q.isoClause || q.applicableStandards?.[0] || 'ISO 14064-1',
-            };
-          }))
-        : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => {
-            const qId = q.questionId || q.id;
-            return {
-              questionId: qId,
-              questionText: q.questionText || q.text || `Clause ${qId}`,
-              answer: answers[qId] || answers[q.questionId] || answers[q.id] || 'Yes, fully in place',
-              isoClause: q.isoClause || 'ISO 14001',
-            };
-          }));
-
-      // Save latest answers with status SUBMITTED to trigger Lead Auditor Review
-      const subRes = await api.submitIsoAnswers(token, {
-        answers: questionsToSubmit,
-        tierSelected: selectedTier,
-        selectedFrameworks,
-      });
-      activeSubId = subRes.submissionId;
-      setSubmissionId(activeSubId);
-
-      // Instantaneous optimistic state update for seamless UX
-      setIsoStatus((prev: any) => ({
-        ...(prev || {}),
-        id: activeSubId,
-        status: subRes.status || 'SUBMITTED',
-        complianceScore: subRes.complianceScore ?? estimatedComplianceScore,
-        tierSelected: subRes.tierSelected || selectedTier,
-        selectedFrameworks: subRes.selectedFrameworks || selectedFrameworks,
-        updatedAt: new Date().toISOString(),
-      }));
-
-      setAuditorReviewSuccess('Diagnostic answers and evidence successfully submitted to Lead Auditor Review Queue. Conformance verification in progress.');
-      setShowSubmissionSuccessModal(true);
-
-      await fetchIsoStatus();
-    } catch (err: any) {
-      setSubmitError(err.message || 'Auditor verification request failed.');
-    } finally {
-      setAuditorReviewLoading(false);
-    }
-  };
-
-  // ── Export Dossier JSON Summary ──────────────────────────────────────────
-  const handleExportDossierJson = () => {
-    const exportData = {
-      submissionId: submissionId || 'PENDING_SUBMISSION',
-      timestamp: new Date().toISOString(),
-      licenseeId: user?.licenseeId || 'N/A',
-      userEmail: user?.email,
-      selectedTier,
-      selectedFrameworks,
-      conformanceScore: estimatedComplianceScore,
-      totalClauses: allQuestions.length,
-      answeredClauses: answeredQuestions,
-      answers,
-      auditStandard: 'ISO 19011:2026 / ISO 14064-1:2018',
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `GHG_Statutory_Dossier_${(submissionId || 'draft').slice(0, 8)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  // ── Create Stripe checkout ────────────────────────────────────────────────
-  const handleCheckout = async () => {
-    if (!token) return;
-    if (auditScope === 'CARBON_EMISSION' && !isAuditReady) {
-      setCheckoutError('Gate 1 Enforcement: Lead Auditor sign-off is required before commercial checkout. Return to Step 1 and request auditor review.');
-      return;
-    }
-    setCheckoutLoading(true);
-    setCheckoutError(null);
-    try {
-      let activeSubId = submissionId;
-      if (!activeSubId) {
-        const answerPayload = Object.entries(answers).map(([qId, ans]) => ({
-          questionId: qId,
-          answer: ans,
-        }));
-        const subRes = await api.submitIsoAnswers(token, {
-          answers: answerPayload.length > 0 ? answerPayload : [{ questionId: 'S1-Q1', answer: 'Yes, fully in place' }],
-          tierSelected: selectedTier,
-        });
-        activeSubId = subRes.submissionId;
-        setSubmissionId(activeSubId);
-      }
-      const origin = window.location.origin;
-      const res = await api.createIsoCheckout(token, {
-        submissionId: activeSubId || '',
-        tierSelected: selectedTier,
-        successUrl: `${origin}/portal?step=3`,
-        cancelUrl: `${origin}/portal?step=2`,
-      });
-      if (res.sessionUrl) {
-        window.location.href = res.sessionUrl;
-      } else {
-        // Fallback if Stripe session URL not available (dev mode)
-        setActiveStep(3);
-      }
-    } catch (err: any) {
-      setCheckoutError(err.message || 'Checkout failed.');
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
-
-  // ── Logo drag-and-drop ────────────────────────────────────────────────────
-  const handleLogoDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) handleLogoFile(file);
-  }, []);
-
-  const handleLogoFile = (file: File) => {
-    setClientLogoFile(file);
-    setCompositePreview(null);
-    setCompositeError(null);
-    const reader = new FileReader();
-    reader.onload = (ev) => setClientLogoPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  // ── Generate composite preview ────────────────────────────────────────────
-  const handleCompose = async () => {
-    if (!token || !clientLogoFile || !clientMessage.trim()) return;
-    if (!isPaid) {
-      setCompositeError('Gate 2 Enforcement: Payment settlement is required to access Credential Studio and generate composite badges.');
-      return;
-    }
-    setCompositeLoading(true);
-    setCompositeError(null);
-    try {
-      const res = await api.composeBadge(token, {
-        clientLogoFile,
-        clientMessage,
-        submissionId: submissionId || undefined,
-      });
-      setCompositePreview(res.previewDataUri);
-    } catch (err: any) {
-      setCompositeError(err.message || 'Failed to generate preview.');
-    } finally {
-      setCompositeLoading(false);
-    }
-  };
 
   // ── Job filing ────────────────────────────────────────────────────────────
   const handleJobSubmit = async (e: React.FormEvent) => {
@@ -1078,23 +479,6 @@ export const PortalPage: React.FC = () => {
       setJobReports([createdReport, ...jobReports]);
       setShowJobModal(false);
 
-      // Automatically sync audit readiness submission for Job Scope
-      try {
-        const subRes = await api.submitIsoAnswers(token, {
-          answers: [
-            { questionId: 'S106-PERIOD-TYPE', answer: periodType },
-            { questionId: 'S106-PERIOD-START', answer: periodStart },
-            { questionId: 'S106-PERIOD-END', answer: periodEnd },
-            { questionId: 'S106-JOBS-CREATED', answer: String(isNaN(jobsCount) ? 0 : jobsCount) },
-            { questionId: 'S106-ATTESTATION-NOTE', answer: customNoteInput.trim() || 'Verified Section 106 covenant' },
-          ],
-          tierSelected: selectedTier,
-        });
-        if (subRes?.submissionId) setSubmissionId(subRes.submissionId);
-      } catch (subErr) {
-        console.warn('[Job Readiness Submission Sync]', subErr);
-      }
-
       setCustomNoteInput('');
     } catch (err: any) {
       setJobFormError(err.message || 'Failed to submit job creation report');
@@ -1103,56 +487,12 @@ export const PortalPage: React.FC = () => {
     }
   };
 
-  const handleProceedFromJobAudit = async () => {
-    if (!token) return;
-    if (jobReports.length === 0) {
-      setJobFormError('Mandatory Section 106 period filing required. Submit at least one verified workforce report before proceeding.');
-      return;
-    }
-    setJobFormError(null);
-    setSubmittingJob(true);
-    try {
-      const latest = jobReports[0];
-      const subRes = await api.submitIsoAnswers(token, {
-        answers: [
-          { questionId: 'S106-PERIOD-TYPE', questionText: 'Period Type', answer: latest.periodType, isoClause: 'Section 106' },
-          { questionId: 'S106-PERIOD-START', questionText: 'Period Start Date', answer: new Date(latest.periodStart).toISOString(), isoClause: 'Section 106' },
-          { questionId: 'S106-PERIOD-END', questionText: 'Period End Date', answer: new Date(latest.periodEnd).toISOString(), isoClause: 'Section 106' },
-          { questionId: 'S106-JOBS-CREATED', questionText: 'Verified Jobs Created', answer: `Conforming: Statutory evidence document attached (${latest.jobsCreated} verified jobs created).`, isoClause: 'Section 106' },
-          { questionId: 'S106-ATTESTATION-NOTE', questionText: 'Local Authority Covenant', answer: latest.attestationNote || 'Verified Section 106 covenant', isoClause: 'Section 106' },
-        ],
-        tierSelected: selectedTier,
-        selectedFrameworks: ['SECTION_106'],
-        submissionId: submissionId || undefined,
-      });
-
-      if (!subRes || !subRes.submissionId) {
-        throw new Error('Workforce readiness assessment failed to register on the server.');
-      }
-      setSubmissionId(subRes.submissionId);
-      setActiveStep(2);
-    } catch (err: any) {
-      console.error('[Job Readiness Submission Error]', err);
-      setJobFormError(err.message || 'Workforce assurance transition failed. Please verify that your report is recorded and try again.');
-    } finally {
-      setSubmittingJob(false);
-    }
-  };
-
-
-
   const copyClientId = () => {
     if (user?.licenseeId) {
       navigator.clipboard.writeText(user.licenseeId);
       setCopiedClientId(true);
       setTimeout(() => setCopiedClientId(false), 2000);
     }
-  };
-
-  const copyApiKey = () => {
-    navigator.clipboard.writeText(telemetryApiKey);
-    setCopiedApiKey(true);
-    setTimeout(() => setCopiedApiKey(false), 2000);
   };
 
   // Corporate display name resolver (prioritizes registered corporate company name)
@@ -1240,95 +580,8 @@ export const PortalPage: React.FC = () => {
     return t.status === statusFilter;
   });
 
-  // ── Telemetry API key (derived from submissionId or user ID) ──────────────
-  const telemetryApiKey = submissionId
-    ? `ghg_api_${submissionId.replace(/-/g, '').substring(0, 24)}`
-    : user?.licenseeId
-    ? `ghg_api_${user.licenseeId.replace(/-/g, '').substring(0, 24)}`
-    : 'ghg_api_pending_payment';
-
-  // ── Progress & Conformity Index Calculation ───────────────────────────────
-  const allQuestions = diagnosticBundle?.pillars
-    ? diagnosticBundle.pillars.flatMap((p: any) => (p.questions || []).map((q: any) => ({
-        questionId: q.questionId || q.id,
-        id: q.questionId || q.id,
-        questionText: q.questionText || q.text,
-        text: q.questionText || q.text,
-        applicableStandards: q.applicableStandards || (q.isoClause ? [q.isoClause] : []),
-        isoClause: q.isoClause || q.applicableStandards?.[0] || 'ISO 14064-1',
-        statutoryMandate: q.statutoryMandate || q.legalMandate,
-        evidenceRequired: q.evidenceRequired,
-        options: q.options || ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
-      })))
-    : (framework?.sections || []).flatMap((s: any) => (s.questions || []).map((q: any) => ({
-        questionId: q.questionId || q.id,
-        id: q.questionId || q.id,
-        questionText: q.questionText || q.text,
-        text: q.questionText || q.text,
-        applicableStandards: [q.isoClause],
-        isoClause: q.isoClause || 'ISO 14001',
-        statutoryMandate: q.legalMandate,
-        evidenceRequired: q.evidenceRequired,
-        options: ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
-      })));
-
-  const formattedPillars = (diagnosticBundle?.pillars || (framework?.sections || []).map((s: any) => ({
-    pillarId: s.sectionId,
-    pillarTitle: s.sectionTitle,
-    description: 'Statutory screening and management systems audit clause',
-    questions: (s.questions || []).map((q: any) => ({
-      id: q.questionId || q.id,
-      questionId: q.questionId || q.id,
-      text: q.questionText || q.text,
-      questionText: q.questionText || q.text,
-      applicableStandards: [q.isoClause],
-      statutoryMandate: q.legalMandate,
-      evidenceRequired: q.evidenceRequired,
-      options: ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
-    })),
-  }))).map((p: any) => ({
-    pillarId: p.pillarId,
-    pillarTitle: p.pillarTitle || p.title || `Pillar ${p.pillarNumber || ''}`.trim(),
-    description: p.description,
-    questions: (p.questions || []).map((q: any) => ({
-      id: q.questionId || q.id,
-      questionId: q.questionId || q.id,
-      text: q.questionText || q.text,
-      questionText: q.questionText || q.text,
-      applicableStandards: q.applicableStandards || (q.isoClause ? [q.isoClause] : []),
-      statutoryMandate: q.statutoryMandate || q.legalMandate,
-      evidenceRequired: q.evidenceRequired,
-      options: q.options || ['Fully compliant & documented', 'Partially implemented', 'Planned within 90 days', 'Not applicable'],
-    })),
-  }));
-
-  const totalQuestions = allQuestions.length;
-  const answeredQuestions = allQuestions.filter((q: any) => {
-    const qId = q.questionId || q.id;
-    return Boolean(answers[qId]);
-  }).length;
-  const progressPct = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
-
-  // Real-time compliance score estimator (0 to 100%)
-  const scoreMetrics = allQuestions.reduce(
-    (acc: { score: number; count: number }, q: any) => {
-      const qId = q.questionId || q.id;
-      const ans = answers[qId];
-      if (!ans) return acc;
-      if (ans === 'Yes, fully in place' || ans === 'Fully compliant & documented') return { score: acc.score + 100, count: acc.count + 1 };
-      if (ans === 'Partially implemented') return { score: acc.score + 50, count: acc.count + 1 };
-      if (ans === 'Not yet implemented' || ans === 'Planned within 90 days') return { score: acc.score + 0, count: acc.count + 1 };
-      return acc; // N/A is neutral
-    },
-    { score: 0, count: 0 }
-  );
-  const estimatedComplianceScore =
-    scoreMetrics.count > 0 ? Math.round(scoreMetrics.score / scoreMetrics.count) : 0;
-
-  // ── Status and Gate Enforcement flags ────────────────────────────────────
-  const currentSubmissionStatus = isoStatus?.status || (submissionId ? 'SUBMITTED' : 'NOT_STARTED');
-  const isAuditReady = currentSubmissionStatus === 'AUDIT_READY' || currentSubmissionStatus === 'APPROVED';
-  const isPaid = Boolean(isoStatus?.paidAt || currentSubmissionStatus === 'APPROVED');
+  // A client is verified for the embed once they hold an issued credential.
+  const hasIssuedCredential = credentials.some((c) => c.status === 'ISSUED');
 
   const totalVerifiedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
   const settledTxs = Array.isArray(transactions) ? transactions.filter((t: any) => t.status === 'SETTLED') : [];
@@ -1428,7 +681,7 @@ export const PortalPage: React.FC = () => {
               type="button"
               className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'CARBON_EMISSION' ? 'active' : ''}`}
               onClick={() => {
-                handleNavigateWorkflow(1, 'CARBON_EMISSION');
+                handleNavigateWorkflow('CARBON_EMISSION');
                 onNav?.();
               }}
             >
@@ -1466,7 +719,7 @@ export const PortalPage: React.FC = () => {
               type="button"
               className={`portal-nav-btn ${activeView === 'workflow' && auditScope === 'JOB_REPORTING' ? 'active' : ''}`}
               onClick={() => {
-                handleNavigateWorkflow(1, 'JOB_REPORTING');
+                handleNavigateWorkflow('JOB_REPORTING');
                 onNav?.();
               }}
             >
@@ -1959,9 +1212,9 @@ export const PortalPage: React.FC = () => {
               onProceedToDiagnostic={(wfType) => {
                 refreshChecklists();
                 if (wfType === 'JOB') {
-                  handleNavigateWorkflow(1, 'JOB_REPORTING');
+                  handleNavigateWorkflow('JOB_REPORTING');
                 } else {
-                  handleNavigateWorkflow(1, 'CARBON_EMISSION');
+                  handleNavigateWorkflow('CARBON_EMISSION');
                 }
               }}
             />
@@ -1995,11 +1248,17 @@ export const PortalPage: React.FC = () => {
         )}
 
       {/* ── VIEW 3: Issued Credentials ───────────────────────────────────── */}
+      {activeView === 'credentials' && token && (
+        <LegacyCredentialPanel
+          token={token}
+          onIssued={() => api.getMyCredentials(token).then((res) => setCredentials(res.credentials || [])).catch(() => undefined)}
+        />
+      )}
       {activeView === 'credentials' && (
         <PortalCredentialsView
           credentials={credentials}
-          onIssueNewCredential={() => handleNavigateWorkflow(4, auditScope)}
-          onOpenStudio={() => handleNavigateWorkflow(4, auditScope)}
+          onIssueNewCredential={() => handleNavigateWorkflow(auditScope)}
+          onOpenStudio={() => handleNavigateWorkflow(auditScope)}
         />
       )}
 
@@ -2027,9 +1286,6 @@ export const PortalPage: React.FC = () => {
         <PortalProfileView
           user={user}
           displayName={displayName}
-          telemetryApiKey={telemetryApiKey}
-          copiedApiKey={copiedApiKey}
-          copyApiKey={copyApiKey}
           profileSuccess={profileSuccess}
           profileError={profileError}
           profileSaving={profileSaving}
@@ -2062,14 +1318,12 @@ export const PortalPage: React.FC = () => {
           <SoftwareEmbedBuilder
             licenseeId={user?.licenseeId || 'client-licensee'}
             partnerName={user?.companyName || user?.email}
-            clientLogoUrl={clientLogoPreview || undefined}
+            clientLogoUrl={user?.logoUrl || undefined}
             allowedOrigins={['*']}
             token={token || undefined}
-            isVerified={isAuditReady}
-            isPaid={isPaid}
-            onNavigateWorkflow={(step) => {
-              handleNavigateWorkflow(step as any, auditScope);
-            }}
+            isVerified={hasIssuedCredential}
+            isPaid={hasIssuedCredential}
+            onNavigateWorkflow={() => handleNavigateWorkflow(auditScope)}
           />
         </div>
       )}
@@ -2079,15 +1333,6 @@ export const PortalPage: React.FC = () => {
 
       {activeView === 'fleet' && token && (
         <FleetWorkspace token={token} returnedFromCheckout={searchParams.get('subscription') === 'success'} />
-      )}
-
-      {/* ── VIEW: Assurance Workflow Engine (Part B Screens 1–11) ────────── */}
-      {activeView === 'assurance-wizard' && (
-        <WorkflowWizard
-          initialWorkflowType={workflowWizardType}
-          initialSubmissionId={workflowWizardSubmissionId}
-          onBackToDashboard={() => setActiveView('overview')}
-        />
       )}
 
       {/* ── Job Filing Modal ──────────────────────────────────────────────────── */}
@@ -2109,24 +1354,6 @@ export const PortalPage: React.FC = () => {
         setCustomNoteInput={setCustomNoteInput}
       />
 
-      {/* ── Lead Auditor Submission Confirmation Modal ───────────────────────── */}
-      <LeadAuditorSubmissionModal
-        isOpen={showSubmissionSuccessModal}
-        onClose={() => setShowSubmissionSuccessModal(false)}
-        submissionId={submissionId}
-        answeredQuestions={answeredQuestions}
-        totalQuestions={totalQuestions}
-        estimatedComplianceScore={estimatedComplianceScore}
-        userEmail={user?.email}
-        onExportDossierJson={handleExportDossierJson}
-        onViewConformanceStatus={() => {
-          setShowSubmissionSuccessModal(false);
-          const elem = document.getElementById('conformance-verification-card');
-          if (elem) {
-            elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }}
-      />
       </main>
     </div>
   );

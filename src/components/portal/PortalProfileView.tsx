@@ -3,9 +3,6 @@ import React from 'react';
 interface PortalProfileViewProps {
   user: any;
   displayName: string;
-  telemetryApiKey: string;
-  copiedApiKey: boolean;
-  copyApiKey: () => void;
   profileSuccess: string | null;
   profileError: string | null;
   profileSaving: boolean;
@@ -34,9 +31,6 @@ interface PortalProfileViewProps {
 export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
   user,
   displayName,
-  telemetryApiKey,
-  copiedApiKey,
-  copyApiKey,
   profileSuccess,
   profileError,
   profileSaving,
@@ -139,46 +133,6 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
               <span style={{ color: 'var(--text-muted)' }}>Assurance Standard:</span>
               <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>ISO 19011:2026 Ready</span>
             </div>
-          </div>
-        </div>
-
-        {/* Ingestion API Credentials Card */}
-        <div className="persefoni-card" style={{ padding: '1.75rem' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-            Telemetry Ingestion API Key
-          </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
-            Use this key for programmatic REST telemetry feeds from meters, IoT sensors, or workforce HR platforms.
-          </p>
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.85rem',
-              color: 'var(--color-sky)',
-              backgroundColor: 'var(--bg-subtle)',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              wordBreak: 'break-all',
-              marginBottom: '0.75rem',
-              border: '1px solid var(--border-light)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-          >
-            <span>{telemetryApiKey}</span>
-            <button
-              type="button"
-              onClick={copyApiKey}
-              className="btn btn-secondary"
-              style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', flexShrink: 0 }}
-            >
-              {copiedApiKey ? 'Copied!' : 'Copy Key'}
-            </button>
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-            Transmit via <code style={{ color: 'var(--color-sky)' }}>x-api-key</code> HTTP Header.
           </div>
         </div>
       </div>

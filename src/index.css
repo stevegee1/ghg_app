@@ -10480,3 +10480,27 @@ a:not([class]):hover {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+/* Legacy readiness credential still to issue */
+
+.legacy-credential {
+  margin-bottom: 1rem;
+}
+
+.pipeline-plain-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pipeline-plain-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
