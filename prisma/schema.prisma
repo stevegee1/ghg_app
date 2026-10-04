@@ -525,7 +525,10 @@ model AuditEvidenceDocument {
   matrixRowId   String?
   fileName      String
   category      EvidenceCategory
+  /// Authenticated download path for the stored file
   fileUrl       String
+  /// Location of the file in private storage (FILE_STORAGE_DIR); null for records with no stored file
+  storageKey    String?
   fileSizeBytes Int
   mimeType      String
   sha256Hash    String

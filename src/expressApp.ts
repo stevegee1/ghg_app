@@ -13,6 +13,7 @@ import { createIsoTelemetryRouter } from './routes/iso-telemetry.route';
 import { createIsoAuditRouter } from './routes/iso-audit.route';
 import { createCustomKeepsakeRouter } from './routes/custom-keepsake.route';
 import { createIsoEvidenceRouter } from './routes/iso-evidence.route';
+import { createEvidenceFileRouter } from './routes/evidence-file.route';
 import { createIsoLegalRouter } from './routes/iso-legal.route';
 import { createJobReportingRouter } from './routes/job-reporting.route';
 import { createOrdersRouter } from './routes/orders.route';
@@ -55,10 +56,10 @@ export function createApp(stripeInstance?: Stripe): Express {
   // (compiled to dist/server/index.js, still launched from project root by Railway)
   const distDir = path.join(process.cwd(), 'dist');
 
-  // Serve static files from Vite's 'dist' output, 'public', and 'uploads'
+  // Serve static files from Vite's 'dist' output and 'public'. Uploaded files live in private
+  // storage and are only streamed through authenticated endpoints.
   app.use(express.static(distDir));
   app.use(express.static(path.join(process.cwd(), 'public')));
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // Security headers via Helmet (configured to allow Vite scripts and cross-origin badge embeds)
   app.use(
@@ -153,6 +154,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createIsoAuditRouter(prisma));
   app.use(createCustomKeepsakeRouter(prisma, checkoutService));
   app.use(createIsoEvidenceRouter(prisma));
+  app.use(createEvidenceFileRouter(prisma));
   app.use(createIsoLegalRouter(prisma));
   app.use(createJobReportingRouter(prisma));
   app.use(createOrdersRouter(prisma));

@@ -197,6 +197,16 @@ export class WorkflowEngineService {
       throw new Error(`Cannot edit answers while submission is in ${submission.status} status.`);
     }
 
+    const evidenceIds = [...new Set(answers.map((a) => a.evidenceDocumentId).filter((v): v is string => Boolean(v)))];
+    if (evidenceIds.length > 0) {
+      const owned = await this.prisma.auditEvidenceDocument.count({
+        where: { id: { in: evidenceIds }, licenseeId: submission.licenseeId },
+      });
+      if (owned !== evidenceIds.length) {
+        throw new Error('Evidence must be a file uploaded by this organisation.');
+      }
+    }
+
     return this.atomic(async (tx) => {
       for (const ans of answers) {
         await tx.workflowAnswer.upsert({
@@ -705,37 +715,4 @@ export class WorkflowEngineService {
       orderBy: { createdAt: 'desc' },
     });
   }
-
-  /**
-   * Screen 4: Registers verified evidence document into AuditEvidenceDocument table.
-   */
-  async uploadEvidenceDocument(input: {
-    licenseeId: string;
-    uploadedBy: string;
-    fileName: string;
-    mimeType: string;
-    fileSizeBytes: number;
-    fileBuffer?: Buffer;
-    category?: EvidenceCategory;
-  }) {
-    const { licenseeId, uploadedBy, fileName, mimeType, fileSizeBytes, fileBuffer, category } = input;
-    const cat = category || EvidenceCategory.OTHER_AUDIT_PROOF;
-    const hash = fileBuffer
-      ? crypto.createHash('sha256').update(fileBuffer).digest('hex')
-      : crypto.createHash('sha256').update(`${licenseeId}_${fileName}_${Date.now()}`).digest('hex');
-
-    return this.prisma.auditEvidenceDocument.create({
-      data: {
-        licenseeId,
-        fileName,
-        category: cat,
-        fileUrl: `/evidence/${licenseeId}/${encodeURIComponent(fileName)}`,
-        fileSizeBytes,
-        mimeType,
-        sha256Hash: hash,
-        uploadedBy,
-      },
-    });
-  }
 }
-

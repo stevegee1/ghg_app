@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import request from 'supertest';
 import { PrismaClient, Vertical, ConformanceGrade, RiskLevel, EvidenceCategory } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -100,35 +101,29 @@ describe('Milestone ISO-4: Evidence Locker & Executive/Event PDF Generator', () 
 
   describe('1. Evidence Document Registration & SHA-256 Hashing', () => {
     it('should upload evidence document and compute SHA-256 integrity hash', async () => {
+      const content = Buffer.from('timestamp,pue\n2026-07-01T00:00Z,1.18\n');
       const res = await request(app)
-        .post('/api/portal/iso/evidence/upload')
+        .post('/api/portal/iso/evidence/upload-file')
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({
-          licenseeId: licenseeA.id,
-          reportId: reportA.id,
-          fileName: 'SCADA_PUE_Hourly_Telemetry_Q3.csv',
-          category: 'SCADA_TELEMETRY',
-          fileSizeBytes: 204850,
-          mimeType: 'text/csv',
-        });
+        .field('reportId', reportA.id)
+        .field('category', 'SCADA_TELEMETRY')
+        .attach('file', content, { filename: 'SCADA_PUE_Hourly_Telemetry_Q3.csv', contentType: 'text/csv' });
 
       expect(res.status).toBe(201);
       expect(res.body.evidenceDoc).toBeDefined();
       expect(res.body.evidenceDoc.fileName).toBe('SCADA_PUE_Hourly_Telemetry_Q3.csv');
       expect(res.body.evidenceDoc.category).toBe(EvidenceCategory.SCADA_TELEMETRY);
-      expect(res.body.evidenceDoc.sha256Hash).toBeDefined();
-      expect(res.body.evidenceDoc.sha256Hash.length).toBe(64); // Valid SHA-256 Hex
+      expect(res.body.evidenceDoc.licenseeId).toBe(licenseeA.id);
+      expect(res.body.evidenceDoc.fileSizeBytes).toBe(content.length);
+      expect(res.body.evidenceDoc.sha256Hash).toBe(crypto.createHash('sha256').update(content).digest('hex'));
     });
 
     it('should reject evidence upload if category is invalid', async () => {
       const res = await request(app)
-        .post('/api/portal/iso/evidence/upload')
+        .post('/api/portal/iso/evidence/upload-file')
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({
-          licenseeId: licenseeA.id,
-          fileName: 'random_file.doc',
-          category: 'INVALID_CATEGORY',
-        });
+        .field('category', 'INVALID_CATEGORY')
+        .attach('file', Buffer.from('%PDF-1.4'), { filename: 'random_file.pdf', contentType: 'application/pdf' });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toContain('category must be one of');
@@ -139,16 +134,12 @@ describe('Milestone ISO-4: Evidence Locker & Executive/Event PDF Generator', () 
     it('should list evidence documents filtered by category', async () => {
       // Upload a second document of different category
       await request(app)
-        .post('/api/portal/iso/evidence/upload')
+        .post('/api/portal/iso/evidence/upload-file')
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({
-          licenseeId: licenseeA.id,
-          reportId: reportA.id,
-          fileName: 'ThamesWater_Trade_Effluent_Discharge_Permit.pdf',
-          category: 'WATER_TRADE_EFFLUENT_PERMIT',
-          fileSizeBytes: 512000,
-          mimeType: 'application/pdf',
-        });
+        .field('reportId', reportA.id)
+        .field('category', 'WATER_TRADE_EFFLUENT_PERMIT')
+        .attach('file', Buffer.from('%PDF-1.4 permit'), { filename: 'ThamesWater_Trade_Effluent_Discharge_Permit.pdf', contentType: 'application/pdf' })
+        .expect(201);
 
       // Query SCADA category specifically
       const scadaRes = await request(app)

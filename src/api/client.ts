@@ -516,6 +516,21 @@ export const api = {
     return data;
   },
 
+  /** Downloads a stored evidence file through the authenticated endpoint and saves it locally. */
+  async downloadEvidenceFile(token: string, fileUrl: string, fileName: string): Promise<void> {
+    const res = await fetch(fileUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Download failed with HTTP ${res.status}`);
+    }
+    const blobUrl = URL.createObjectURL(await res.blob());
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(blobUrl);
+  },
+
   async getEvidenceDocuments(token: string, licenseeId?: string): Promise<any> {
     const url = licenseeId ? `/api/portal/iso/evidence?licenseeId=${encodeURIComponent(licenseeId)}` : '/api/portal/iso/evidence';
     const res = await fetch(url, {

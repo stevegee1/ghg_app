@@ -1,18 +1,23 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import crypto from 'crypto';
+import { areaDirectory } from '../services/file-storage.service';
 
 /**
- * Accepts a single client logo image (PNG, JPG, SVG or WEBP, at most 5 MB) and stores it under
- * uploads/client-logos with a server-generated name. Paths supplied by clients are never read.
+ * Accepts a single client logo image (PNG, JPG, SVG or WEBP, at most 5 MB) and stores it in
+ * private storage under logos/<licensee> with a server-generated name. Paths supplied by clients
+ * are never read, and logos are only read back by the badge compositor.
  */
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'client-logos');
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 export const logoUpload = multer({
   storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
+    destination: (req, _file, cb) => {
+      try {
+        cb(null, areaDirectory('logos', req.user?.licenseeId || 'platform'));
+      } catch (err) {
+        cb(err as Error, '');
+      }
+    },
     filename: (_req, file, cb) => {
       cb(null, `${crypto.randomUUID()}${path.extname(file.originalname).toLowerCase()}`);
     },

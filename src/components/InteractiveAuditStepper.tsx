@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 export interface AuditQuestion {
   id: string;
@@ -49,6 +51,7 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
   onUploadEvidence,
   evidenceByQuestion = {},
 }) => {
+  const { token } = useAuth();
   const [activePillarIdx, setActivePillarIdx] = useState<number>(0);
   const [activeQuestionIdx, setActiveQuestionIdx] = useState<number>(0);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
@@ -579,20 +582,23 @@ export const InteractiveAuditStepper: React.FC<InteractiveAuditStepperProps> = (
                               ✓ SHA-256: {doc.sha256Hash?.substring(0, 10)}...
                             </span>
                           </div>
-                          {doc.fileUrl && (
-                            <a
-                              href={doc.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          {doc.fileUrl && token && (
+                            <button
+                              type="button"
+                              onClick={() => api.downloadEvidenceFile(token, doc.fileUrl, doc.fileName).catch((err: Error) => alert(err.message))}
                               style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: 0,
+                                cursor: 'pointer',
                                 fontSize: '0.72rem',
                                 color: 'var(--color-sky)',
                                 textDecoration: 'none',
                                 fontWeight: 600,
                               }}
                             >
-                              View Document ↗
-                            </a>
+                              Download document
+                            </button>
                           )}
                         </div>
                       ))}

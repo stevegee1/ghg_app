@@ -7,4 +7,6 @@ coverage
 *.zip
 .DS_Store
 uploads
+.test-storage
+.storage
 /*.jpg

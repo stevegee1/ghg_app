@@ -87,7 +87,7 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
   initialSubmissionId = null,
   onBackToDashboard,
 }) => {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const fileInputId = useId();
 
   // Wizard Navigation: Screens 2 to 11
@@ -290,37 +290,25 @@ export const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
       setUploadingEvidence(true);
       setError(null);
 
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        const res = await fetch('/api/workflow/evidence/upload', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            licenseeId: user?.licenseeId,
-            fileName: file.name,
-            mimeType: file.type || 'application/pdf',
-            fileSizeBytes: file.size,
-            fileBufferBase64: base64String,
-          }),
-        });
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/workflow/evidence/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to upload evidence file.');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to upload evidence file.');
 
-        const docId = data.evidenceDocument.id;
-        const currentVal = answersMap[questionId]?.value || '';
-        await handleAnswerChange(questionId, currentVal, docId, file.name);
-        setUploadingEvidence(false);
-      };
-
-      reader.readAsDataURL(file);
+      const docId = data.evidenceDocument.id;
+      const currentVal = answersMap[questionId]?.value || '';
+      await handleAnswerChange(questionId, currentVal, docId, file.name);
     } catch (err: any) {
       setError(err.message || 'Error uploading evidence');
+    } finally {
       setUploadingEvidence(false);
+      e.target.value = '';
     }
   };
 

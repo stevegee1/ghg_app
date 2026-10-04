@@ -1,8 +1,10 @@
 import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
-import { PrismaClient, WorkflowType, WorkflowStatus, DeliveryType } from '@prisma/client';
+import { PrismaClient, WorkflowType, WorkflowStatus, DeliveryType, EvidenceCategory } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { logoUpload } from '../middleware/logo-upload.middleware';
+import { evidenceUpload } from '../middleware/evidence-upload.middleware';
+import { storeEvidenceFile } from '../services/evidence-file.service';
 import {
   WorkflowEngineService,
   InvalidWorkflowTransitionError,
@@ -873,39 +875,46 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * Screen 4: POST /api/workflow/evidence/upload
-   * Registers evidence document for questionnaire answers.
+   * Uploads one evidence file (multipart, field "file") into private storage for questionnaire answers.
+   * Clients upload for their own organisation; administrators must name an existing licensee.
    */
-  router.post('/api/workflow/evidence/upload', authenticateToken, async (req: Request, res: Response) => {
+  router.post('/api/workflow/evidence/upload', authenticateToken, evidenceUpload, async (req: Request, res: Response) => {
     const user = req.user!;
-    const licenseeId = user.licenseeId || req.body.licenseeId;
-    const { fileName, mimeType, fileSizeBytes, fileBufferBase64, category } = req.body || {};
+    const requested = typeof req.body?.licenseeId === 'string' ? req.body.licenseeId.trim() : '';
+    const licenseeId = user.role === 'ADMIN' ? requested : user.licenseeId;
 
-    if (!licenseeId || !fileName) {
-      return res.status(400).json({ error: 'licenseeId and fileName are required.' });
+    if (!licenseeId) {
+      return res.status(400).json({ error: 'licenseeId is required.' });
+    }
+    if (user.role !== 'ADMIN' && requested && requested !== user.licenseeId) {
+      return res.status(403).json({ error: 'Forbidden: Cannot upload evidence for other licensees.' });
+    }
+    if (!(await prisma.licensee.findUnique({ where: { id: licenseeId }, select: { id: true } }))) {
+      return res.status(400).json({ error: 'Unknown licensee.' });
+    }
+
+    const category = req.body?.category;
+    if (category && !Object.values(EvidenceCategory).includes(category)) {
+      return res.status(400).json({ error: `category must be one of: ${Object.values(EvidenceCategory).join(', ')}` });
     }
 
     try {
-      const buffer = fileBufferBase64 ? Buffer.from(fileBufferBase64, 'base64') : undefined;
-
-      const doc = await runWithRls(prisma, user, async (tx) => {
-        return new WorkflowEngineService(tx).uploadEvidenceDocument({
+      const doc = await runWithRls(prisma, user, (tx) =>
+        storeEvidenceFile(tx, {
           licenseeId,
           uploadedBy: user.userId,
-          fileName,
-          mimeType: mimeType || 'application/pdf',
-          fileSizeBytes: fileSizeBytes || (buffer ? buffer.length : 1024),
-          fileBuffer: buffer,
-          category,
-        });
-      });
+          file: req.file!,
+          category: category as EvidenceCategory | undefined,
+        })
+      );
 
       return res.status(201).json({
         success: true,
         evidenceDocument: doc,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[WORKFLOW EVIDENCE UPLOAD ERROR]', err);
-      return res.status(400).json({ error: err.message || 'Failed to register evidence document.' });
+      return res.status(500).json({ error: 'Failed to upload the evidence file.' });
     }
   });
 
