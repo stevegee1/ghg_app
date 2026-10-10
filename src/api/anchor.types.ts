@@ -26,3 +26,32 @@ export interface AnchorOverview {
   unbatched: number;
   fingerprintsByKind: Record<string, number>;
 }
+
+export interface VerifyMatch {
+  kind: string;
+  recordId: string;
+  recordSha256: string;
+  leafHash: string;
+  fingerprintedAt: string;
+  formulaHolds: boolean;
+  batch: {
+    merkleRoot: string;
+    leafCount: number;
+    status: AnchorBatchStatus;
+    network: string | null;
+    chainId: number | null;
+    txHash: string | null;
+    blockNumber: string | null;
+    confirmedAt: string | null;
+  } | null;
+  proof: string[] | null;
+  proofValid: boolean | null;
+  chain: { status: 'NOT_PUBLISHED' | 'PUBLISHED' | 'CONFIRMED'; rootOnChainMatches: boolean | null; explorerUrl: string | null };
+}
+
+export interface VerifyResult {
+  hash: string;
+  anchoringWallet: string | null;
+  method: string[];
+  matches: VerifyMatch[];
+}

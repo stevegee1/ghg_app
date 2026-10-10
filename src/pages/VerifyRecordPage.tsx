@@ -1,0 +1,171 @@
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { api } from '../api/client';
+import type { VerifyMatch, VerifyResult } from '../api/anchor.types';
+
+const KIND_LABELS: Record<string, string> = {
+  FLEET_TELEMETRY_SNAPSHOT: 'Machine telemetry reading',
+  FLEET_IMPORT_FILE: 'Fleet data file',
+  FLEET_COST_RUN: 'Contract cost calculation',
+  EVIDENCE_FILE: 'Evidence file',
+  CREDENTIAL: 'Issued credential',
+  SCOPE3_RECORD: 'Scope 3 supply chain record',
+};
+
+async function sha256OfFile(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const Check: React.FC<{ ok: boolean | null; yes: string; no: string; unknown: string }> = ({ ok, yes, no, unknown }) => (
+  <li className={ok === true ? 'verify-ok' : ok === false ? 'verify-bad' : 'verify-unknown'}>{ok === true ? yes : ok === false ? no : unknown}</li>
+);
+
+const MatchCard: React.FC<{ m: VerifyMatch }> = ({ m }) => (
+  <article className="transparency-card verify-card">
+    <h3>{KIND_LABELS[m.kind] ?? m.kind}</h3>
+    <p className="transparency-note">Fingerprinted {new Date(m.fingerprintedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+    <ul className="verify-checks">
+      <Check ok={m.formulaHolds} yes="The fingerprint matches this record's hash." no="The fingerprint does not match the record's hash." unknown="" />
+      <Check
+        ok={m.proofValid}
+        yes="The fingerprint is proven to be in its batch."
+        no="The proof does not lead to the batch root."
+        unknown="Waiting for the next daily batch."
+      />
+      {m.batch && (
+        <Check
+          ok={m.chain.status === 'NOT_PUBLISHED' ? null : m.chain.rootOnChainMatches}
+          yes={`The batch root is on ${m.batch.network ?? 'chain'} and matches.`}
+          no="The root on chain does not match this batch."
+          unknown={m.chain.status === 'NOT_PUBLISHED' ? 'The batch root has not been published yet.' : 'Published; the on-chain check is not available right now.'}
+        />
+      )}
+    </ul>
+    {m.chain.explorerUrl && (
+      <p>
+        <a href={m.chain.explorerUrl} target="_blank" rel="noopener noreferrer">
+          View the transaction{m.batch?.blockNumber ? ` (block ${m.batch.blockNumber})` : ''}
+        </a>
+      </p>
+    )}
+    <details className="verify-details">
+      <summary>Technical details</summary>
+      <dl>
+        <dt>Record SHA-256</dt>
+        <dd>{m.recordSha256}</dd>
+        <dt>Fingerprint</dt>
+        <dd>{m.leafHash}</dd>
+        {m.batch && (
+          <>
+            <dt>Batch root</dt>
+            <dd>{m.batch.merkleRoot}</dd>
+          </>
+        )}
+        {m.proof && m.proof.length > 0 && (
+          <>
+            <dt>Proof ({m.proof.length} hashes)</dt>
+            <dd>{m.proof.join(' ')}</dd>
+          </>
+        )}
+      </dl>
+    </details>
+  </article>
+);
+
+/** Public page: check that a record or file was fingerprinted and anchored on chain. */
+export const VerifyRecordPage: React.FC = () => {
+  const [params, setParams] = useSearchParams();
+  const [input, setInput] = useState(params.get('hash') ?? '');
+  const [state, setState] = useState<{ status: 'idle' } | { status: 'loading' } | { status: 'error'; message: string } | { status: 'done'; result: VerifyResult }>({
+    status: 'idle',
+  });
+
+  const lookup = async (hash: string) => {
+    const clean = hash.trim().toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(clean)) return setState({ status: 'error', message: 'Enter a SHA-256 hash: 64 hexadecimal characters.' });
+    setState({ status: 'loading' });
+    setParams({ hash: clean }, { replace: true });
+    try {
+      setState({ status: 'done', result: await api.verifyRecordHash(clean) });
+    } catch (err) {
+      setState({ status: 'error', message: (err as Error).message });
+    }
+  };
+
+  useEffect(() => {
+    document.title = 'Verify a record - NFTYLOGS';
+    const initial = params.get('hash');
+    if (initial) void lookup(initial);
+    // Only on first load: later lookups are triggered by the form.
+  }, []);
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    const hash = await sha256OfFile(file);
+    setInput(hash);
+    void lookup(hash);
+  };
+
+  return (
+    <main className="transparency-page container-x">
+      <header className="transparency-hero">
+        <p className="partners-eyebrow">Verification</p>
+        <h1>Verify a record</h1>
+        <p>
+          Paste a record&apos;s SHA-256, or choose the file. Files are hashed in your browser and never uploaded. We show whether the record was
+          fingerprinted, the proof that it is in a batch, and the public blockchain transaction carrying that batch.
+        </p>
+      </header>
+
+      <form
+        className="verify-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void lookup(input);
+        }}
+      >
+        <label className="verify-field">
+          <span>SHA-256</span>
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="64 hexadecimal characters" spellCheck={false} />
+        </label>
+        <button type="submit" className="btn btn-primary" disabled={state.status === 'loading'}>
+          {state.status === 'loading' ? 'Checking...' : 'Check'}
+        </button>
+        <label className="btn btn-secondary verify-file">
+          Choose a file
+          <input type="file" onChange={(e) => onFile(e.target.files?.[0])} />
+        </label>
+      </form>
+
+      <section className="transparency-section" aria-live="polite">
+        {state.status === 'error' && (
+          <p className="transparency-note" role="alert">
+            {state.message}
+          </p>
+        )}
+        {state.status === 'done' && state.result.matches.length === 0 && (
+          <p className="transparency-note">No record with this hash has been fingerprinted. New records are fingerprinted once a day.</p>
+        )}
+        {state.status === 'done' && state.result.matches.length > 0 && (
+          <div className="transparency-cards">
+            {state.result.matches.map((m) => (
+              <MatchCard key={`${m.kind}-${m.recordId}`} m={m} />
+            ))}
+          </div>
+        )}
+        {state.status === 'done' && (
+          <details className="verify-details">
+            <summary>How to check this yourself</summary>
+            <ul>
+              {state.result.method.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+              {state.result.anchoringWallet && <li>anchoring wallet: {state.result.anchoringWallet}</li>}
+            </ul>
+          </details>
+        )}
+      </section>
+    </main>
+  );
+};

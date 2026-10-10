@@ -162,6 +162,7 @@ export const Footer: React.FC = () => {
             <div className="cerebrium-footer-col-title">Company</div>
             <ul className="cerebrium-footer-links">
               <li><Link to="/transparency" className="cerebrium-footer-link">Transparency &amp; legal</Link></li>
+              <li><Link to="/verify/record" className="cerebrium-footer-link">Verify a record</Link></li>
               <li><Link to="/blog" className="cerebrium-footer-link">Blog</Link></li>
               <li>
                 <a

@@ -29,7 +29,7 @@ import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueue
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
 import type { AdminMerchProduct, MerchProduct } from './merch.types';
 import type { MarketIndex, MarketIndexValue } from './market.types';
-import type { AnchorBatch, AnchorOverview } from './anchor.types';
+import type { AnchorBatch, AnchorOverview, VerifyResult } from './anchor.types';
 
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -72,6 +72,11 @@ export const api = {
       throw new Error(err.error || `HTTP ${res.status}`);
     }
     return res.json();
+  },
+
+  /** GET /api/public/verify/:hash - public record verification */
+  async verifyRecordHash(hash: string): Promise<VerifyResult> {
+    return apiRequest(`/api/public/verify/${encodeURIComponent(hash)}`);
   },
 
   /** Blockchain anchoring (admin) */
