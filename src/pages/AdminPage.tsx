@@ -9,6 +9,7 @@ import { FleetSetupRequestsAdmin } from '../components/admin/FleetSetupRequestsA
 import { FleetProvidersAdmin } from '../components/admin/FleetProvidersAdmin';
 import { MerchProductsAdmin } from '../components/admin/MerchProductsAdmin';
 import { MarketIndicesAdmin } from '../components/admin/MarketIndicesAdmin';
+import { AnchorsAdmin } from '../components/admin/AnchorsAdmin';
 import { DeliveryPartnersAdmin } from '../components/admin/DeliveryPartnersAdmin';
 
 // Google SaaS Standard SVG Icons (Zero Emojis)
@@ -97,7 +98,7 @@ export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES' | 'MARKET_INPUTS'>('READINESS_TRACKER');
+  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES' | 'MARKET_INPUTS' | 'ANCHORS'>('READINESS_TRACKER');
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -660,6 +661,7 @@ export const AdminPage: React.FC = () => {
             { key: 'FLEET_SETUP', label: 'Fleet Set-up Calls', badge: null },
             { key: 'FLEET_DEVICES', label: 'Fleet Devices', badge: null },
             { key: 'MARKET_INPUTS', label: 'Market Inputs', badge: null },
+            { key: 'ANCHORS', label: 'Blockchain Anchors', badge: null },
             { key: 'DELIVERY_PARTNERS', label: 'Delivery Partners', badge: null },
             { key: 'SPLITS', label: 'Royalty Splits', badge: null },
           ] as const).map(({ key, label, badge }) => {
@@ -2075,6 +2077,7 @@ export const AdminPage: React.FC = () => {
       {activeAdminTab === 'FLEET_DEVICES' && token && <FleetProvidersAdmin token={token} />}
       {activeAdminTab === 'MERCH_PRICES' && token && <MerchProductsAdmin token={token} />}
       {activeAdminTab === 'MARKET_INPUTS' && token && <MarketIndicesAdmin token={token} />}
+      {activeAdminTab === 'ANCHORS' && token && <AnchorsAdmin token={token} />}
 
       {activeAdminTab === 'DELIVERY_PARTNERS' && token && <DeliveryPartnersAdmin token={token} />}
 

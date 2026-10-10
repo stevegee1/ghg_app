@@ -1812,3 +1812,60 @@ model FleetProjectCostRun {
 
   @@index([licenseeId, projectId, createdAt])
 }
+
+/// Kinds of record whose fingerprint is anchored on a public blockchain.
+enum AnchorRecordKind {
+  FLEET_TELEMETRY_SNAPSHOT
+  FLEET_IMPORT_FILE
+  FLEET_COST_RUN
+  EVIDENCE_FILE
+  CREDENTIAL
+  SCOPE3_RECORD
+}
+
+enum AnchorBatchStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+}
+
+/// One record's fingerprint. leafHash = SHA-256("<kind>:<recordId>:<recordSha256>"). Only the batch
+/// Merkle root is published; no record content leaves the platform.
+model AnchorLeaf {
+  id           String           @id @default(cuid())
+  kind         AnchorRecordKind
+  recordId     String
+  recordSha256 String
+  leafHash     String
+  licenseeId   String?
+  batchId      String?
+  batch        AnchorBatch?     @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  leafIndex    Int?
+  createdAt    DateTime         @default(now())
+
+  @@unique([kind, recordId])
+  @@index([leafHash])
+  @@index([batchId, leafIndex])
+  @@index([batchId, createdAt])
+}
+
+/// A daily batch of fingerprints combined into one Merkle root, then published on chain.
+model AnchorBatch {
+  id          String            @id @default(cuid())
+  merkleRoot  String            @unique
+  leafCount   Int
+  status      AnchorBatchStatus @default(PENDING)
+  network     String?
+  chainId     Int?
+  txHash      String?
+  blockNumber BigInt?
+  submittedAt DateTime?
+  confirmedAt DateTime?
+  attempts    Int               @default(0)
+  lastError   String?
+  createdAt   DateTime          @default(now())
+  leaves      AnchorLeaf[]
+
+  @@index([status, createdAt])
+}
