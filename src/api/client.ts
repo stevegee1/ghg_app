@@ -4,6 +4,8 @@ import type {
   FleetAsset,
   FleetProject,
   FleetProjectInput,
+  FleetProjectMaterial,
+  FleetCostRun,
   FleetAssetImportResult,
   FleetAssetInput,
   FleetEstimate,
@@ -1185,6 +1187,25 @@ export const api = {
   },
   async removeFleetProjectAssignment(token: string, id: string, assignmentId: string): Promise<{ project: FleetProject }> {
     return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/assets/${encodeURIComponent(assignmentId)}`, { token, method: 'DELETE' });
+  },
+
+  async listFleetMaterialPrices(token: string): Promise<{ indices: { id: string; name: string; unit: string; currency: string }[] }> {
+    return apiRequest('/api/fleet/projects/material-prices', { token });
+  },
+  async listFleetProjectMaterials(token: string, id: string): Promise<{ materials: FleetProjectMaterial[] }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/materials`, { token });
+  },
+  async setFleetProjectMaterial(token: string, id: string, body: { indexId: string; quantity: string; budgetUnitPrice: string }): Promise<{ materials: FleetProjectMaterial[] }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/materials`, { token, method: 'PUT', body });
+  },
+  async removeFleetProjectMaterial(token: string, id: string, materialId: string): Promise<{ materials: FleetProjectMaterial[] }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/materials/${encodeURIComponent(materialId)}`, { token, method: 'DELETE' });
+  },
+  async listFleetCostRuns(token: string, id: string): Promise<{ runs: FleetCostRun[] }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/costs`, { token });
+  },
+  async calculateFleetProjectCost(token: string, id: string, body: { from?: string; to?: string }): Promise<{ run: FleetCostRun }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/costs`, { token, method: 'POST', body });
   },
 
   async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {

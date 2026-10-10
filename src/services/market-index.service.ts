@@ -231,7 +231,15 @@ export async function deleteManualValue(prisma: PrismaClient, indexId: string, v
   const value = await prisma.marketIndexValue.findFirst({ where: { id: valueId, indexId }, include: { index: true } });
   if (!value) throw new MarketIndexError('Value not found.', 404);
   if (value.index.feed !== MarketIndexFeed.MANUAL) throw new MarketIndexError('Feed values cannot be deleted.', 409);
-  await prisma.marketIndexValue.delete({ where: { id: valueId } });
+  try {
+    await prisma.marketIndexValue.delete({ where: { id: valueId } });
+  } catch (err) {
+    // A database trigger refuses to delete a value that a cost calculation used.
+    if (err instanceof Error && err.message.includes('used by a cost calculation')) {
+      throw new MarketIndexError('This value was used in a cost calculation and cannot be deleted. Add a corrected value for a later date instead.', 409);
+    }
+    throw err;
+  }
 }
 
 export async function createManualIndex(prisma: PrismaClient, body: Record<string, unknown>) {

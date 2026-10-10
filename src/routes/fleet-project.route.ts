@@ -12,6 +12,14 @@ import {
   removeAssignment,
   updateProject,
 } from '../services/fleet/fleet-project.service';
+import {
+  calculateProjectCost,
+  listCostRuns,
+  listMaterialIndices,
+  listProjectMaterials,
+  removeProjectMaterial,
+  setProjectMaterial,
+} from '../services/fleet/fleet-project-cost.service';
 
 /** Client projects (contracts) and which machines work on them. Requires an active Fleet subscription. */
 export function createFleetProjectRouter(prisma: PrismaClient): Router {
@@ -65,6 +73,30 @@ export function createFleetProjectRouter(prisma: PrismaClient): Router {
   router.delete('/api/fleet/projects/:id/assets/:assignmentId', run('FLEET PROJECT ASSIGNMENT REMOVE', async (req) => ({
     project: await runWithRls(prisma, req.user!, (tx) => removeAssignment(tx, lic(req), req.params.id, req.params.assignmentId)),
   })));
+
+  router.get('/api/fleet/projects/material-prices', run('FLEET MATERIAL PRICES', async (req) => ({
+    indices: await runWithRls(prisma, req.user!, (tx) => listMaterialIndices(tx)),
+  })));
+
+  router.get('/api/fleet/projects/:id/materials', run('FLEET PROJECT MATERIALS', async (req) => ({
+    materials: await runWithRls(prisma, req.user!, (tx) => listProjectMaterials(tx, lic(req), req.params.id)),
+  })));
+
+  router.put('/api/fleet/projects/:id/materials', run('FLEET PROJECT MATERIAL SET', async (req) => ({
+    materials: await runWithRls(prisma, req.user!, (tx) => setProjectMaterial(tx, lic(req), req.params.id, req.body || {})),
+  })));
+
+  router.delete('/api/fleet/projects/:id/materials/:materialId', run('FLEET PROJECT MATERIAL REMOVE', async (req) => ({
+    materials: await runWithRls(prisma, req.user!, (tx) => removeProjectMaterial(tx, lic(req), req.params.id, req.params.materialId)),
+  })));
+
+  router.get('/api/fleet/projects/:id/costs', run('FLEET PROJECT COST RUNS', async (req) => ({
+    runs: await runWithRls(prisma, req.user!, (tx) => listCostRuns(tx, lic(req), req.params.id)),
+  })));
+
+  router.post('/api/fleet/projects/:id/costs', run('FLEET PROJECT COST CALCULATE', async (req) => ({
+    run: await runWithRls(prisma, req.user!, (tx) => calculateProjectCost(tx, lic(req), req.params.id, req.body || {}, req.user!.userId)),
+  }), 201));
 
   return router;
 }

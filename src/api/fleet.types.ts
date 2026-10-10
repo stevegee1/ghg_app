@@ -304,3 +304,40 @@ export interface FleetProjectInput {
   startDate: string;
   endDate?: string | null;
 }
+
+export interface FleetProjectMaterial {
+  id: string;
+  indexId: string;
+  name: string;
+  unit: string;
+  quantity: string;
+  budgetUnitPrice: string;
+}
+
+export interface FleetCostResults {
+  currency: string;
+  fuel: { litres: string; costPence: number; unpricedLitres: string };
+  carbon: { tonnesCo2e: string; costPence: number; unpricedTonnesCo2e: string };
+  idle: { hours: string; fuelCostPence: number };
+  operatingHours: string;
+  operatingCostPence: number;
+  costPerOperatingHourPence: number | null;
+  materials: { indexCode: string; name: string; unit: string; quantity: string; budgetUnitPrice: string; currentUnitPrice: string | null; exposurePence: number | null }[];
+  materialExposurePence: number;
+  totalExposurePence: number;
+  budgetedMarginPence: number;
+  exposureShareOfMarginPercent: string | null;
+  marginAfterExposurePence: number;
+  byAsset: { assetId: string; assetTag: string; name: string; litres: string; tonnesCo2e: string; operatingHours: string; costPence: number; costPerOperatingHourPence: number | null }[];
+  warnings: string[];
+}
+
+export interface FleetCostRun {
+  id: string;
+  periodFrom: string;
+  periodTo: string;
+  methodVersion: string;
+  results: FleetCostResults;
+  recordSha256: string;
+  createdAt: string;
+}

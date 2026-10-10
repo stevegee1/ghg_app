@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { FleetAsset, FleetProject } from '../../api/fleet.types';
 import { formatDate } from './fleetFormat';
+import { FleetProjectCosts } from './FleetProjectCosts';
 
 interface Props {
   token: string;
@@ -209,6 +210,7 @@ const ProjectCard: React.FC<{ token: string; project: FleetProject; assets: Flee
           {error}
         </p>
       )}
+      <FleetProjectCosts token={token} project={project} />
     </article>
   );
 };

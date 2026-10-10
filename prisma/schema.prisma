@@ -1711,6 +1711,7 @@ model MarketIndex {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @default(now()) @updatedAt
   values      MarketIndexValue[]
+  projectMaterials FleetProjectMaterial[]
 }
 
 /// One dated value of a market index. Manual values record who entered them and the source reference.
@@ -1751,6 +1752,8 @@ model FleetProject {
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @default(now()) @updatedAt
   assignments        FleetProjectAsset[]
+  materials          FleetProjectMaterial[]
+  costRuns           FleetProjectCostRun[]
 
   @@unique([licenseeId, name])
   @@index([licenseeId, status])
@@ -1771,4 +1774,41 @@ model FleetProjectAsset {
 
   @@index([licenseeId, assetId])
   @@index([projectId])
+}
+
+/// A material the contract buys, with the unit price it was budgeted at. Its exposure is the
+/// difference between the current market index value and the budgeted price, times the quantity.
+model FleetProjectMaterial {
+  id                   String       @id @default(cuid())
+  licenseeId           String
+  projectId            String
+  project              FleetProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  indexId              String
+  index                MarketIndex  @relation(fields: [indexId], references: [id])
+  quantity             Decimal      @db.Decimal(16, 3)
+  /// Budgeted price per index unit, in the index currency
+  budgetUnitPrice      Decimal      @db.Decimal(14, 6)
+  createdAt            DateTime     @default(now())
+
+  @@unique([projectId, indexId])
+}
+
+/// One immutable cost calculation for a project and period: the method version, every input value
+/// used, the results and a SHA-256 of the canonical record.
+model FleetProjectCostRun {
+  id            String       @id @default(cuid())
+  licenseeId    String
+  projectId     String
+  project       FleetProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  periodFrom    DateTime     @db.Date
+  /// Inclusive last day of the period
+  periodTo      DateTime     @db.Date
+  methodVersion String
+  inputs        Json
+  results       Json
+  recordSha256  String
+  createdById   String
+  createdAt     DateTime     @default(now())
+
+  @@index([licenseeId, projectId, createdAt])
 }
