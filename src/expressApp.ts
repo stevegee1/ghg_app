@@ -8,6 +8,7 @@ import { createAuthRouter } from './routes/auth.route';
 import { createPortalRouter } from './routes/portal.route';
 import { createTransparencyRouter } from './routes/transparency.route';
 import { createB2bTriggerRouter } from './routes/b2b-trigger.route';
+import { createLogoDropRouter } from './routes/logo-drop.route';
 import { createAdminSplitConfigRouter } from './routes/admin-split-config.route';
 import { createIsoTelemetryRouter } from './routes/iso-telemetry.route';
 import { createIsoAuditRouter } from './routes/iso-audit.route';
@@ -155,6 +156,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   // Mount checkout API router and B2B trigger router
   app.use(createCheckoutRouter(checkoutService, prisma, stripe));
   app.use(createB2bTriggerRouter(checkoutService, prisma));
+  app.use(createLogoDropRouter(checkoutService, prisma));
 
   // Mount auth, portal, transparency, and admin split-config routers
   app.use(createAuthRouter(prisma));

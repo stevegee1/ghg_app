@@ -6,6 +6,9 @@ import { resolveActiveSplitConfig } from './split-config.service';
 import { computeCharityAllocations } from './charity-allocation.service';
 import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './platform-account.service';
 
+/** Currency used when a checkout does not name one. */
+export const DEFAULT_CHECKOUT_CURRENCY = 'GBP';
+
 export interface InitiateCheckoutInput {
   licenseeId: string;
   checkoutReferenceId?: string;
@@ -39,7 +42,7 @@ export class CheckoutService {
    * Resolves active split config via resolveActiveSplitConfig (per-licensee or platform default).
    */
   async initiateCheckout(input: InitiateCheckoutInput) {
-    const { licenseeId, checkoutReferenceId, grossAmountCents, currency = 'GBP', triggerEvent } = input;
+    const { licenseeId, checkoutReferenceId, grossAmountCents, currency = DEFAULT_CHECKOUT_CURRENCY, triggerEvent } = input;
 
     // 1. Look up Licensee & verify payment onboarding (or auto-provision platform licensee)
     let licensee = await this.prisma.licensee.findUnique({
@@ -253,8 +256,11 @@ export class CheckoutService {
     deliveryType?: DeliveryType;
     shippingAddress?: any;
     metadata?: Record<string, string>;
+    /** Defaults to CONSUMER_OPT_IN; partner self-reports pass MANUAL_ATTESTATION with their note. */
+    verificationSource?: VerificationSource;
+    attestationNote?: string;
   }) {
-    const { licenseeId, itemTitle, itemDescription, grossAmountCents, currency = 'GBP', successUrl, cancelUrl, customerEmail, deliveryType = DeliveryType.PHYSICAL, shippingAddress, metadata } = params;
+    const { licenseeId, itemTitle, itemDescription, grossAmountCents, currency = DEFAULT_CHECKOUT_CURRENCY, successUrl, cancelUrl, customerEmail, deliveryType = DeliveryType.PHYSICAL, shippingAddress, metadata } = params;
 
     const refId = `stripe_cs_${crypto.randomUUID()}`;
     const checkoutResult = await this.initiateCheckout({
@@ -263,7 +269,8 @@ export class CheckoutService {
       grossAmountCents,
       currency,
       triggerEvent: {
-        verificationSource: VerificationSource.CONSUMER_OPT_IN,
+        verificationSource: params.verificationSource ?? VerificationSource.CONSUMER_OPT_IN,
+        attestationNote: params.attestationNote,
         deliveryType,
         fulfillmentStatus: deliveryType === DeliveryType.PHYSICAL ? FulfillmentStatus.PENDING : undefined,
         rawPayload: {

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { AdminMerchProduct, MerchProductKind } from '../../api/merch.types';
 import { formatPence } from '../merch/useMerchProducts';
+import { LogoDropPricesAdmin } from './LogoDropPricesAdmin';
 
 const KIND_LABELS: Record<MerchProductKind, string> = {
   CATALOGUE: 'Store items',
@@ -122,6 +123,7 @@ export const MerchProductsAdmin: React.FC<{ token: string }> = ({ token }) => {
             </div>
           );
         })}
+      <LogoDropPricesAdmin token={token} />
     </section>
   );
 };

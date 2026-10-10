@@ -101,27 +101,35 @@ export const api = {
     return res.json();
   },
 
-  async b2bTrigger(params: {
-    licenseeId: string;
-    quantity: number;
-    deliveryType: 'PHYSICAL' | 'DIGITAL';
-    externalReferenceId: string;
-    attestationNote?: string;
-    logoName?: string;
-  }) {
-    const res = await fetch('/api/b2b/trigger', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': 'b2b_key_itm_secret',
-      },
-      body: JSON.stringify(params),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'B2B Licensing trigger failed' }));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    return res.json();
+  /** GET /api/admin/logo-drop/prices */
+  async getAdminLogoDropPrices(
+    token: string
+  ): Promise<{ currency: string; licensees: { id: string; name: string; pricePerDropCents: number | null }[] }> {
+    return apiRequest('/api/admin/logo-drop/prices', { token });
+  },
+
+  /** PATCH /api/admin/logo-drop/prices/:licenseeId */
+  async updateLogoDropPrice(token: string, licenseeId: string, pricePerDropPence: number | null) {
+    return apiRequest<{ licensee: { id: string; name: string; pricePerDropCents: number | null } }>(
+      `/api/admin/logo-drop/prices/${encodeURIComponent(licenseeId)}`,
+      { token, method: 'PATCH', body: { pricePerDropPence } }
+    );
+  },
+
+  /** GET /api/portal/logo-drop/pricing - the signed-in client's price per drop and split */
+  async getLogoDropPricing(token: string): Promise<{ pricePerDropPence: number | null; royaltyBps: number; currency: string }> {
+    return apiRequest('/api/portal/logo-drop/pricing', { token });
+  },
+
+  /** POST /api/portal/logo-drop - priced on the server from the client's own licensee */
+  async orderLogoDrops(
+    token: string,
+    params: { quantity: number; deliveryType: 'PHYSICAL' | 'DIGITAL'; attestationNote?: string }
+  ) {
+    return apiRequest<{ sessionUrl: string | null; transactionId: string }>(
+      '/api/portal/logo-drop',
+      { token, method: 'POST', body: params }
+    );
   },
 
   async getSouvenirTracker(orderId?: string) {

@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { BrandLogoUploader } from '../components/BrandLogoUploader';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
-import { StatusBadge } from '../components/StatusBadge';
 
 export const PartnerLogoDropPage: React.FC = () => {
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const [searchParams] = useSearchParams();
-  const licenseeId = searchParams.get('licenseeId') || user?.licenseeId || '';
+  const returnedFromStripe = searchParams.get('payment') === 'success';
 
   // Form State
   const [logoUrl, setLogoUrl] = useState<string>('');
@@ -22,13 +21,24 @@ export const PartnerLogoDropPage: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [successResult, setSuccessResult] = useState<any | null>(null);
 
-  // Pricing calculation (Standard baseline per verified drop)
-  const pricePerDropCents = 500;
-  const grossAmountCents = quantity * pricePerDropCents;
-  const royaltyCents = Math.round((grossAmountCents * 8500) / 10000);
+  // The client's own price per drop and the active split, from the server. The order is priced there too.
+  const [pricing, setPricing] = useState<{ pricePerDropPence: number | null; royaltyBps: number; currency: string } | null>(null);
+  const [pricingError, setPricingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    api
+      .getLogoDropPricing(token)
+      .then(setPricing)
+      .catch((err: Error) => setPricingError(err.message));
+  }, [token]);
+
+  const pricePerDropCents = pricing?.pricePerDropPence ?? null;
+  const grossAmountCents = pricePerDropCents === null ? 0 : quantity * pricePerDropCents;
+  const royaltyCents = pricing ? Math.round((grossAmountCents * pricing.royaltyBps) / 10000) : 0;
   const charityCents = grossAmountCents - royaltyCents;
+  const money = (pence: number, currency: string) => new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(pence / 100);
 
   const handleLicensingCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,16 +59,10 @@ export const PartnerLogoDropPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const result = await api.b2bTrigger({
-        licenseeId,
-        quantity,
-        deliveryType,
-        externalReferenceId: `ref_b2b_${Date.now()}`,
-        attestationNote,
-        logoName,
-      });
-
-      setSuccessResult(result);
+      if (!token) throw new Error('Please sign in to order logo drops.');
+      const session = await api.orderLogoDrops(token, { quantity, deliveryType, attestationNote });
+      if (!session.sessionUrl) throw new Error('Checkout is unavailable right now. Please try again later.');
+      window.location.assign(session.sessionUrl);
     } catch (err: any) {
       setError(err.message || 'Failed to complete licensing transaction.');
     } finally {
@@ -77,58 +81,19 @@ export const PartnerLogoDropPage: React.FC = () => {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {successResult ? (
+      {returnedFromStripe ? (
         <div className="card">
-          <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
-            <div style={{ fontSize: '1.125rem', fontWeight: 700 }}>
-              B2B Logo Drop Licensing & Settlement Complete
-            </div>
+          <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '1.125rem', fontWeight: 700 }}>Payment submitted</div>
             <div style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
-              Transaction Ref: <code>{successResult.transactionId}</code>
+              Stripe has your payment. The order appears in your payment history once Stripe confirms it.
             </div>
           </div>
-          <div className="responsive-grid-2" style={{ marginBottom: '1.5rem' }}>
-            <div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Settlement Status</div>
-              <div style={{ marginTop: '0.25rem' }}><StatusBadge status="SETTLED" /></div>
-
-              <div style={{ marginTop: '1rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Deployment Type</div>
-              <div style={{ fontWeight: 600 }}>
-                {deliveryType === 'DIGITAL' ? 'Digital / Software Application' : 'Physical Keepsake / Product Application'}
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Transaction Reference</div>
-              <div style={{ marginTop: '0.25rem', fontWeight: 600 }}>
-                <code>{successResult.transactionId}</code>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem' }}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-              Settled Royalty & Charity Financial Breakdown
-            </h3>
-            <FinancialSplitBar
-              grossAmountCents={successResult.grossAmountCents}
-              licensorRoyaltyCents={successResult.licensorRoyaltyCents}
-              charityGiftCents={successResult.charityGiftCents}
-            />
-          </div>
-
-          <button
-            onClick={() => {
-              setSuccessResult(null);
-              setError(null);
-            }}
-            className="btn btn-secondary"
-            style={{ width: '100%', marginTop: '1.5rem' }}
-          >
-            Create Another Logo Drop Licensing Batch
-          </button>
+          <Link to="/portal?tab=transactions" className="btn btn-secondary">
+            View payment history
+          </Link>
         </div>
-      ) : (
+) : (
         <form onSubmit={handleLicensingCheckout}>
           <div className="responsive-grid-2">
             {/* Left Column: Brand Logo & Deployment Method */}
@@ -243,14 +208,20 @@ export const PartnerLogoDropPage: React.FC = () => {
                       style={{ width: '120px' }}
                     />
                     <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                      drops × £{(pricePerDropCents / 100).toFixed(2)}/drop
+                      {pricing && pricePerDropCents !== null
+                        ? `drops × ${money(pricePerDropCents, pricing.currency)} per drop`
+                        : pricingError
+                        ? `Pricing is unavailable: ${pricingError}`
+                        : pricing
+                        ? 'Logo drop pricing has not been set up for your account. Please contact us.'
+                        : 'Loading your price...'}
                     </span>
                   </div>
 
                   <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', marginTop: '0.75rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.125rem' }}>
                       <span>Total Licensing Fee:</span>
-                      <span>£{(grossAmountCents / 100).toFixed(2)}</span>
+                      <span>{pricing ? money(grossAmountCents, pricing.currency) : '-'}</span>
                     </div>
                     <FinancialSplitBar
                       grossAmountCents={grossAmountCents}
@@ -265,28 +236,22 @@ export const PartnerLogoDropPage: React.FC = () => {
               <div className="card">
                 <div className="card-header" style={{ marginBottom: '0.75rem' }}>
                   <h2 className="card-title">3. Payment & Licensing Settlement</h2>
-                  <p className="card-subtitle">Encrypted 256-bit SSL transaction settlement via Stripe</p>
+                  <p className="card-subtitle">Payment is handled by Stripe</p>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: '1rem' }}>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Card number (4242 •••• •••• ••••)"
-                    className="form-input"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  />
-                </div>
+                <p className="card-subtitle" style={{ marginBottom: '1rem' }}>You pay securely on Stripe's checkout page.</p>
 
                 <button
                   type="submit"
-                  disabled={loading || quantity <= 0}
+                  disabled={loading || quantity <= 0 || !pricing || pricePerDropCents === null}
                   className="btn btn-primary"
                   style={{ width: '100%', padding: '0.875rem' }}
                 >
                   {loading
-                    ? 'Settling Licensing Fee via Stripe...'
-                    : `Pay £${(grossAmountCents / 100).toFixed(2)} & License ${quantity} Drops`}
+                    ? 'Opening Stripe checkout...'
+                    : pricing && pricePerDropCents !== null
+                    ? `Pay ${money(grossAmountCents, pricing.currency)} with Stripe`
+                    : 'Pricing unavailable'}
                 </button>
               </div>
             </div>
