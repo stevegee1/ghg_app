@@ -30,6 +30,7 @@ import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, Pi
 import type { AdminMerchProduct, MerchProduct } from './merch.types';
 import type { MarketIndex, MarketIndexValue } from './market.types';
 import type { AnchorBatch, AnchorOverview, VerifyResult } from './anchor.types';
+import type { Scope3ChainDetail, Scope3ChainSummary, Scope3Record, Scope3RecordInput } from './scope3.types';
 
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -72,6 +73,38 @@ export const api = {
       throw new Error(err.error || `HTTP ${res.status}`);
     }
     return res.json();
+  },
+
+  /** Scope 3 supply chains (client) */
+  async listScope3Chains(token: string): Promise<{ chains: Scope3ChainSummary[] }> {
+    return apiRequest('/api/scope3/chains', { token });
+  },
+  async createScope3Chain(token: string, body: { name: string; category: string; projectId?: string | null }) {
+    return apiRequest<{ chain: { id: string } }>('/api/scope3/chains', { token, method: 'POST', body });
+  },
+  async getScope3Chain(token: string, id: string): Promise<{ chain: Scope3ChainDetail }> {
+    return apiRequest(`/api/scope3/chains/${encodeURIComponent(id)}`, { token });
+  },
+  async addScope3Record(token: string, id: string, body: Scope3RecordInput): Promise<{ record: Scope3Record }> {
+    return apiRequest(`/api/scope3/chains/${encodeURIComponent(id)}/records`, { token, method: 'POST', body });
+  },
+  async inviteScope3Supplier(token: string, id: string, supplierEmail: string): Promise<{ invite: { id: string; supplierEmail: string; expiresAt: string }; emailSent: boolean }> {
+    return apiRequest(`/api/scope3/chains/${encodeURIComponent(id)}/invites`, { token, method: 'POST', body: { supplierEmail } });
+  },
+  async revokeScope3Invite(token: string, id: string, inviteId: string) {
+    return apiRequest<Record<string, never>>(`/api/scope3/chains/${encodeURIComponent(id)}/invites/${encodeURIComponent(inviteId)}`, {
+      token,
+      method: 'DELETE',
+      acceptStatus: [204],
+    });
+  },
+
+  /** Supplier invite link (no account) */
+  async getSupplierInvite(inviteToken: string): Promise<{ clientName: string; chainName: string; category: string; supplierEmail: string; expiresAt: string }> {
+    return apiRequest(`/api/supply-chain/invite?token=${encodeURIComponent(inviteToken)}`);
+  },
+  async addSupplierRecord(inviteToken: string, body: Omit<Scope3RecordInput, 'supersedesId'>): Promise<{ record: Scope3Record }> {
+    return apiRequest('/api/supply-chain/invite/records', { method: 'POST', body: { token: inviteToken, ...body } });
   },
 
   /** GET /api/public/verify/:hash - public record verification */

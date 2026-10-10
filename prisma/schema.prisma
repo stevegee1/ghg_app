@@ -53,6 +53,7 @@ model Licensee {
   fleetSubscription        FleetSubscription?
   routingEvents            ServiceRoutingEvent[]
   fleetProjects FleetProject[]
+  scope3Chains Scope3Chain[]
 }
 
 enum Vertical {
@@ -1754,6 +1755,7 @@ model FleetProject {
   assignments        FleetProjectAsset[]
   materials          FleetProjectMaterial[]
   costRuns           FleetProjectCostRun[]
+  scope3Chains       Scope3Chain[]
 
   @@unique([licenseeId, name])
   @@index([licenseeId, status])
@@ -1868,4 +1870,87 @@ model AnchorBatch {
   leaves      AnchorLeaf[]
 
   @@index([status, createdAt])
+}
+
+/// GHG Protocol Scope 3 upstream categories a supply chain can report under.
+enum Scope3Category {
+  PURCHASED_GOODS_AND_SERVICES
+  CAPITAL_GOODS
+  FUEL_AND_ENERGY_RELATED
+  UPSTREAM_TRANSPORTATION
+  WASTE_IN_OPERATIONS
+}
+
+enum Scope3Stage {
+  RAW_MATERIAL
+  PROCESSING
+  MANUFACTURING
+  TRANSPORT
+  DELIVERY
+}
+
+enum Scope3EnteredBy {
+  CLIENT
+  SUPPLIER
+}
+
+/// One purchased material or product line, followed from raw material to delivery.
+model Scope3Chain {
+  id         String           @id @default(cuid())
+  licenseeId String
+  licensee   Licensee         @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  name       String
+  category   Scope3Category
+  projectId  String?
+  project    FleetProject?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt  DateTime         @default(now())
+  records    Scope3Record[]
+  invites    Scope3SupplierInvite[]
+
+  @@unique([licenseeId, name])
+  @@index([licenseeId])
+}
+
+/// One stage of a supply chain. Emissions = quantity x emission factor, with the factor's source.
+/// Records are never edited; a correction is a new record that supersedes the old one. They are
+/// removed only with their client account.
+model Scope3Record {
+  id                String          @id @default(cuid())
+  licenseeId        String
+  chainId           String
+  chain             Scope3Chain     @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  stage             Scope3Stage
+  description       String
+  supplierName      String
+  quantity          Decimal         @db.Decimal(16, 4)
+  unit              String
+  factorKgCo2ePerUnit Decimal       @db.Decimal(14, 6)
+  factorSource      String
+  kgCo2e            Decimal         @db.Decimal(18, 4)
+  occurredOn        DateTime        @db.Date
+  enteredBy         Scope3EnteredBy
+  enteredByUserId   String?
+  inviteId          String?
+  supersedesId      String?         @unique
+  supersedes        Scope3Record?   @relation("Scope3Correction", fields: [supersedesId], references: [id], onDelete: Cascade)
+  supersededBy      Scope3Record?   @relation("Scope3Correction")
+  recordSha256      String
+  createdAt         DateTime        @default(now())
+
+  @@index([licenseeId, chainId, occurredOn])
+}
+
+/// A link that lets a supplier add stage records to one chain without an account.
+model Scope3SupplierInvite {
+  id            String      @id @default(cuid())
+  licenseeId    String
+  chainId       String
+  chain         Scope3Chain @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  supplierEmail String
+  tokenHash     String      @unique
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@index([licenseeId, chainId])
 }

@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { FLEET_REPORT_STATEMENT, getFleetSummary } from './fleet-reporting.service';
 import { toIsoDate } from './fleet-project.service';
 import { recordHash } from '../canonical-hash.service';
+import { scope3Summary } from '../scope3.service';
 
 /** The fields of a stored cost run's results (fleet-project-cost.service.ts) the ledger reports. */
 interface CostRunResults {
@@ -18,7 +19,7 @@ interface CostRunResults {
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-export const CLIMATE_LEDGER_SCHEMA = 'NFTYLOGS-CLIMATE-LEDGER-2026.1';
+export const CLIMATE_LEDGER_SCHEMA = 'NFTYLOGS-CLIMATE-LEDGER-2026.2';
 export const CLIMATE_LEDGER_ALIGNMENT =
   'Metrics follow the IFRS S2 Climate-related Disclosures cross-industry metrics (paragraph 29: greenhouse gas emissions, ' +
   'transition risk exposure, internal carbon prices), the basis for UK SRS S2.';
@@ -34,6 +35,7 @@ const tonnes = (kg: string) => new Prisma.Decimal(kg).div(1000).toDecimalPlaces(
 export async function buildClimateLedger(db: Db, licenseeId: string, from: Date, toExclusive: Date) {
   const licensee = await db.licensee.findUnique({ where: { id: licenseeId }, select: { name: true } });
   const summary = await getFleetSummary(db, licenseeId, from, toExclusive);
+  const supplyChain = await scope3Summary(db, licenseeId, from, toExclusive);
   const lastDay = new Date(toExclusive.getTime() - DAY_MS);
 
   const runs = await db.fleetProjectCostRun.findMany({
@@ -91,6 +93,10 @@ export async function buildClimateLedger(db: Db, licenseeId: string, from: Date,
       },
       coverage: summary.coverage,
       emissionFactors: summary.factorsUsed,
+      scope3SupplyChain: {
+        method: 'GHG Protocol Scope 3 Standard, supplier-specific and published factors entered per stage with their source',
+        ...supplyChain,
+      },
     },
     internalCarbonPrices: [...carbonPrices.values()].sort((a, b) => (a.effectiveDate < b.effectiveDate ? -1 : 1)),
     transitionRiskExposure: {
@@ -129,6 +135,10 @@ export function ledgerToCsv(l: ClimateLedger): string {
     rows.push(['ghg_emissions', scope, 'emissions', s.tonnesCo2e, 'tCO2e', l.ghgEmissions.method]);
     rows.push(['ghg_emissions', scope, 'fuel', s.fuelLitres, 'litre', '']);
   }
+  const sc = l.ghgEmissions.scope3SupplyChain;
+  rows.push(['ghg_emissions', 'scope3_supply_chain', 'emissions', sc.tonnesCo2e, 'tCO2e', l.ghgEmissions.scope3SupplyChain.method]);
+  for (const c of sc.byCategory) rows.push(['scope3_supply_chain', c.category, 'emissions', c.tonnesCo2e, 'tCO2e', '']);
+  for (const st of sc.byStage) rows.push(['scope3_supply_chain_stage', st.stage, 'emissions', st.tonnesCo2e, 'tCO2e', '']);
   for (const f of l.ghgEmissions.emissionFactors) {
     rows.push(['emission_factor', f.fuelType, 'factor', f.kgCo2ePerUnit, `kgCO2e/${f.unit}`, `${f.source} ${f.publicationYear}`]);
   }

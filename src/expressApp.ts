@@ -36,6 +36,7 @@ import { createMarketIndexRouter } from './routes/market-index.route';
 import { createFleetProjectRouter } from './routes/fleet-project.route';
 import { createAnchorRouter } from './routes/anchor.route';
 import { createAnchorVerifyRouter } from './routes/anchor-verify.route';
+import { createScope3Router } from './routes/scope3.route';
 import { createAssessmentRouter } from './routes/assessment.route';
 import { createPreparationChecklistRouter } from './routes/preparation-checklist.route';
 import { CheckoutService } from './services/checkout.service';
@@ -193,6 +194,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createFleetProjectRouter(prisma));
   app.use(createAnchorRouter(prisma));
   app.use(createAnchorVerifyRouter(prisma));
+  app.use(createScope3Router(prisma));
   app.use(createAssessmentRouter(prisma));
   app.use(createPreparationChecklistRouter(prisma));
 

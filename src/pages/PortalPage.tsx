@@ -8,6 +8,7 @@ import { PipelineWorkspace } from '../components/pipeline/PipelineWorkspace';
 import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
 import { PortalOverviewView } from '../components/portal/PortalOverviewView';
 import { useSiteFacts } from '../components/landing/useSiteFacts';
+import { Scope3Workspace } from '../components/scope3/Scope3Workspace';
 import { FleetWorkspace } from '../components/fleet/FleetWorkspace';
 import { PortalCredentialsView } from '../components/portal/PortalCredentialsView';
 import { PortalJobsView } from '../components/portal/PortalJobsView';
@@ -136,7 +137,7 @@ const GoogleIcons = {
   ),
 };
 
-export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'fleet';
+export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'fleet' | 'supply-chain';
 
 /** Maps the ?tab= value (including older aliases) to a view. No tab means the overview. */
 const viewFromTab = (tab: string | null): DashboardView => {
@@ -163,6 +164,8 @@ const viewFromTab = (tab: string | null): DashboardView => {
       return 'embed';
     case 'fleet':
       return 'fleet';
+    case 'supply-chain':
+      return 'supply-chain';
     default:
       return 'overview';
   }
@@ -589,6 +592,8 @@ export const PortalPage: React.FC = () => {
         return 'Client Profile';
       case 'fleet':
         return 'Fleet Emissions';
+      case 'supply-chain':
+        return 'Supply Chain';
       default:
         return 'Client Profile Dashboard';
     }
@@ -825,6 +830,14 @@ export const PortalPage: React.FC = () => {
         >
           <span className="portal-nav-icon"><GoogleIcons.Leaf /></span>
           <span className="portal-nav-label">Fleet Emissions</span>
+        </button>
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'supply-chain' ? 'active' : ''}`}
+          onClick={() => { setActiveView('supply-chain'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Leaf /></span>
+          <span className="portal-nav-label">Supply Chain (Scope 3)</span>
         </button>
 
         <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>VERIFICATION &amp; GOVERNANCE</div>
@@ -1266,6 +1279,7 @@ export const PortalPage: React.FC = () => {
       {activeView === 'fleet' && token && (
         <FleetWorkspace token={token} returnedFromCheckout={searchParams.get('subscription') === 'success'} />
       )}
+      {activeView === 'supply-chain' && token && <Scope3Workspace token={token} />}
 
       {/* ── Job Filing Modal ──────────────────────────────────────────────────── */}
       <JobFilingModal

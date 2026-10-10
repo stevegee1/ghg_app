@@ -291,6 +291,25 @@ export class EmailService {
     return this.deliver(params.toEmail, 'Confirm your NFTYLOGS partner application', html, `Partner verify: ${params.verifyUrl}`);
   }
 
+  /** A client asks a supplier to add their stages of a supply chain (Scope 3). */
+  async sendSupplierInviteEmail(params: { toEmail: string; submitUrl: string; clientName: string; chainName: string; expiresOn: string }) {
+    const escape = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">Supply chain emissions request</h2>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+          <strong>${escape(params.clientName)}</strong> asks you to record your stages of <strong>${escape(params.chainName)}</strong>:
+          quantities and the emission factors you use, with their source. No account is needed.
+        </p>
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${params.submitUrl}" style="background-color: #1a73e8; color: #ffffff; padding: 12px 24px; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 6px; display: inline-block;">Add supply chain records</a>
+        </p>
+        <p style="color: #64748b; font-size: 13px; line-height: 1.5;">The link works until ${escape(params.expiresOn)}. Records cannot be edited once added; corrections are added as new records.</p>
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.</p>
+      </div>`;
+    return this.deliver(params.toEmail, `Supply chain emissions request from ${params.clientName}`, html, `Supplier invite: ${params.submitUrl}`);
+  }
+
   /** Double opt-in: the subscription only starts when the recipient follows the confirmation link. */
   async sendNewsletterConfirmationEmail(params: { toEmail: string; confirmUrl: string; unsubscribeUrl: string }) {
     const html = `

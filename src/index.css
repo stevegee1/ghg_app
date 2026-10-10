@@ -11242,6 +11242,39 @@ a:not([class]):hover {
   }
 }
 
+/* Scope 3 supply chains */
+.scope3-title {
+  margin: 1rem 0 0.25rem;
+}
+
+.scope3-text {
+  white-space: normal !important;
+  min-width: 160px;
+  max-width: 320px;
+  overflow-wrap: break-word;
+}
+
+.scope3-superseded td {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.scope3-chain-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.scope3-chain-card:hover {
+  border-color: var(--accent-primary);
+}
+
 /* Admin: market inputs */
 .market-row {
   border-bottom: 1px solid var(--border-light);

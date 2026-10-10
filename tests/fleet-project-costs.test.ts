@@ -188,7 +188,8 @@ describe('Climate ledger export', () => {
     await request(app).get('/api/fleet/ledger?from=2025-03-31&to=2025-03-01').set(auth()).expect(400);
     const res = await request(app).get('/api/fleet/ledger?from=2025-03-01&to=2025-03-31').set(auth()).expect(200);
     const l = res.body;
-    expect(l.schema).toBe('NFTYLOGS-CLIMATE-LEDGER-2026.1');
+    expect(l.schema).toBe('NFTYLOGS-CLIMATE-LEDGER-2026.2');
+    expect(l.ghgEmissions.scope3SupplyChain.tonnesCo2e).toBe('0');
     expect(l.period).toEqual({ from: '2025-03-01', to: '2025-03-31' });
     expect(l.ghgEmissions.scope1.tonnesCo2e).toBe('2.7');
     expect(l.internalCarbonPrices).toEqual([expect.objectContaining({ indexCode: 'UK_ETS_CARBON_PRICE', value: '40' })]);
