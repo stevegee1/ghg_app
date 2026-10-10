@@ -1677,3 +1677,51 @@ model MerchProduct {
 
   @@index([kind, active, sortOrder])
 }
+
+enum MarketIndexCategory {
+  FUEL
+  CARBON
+  MATERIAL
+}
+
+enum MarketIndexFeed {
+  MANUAL
+  UK_WEEKLY_ROAD_FUEL
+}
+
+/// A market input used to cost contract activity (fuel, carbon, materials). Values are dated and sourced.
+model MarketIndex {
+  id          String              @id @default(cuid())
+  code        String              @unique
+  name        String
+  category    MarketIndexCategory
+  /// Unit of each value, e.g. GBP_PER_LITRE, GBP_PER_TONNE_CO2E, GBP_PER_TONNE
+  unit        String
+  currency    String
+  /// Fleet fuel types this index prices (FUEL indices only)
+  fuelTypes   FleetFuelType[]
+  feed        MarketIndexFeed     @default(MANUAL)
+  /// Column the feed reads, e.g. ULSD for diesel in the UK weekly road fuel prices
+  feedColumn  String?
+  source      String
+  sourceUrl   String?
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @default(now()) @updatedAt
+  values      MarketIndexValue[]
+}
+
+/// One dated value of a market index. Manual values record who entered them and the source reference.
+model MarketIndexValue {
+  id              String      @id @default(cuid())
+  indexId         String
+  index           MarketIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+  effectiveDate   DateTime    @db.Date
+  value           Decimal     @db.Decimal(14, 6)
+  sourceReference String
+  enteredByUserId String?
+  createdAt       DateTime    @default(now())
+
+  @@unique([indexId, effectiveDate])
+  @@index([indexId, effectiveDate])
+}

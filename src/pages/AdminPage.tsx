@@ -8,6 +8,7 @@ import { ReviewQueue } from '../components/admin/review/ReviewQueue';
 import { FleetSetupRequestsAdmin } from '../components/admin/FleetSetupRequestsAdmin';
 import { FleetProvidersAdmin } from '../components/admin/FleetProvidersAdmin';
 import { MerchProductsAdmin } from '../components/admin/MerchProductsAdmin';
+import { MarketIndicesAdmin } from '../components/admin/MarketIndicesAdmin';
 import { DeliveryPartnersAdmin } from '../components/admin/DeliveryPartnersAdmin';
 
 // Google SaaS Standard SVG Icons (Zero Emojis)
@@ -96,7 +97,7 @@ export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES'>('READINESS_TRACKER');
+  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES' | 'MARKET_INPUTS'>('READINESS_TRACKER');
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -658,6 +659,7 @@ export const AdminPage: React.FC = () => {
             { key: 'EMISSION_FACTORS', label: 'Emission Factors', badge: null },
             { key: 'FLEET_SETUP', label: 'Fleet Set-up Calls', badge: null },
             { key: 'FLEET_DEVICES', label: 'Fleet Devices', badge: null },
+            { key: 'MARKET_INPUTS', label: 'Market Inputs', badge: null },
             { key: 'DELIVERY_PARTNERS', label: 'Delivery Partners', badge: null },
             { key: 'SPLITS', label: 'Royalty Splits', badge: null },
           ] as const).map(({ key, label, badge }) => {
@@ -2072,6 +2074,7 @@ export const AdminPage: React.FC = () => {
 
       {activeAdminTab === 'FLEET_DEVICES' && token && <FleetProvidersAdmin token={token} />}
       {activeAdminTab === 'MERCH_PRICES' && token && <MerchProductsAdmin token={token} />}
+      {activeAdminTab === 'MARKET_INPUTS' && token && <MarketIndicesAdmin token={token} />}
 
       {activeAdminTab === 'DELIVERY_PARTNERS' && token && <DeliveryPartnersAdmin token={token} />}
 

@@ -11011,6 +11011,81 @@ a:not([class]):hover {
   }
 }
 
+/* Admin: market inputs */
+.market-row {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.market-row:last-child {
+  border-bottom: none;
+}
+
+.market-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.75rem 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.market-latest {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.market-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+}
+
+.market-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.market-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.market-form input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  font: inherit;
+  min-width: 0;
+}
+
+.market-source-cell {
+  white-space: normal !important;
+  max-width: 420px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+@media (min-width: 900px) {
+  .market-form {
+    grid-template-columns: 160px 160px minmax(0, 1fr) auto;
+  }
+}
+
 /* Checkout page: shown when there is no order to display */
 .checkout-message {
   background: var(--bg-card);

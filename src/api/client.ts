@@ -24,6 +24,7 @@ import type {
 import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
 import type { AdminMerchProduct, MerchProduct } from './merch.types';
+import type { MarketIndex, MarketIndexValue } from './market.types';
 
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -66,6 +67,32 @@ export const api = {
       throw new Error(err.error || `HTTP ${res.status}`);
     }
     return res.json();
+  },
+
+  /** Market inputs (admin) */
+  async getMarketIndices(token: string): Promise<{ indices: MarketIndex[]; fuelFeedConfigured: boolean }> {
+    return apiRequest('/api/admin/market-indices', { token });
+  },
+  async getMarketIndexValues(token: string, indexId: string): Promise<{ values: MarketIndexValue[] }> {
+    return apiRequest(`/api/admin/market-indices/${encodeURIComponent(indexId)}/values`, { token });
+  },
+  async addMarketIndexValue(token: string, indexId: string, body: { effectiveDate: string; value: string; sourceReference: string }) {
+    return apiRequest<{ value: MarketIndexValue }>(`/api/admin/market-indices/${encodeURIComponent(indexId)}/values`, { token, method: 'POST', body });
+  },
+  async deleteMarketIndexValue(token: string, indexId: string, valueId: string) {
+    return apiRequest<Record<string, never>>(
+      `/api/admin/market-indices/${encodeURIComponent(indexId)}/values/${encodeURIComponent(valueId)}`,
+      { token, method: 'DELETE', acceptStatus: [204] }
+    );
+  },
+  async importFuelPrices(token: string): Promise<{ inserted: number; latestDate: string | null }> {
+    return apiRequest('/api/admin/market-indices/import-fuel', { token, method: 'POST' });
+  },
+  async createMarketIndex(
+    token: string,
+    body: { code: string; name: string; category: string; unit: string; currency: string; source: string; sourceUrl?: string }
+  ) {
+    return apiRequest<{ index: MarketIndex }>('/api/admin/market-indices', { token, method: 'POST', body });
   },
 
   /** GET /api/merch/products - active merch items and their current prices */
