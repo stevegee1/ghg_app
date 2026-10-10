@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, FulfillmentPartnerStatus, CharityPartnerStatus } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { validateWorkEmail } from '../utils/emailValidation';
+import { confirmPartnerEmail, sendPartnerVerification } from '../services/partner-email-verification.service';
 
 /** Services a delivery or production partner can offer. Delivery first: local delivery cuts merch emissions. */
 export const PARTNER_CAPABILITIES = [
@@ -78,14 +79,40 @@ export function createPartnerNetworkRouter(prisma: PrismaClient): Router {
         },
       });
 
+      await sendPartnerVerification(prisma, {
+        kind: 'DELIVERY',
+        applicationId: application.id,
+        email: application.workEmail,
+        organisationName: application.companyName,
+        baseUrl: process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`,
+      });
+
       return res.status(201).json({
         success: true,
         applicationId: application.id,
-        message: 'Your partner application has been recorded. Our supply chain operations team will review your dossier and contact your work email within 2 business days to schedule an introductory technical evaluation.',
+        message: `We sent a confirmation link to ${application.workEmail}. Your application goes to our team once you confirm the email.`,
       });
     } catch (err: any) {
       console.error('[FULFILLMENT PARTNER APPLY POST]', err);
       return res.status(500).json({ error: 'Failed to process partner application. Please try again.' });
+    }
+  });
+
+  /**
+   * POST /api/partners/verify-email
+   * Public - confirms the email behind a charity or delivery partner application link.
+   */
+  router.post('/api/partners/verify-email', async (req: Request, res: Response) => {
+    try {
+      const token = typeof req.body?.token === 'string' ? req.body.token : '';
+      const result = await confirmPartnerEmail(prisma, token);
+      if (!result) {
+        return res.status(400).json({ error: 'This link is invalid or has expired. Please apply again.' });
+      }
+      return res.status(200).json({ success: true, kind: result.kind });
+    } catch (err) {
+      console.error('[PARTNER VERIFY EMAIL]', err);
+      return res.status(500).json({ error: 'Could not confirm the email. Please try again.' });
     }
   });
 
@@ -162,7 +189,8 @@ export function createPartnerNetworkRouter(prisma: PrismaClient): Router {
       }
 
       const { status } = req.query;
-      const where: any = {};
+      // Only applications whose work email has been confirmed reach the review list.
+      const where: any = { emailVerifiedAt: { not: null } };
       if (status && status !== 'ALL') {
         where.status = status as FulfillmentPartnerStatus;
       }
@@ -225,6 +253,14 @@ export function createPartnerNetworkRouter(prisma: PrismaClient): Router {
       const validStatuses = Object.values(FulfillmentPartnerStatus);
       if (status && !validStatuses.includes(status)) {
         return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
+      }
+
+      const existing = await prisma.fulfillmentPartnerApplication.findUnique({ where: { id }, select: { emailVerifiedAt: true } });
+      if (!existing) {
+        return res.status(404).json({ error: 'Application not found.' });
+      }
+      if (!existing.emailVerifiedAt) {
+        return res.status(409).json({ error: 'The applicant has not confirmed their work email yet.' });
       }
 
       const updated = await prisma.fulfillmentPartnerApplication.update({

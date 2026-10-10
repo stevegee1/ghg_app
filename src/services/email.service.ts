@@ -270,6 +270,27 @@ export class EmailService {
     return { success: true, provider: 'LOCAL_LOG' };
   }
 
+  /** Partner applications reach an administrator only after the applicant follows this link. */
+  async sendPartnerVerificationEmail(params: { toEmail: string; verifyUrl: string; organisationName: string; programme: string }) {
+    const escape = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">Confirm your email</h2>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+          We received a ${escape(params.programme)} application from <strong>${escape(params.organisationName)}</strong> with this address.
+          Confirm the email to send the application to our team for review.
+        </p>
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${params.verifyUrl}" style="background-color: #1a73e8; color: #ffffff; padding: 12px 24px; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 6px; display: inline-block;">Confirm email</a>
+        </p>
+        <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
+          If you did not apply, ignore this email and the application will not be reviewed. The link expires in 48 hours.
+        </p>
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.</p>
+      </div>`;
+    return this.deliver(params.toEmail, 'Confirm your NFTYLOGS partner application', html, `Partner verify: ${params.verifyUrl}`);
+  }
+
   /** Double opt-in: the subscription only starts when the recipient follows the confirmation link. */
   async sendNewsletterConfirmationEmail(params: { toEmail: string; confirmUrl: string; unsubscribeUrl: string }) {
     const html = `

@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
 import { createApp } from '../src/expressApp';
+import { emailService } from '../src/services/email.service';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { expireElapsedCharityContracts } from '../src/cron/charity-expiry.cron';
 import { getOrComputeDefaultCharityAllocations } from '../src/services/charity-allocation.service';
@@ -151,6 +152,33 @@ describe('Part C — ESG Split Engine & Charity Lifecycle', () => {
       const dbCharity = await prisma.charity.findUnique({ where: { id: res.body.charity.id } });
       expect(dbCharity).toBeDefined();
       expect(dbCharity!.stripeConnectedAccountId).toBeNull();
+      expect(dbCharity!.emailVerifiedAt).toBeNull();
+    });
+
+    it('POST /api/charities/apply rejects personal email providers', async () => {
+      await request(app)
+        .post('/api/charities/apply')
+        .send({ name: 'Personal Mail Charity', contactEmail: 'founder@gmail.com', statement: 'Tree planting.' })
+        .expect(400);
+    });
+
+    it('POST /api/partners/verify-email confirms the contact email from the emailed link', async () => {
+      const sent = jest.spyOn(emailService, 'sendPartnerVerificationEmail');
+      const res = await request(app)
+        .post('/api/charities/apply')
+        .send({ name: 'Leeds Rivers Trust', contactEmail: 'hello@leedsrivers.org.uk', statement: 'River clean-ups.' })
+        .expect(201);
+      const token = new URL(sent.mock.calls[0][0].verifyUrl).searchParams.get('token')!;
+      sent.mockRestore();
+
+      const confirmed = await request(app).post('/api/partners/verify-email').send({ token }).expect(200);
+      expect(confirmed.body.kind).toBe('CHARITY');
+      const stored = await prisma.charity.findUnique({ where: { id: res.body.charity.id } });
+      expect(stored!.emailVerifiedAt).not.toBeNull();
+      await prisma.charity.delete({ where: { id: res.body.charity.id } });
+
+      // The first application confirms its email the same way before review.
+      await prisma.charity.updateMany({ where: { contactEmail: 'contact@oceancleanup.org' }, data: { emailVerifiedAt: new Date() } });
     });
 
     it('POST /api/charities/apply validates required fields', async () => {
@@ -350,12 +378,13 @@ describe('Part C — ESG Split Engine & Charity Lifecycle', () => {
     it('POST /api/admin/charities/:id/approve rejects approval if 3 slots are already committed', async () => {
       const pending = await prisma.charity.upsert({
         where: { id: 'test-pending-slot-cap' },
-        update: { status: CharityStatus.PENDING_APPLICATION },
+        update: { status: CharityStatus.PENDING_APPLICATION, emailVerifiedAt: new Date() },
         create: {
           id: 'test-pending-slot-cap',
           name: 'Pending Org For Cap Check',
           contactEmail: 'pending.cap@org.com',
           status: CharityStatus.PENDING_APPLICATION,
+          emailVerifiedAt: new Date(),
         },
       });
 

@@ -1,4 +1,6 @@
 import { Router, Request, Response } from 'express';
+import { validateWorkEmail } from '../utils/emailValidation';
+import { sendPartnerVerification } from '../services/partner-email-verification.service';
 import { PrismaClient, CharityFocusPillar, CharityApplicationStatus, CharityStatus } from '@prisma/client';
 import { generateCharityPartnershipPdf } from '../services/charity-partnership-pdf.service';
 
@@ -256,8 +258,12 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
         return res.status(400).json({ error: 'Charity name is required.' });
       }
 
-      if (!contactEmail || typeof contactEmail !== 'string' || !contactEmail.includes('@')) {
+      if (!contactEmail || typeof contactEmail !== 'string') {
         return res.status(400).json({ error: 'A valid contact email address is required.' });
+      }
+      const emailCheck = validateWorkEmail(contactEmail);
+      if (!emailCheck.isValid) {
+        return res.status(400).json({ error: emailCheck.error || 'Use your organisation email address, not a personal one.' });
       }
 
       if (!statement || typeof statement !== 'string' || !statement.trim()) {
@@ -292,9 +298,17 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
         },
       });
 
+      await sendPartnerVerification(prisma, {
+        kind: 'CHARITY',
+        applicationId: charity.id,
+        email: charity.contactEmail ?? contactEmail.toLowerCase().trim(),
+        organisationName: charity.name,
+        baseUrl: process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`,
+      });
+
       return res.status(201).json({
         success: true,
-        message: 'Charity partner application submitted successfully. Awaiting Lead Auditor review.',
+        message: `We sent a confirmation link to ${charity.contactEmail}. Your application goes to our team once you confirm the email.`,
         charity: {
           id: charity.id,
           name: charity.name,

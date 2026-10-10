@@ -143,6 +143,10 @@ model Charity {
   registeredCharityNumber  String?
   contactEmail             String?
   statement                String?
+  /// Set when the applicant confirms their contact email. Unverified applications are not shown to admins.
+  emailVerifiedAt          DateTime?
+  emailVerificationHash    String?       @unique
+  emailVerificationExpires DateTime?
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @default(now()) @updatedAt
 
@@ -993,6 +997,10 @@ model FulfillmentPartnerApplication {
   reviewedAt           DateTime?
   reviewNotes          String?
   ipAddress            String?
+  /// Set when the applicant confirms their work email. Unverified applications are not shown to admins.
+  emailVerifiedAt          DateTime?
+  emailVerificationHash    String?                  @unique
+  emailVerificationExpires DateTime?
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 

@@ -24,7 +24,7 @@ export const PartnersBand: React.FC<{ facts: SiteFacts }> = ({ facts }) => (
               {facts.charityPlacesOpen === 1 ? 'place' : 'places'} open
             </p>
           )}
-          <Link to="/partners#charities" className="landing-solution-cta">
+          <Link to="/partners/charities" className="landing-solution-cta">
             Apply as a charity <span aria-hidden="true">→</span>
           </Link>
         </article>
@@ -34,7 +34,7 @@ export const PartnersBand: React.FC<{ facts: SiteFacts }> = ({ facts }) => (
             We arrange merch delivery with partners as close to each customer as possible, preferring cargo bikes and electric vans,
             to keep delivery emissions low.
           </p>
-          <Link to="/partners" className="landing-solution-cta">
+          <Link to="/partners/delivery" className="landing-solution-cta">
             Become a delivery partner <span aria-hidden="true">→</span>
           </Link>
         </article>

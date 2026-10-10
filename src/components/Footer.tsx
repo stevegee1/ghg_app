@@ -152,8 +152,8 @@ export const Footer: React.FC = () => {
           <div>
             <div className="cerebrium-footer-col-title">Partners</div>
             <ul className="cerebrium-footer-links">
-              <li><Link to="/partners" className="cerebrium-footer-link">Delivery &amp; production partners</Link></li>
-              <li><Link to="/partners#charities" className="cerebrium-footer-link">Charity partners</Link></li>
+              <li><Link to="/partners/delivery" className="cerebrium-footer-link">Delivery &amp; production partners</Link></li>
+              <li><Link to="/partners/charities" className="cerebrium-footer-link">Charity partners</Link></li>
               <li><Link to="/track" className="cerebrium-footer-link">Track a merch order</Link></li>
             </ul>
           </div>

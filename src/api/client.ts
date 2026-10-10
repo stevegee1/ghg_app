@@ -252,6 +252,18 @@ export const api = {
     return res.json();
   },
 
+  /** POST /api/partners/verify-email - confirms the email behind a partner application link */
+  async verifyPartnerEmail(token: string): Promise<{ success: boolean; kind: 'CHARITY' | 'DELIVERY' }> {
+    const res = await fetch('/api/partners/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json().catch(() => ({ error: 'Could not confirm the email.' }));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  },
+
   /** POST /api/charities/register - capacity-gated on the server */
   async registerCharity(params: {
     legalEntityName: string;

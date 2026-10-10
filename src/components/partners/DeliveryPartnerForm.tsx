@@ -45,7 +45,7 @@ export const DeliveryPartnerForm: React.FC = () => {
   if (done) {
     return (
       <div className="partners-done" role="status">
-        <h3>Application received</h3>
+        <h3>Check your inbox</h3>
         <p>{done}</p>
       </div>
     );
@@ -68,6 +68,7 @@ export const DeliveryPartnerForm: React.FC = () => {
         </label>
         <label>
           Work email
+          <span className="partners-hint">Use your company email address. Personal addresses such as Gmail are not accepted.</span>
           <input type="email" value={workEmail} maxLength={254} onChange={(e) => setWorkEmail(e.target.value)} />
         </label>
       </div>

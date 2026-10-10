@@ -97,7 +97,8 @@ export function createAdminCharitiesRouter(prisma: PrismaClient, stripe: Stripe)
 
       // Pending application queue
       const pendingApplications = await prisma.charity.findMany({
-        where: { status: CharityStatus.PENDING_APPLICATION },
+        // Only applications whose contact email has been confirmed reach the review queue.
+        where: { status: CharityStatus.PENDING_APPLICATION, emailVerifiedAt: { not: null } },
         orderBy: { createdAt: 'asc' },
       });
 
@@ -138,6 +139,9 @@ export function createAdminCharitiesRouter(prisma: PrismaClient, stripe: Stripe)
         return res.status(404).json({ error: 'Charity not found.' });
       }
 
+      if (!charity.emailVerifiedAt) {
+        return res.status(409).json({ error: 'The applicant has not confirmed their email yet.' });
+      }
       if (charity.status !== CharityStatus.PENDING_APPLICATION) {
         return res.status(400).json({
           error: `Only charities with status PENDING_APPLICATION can be approved. Current status: ${charity.status}`,
