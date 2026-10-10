@@ -147,6 +147,7 @@ export function createPortalRouter(prisma: PrismaClient): Router {
         const totalLogoDrops = transactions.length;
 
         let totalCharityGiftCentsSettled = 0;
+        let totalGrossCentsSettled = 0;
         const countByStatus: Record<string, number> = {
           PENDING: 0,
           SETTLED: 0,
@@ -157,8 +158,11 @@ export function createPortalRouter(prisma: PrismaClient): Router {
 
         for (const transaction of transactions) {
           countByStatus[transaction.status] = (countByStatus[transaction.status] || 0) + 1;
-          if (transaction.status === TransactionStatus.SETTLED && transaction.financialSplit) {
-            totalCharityGiftCentsSettled += transaction.financialSplit.charityGiftCents;
+          if (transaction.status === TransactionStatus.SETTLED) {
+            totalGrossCentsSettled += transaction.grossAmountCents;
+            if (transaction.financialSplit) {
+              totalCharityGiftCentsSettled += transaction.financialSplit.charityGiftCents;
+            }
           }
         }
 
@@ -166,6 +170,7 @@ export function createPortalRouter(prisma: PrismaClient): Router {
           licenseeId: targetLicenseeId || 'ALL',
           totalLogoDrops,
           totalCharityGiftCentsSettled,
+          totalGrossCentsSettled,
           countByStatus,
         };
       });

@@ -30,10 +30,10 @@ export const PortalTransactionsView: React.FC<PortalTransactionsViewProps> = ({
       >
         <div>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
-            Transaction History &amp; 15% ESG Splits
+            Payment history
           </h2>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-            Immutable settlement history with SHA-256 data watermarks
+            Every payment and the share passed to partner charities.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -79,7 +79,7 @@ export const PortalTransactionsView: React.FC<PortalTransactionsViewProps> = ({
                 <th style={{ padding: '0.75rem 1rem' }}>Transaction ID</th>
                 <th style={{ padding: '0.75rem 1rem' }}>Status</th>
                 <th style={{ padding: '0.75rem 1rem' }}>Gross Amount</th>
-                <th style={{ padding: '0.75rem 1rem' }}>15% Charity Split</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Charity share</th>
                 <th style={{ padding: '0.75rem 1rem' }}>Date</th>
               </tr>
             </thead>
@@ -96,7 +96,7 @@ export const PortalTransactionsView: React.FC<PortalTransactionsViewProps> = ({
                     £{(tx.grossAmountCents / 100).toFixed(2)}
                   </td>
                   <td style={{ padding: '0.85rem 1rem', fontWeight: 800, color: 'var(--color-green)', fontFamily: 'var(--font-mono)' }}>
-                    £{(tx.charityGiftCents / 100).toFixed(2)}
+                    {typeof tx.financialSplit?.charityGiftCents === 'number' ? `£${(tx.financialSplit.charityGiftCents / 100).toFixed(2)}` : '-'}
                   </td>
                   <td style={{ padding: '0.85rem 1rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     {new Date(tx.createdAt).toLocaleDateString('en-GB')}

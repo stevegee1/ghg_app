@@ -285,7 +285,22 @@ describe('Milestone 4 Partner Portal, Auth & Transparency Layer Tests', () => {
       })
     ).rejects.toThrow('Invalid licenseeId format');
   });
+
+  test('9. Portal summary totals every settled payment and its recorded charity share for the caller only', async () => {
+    const token = jwt.sign({ userId: 'usr_partner_001', role: 'PARTNER', licenseeId: 'lic_itm_power' }, JWT_SECRET, { expiresIn: '1h' });
+    const res = await request(app).get('/api/portal/summary').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+
+    const settled = await prisma.transaction.findMany({
+      where: { licenseeId: 'lic_itm_power', status: 'SETTLED' },
+      include: { financialSplit: true },
+    });
+    const gross = settled.reduce((sum, t) => sum + t.grossAmountCents, 0);
+    const charity = settled.reduce((sum, t) => sum + (t.financialSplit?.charityGiftCents ?? 0), 0);
+
+    expect(res.body.licenseeId).toBe('lic_itm_power');
+    expect(res.body.totalGrossCentsSettled).toBe(gross);
+    expect(res.body.totalCharityGiftCentsSettled).toBe(charity);
+    expect(res.body.countByStatus.SETTLED).toBe(settled.length);
+  });
 });
-
-
-

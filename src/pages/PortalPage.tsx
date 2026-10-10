@@ -7,6 +7,7 @@ import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
 import { PipelineWorkspace } from '../components/pipeline/PipelineWorkspace';
 import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
 import { PortalOverviewView } from '../components/portal/PortalOverviewView';
+import { useSiteFacts } from '../components/landing/useSiteFacts';
 import { FleetWorkspace } from '../components/fleet/FleetWorkspace';
 import { PortalCredentialsView } from '../components/portal/PortalCredentialsView';
 import { PortalJobsView } from '../components/portal/PortalJobsView';
@@ -397,6 +398,7 @@ export const PortalPage: React.FC = () => {
     [navigate]
   );
   const [credentials, setCredentials] = useState<any[]>([]);
+  const { charityShare } = useSiteFacts();
 
   // ── Job filing modal ──────────────────────────────────────────────────────
   const [showJobModal, setShowJobModal] = useState<boolean>(false);
@@ -580,7 +582,7 @@ export const PortalPage: React.FC = () => {
       case 'embed':
         return 'Website Trust Seal & HTML Embed Generator';
       case 'transactions':
-        return 'Settlement History & 15% ESG Splits';
+        return 'Payments';
       case 'legal':
         return 'ISO 19011:2026 Annex A Remote Auditing Guarantee';
       case 'profile':
@@ -600,25 +602,36 @@ export const PortalPage: React.FC = () => {
   // A client is verified for the embed once they hold an issued credential.
   const hasIssuedCredential = credentials.some((c) => c.status === 'ISSUED');
 
-  const totalVerifiedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
+  // Every figure below comes from the API: settled payments, their recorded splits, credentials and filings.
   const settledTxs = Array.isArray(transactions) ? transactions.filter((t: any) => t.status === 'SETTLED') : [];
-  const settledCount = summary?.countByStatus?.SETTLED ?? summary?.totalSettledTransactions ?? settledTxs.length;
-  const settledGrossCents = summary?.totalGrossVolumeCents ?? settledTxs.reduce((acc: number, t: any) => acc + (t.grossAmountCents || 0), 0);
-  const settledCharityCents = summary?.totalCharityGiftCentsSettled ?? summary?.totalCharityGiftCents ?? settledTxs.reduce((acc: number, t: any) => acc + (t.financialSplit?.charityGiftCents || (t.grossAmountCents ? Math.round(t.grossAmountCents * 0.15) : 0)), 0);
+  const settledCount = summary?.countByStatus?.SETTLED ?? settledTxs.length;
+  const settledGrossCents =
+    summary?.totalGrossCentsSettled ?? settledTxs.reduce((acc: number, t: any) => acc + (t.grossAmountCents || 0), 0);
+  const settledCharityCents =
+    summary?.totalCharityGiftCentsSettled ??
+    settledTxs.reduce((acc: number, t: any) => acc + (t.financialSplit?.charityGiftCents || 0), 0);
+  const formatPounds = (cents: number) =>
+    `\u00a3${(cents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const issuedCredentials = credentials.filter((c) => c.status === 'ISSUED').length;
+  const totalReportedJobs = jobReports.reduce((acc, r) => acc + (r.jobsCreated || 0), 0);
+  const pending = (value: string) => (loading ? '...' : value);
 
-  const kpis = auditScope === 'CARBON_EMISSION'
+  const accountKpis = [
+    { label: 'Settled payments', value: pending(settledCount.toLocaleString('en-GB')), sub: 'Payments completed through Stripe' },
+    { label: 'Amount paid', value: pending(formatPounds(settledGrossCents)), sub: 'Total of settled payments' },
+    {
+      label: charityShare ? `Charity share (${charityShare}%)` : 'Charity share',
+      value: pending(formatPounds(settledCharityCents)),
+      sub: 'Passed to partner charities from your payments',
+    },
+    { label: 'Credentials issued', value: issuedCredentials.toLocaleString('en-GB'), sub: 'Approved audits with a credential' },
+  ];
+  const workforceKpis = isJobActive
     ? [
-        { label: 'Settled Transactions', value: loading ? '...' : settledCount.toLocaleString(), sub: 'Verified Audit Trail', accent: 'var(--color-sky)' },
-        { label: 'Settled Gross Volume', value: loading ? '...' : `\u00a3${(settledGrossCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Contractual Settlement', accent: 'var(--color-green)' },
-        { label: '15% ESG Charity Split', value: loading ? '...' : `\u00a3${(settledCharityCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Direct Environmental Routing', accent: 'var(--color-sky)' },
-        { label: 'Active Credentials', value: loading ? '...' : credentials.length.toString(), sub: 'Issued readiness credentials', accent: 'var(--google-amber)' },
+        { label: 'Jobs reported', value: pending(totalReportedJobs.toLocaleString('en-GB')), sub: 'Across all filed periods' },
+        { label: 'Filed periods', value: pending(jobReports.length.toLocaleString('en-GB')), sub: 'Quarterly and annual filings' },
       ]
-    : [
-        { label: 'Total Verified Jobs', value: loading ? '...' : totalVerifiedJobs.toLocaleString(), sub: 'Section 106 Local Impact', accent: 'var(--color-sky)' },
-        { label: 'Active Filing Periods', value: loading ? '...' : jobReports.length.toString(), sub: 'Quarterly & Annual Covenants', accent: 'var(--color-green)' },
-        { label: '15% Social Endowment', value: loading ? '...' : `\u00a3${(settledCharityCents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Direct Disaster Relief Endowment', accent: 'var(--color-sky)' },
-        { label: 'Audited Covenants', value: loading ? '...' : (jobReports.length > 0 ? '100% Verified' : 'Filing Required'), sub: 'ISO 19011:2026 Assured', accent: 'var(--google-amber)' },
-      ];
+    : null;
 
   // ── Sidebar nav items helper (shared desktop + mobile drawer) ───────────
   const SidebarContent = ({ onNav }: { onNav?: () => void }) => (
@@ -869,10 +882,6 @@ export const PortalPage: React.FC = () => {
           <span className="portal-nav-label">Sign out</span>
         </button>
 
-        <div className="portal-sidebar-security">
-          <span className="portal-status-dot" />
-          <span>ISO 19011:2026 Engine Online</span>
-        </div>
       </div>
     </>
   );
@@ -1154,16 +1163,10 @@ export const PortalPage: React.FC = () => {
         {/* ── VIEW: Executive Overview & KPI Dashboard (True Source of Truth) ── */}
         {activeView === 'overview' && (
           <PortalOverviewView
-            user={user}
-            isCarbonPrepReady={isCarbonPrepReady}
-            isJobPrepReady={isJobPrepReady}
-            auditScope={auditScope}
-            setAuditScope={setAuditScope}
-            kpis={kpis}
-            credentials={credentials}
-            transactions={transactions}
+            accountKpis={accountKpis}
+            workforceKpis={workforceKpis}
+            services={{ carbon: isCarbonActive, job: isJobActive }}
             handleNavigateWorkflow={handleNavigateWorkflow}
-            setActiveView={setActiveView}
           />
         )}
 
@@ -1201,7 +1204,7 @@ export const PortalPage: React.FC = () => {
         />
       )}
 
-      {/* ── VIEW 5: Settlement History & 15% ESG Splits ──────────────────── */}
+      {/* ── VIEW 5: Payment history ──────────────────── */}
       {activeView === 'transactions' && (
         <PortalTransactionsView
           filteredTransactions={filteredTransactions}

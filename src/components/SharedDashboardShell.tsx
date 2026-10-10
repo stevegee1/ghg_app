@@ -64,6 +64,8 @@ interface SharedDashboardShellProps {
   isAdminViewing?: boolean;
   hideEmailBanner?: boolean;
   onNavigateWorkflow?: (type: 'CARBON' | 'JOB', draftId?: string | null) => void;
+  /** Services the client holds. Each audit card shows only for a held service; omitted shows both (admin view). */
+  services?: { carbon: boolean; job: boolean };
 }
 
 // ── Type-badge lookup ─────────────────────────────────────────────────────────
@@ -80,6 +82,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   isAdminViewing = false,
   hideEmailBanner = false,
   onNavigateWorkflow,
+  services,
 }) => {
   const { token, user } = useAuth();
   const navigate = useNavigate();
@@ -217,6 +220,8 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   };
   const recentActivity = Array.isArray(data?.recentActivity) ? data.recentActivity : [];
   const credentials = Array.isArray(data?.credentials) ? data.credentials : [];
+  const showCarbon = services ? services.carbon : true;
+  const showJob = services ? services.job : true;
   const telemetryApi = data?.telemetryApi || null;
 
   return (
@@ -350,7 +355,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
                 </div>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono, monospace)', margin: '0.3rem 0 0 0' }}>
-                {profile.email || 'licensee@ghglogodrop.com'} &bull; ID: {profile.userId ? profile.userId.slice(0, 10) : 'VERIFIED'}
+                {profile.email}
               </p>
             </div>
           </div>
@@ -379,7 +384,15 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
       {/* ── 2. Audit Workflow Cards ─────────────────────────────────────────── */}
       <section className="shared-dash-workflow-grid">
 
+        {!showCarbon && !showJob && (
+          <div className="shared-dash-workflow-card">
+            <h2 className="shared-dash-empty-title">No audit service yet</h2>
+            <p className="shared-dash-empty-text">Add GHG or Workforce from the menu to start an audit.</p>
+          </div>
+        )}
+
         {/* Carbon Emission Audit */}
+        {showCarbon && (
         <div className="shared-dash-workflow-card">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -436,7 +449,10 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
           </button>
         </div>
 
+        )}
+
         {/* Job Reporting Audit */}
+        {showJob && (
         <div className="shared-dash-workflow-card job-scope">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -492,6 +508,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
             </svg>
           </button>
         </div>
+        )}
       </section>
 
       {/* ── 3. Recent Activity Ledger ───────────────────────────────────────── */}

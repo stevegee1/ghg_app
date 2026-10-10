@@ -2728,6 +2728,79 @@ h4 {
   cursor: pointer;
 }
 
+/* Console overview: KPI rows above the audit cards */
+.portal-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.portal-kpi-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 0.75rem 0;
+}
+
+.portal-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.portal-kpi-card {
+  padding: 1.25rem;
+  border-left: 4px solid var(--color-sky);
+}
+
+.portal-kpi-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.portal-kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 0.3rem;
+  font-family: var(--font-mono);
+}
+
+.portal-kpi-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.shared-dash-empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.shared-dash-empty-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+@media (min-width: 600px) {
+  .portal-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .portal-kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 /* ── Responsive: tablet + mobile (≤ 960px) ────────────────────────────────── */
 @media (max-width: 960px) {
   .console-mobile-drawer-toggle {
