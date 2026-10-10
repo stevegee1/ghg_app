@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { FinancialSplitBar } from '../components/FinancialSplitBar';
-import { StatusBadge } from '../components/StatusBadge';
 
 interface OrderSummaryData {
   orderNumber: string;
@@ -25,21 +23,10 @@ interface OrderSummaryData {
 
 export const CheckoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const itemName = searchParams.get('item') || 'NFTYLOGS Vagaries of GHG Emissions Embroidered Cap';
-  const itemPriceGbp = parseFloat(searchParams.get('price') || '35.00');
-  const grossAmountCents = Math.round(itemPriceGbp * 100);
 
   const sessionId = searchParams.get('session_id');
   const txId = searchParams.get('tx_id');
   const isPostCheckout = Boolean(sessionId || txId);
-
-  // Form State (for direct in-app card testing fallback)
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvc, setCardCvc] = useState('');
-  const [optIn, setOptIn] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Order Summary State
   const [orderSummary, setOrderSummary] = useState<OrderSummaryData | null>(null);
@@ -61,28 +48,7 @@ export const CheckoutPage: React.FC = () => {
           setOrderSummary(data);
         }
       } catch (err: any) {
-        console.warn('Could not fetch real-time order summary, falling back to local metadata:', err);
-        if (isCurrent) {
-          // Resilient fallback with real transaction ID
-          setOrderSummary({
-            orderNumber: `GHG-ORD-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-            transactionId: txId || sessionId || `tx_${Date.now()}`,
-            status: 'SETTLED',
-            orderStatus: 'SPLIT_DISBURSED',
-            itemTitle: itemName,
-            grossAmountCents,
-            licensorRoyaltyCents: Math.round(grossAmountCents * 0.85),
-            charityGiftCents: grossAmountCents - Math.round(grossAmountCents * 0.85),
-            currency: 'GBP',
-            trackingUrl: `/track`,
-            invoicePdfUrl: `/transparency`,
-            charityAllocations: [
-              { charityName: 'Green Earth Foundation', amountCents: Math.round(grossAmountCents * 0.05), transferred: true },
-              { charityName: 'Clean Oceans Trust', amountCents: Math.round(grossAmountCents * 0.05), transferred: true },
-              { charityName: 'Youth Eco Sports Alliance', amountCents: Math.round(grossAmountCents * 0.05), transferred: true },
-            ],
-          });
-        }
+        console.error('[CHECKOUT] Order summary unavailable', err);
       } finally {
         if (isCurrent) setSummaryLoading(false);
       }
@@ -93,7 +59,7 @@ export const CheckoutPage: React.FC = () => {
     return () => {
       isCurrent = false;
     };
-  }, [sessionId, txId, isPostCheckout, grossAmountCents, itemName]);
+  }, [sessionId, txId, isPostCheckout]);
 
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
@@ -122,51 +88,6 @@ export const CheckoutPage: React.FC = () => {
       window.location.href = `/api/orders/${orderSummary.orderNumber}/invoice-pdf`;
     } finally {
       setDownloadingPdf(false);
-    }
-  };
-
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').substring(0, 16);
-    const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
-    setCardNumber(formatted);
-  };
-
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').substring(0, 4);
-    const formatted = val.length >= 3 ? `${val.substring(0, 2)}/${val.substring(2)}` : val;
-    setCardExpiry(formatted);
-  };
-
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!optIn) {
-      setError('Please agree to the Verified GHG Accountability Mark terms to proceed.');
-      return;
-    }
-    if (cardNumber.replace(/\s/g, '').length < 15) {
-      setError('Please enter a valid card number.');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const ref = `order_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const targetLicenseeId = searchParams.get('licenseeId') || 'lic_ghg_official';
-      const result = await api.checkout({
-        licenseeId: targetLicenseeId,
-        grossAmountCents,
-        checkoutReferenceId: ref,
-      });
-
-      // Fetch freshly sealed summary
-      const summary = await api.getOrderSummary({ txId: result.transactionId });
-      setOrderSummary(summary);
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred during checkout processing.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -247,7 +168,7 @@ export const CheckoutPage: React.FC = () => {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
                 <div style={{ fontSize: '0.975rem', fontWeight: 500, color: '#1e293b', lineHeight: 1.4 }}>
-                  Statutory 15% ESG split locked &amp; disbursed to audited charities
+                  Charity share recorded with your order
                 </div>
               </div>
 
@@ -345,11 +266,11 @@ export const CheckoutPage: React.FC = () => {
                   <strong style={{ color: '#0f172a' }}>£{(orderSummary.grossAmountCents / 100).toFixed(2)}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                  <span>Supplier Production (85%):</span>
+                  <span>Supplier production:</span>
                   <strong style={{ color: '#0f172a' }}>£{(orderSummary.licensorRoyaltyCents / 100).toFixed(2)}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Statutory ESG Charity Allocation (15%):</span>
+                  <span>Charity share:</span>
                   <strong style={{ color: '#16a34a' }}>£{(orderSummary.charityGiftCents / 100).toFixed(2)}</strong>
                 </div>
               </div>
@@ -388,7 +309,7 @@ export const CheckoutPage: React.FC = () => {
                 Track your order <span style={{ fontSize: '1.25rem', transform: 'translateX(2px)' }}>→</span>
               </Link>
               <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.4rem', fontWeight: 400 }}>
-                Order #{orderSummary.orderNumber} • 15% Charity Split Confirmed • Real-time tracking
+                Order #{orderSummary.orderNumber}
               </div>
             </div>
 
@@ -483,174 +404,23 @@ export const CheckoutPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          /* PRE-CHECKOUT CARD PAYMENT FORM FALLBACK */
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '24px',
-              padding: '3rem 2.5rem',
-              boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.05)',
-            }}
-          >
-            {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
-                Secure Order Checkout
-              </h1>
-              <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>
-                Encrypted payment processing &amp; verified statutory ESG charitable split.
-              </p>
+          <div className="checkout-message">
+            <h1>{isPostCheckout ? 'We could not load your order' : 'Nothing to check out'}</h1>
+            <p>
+              {isPostCheckout
+                ? 'Your payment is handled by Stripe and is not affected. Your receipt is in your email, and you can follow the order on the tracking page.'
+                : 'Orders are placed from the store and paid securely through Stripe.'}
+            </p>
+            <div className="checkout-message-actions">
+              {isPostCheckout && (
+                <Link to="/track" className="btn btn-primary">
+                  Track an order
+                </Link>
+              )}
+              <Link to="/merch" className="btn btn-secondary">
+                Go to the store
+              </Link>
             </div>
-
-            {error && (
-              <div
-                style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid #ef4444',
-                  color: '#dc2626',
-                  padding: '0.85rem 1rem',
-                  borderRadius: '8px',
-                  marginBottom: '1.5rem',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleCheckout}>
-              {/* Item Summary Card */}
-              <div
-                style={{
-                  padding: '1.25rem',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '12px',
-                  marginBottom: '1.5rem',
-                  border: '1px solid #e2e8f0',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>{itemName}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>NFTYLOGS Official Store</div>
-                  </div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
-                    £{itemPriceGbp.toFixed(2)}
-                  </div>
-                </div>
-              </div>
-
-              {/* 15% ESG Accountability Mark Box */}
-              <div
-                style={{
-                  backgroundColor: '#f0fdf4',
-                  border: '1px solid #bbf7d0',
-                  padding: '1rem',
-                  borderRadius: '12px',
-                  marginBottom: '1.5rem',
-                }}
-              >
-                <label style={{ display: 'flex', gap: '0.65rem', cursor: 'pointer', fontSize: '0.8rem' }}>
-                  <input
-                    type="checkbox"
-                    checked={optIn}
-                    onChange={(e) => setOptIn(e.target.checked)}
-                    style={{ marginTop: '0.15rem', accentColor: '#16a34a' }}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 800, color: '#15803d' }}>Verified GHG Accountability Mark</div>
-                    <div style={{ color: '#166534', marginTop: '0.2rem', lineHeight: 1.4 }}>
-                      Exact 15% (£{(itemPriceGbp * 0.15).toFixed(2)}) of this purchase is automatically routed to verified local environmental restoration funds.
-                    </div>
-                  </div>
-                </label>
-              </div>
-
-              {/* Payment Details Form */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Payment Details</label>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    256-Bit SSL Encrypted
-                  </span>
-                </div>
-
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Card number (4242 •••• •••• ••••)"
-                    value={cardNumber}
-                    onChange={handleCardNumberChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem 0.9rem',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.875rem',
-                      fontFamily: 'monospace',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <input
-                    type="text"
-                    required
-                    placeholder="MM / YY"
-                    value={cardExpiry}
-                    onChange={handleExpiryChange}
-                    style={{
-                      padding: '0.75rem 0.9rem',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.875rem',
-                      fontFamily: 'monospace',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                  <input
-                    type="password"
-                    required
-                    maxLength={4}
-                    placeholder="CVC"
-                    value={cardCvc}
-                    onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                    style={{
-                      padding: '0.75rem 0.9rem',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.875rem',
-                      fontFamily: 'monospace',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || !optIn}
-                style={{
-                  width: '100%',
-                  padding: '0.9rem',
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  backgroundColor: 'var(--bg-card)',
-                  color: 'var(--text-main)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  cursor: loading || !optIn ? 'not-allowed' : 'pointer',
-                  opacity: loading || !optIn ? 0.7 : 1,
-                }}
-              >
-                {loading ? 'Processing Payment...' : `Pay £${itemPriceGbp.toFixed(2)} →`}
-              </button>
-            </form>
           </div>
         )}
       </div>

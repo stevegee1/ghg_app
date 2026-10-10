@@ -167,6 +167,10 @@ describe('Milestone 4 Partner Portal, Auth & Transparency Layer Tests', () => {
     expect(typeof res.body.totalCharityGiftCents).toBe('number');
     expect(Array.isArray(res.body.publicPartners)).toBe(true);
 
+    // The charity share comes from the active platform split, not a fixed number.
+    const split = await prisma.splitConfigHistory.findFirst({ where: { licenseeId: null, isActive: true }, orderBy: { changedAt: 'desc' } });
+    expect(res.body.charityPercentage).toBe(split ? (10000 - split.royaltyBps) / 100 : null);
+
     // Ensure publicPartners contains Arsenal FC (isPubliclyVisible = true)
     const arsenalPartner = res.body.publicPartners.find(
       (p: any) => p.licenseeId === 'lic_arsenal_fc'

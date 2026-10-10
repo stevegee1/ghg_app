@@ -29,6 +29,14 @@ export function createTransparencyRouter(prisma: PrismaClient): Router {
         0
       );
 
+      // The charity share comes from the active platform split; null when none is configured.
+      const split = await prisma.splitConfigHistory.findFirst({
+        where: { licenseeId: null, isActive: true },
+        orderBy: { changedAt: 'desc' },
+        select: { royaltyBps: true },
+      });
+      const charityPercentage = split ? (10000 - split.royaltyBps) / 100 : null;
+
       // Fetch opted-in public licensees along with their most recent JobCreationReport
       const publicLicensees = await prisma.licensee.findMany({
         where: { isPubliclyVisible: true },
@@ -71,7 +79,7 @@ export function createTransparencyRouter(prisma: PrismaClient): Router {
       return res.status(200).json({
         totalSettledTransactions,
         totalCharityGiftCents,
-        charityPercentage: 15,
+        charityPercentage,
         dataDisclaimer:
           'Figures reflect settled licensing transactions and charitable routing only. Partner environmental claims are not independently verified by this platform.',
         publicPartners,

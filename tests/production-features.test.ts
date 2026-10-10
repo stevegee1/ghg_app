@@ -85,7 +85,7 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
   });
 
   describe('2. Active Charities & Capacity-Gated Registration', () => {
-    it('GET /api/charities/active returns maximum 3 charities with 1-year warranty validity', async () => {
+    it('GET /api/charities/active returns at most 3 charities with their recorded partnership dates', async () => {
       const res = await request(app)
         .get('/api/charities/active')
         .expect(200);
@@ -99,9 +99,10 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
       if (res.body.charities.length > 0) {
         const first = res.body.charities[0];
         expect(first).toHaveProperty('name');
-        expect(first).toHaveProperty('warrantyStart');
-        expect(first).toHaveProperty('warrantyEnd');
-        expect(first).toHaveProperty('warrantyActive');
+        const stored = await prisma.charity.findUnique({ where: { id: first.id } });
+        expect(first.partnershipStart).toBe(stored!.contractStartDate ? stored!.contractStartDate.toISOString() : null);
+        expect(first.partnershipEnd).toBe(stored!.contractEndDate ? stored!.contractEndDate.toISOString() : null);
+        expect(typeof first.totalDisbursedCents).toBe('number');
       }
     });
 

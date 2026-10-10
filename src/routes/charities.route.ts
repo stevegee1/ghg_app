@@ -30,22 +30,16 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
       const totalActiveCount = await prisma.charity.count({ where: { status: 'ACTIVE' } });
       const registrationOpen = totalActiveCount < MAX_ACTIVE_CHARITIES;
 
-      // Compute warranty year: 1 year from charity creation date
+      // Partnership dates are the contract dates recorded at activation; null until they are set.
       const formatted = charities.map((c) => {
         const totalDisbursedCents = c.allocations.reduce((sum, a) => sum + a.amountCents, 0);
-        const warrantyStart = c.createdAt;
-        const warrantyEnd = new Date(warrantyStart);
-        warrantyEnd.setFullYear(warrantyEnd.getFullYear() + 1);
-
         return {
           id: c.id,
           name: c.name,
           status: c.status,
-          warrantyStart: warrantyStart.toISOString(),
-          warrantyEnd: warrantyEnd.toISOString(),
-          warrantyActive: new Date() < warrantyEnd,
+          partnershipStart: c.contractStartDate ? c.contractStartDate.toISOString() : null,
+          partnershipEnd: c.contractEndDate ? c.contractEndDate.toISOString() : null,
           totalDisbursedCents,
-          totalDisbursedGbp: (totalDisbursedCents / 100).toFixed(2),
         };
       });
 
