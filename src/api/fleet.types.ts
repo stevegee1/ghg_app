@@ -273,3 +273,34 @@ export interface AdminTrackingAsset {
 export type MappingTestResult =
   | { index: number; ok: true; externalDeviceId: string; snapshot: Record<string, unknown> }
   | { index: number; ok: false; error: string };
+
+export interface FleetProjectAssignment {
+  id: string;
+  assetId: string;
+  fromDate: string;
+  toDate: string | null;
+  asset: { id: string; assetTag: string; name: string };
+}
+
+export interface FleetProject {
+  id: string;
+  name: string;
+  reference: string | null;
+  contractValuePence: number;
+  budgetedMarginBps: number;
+  currency: string;
+  startDate: string;
+  endDate: string | null;
+  status: 'ACTIVE' | 'CLOSED';
+  assignments: FleetProjectAssignment[];
+}
+
+export interface FleetProjectInput {
+  name: string;
+  reference?: string | null;
+  contractValuePence: number;
+  budgetedMarginBps: number;
+  currency: string;
+  startDate: string;
+  endDate?: string | null;
+}

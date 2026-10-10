@@ -2,6 +2,8 @@ import type {
   EmissionFactorInput,
   EmissionFactorRecord,
   FleetAsset,
+  FleetProject,
+  FleetProjectInput,
   FleetAssetImportResult,
   FleetAssetInput,
   FleetEstimate,
@@ -1160,6 +1162,29 @@ export const api = {
 
   async getFleetOverview(token: string): Promise<FleetOverview> {
     return apiRequest('/api/fleet/overview', { token });
+  },
+
+  async listFleetProjects(token: string): Promise<{ projects: FleetProject[]; defaultCurrency: string }> {
+    return apiRequest('/api/fleet/projects', { token });
+  },
+  async createFleetProject(token: string, body: FleetProjectInput): Promise<{ project: FleetProject }> {
+    return apiRequest('/api/fleet/projects', { token, method: 'POST', body });
+  },
+  async updateFleetProject(token: string, id: string, body: Partial<FleetProjectInput> & { status?: 'ACTIVE' | 'CLOSED' }): Promise<{ project: FleetProject }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}`, { token, method: 'PATCH', body });
+  },
+  async assignFleetProjectAsset(token: string, id: string, body: { assetId: string; fromDate: string; toDate?: string | null }): Promise<{ project: FleetProject }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/assets`, { token, method: 'POST', body });
+  },
+  async endFleetProjectAssignment(token: string, id: string, assignmentId: string, toDate: string | null): Promise<{ project: FleetProject }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/assets/${encodeURIComponent(assignmentId)}`, {
+      token,
+      method: 'PATCH',
+      body: { toDate },
+    });
+  },
+  async removeFleetProjectAssignment(token: string, id: string, assignmentId: string): Promise<{ project: FleetProject }> {
+    return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/assets/${encodeURIComponent(assignmentId)}`, { token, method: 'DELETE' });
   },
 
   async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {

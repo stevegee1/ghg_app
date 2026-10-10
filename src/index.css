@@ -11011,6 +11011,54 @@ a:not([class]):hover {
   }
 }
 
+/* Fleet: projects */
+.fleet-project {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fleet-project-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.fleet-project-head .fleet-panel-title {
+  margin: 0 0 0.25rem;
+}
+
+.fleet-project-assignments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fleet-project-assignments li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.fleet-project-assign {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+@media (min-width: 900px) {
+  .fleet-project-assign {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+}
+
 /* Admin: market inputs */
 .market-row {
   border-bottom: 1px solid var(--border-light);

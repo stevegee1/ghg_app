@@ -52,6 +52,7 @@ model Licensee {
   fleetDeviceBindings      FleetDeviceBinding[]
   fleetSubscription        FleetSubscription?
   routingEvents            ServiceRoutingEvent[]
+  fleetProjects FleetProject[]
 }
 
 enum Vertical {
@@ -1350,6 +1351,7 @@ model FleetAsset {
   updatedAt               DateTime              @updatedAt
 
   readings  FleetReading[]
+  projectAssignments FleetProjectAsset[]
   snapshots FleetTelemetrySnapshot[]
   faults    FleetFaultCode[]
   bindings  FleetDeviceBinding[]
@@ -1724,4 +1726,49 @@ model MarketIndexValue {
 
   @@unique([indexId, effectiveDate])
   @@index([indexId, effectiveDate])
+}
+
+enum FleetProjectStatus {
+  ACTIVE
+  CLOSED
+}
+
+/// A contract the client runs machines on. Its value and budgeted margin are the baseline for
+/// measuring what fuel, carbon and idle time cost the contract.
+model FleetProject {
+  id                 String               @id @default(cuid())
+  licenseeId         String
+  licensee           Licensee             @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  name               String
+  reference          String?
+  contractValuePence BigInt
+  /// Budgeted margin in basis points of contract value (1200 = 12%)
+  budgetedMarginBps  Int
+  currency           String
+  startDate          DateTime             @db.Date
+  endDate            DateTime?            @db.Date
+  status             FleetProjectStatus   @default(ACTIVE)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @default(now()) @updatedAt
+  assignments        FleetProjectAsset[]
+
+  @@unique([licenseeId, name])
+  @@index([licenseeId, status])
+}
+
+/// A machine working on a project for a period. One machine is on at most one project at a time.
+model FleetProjectAsset {
+  id         String       @id @default(cuid())
+  licenseeId String
+  projectId  String
+  project    FleetProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assetId    String
+  asset      FleetAsset   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  fromDate   DateTime     @db.Date
+  /// Inclusive last day; null while the machine is still on the project
+  toDate     DateTime?    @db.Date
+  createdAt  DateTime     @default(now())
+
+  @@index([licenseeId, assetId])
+  @@index([projectId])
 }
