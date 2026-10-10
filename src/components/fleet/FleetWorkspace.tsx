@@ -114,7 +114,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
         {overview && tab === 'assets' && <FleetAssets token={token} onChanged={refresh} />}
         {overview && tab === 'uploads' && <FleetUploads token={token} onSubscribe={() => setTab('subscription')} onImported={refresh} />}
         {overview && tab === 'api' && <FleetApiAccess token={token} />}
-        {overview && tab === 'subscription' && <FleetSubscription token={token} overview={overview} />}
+        {overview && tab === 'subscription' && <FleetSubscription token={token} overview={overview} onAddAssets={() => setTab('assets')} />}
       </div>
     </section>
   );

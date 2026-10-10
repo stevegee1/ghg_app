@@ -6,6 +6,8 @@ import { formatDate } from './fleetFormat';
 interface Props {
   token: string;
   overview: FleetOverview;
+  /** Opens the Assets tab, where the first asset is registered. */
+  onAddAssets: () => void;
 }
 
 const STATUS_COPY: Record<string, { label: string; detail: string }> = {
@@ -16,7 +18,7 @@ const STATUS_COPY: Record<string, { label: string; detail: string }> = {
   INCOMPLETE: { label: 'Not started', detail: 'Checkout was not completed.' },
 };
 
-export const FleetSubscription: React.FC<Props> = ({ token, overview }) => {
+export const FleetSubscription: React.FC<Props> = ({ token, overview, onAddAssets }) => {
   const [pricing, setPricing] = useState<{ unitAmount: number; currency: string; interval: string } | null>(null);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -76,14 +78,19 @@ export const FleetSubscription: React.FC<Props> = ({ token, overview }) => {
         )}
 
         {canSubscribe && overview.activeAssets === 0 && (
-          <p className="fleet-muted">Register at least one asset before subscribing. You are billed for active assets only.</p>
+          <p className="fleet-muted">You are billed per active asset, so add your first machine or vehicle before subscribing.</p>
         )}
 
         {error && <p className="fleet-error-text" role="alert">{error}</p>}
 
         <div className="fleet-form-actions">
-          {canSubscribe && (
-            <button type="button" className="btn btn-primary" disabled={busy || overview.activeAssets === 0 || !pricing} onClick={() => go('subscribe')}>
+          {canSubscribe && overview.activeAssets === 0 && (
+            <button type="button" className="btn btn-primary" onClick={onAddAssets}>
+              Add your first asset
+            </button>
+          )}
+          {canSubscribe && overview.activeAssets > 0 && (
+            <button type="button" className="btn btn-primary" disabled={busy || !pricing} onClick={() => go('subscribe')}>
               {busy ? 'Opening checkout...' : 'Subscribe'}
             </button>
           )}

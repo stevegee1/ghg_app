@@ -1079,7 +1079,9 @@ export const api = {
     return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/review-dossier`, { token });
   },
 
-  async getReviewerProfile(token: string): Promise<{ profile: { name: string; lastAccreditation: string | null } }> {
+  async getReviewerProfile(
+    token: string
+  ): Promise<{ profile: { name: string; lastAccreditation: string | null }; aiProvider: 'gemini' | 'anthropic' | 'openai' | null }> {
     return apiRequest('/api/workflow/reviewer-profile', { token });
   },
 

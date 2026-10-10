@@ -60,6 +60,11 @@ export function readProviderConfig(id: LlmProviderId): { apiKey: string; model: 
   return apiKey && model ? { apiKey, model } : null;
 }
 
+/** The provider the AI pre-screen will use, in the same priority order as resolveActiveProvider; null means rules only. */
+export function configuredLlmProviderId(): LlmProviderId | null {
+  return (['gemini', 'anthropic', 'openai'] as LlmProviderId[]).find((id) => readProviderConfig(id) !== null) ?? null;
+}
+
 /** Throws at boot when a provider key is set without its model name. */
 export function validateLlmProviderConfig(): void {
   const problems = (Object.keys(LLM_PROVIDER_ENV) as LlmProviderId[])

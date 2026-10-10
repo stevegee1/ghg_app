@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { configuredLlmProviderId } from '../src/services/review-pipeline/llm-provider.interface';
 import { EvidenceCategory, PrismaClient, Vertical, WorkflowStatus, WorkflowType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -126,6 +127,8 @@ describe('Lead Auditor review queue and dossier', () => {
 
   it('signs decisions with the auditor\'s own name and remembers their accreditation', async () => {
     const before = await request(app).get('/api/workflow/reviewer-profile').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    // The profile tells the Lead Auditor whether pre-screens use an AI model or rules only.
+    expect(before.body.aiProvider).toBe(configuredLlmProviderId());
     expect(before.body.profile).toEqual({ name: 'Priya Nair', lastAccreditation: null });
 
     await request(app)
@@ -150,5 +153,24 @@ describe('Lead Auditor review queue and dossier', () => {
 
     const decided = await request(app).get('/api/workflow/review-queue?stage=decided').set('Authorization', `Bearer ${adminToken}`).expect(200);
     expect(decided.body.submissions.find((s: any) => s.id === screenedId)).toMatchObject({ status: 'REJECTED', decidedBy: 'Priya Nair' });
+  });
+});
+
+describe('AI provider detection', () => {
+  const keys = ['GEMINI_API_KEY', 'GEMINI_MODEL', 'ANTHROPIC_API_KEY', 'ANTHROPIC_MODEL', 'OPENAI_API_KEY', 'OPENAI_MODEL'];
+  const saved: Record<string, string | undefined> = {};
+  beforeEach(() => keys.forEach((k) => { saved[k] = process.env[k]; delete process.env[k]; }));
+  afterEach(() => keys.forEach((k) => { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; }));
+
+  it('reports rules only when no provider has both a key and a model', () => {
+    expect(configuredLlmProviderId()).toBeNull();
+    process.env.ANTHROPIC_API_KEY = 'key';
+    expect(configuredLlmProviderId()).toBeNull();
+  });
+
+  it('reports the provider whose key and model are both set', () => {
+    process.env.ANTHROPIC_API_KEY = 'key';
+    process.env.ANTHROPIC_MODEL = 'model';
+    expect(configuredLlmProviderId()).toBe('anthropic');
   });
 });

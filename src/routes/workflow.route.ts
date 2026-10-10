@@ -19,6 +19,7 @@ import { CheckoutService } from '../services/checkout.service';
 import { runWithRls } from '../db/rls';
 import { getAssuranceFee } from '../services/assurance-fee.service';
 import { PLATFORM_LICENSEE_ID } from '../services/platform-account.service';
+import { configuredLlmProviderId } from '../services/review-pipeline/llm-provider.interface';
 import {
   isPipelineService,
   listClientFrameworks,
@@ -635,7 +636,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     try {
       const profile = await runWithRls(prisma, req.user!, (tx) => getReviewerProfile(tx, req.user!.userId));
       if (!profile) return res.status(404).json({ error: 'Reviewer account not found.' });
-      return res.status(200).json({ profile });
+      // aiProvider tells the Lead Auditor whether pre-screens use an AI model or the rules engine only.
+      return res.status(200).json({ profile, aiProvider: configuredLlmProviderId() });
     } catch (err: unknown) {
       console.error('[WORKFLOW REVIEWER PROFILE ERROR]', err);
       return res.status(500).json({ error: 'Failed to load your reviewer profile.' });
