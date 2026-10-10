@@ -912,6 +912,14 @@ h4 {
   }
 }
 
+/* Small phones: drop the Website link and the Console badge so the account button stays on screen */
+@media (max-width: 480px) {
+  .navbar-console-mode .btn-audit-cta,
+  .navbar-console-mode .console-mode-badge {
+    display: none;
+  }
+}
+
 .google-account-container {
   position: relative;
   display: inline-flex;
@@ -9660,6 +9668,27 @@ a:not([class]):hover {
   margin: 0 0 0.25rem;
   font-size: 1.3rem;
   font-weight: 800;
+  color: var(--text-main);
+}
+
+.onb-page-title {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.onb-service-questions + .onb-service-questions {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.onb-service-questions-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-main);
 }
 

@@ -18,10 +18,12 @@ interface Props {
   onAnswer: (key: string, value: boolean) => void;
   fleet: FleetProfileAnswers;
   onFleetChange: (fleet: FleetProfileAnswers) => void;
+  /** Questions already asked for another chosen service, so they are not asked twice. */
+  skip?: string[];
 }
 
 /** The questions for one service. Only the chosen service's questions are asked. */
-export const ServiceQuestions: React.FC<Props> = ({ service, answers, onAnswer, fleet, onFleetChange }) => {
+export const ServiceQuestions: React.FC<Props> = ({ service, answers, onAnswer, fleet, onFleetChange, skip = [] }) => {
   if (service === 'FLEET') {
     const toggleCategory = (category: FleetAssetCategory) =>
       onFleetChange({
@@ -77,7 +79,7 @@ export const ServiceQuestions: React.FC<Props> = ({ service, answers, onAnswer, 
     );
   }
 
-  const questions = service === 'GHG' ? GHG_QUESTIONS : WORKFORCE_QUESTIONS;
+  const questions = (service === 'GHG' ? GHG_QUESTIONS : WORKFORCE_QUESTIONS).filter((q) => !skip.includes(q.key));
   return (
     <div className="onb-questions">
       {questions.map((q) => (

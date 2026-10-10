@@ -7,7 +7,7 @@ import {
   FLEET_CLOUD_CONNECTION,
   IntakeAssessmentInput,
 } from '../services/assessment.service';
-import { ClientService, isClientService } from '../services/service-routing.service';
+import { CLIENT_SERVICES, ClientService, isClientService } from '../services/service-routing.service';
 import { requireAuth, requireAdmin } from '../middleware/auth.middleware';
 
 type Parsed<T> = { value: T } | { error: string };
@@ -90,8 +90,8 @@ export function createAssessmentRouter(prisma: PrismaClient): Router {
 
   /**
    * POST /api/assessment
-   * Completes onboarding: the organisation questions, one chosen service and that service's
-   * questions. Routes the client to the service's pipeline and returns where they land.
+   * Completes onboarding: the organisation questions, the chosen services and each service's
+   * questions. Each service gets its own pipeline; the client lands on the first.
    */
   router.post('/api/assessment', requireAuth, async (req: Request, res: Response) => {
     const user = req.user;
@@ -102,16 +102,23 @@ export function createAssessmentRouter(prisma: PrismaClient): Router {
 
     const org = parseOrganisation(body);
     if ('error' in org) return res.status(400).json({ error: org.error });
-    if (!isClientService(body.service)) {
-      return res.status(400).json({ error: 'service must be one of GHG, WORKFORCE or FLEET.' });
+    // One or more services; each still runs in its own pipeline. A single `service` is accepted too.
+    const requested = Array.isArray(body.services) ? body.services : body.service !== undefined ? [body.service] : [];
+    if (requested.length === 0 || !requested.every(isClientService)) {
+      return res.status(400).json({ error: 'services must list one or more of GHG, WORKFORCE or FLEET.' });
     }
-    const answers = parseServiceAnswers(body.service, body);
-    if ('error' in answers) return res.status(400).json({ error: answers.error });
+    const services = CLIENT_SERVICES.filter((s) => (requested as ClientService[]).includes(s));
+    let serviceAnswers: Partial<IntakeAssessmentInput> = {};
+    for (const service of services) {
+      const answers = parseServiceAnswers(service, body);
+      if ('error' in answers) return res.status(400).json({ error: answers.error });
+      serviceAnswers = { ...serviceAnswers, ...answers.value };
+    }
 
     try {
       const result = await assessmentService.submitAssessment(
         user.licenseeId,
-        { ...org.value, ...answers.value, services: [body.service] },
+        { ...org.value, ...serviceAnswers, services },
         user.userId
       );
       return res.status(200).json({

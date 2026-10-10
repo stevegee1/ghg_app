@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { ServicePicker } from '../components/onboarding/ServicePicker';
@@ -35,6 +35,17 @@ const SERVICE_INTRO: Record<ClientService, { title: string; detail: string }> = 
 
 export type OnboardingStep = 1 | 2 | 3;
 
+/** Services in the order they are asked about and routed to. */
+const SERVICE_ORDER: ClientService[] = ['GHG', 'WORKFORCE', 'FLEET'];
+
+/** Services the client already holds, from their entitlements. */
+const heldServices = (entitlements: { serviceLine: string }[] = []): ClientService[] => {
+  const lines = new Set(entitlements.map((e) => e.serviceLine));
+  return SERVICE_ORDER.filter((s) =>
+    s === 'GHG' ? lines.has('GHG') || lines.has('CARBON') : s === 'WORKFORCE' ? lines.has('JOB') : lines.has('FLEET')
+  );
+};
+
 export const OnboardingPage: React.FC = () => {
   const { user, token, updateUser, refreshUser } = useAuth();
   const navigate = useNavigate();
@@ -54,7 +65,9 @@ export const OnboardingPage: React.FC = () => {
   const [primaryRole, setPrimaryRole] = useState<string>(user?.primaryRole || 'COMPLIANCE_OFFICER');
   const [organisationCountry, setOrganisationCountry] = useState<string>(user?.organisationCountry || 'GB');
   const [industrySector, setIndustrySector] = useState<string>(user?.industrySector || 'MANUFACTURING');
-  const [service, setService] = useState<ClientService | null>(addService);
+  const [services, setServicesState] = useState<ClientService[]>(addService ? [addService] : []);
+  const setServices = (next: ClientService[]) => setServicesState(SERVICE_ORDER.filter((s) => next.includes(s)));
+  const alreadyHeld = heldServices(user?.serviceEntitlements);
 
   // ── Step 2: Scale and the chosen service's questions ──────────────────────
   const [organisationSize, setOrganisationSize] = useState<string>('MEDIUM_50_249');
@@ -67,7 +80,9 @@ export const OnboardingPage: React.FC = () => {
   const [decidingId, setDecidingId] = useState<string | null>(null);
   const [destination, setDestination] = useState<string | null>(null);
 
-  const serviceTitle = SERVICE_OPTIONS.find((o) => o.id === service)?.title ?? '';
+  const serviceTitle = services.map((id) => SERVICE_OPTIONS.find((o) => o.id === id)?.title ?? id).join(', ');
+  const hasFleet = services.includes('FLEET');
+  const hasFrameworkService = services.includes('GHG') || services.includes('WORKFORCE');
 
   // A client who has already onboarded sees their roadmap, unless they are adding a service.
   useEffect(() => {
@@ -77,8 +92,7 @@ export const OnboardingPage: React.FC = () => {
       .then((res) => {
         const lines: string[] = res.assessment?.serviceLinesRequested || [];
         if (!res.assessment) return;
-        const existing: ClientService = lines.includes('GHG') || lines.includes('CARBON') ? 'GHG' : lines.includes('JOB') ? 'WORKFORCE' : 'FLEET';
-        setService(existing);
+        setServices(heldServices(lines.map((serviceLine) => ({ serviceLine }))));
         setRecommendations(res.assessment.recommendations || []);
         setStep(3);
       })
@@ -93,8 +107,8 @@ export const OnboardingPage: React.FC = () => {
       setError('Company name is required');
       return;
     }
-    if (!service) {
-      setError('Choose the service you need.');
+    if (services.length === 0) {
+      setError('Choose at least one service.');
       return;
     }
     setError(null);
@@ -121,26 +135,32 @@ export const OnboardingPage: React.FC = () => {
     setStep(2);
   };
 
-  /** Validates that every question for the chosen service has an answer. */
+  /** Validates that every question for each chosen service has an answer. */
   const collectAnswers = (): { error: string } | { value: Record<string, unknown> } => {
-    if (!service) return { error: 'Choose the service you need.' };
-    if (service === 'FLEET') {
+    if (services.length === 0) return { error: 'Choose at least one service.' };
+    const value: Record<string, unknown> = {};
+    if (hasFleet) {
       if (!fleet.assetCountBand || !fleet.cloudConnection || fleet.categories.length === 0) {
         return { error: 'Answer every Fleet question, including at least one equipment type.' };
       }
-      return { value: { fleetProfile: fleet } };
+      value.fleetProfile = fleet;
     }
-    const questions = service === 'GHG' ? GHG_QUESTIONS : WORKFORCE_QUESTIONS;
-    const unanswered = questions.filter((q) => typeof answers[q.key] !== 'boolean');
+    const questions = [
+      ...(services.includes('GHG') ? GHG_QUESTIONS : []),
+      ...(services.includes('WORKFORCE') ? WORKFORCE_QUESTIONS : []),
+    ];
+    const keys = [...new Set(questions.map((q) => q.key))];
+    const unanswered = keys.filter((key) => typeof answers[key] !== 'boolean');
     if (unanswered.length > 0) {
       return { error: `Answer every question before continuing (${unanswered.length} left).` };
     }
-    return { value: Object.fromEntries(questions.map((q) => [q.key, answers[q.key]])) };
+    for (const key of keys) value[key] = answers[key];
+    return { value };
   };
 
   const handleAssessmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token || !service) return;
+    if (!token || services.length === 0) return;
     const collected = collectAnswers();
     if ('error' in collected) {
       setError(collected.error);
@@ -151,13 +171,13 @@ export const OnboardingPage: React.FC = () => {
 
     try {
       if (addService) {
-        const res = await api.addClientService(token, { service, ...collected.value });
+        const res = await api.addClientService(token, { service: addService, ...collected.value });
         await refreshUser();
         navigate(res.destination);
         return;
       }
       const res = await api.submitAssessment(token, {
-        service,
+        services,
         organisationCountry,
         organisationSize,
         annualRevenueBand,
@@ -199,45 +219,18 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleLaunchChecklist = () => {
-    navigate(destination || SERVICE_DESTINATIONS[service || 'GHG']);
+    navigate(destination || SERVICE_DESTINATIONS[services[0] || 'GHG']);
   };
+
+  // A service the client already holds has nothing to add: go straight to it.
+  if (addService && alreadyHeld.includes(addService)) {
+    return <Navigate to={SERVICE_DESTINATIONS[addService]} replace />;
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', color: 'var(--text-main)', padding: '2.5rem 1rem' }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-        {/* Navigation Breadcrumb & Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <img
-              src="/images/nfty-logs-logo.png"
-              alt="NFTYLOGS"
-              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
-            />
-            <span style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-              NFTYLOGS
-            </span>
-            <span
-              style={{
-                fontSize: '0.72rem',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '6px',
-                background: '#f1f5f9',
-                color: '#334155',
-                fontWeight: 700,
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              Statutory Intake Navigator
-            </span>
-          </div>
-
-          <Link
-            to="/portal"
-            style={{ fontSize: '0.85rem', color: '#475569', textDecoration: 'none', fontWeight: 600 }}
-          >
-            Skip to Console
-          </Link>
-        </div>
+        <h1 className="onb-page-title">{addService ? `Add ${serviceTitle}` : 'Set up your account'}</h1>
 
         {/* Step Progress Bar */}
         <div
@@ -311,7 +304,7 @@ export const OnboardingPage: React.FC = () => {
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 2 ? '#090d1a' : '#64748b', fontFamily: 'var(--font-heading)' }}>
                   Your answers
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Questions for your service</div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Questions for your services</div>
               </div>
             </div>
 
@@ -531,7 +524,7 @@ export const OnboardingPage: React.FC = () => {
               </div>
 
               <div className="onb-section">
-                <ServicePicker value={service} onChange={setService} />
+                <ServicePicker value={services} onChange={setServices} disabled={alreadyHeld} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.75rem' }}>
@@ -571,14 +564,16 @@ export const OnboardingPage: React.FC = () => {
           >
             <div className="onb-step-header">
               <div>
-                <h2 className="onb-step-title">{service ? SERVICE_INTRO[service].title : ''}</h2>
-                <p className="onb-help">{service ? SERVICE_INTRO[service].detail : ''}</p>
+                <h2 className="onb-step-title">{services.length === 1 ? SERVICE_INTRO[services[0]].title : 'Questions for your services'}</h2>
+                <p className="onb-help">
+                  {services.length === 1 ? SERVICE_INTRO[services[0]].detail : 'Each set of answers sets up that service. Shared questions are asked once.'}
+                </p>
               </div>
               <div className="onb-step-badges">
                 <span className="onb-service-badge">{addService ? `Adding ${serviceTitle}` : serviceTitle}</span>
                 {!addService && (
                   <button type="button" className="onb-link-button" onClick={() => setStep(1)}>
-                    Change service
+                    Change services
                   </button>
                 )}
               </div>
@@ -648,15 +643,19 @@ export const OnboardingPage: React.FC = () => {
               </div>
               )}
 
-              {service && (
-                <ServiceQuestions
-                  service={service}
-                  answers={answers}
-                  onAnswer={(key, value) => setAnswers((prev) => ({ ...prev, [key]: value }))}
-                  fleet={fleet}
-                  onFleetChange={setFleet}
-                />
-              )}
+              {services.map((id, index) => (
+                <section key={id} className="onb-service-questions" aria-label={SERVICE_INTRO[id].title}>
+                  {services.length > 1 && <h3 className="onb-service-questions-title">{SERVICE_INTRO[id].title}</h3>}
+                  <ServiceQuestions
+                    service={id}
+                    answers={answers}
+                    onAnswer={(key, value) => setAnswers((prev) => ({ ...prev, [key]: value }))}
+                    fleet={fleet}
+                    onFleetChange={setFleet}
+                    skip={id === 'WORKFORCE' && services.slice(0, index).includes('GHG') ? GHG_QUESTIONS.map((q) => q.key) : []}
+                  />
+                </section>
+              ))}
 
               {error && (
                 <p className="onb-error" role="alert">
@@ -698,7 +697,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  {loading ? 'Saving your answers...' : addService ? `Add ${serviceTitle}` : service === 'FLEET' ? 'Set up Fleet' : 'Show my compliance roadmap'}
+                  {loading ? 'Saving your answers...' : addService ? `Add ${serviceTitle}` : hasFrameworkService ? 'Show my compliance roadmap' : 'Set up Fleet'}
                 </button>
               </div>
             </form>
@@ -706,20 +705,20 @@ export const OnboardingPage: React.FC = () => {
         )}
 
         {/* ── STEP 3: COMPLIANCE ROADMAP & RECOMMENDATIONS ────────────────────── */}
-        {step === 3 && service === 'FLEET' && (
+        {step === 3 && hasFleet && (
           <div className="onb-fleet-done">
             <h2 className="onb-step-title">Your Fleet service is set up</h2>
             <p className="onb-help">
               Next, register your machines and vehicles, choose your subscription and connect your data. Your Fleet
               dashboard walks you through each step.
             </p>
-            <button type="button" className="btn btn-primary" onClick={handleLaunchChecklist}>
+            <button type="button" className="btn btn-primary" onClick={() => navigate(SERVICE_DESTINATIONS.FLEET)}>
               Go to Fleet
             </button>
           </div>
         )}
 
-        {step === 3 && service !== 'FLEET' && (
+        {step === 3 && hasFrameworkService && (
           <div>
             <div
               style={{
@@ -940,7 +939,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  {service === 'WORKFORCE' ? 'Start Workforce preparation' : 'Start GHG preparation'}
+                  {services[0] === 'WORKFORCE' ? 'Start Workforce preparation' : 'Start GHG preparation'}
                 </button>
               </div>
             </div>

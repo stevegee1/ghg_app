@@ -618,8 +618,10 @@ describe('Onboarding routes each client to isolated services', () => {
   });
 
   it.each([
-    [{ ...org, ...ghgAnswers }, /service must be one of/],
-    [{ ...org, service: 'MERCH', ...ghgAnswers }, /service must be one of/],
+    [{ ...org, ...ghgAnswers }, /services must list one or more/],
+    [{ ...org, service: 'MERCH', ...ghgAnswers }, /services must list one or more/],
+    [{ ...org, services: ['GHG', 'MERCH'], ...ghgAnswers }, /services must list one or more/],
+    [{ ...org, services: ['GHG', 'WORKFORCE'], ...ghgAnswers }, /hasPlanningConsent must be answered/],
     [{ ...org, service: 'GHG', ...ghgAnswers, hasFleet: 'yes' }, /hasFleet must be answered yes or no/],
     [{ ...org, service: 'WORKFORCE', isUKPublicContractor: true }, /hasPlanningConsent must be answered/],
     [{ ...org, service: 'FLEET', fleetProfile: { assetCountBand: '11_50', categories: [], cloudConnection: 'SOME' } }, /categories/],
@@ -650,6 +652,22 @@ describe('Onboarding routes each client to isolated services', () => {
     expect(selected.service).toBe('GHG');
     expect(selected.answers.isUKPublicContractor).toBe(true);
     expect(events.every((e) => e.actor === client.userId)).toBe(true);
+  });
+
+  it('onboards several services at once, each with its own entitlements, landing on the first', async () => {
+    const client = await makeClient('multi');
+    const res = await request(app)
+      .post('/api/assessment')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ ...org, services: ['WORKFORCE', 'GHG'], ...ghgAnswers, hasPlanningConsent: true })
+      .expect(200);
+
+    expect(res.body.destination).toBe('/portal?tab=checklist&scope=CARBON_EMISSION');
+    expect((await entitlement(client.licenseeId, 'GHG'))!.status).toBe('ACTIVE');
+    expect((await entitlement(client.licenseeId, 'JOB'))!.status).toBe('ACTIVE');
+    expect(await entitlement(client.licenseeId, 'FLEET')).toBeNull();
+    const codes = res.body.recommendations.map((r: { frameworkCode: string }) => r.frameworkCode);
+    expect(codes).toEqual(expect.arrayContaining(['UK_PPN_006', 'UK_SECTION_106']));
   });
 
   it('keeps assessment history when onboarding is repeated and gates only on the current one', async () => {

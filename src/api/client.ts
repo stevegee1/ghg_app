@@ -856,7 +856,7 @@ export const api = {
 
   // ── Assessment Layer ──────────────────────────────────────────────────────
   async submitAssessment(token: string, params: {
-    service: 'GHG' | 'WORKFORCE' | 'FLEET';
+    services: ('GHG' | 'WORKFORCE' | 'FLEET')[];
     organisationCountry: string;
     organisationSize: string;
     annualRevenueBand: string;
