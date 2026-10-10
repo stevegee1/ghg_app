@@ -4,6 +4,7 @@ import { PrismaClient, Vertical } from '@prisma/client';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { recordHash } from '../src/services/canonical-hash.service';
+import { verifyLedgerHash } from '../src/services/fleet/fleet-ledger.service';
 
 const prisma = new PrismaClient();
 const app = createApp();
@@ -181,3 +182,29 @@ describe('Contract cost calculation', () => {
     await request(app).post(`/api/fleet/projects/${projectId}/costs`).set(auth()).send({ from: '2025-03-20', to: '2025-03-10' }).expect(400);
   });
 });
+
+describe('Climate ledger export', () => {
+  it('reports emissions, the carbon prices used and each project latest cost run, with a verifiable hash', async () => {
+    await request(app).get('/api/fleet/ledger?from=2025-03-31&to=2025-03-01').set(auth()).expect(400);
+    const res = await request(app).get('/api/fleet/ledger?from=2025-03-01&to=2025-03-31').set(auth()).expect(200);
+    const l = res.body;
+    expect(l.schema).toBe('NFTYLOGS-CLIMATE-LEDGER-2026.1');
+    expect(l.period).toEqual({ from: '2025-03-01', to: '2025-03-31' });
+    expect(l.ghgEmissions.scope1.tonnesCo2e).toBe('2.7');
+    expect(l.internalCarbonPrices).toEqual([expect.objectContaining({ indexCode: 'UK_ETS_CARBON_PRICE', value: '40' })]);
+
+    const latest = await prisma.fleetProjectCostRun.findFirstOrThrow({ where: { projectId }, orderBy: { createdAt: 'desc' } });
+    const entry = l.transitionRiskExposure.projects.find((p: { costRunId: string }) => p.costRunId === latest.id);
+    expect(entry).toMatchObject({ projectName: 'Bridge deck', recordSha256: latest.recordSha256, costPerOperatingHourPence: 1708, totalExposurePence: 135400 });
+    expect(res.headers['x-ledger-sha256']).toBe(l.ledgerSha256);
+    expect(verifyLedgerHash(l)).toBe(true);
+    expect(verifyLedgerHash({ ...l, ghgEmissions: { ...l.ghgEmissions, scope1: { ...l.ghgEmissions.scope1, tonnesCo2e: '0' } } })).toBe(false);
+
+    const csv = await request(app).get('/api/fleet/ledger?from=2025-03-01&to=2025-03-31&format=csv').set(auth()).expect(200);
+    expect(csv.headers['content-type']).toMatch(/text\/csv/);
+    expect(csv.text.split('\n')[0]).toBe('section,item,metric,value,unit,reference');
+    expect(csv.text).toContain('ghg_emissions,scope1,emissions,2.7,tCO2e');
+    expect(csv.text).toContain('transition_risk,Bridge deck,cost_per_operating_hour,17.08,GBP');
+  });
+});
+

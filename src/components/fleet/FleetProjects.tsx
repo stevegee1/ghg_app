@@ -3,6 +3,7 @@ import { api } from '../../api/client';
 import type { FleetAsset, FleetProject } from '../../api/fleet.types';
 import { formatDate } from './fleetFormat';
 import { FleetProjectCosts } from './FleetProjectCosts';
+import { FleetLedgerDownload } from './FleetLedgerDownload';
 
 interface Props {
   token: string;
@@ -258,6 +259,7 @@ export const FleetProjects: React.FC<Props> = ({ token, onSubscribe }) => {
 
   return (
     <div className="fleet-stack">
+      <FleetLedgerDownload token={token} />
       <ProjectForm token={token} currency={currency} onCreated={(p) => setProjects((prev) => [p, ...(prev ?? [])])} />
       {projects.length === 0 && <div className="fleet-panel fleet-muted">No projects yet. Add a contract above, then put machines on it.</div>}
       {projects.map((p) => (

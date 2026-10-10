@@ -20,6 +20,8 @@ import {
   removeProjectMaterial,
   setProjectMaterial,
 } from '../services/fleet/fleet-project-cost.service';
+import { buildClimateLedger, ledgerToCsv } from '../services/fleet/fleet-ledger.service';
+import { parseRange } from './fleet.route';
 
 /** Client projects (contracts) and which machines work on them. Requires an active Fleet subscription. */
 export function createFleetProjectRouter(prisma: PrismaClient): Router {
@@ -37,6 +39,7 @@ export function createFleetProjectRouter(prisma: PrismaClient): Router {
     next();
   };
   router.use('/api/fleet/projects', authenticateToken, requireFleetClient);
+  router.use('/api/fleet/ledger', authenticateToken, requireFleetClient);
 
   const run = (label: string, fn: (req: Request) => Promise<unknown>, status = 200) => async (req: Request, res: Response) => {
     try {
@@ -97,6 +100,27 @@ export function createFleetProjectRouter(prisma: PrismaClient): Router {
   router.post('/api/fleet/projects/:id/costs', run('FLEET PROJECT COST CALCULATE', async (req) => ({
     run: await runWithRls(prisma, req.user!, (tx) => calculateProjectCost(tx, lic(req), req.params.id, req.body || {}, req.user!.userId)),
   }), 201));
+
+  /**
+   * GET /api/fleet/ledger?from=YYYY-MM-DD&to=YYYY-MM-DD&format=json|csv
+   * The climate ledger (emissions, internal carbon prices, transition risk exposure) for the period.
+   */
+  router.get('/api/fleet/ledger', async (req: Request, res: Response) => {
+    const range = parseRange(req);
+    if (!range) return res.status(400).json({ error: 'from and to must be dates (YYYY-MM-DD), to on or after from, at most 3 years apart.' });
+    const format = req.query.format === 'csv' ? 'csv' : 'json';
+    try {
+      const ledger = await runWithRls(prisma, req.user!, (tx) => buildClimateLedger(tx, lic(req), range.from, range.to));
+      const name = `climate-ledger-${ledger.period.from}-to-${ledger.period.to}.${format}`;
+      res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+      res.setHeader('X-Ledger-Sha256', ledger.ledgerSha256);
+      if (format === 'csv') return res.status(200).type('text/csv').send(ledgerToCsv(ledger));
+      return res.status(200).json(ledger);
+    } catch (err) {
+      console.error('[FLEET LEDGER ERROR]', err);
+      return res.status(500).json({ error: 'The ledger could not be produced.' });
+    }
+  });
 
   return router;
 }
