@@ -16,7 +16,12 @@ export interface AnchorBatch {
   createdAt: string;
 }
 
+export type AnchorPublishing =
+  | { enabled: false }
+  | { enabled: true; network: string; chainId: number; address: string; explorerTxUrl: string };
+
 export interface AnchorOverview {
+  publishing: AnchorPublishing;
   batches: AnchorBatch[];
   unbatched: number;
   fingerprintsByKind: Record<string, number>;

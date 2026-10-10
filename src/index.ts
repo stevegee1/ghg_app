@@ -15,7 +15,8 @@ import { validateSecretBoxKey } from './services/secret-box.service';
 import { validateLlmProviderConfig } from './services/review-pipeline/llm-provider.interface';
 import { validateFuelFeedConfig } from './services/market-index.service';
 import { scheduleMarketIndexJob } from './jobs/market-index.job';
-import { scheduleAnchorJob } from './jobs/anchor.job';
+import { scheduleAnchorJob, scheduleAnchorPublishJob } from './jobs/anchor.job';
+import { validateAnchorConfig } from './services/anchor/anchor-publisher';
 import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './services/platform-account.service';
 
 async function main() {
@@ -64,6 +65,13 @@ async function main() {
     validateLlmProviderConfig();
   } catch (err) {
     console.error(`FATAL: AI review provider configuration is invalid. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
+
+  try {
+    validateAnchorConfig();
+  } catch (err) {
+    console.error(`FATAL: Blockchain anchoring configuration is invalid. ${(err as Error).message} Refusing to start.`);
     process.exit(1);
   }
 
@@ -197,6 +205,7 @@ async function main() {
     console.log(`[INFO] Fleet location retention scheduled: ${LOCATION_RETENTION_DAYS} days.`);
     scheduleMarketIndexJob(prisma);
     scheduleAnchorJob(prisma);
+    scheduleAnchorPublishJob(prisma);
   } catch (e: any) {
     console.error('[ERROR] DB connection failed (check DATABASE_URL):', e?.message ?? e);
     // Do not exit: server remains up to handle health checks and API errors gracefully

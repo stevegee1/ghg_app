@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { collectFingerprints, createBatch } from '../services/anchor/anchor-batch.service';
+import { publishAndConfirm } from '../services/anchor/anchor-publish.service';
+import { getAnchorPublisher } from '../services/anchor/anchor-runtime';
 
 const serializeBatch = (b: { blockNumber: bigint | null } & Record<string, unknown>) => ({
   ...b,
@@ -20,7 +22,11 @@ export function createAnchorRouter(prisma: PrismaClient): Router {
         prisma.anchorLeaf.count({ where: { batchId: null } }),
         prisma.anchorLeaf.groupBy({ by: ['kind'], _count: { _all: true } }),
       ]);
+      const publisher = getAnchorPublisher();
       return res.status(200).json({
+        publishing: publisher
+          ? { enabled: true, network: publisher.network, chainId: publisher.chainId, address: publisher.address, explorerTxUrl: publisher.explorerTxUrl }
+          : { enabled: false },
         batches: batches.map(serializeBatch),
         unbatched,
         fingerprintsByKind: Object.fromEntries(byKind.map((k) => [k.kind, k._count._all])),
@@ -36,7 +42,9 @@ export function createAnchorRouter(prisma: PrismaClient): Router {
     try {
       const added = await collectFingerprints(prisma);
       const batch = await createBatch(prisma);
-      return res.status(200).json({ added, batch: batch ? serializeBatch(batch) : null });
+      const publisher = getAnchorPublisher();
+      const publishing = publisher ? await publishAndConfirm(prisma, publisher) : null;
+      return res.status(200).json({ added, batch: batch ? serializeBatch(batch) : null, publishing });
     } catch (err) {
       console.error('[ANCHORS RUN]', err);
       return res.status(500).json({ error: 'The anchoring run failed.' });

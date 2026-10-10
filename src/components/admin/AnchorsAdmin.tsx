@@ -77,6 +77,19 @@ export const AnchorsAdmin: React.FC<{ token: string }> = ({ token }) => {
       {data && (
         <>
           <div className="fleet-panel">
+            <h3 className="fleet-panel-title">Publishing</h3>
+            {data.publishing.enabled ? (
+              <p className="fleet-muted">
+                On {data.publishing.network} (chain {data.publishing.chainId}) from wallet{' '}
+                <code className="market-source-cell">{data.publishing.address}</code>. Keep a small balance in this wallet for network fees.
+              </p>
+            ) : (
+              <p className="fleet-muted">
+                Off. Batches are created but not published until the ANCHOR_ settings are set on the server (see .env.example).
+              </p>
+            )}
+          </div>
+          <div className="fleet-panel">
             <h3 className="fleet-panel-title">Fingerprinted records</h3>
             <ul className="fleet-split-list">
               {Object.keys(KIND_LABELS).map((k) => (
@@ -104,6 +117,7 @@ export const AnchorsAdmin: React.FC<{ token: string }> = ({ token }) => {
                       <th scope="col">Records</th>
                       <th scope="col">Status</th>
                       <th scope="col">Merkle root</th>
+                      <th scope="col">Transaction</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -116,6 +130,16 @@ export const AnchorsAdmin: React.FC<{ token: string }> = ({ token }) => {
                           {b.lastError ? ` (${b.lastError})` : ''}
                         </td>
                         <td className="market-source-cell">{b.merkleRoot}</td>
+                        <td className="market-source-cell">
+                          {b.txHash && data.publishing.enabled ? (
+                            <a href={`${data.publishing.explorerTxUrl}${b.txHash}`} target="_blank" rel="noopener noreferrer">
+                              {b.txHash.slice(0, 18)}...
+                            </a>
+                          ) : (
+                            b.txHash ?? '-'
+                          )}
+                          {b.blockNumber ? ` (block ${b.blockNumber})` : ''}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
