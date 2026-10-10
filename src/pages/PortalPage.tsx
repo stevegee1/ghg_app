@@ -137,6 +137,36 @@ const GoogleIcons = {
 
 export type DashboardView = 'checklist' | 'workflow' | 'overview' | 'credentials' | 'jobs' | 'embed' | 'transactions' | 'legal' | 'profile' | 'fleet';
 
+/** Maps the ?tab= value (including older aliases) to a view. No tab means the overview. */
+const viewFromTab = (tab: string | null): DashboardView => {
+  switch (tab) {
+    case 'checklist':
+    case 'preparation':
+      return 'checklist';
+    case 'workflow':
+    case 'diagnostic':
+      return 'workflow';
+    case 'credentials':
+      return 'credentials';
+    case 'transactions':
+    case 'settlement':
+      return 'transactions';
+    case 'profile':
+      return 'profile';
+    case 'legal':
+      return 'legal';
+    case 'jobs':
+    case 'job-reporting':
+      return 'jobs';
+    case 'embed':
+      return 'embed';
+    case 'fleet':
+      return 'fleet';
+    default:
+      return 'overview';
+  }
+};
+
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
@@ -167,17 +197,7 @@ export const PortalPage: React.FC = () => {
 
   const [activeView, setActiveViewState] = useState<DashboardView>(() => {
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab') || params.get('view');
-    if (tab === 'checklist' || tab === 'preparation') return 'checklist';
-    if (tab === 'workflow' || tab === 'diagnostic') return 'workflow';
-    if (tab === 'credentials') return 'credentials';
-    if (tab === 'transactions' || tab === 'settlement') return 'transactions';
-    if (tab === 'profile' || tab === 'evidence') return 'profile';
-    if (tab === 'legal') return 'legal';
-    if (tab === 'jobs' || tab === 'job-reporting') return 'jobs';
-    if (tab === 'embed') return 'embed';
-    if (tab === 'fleet') return 'fleet';
-    return 'overview';
+    return viewFromTab(params.get('tab') || params.get('view'));
   });
 
   const [auditScope, setAuditScope] = useState<AuditScope>(() => {
@@ -339,20 +359,20 @@ export const PortalPage: React.FC = () => {
       setActiveViewState(targetView);
       if (options?.scope) setAuditScope(options.scope);
 
-      // Persist view and scope to the URL so a refresh keeps them. The pipeline workspace owns submission_id.
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.set('tab', targetView);
-          next.delete('step');
-          next.delete('submission_id');
-          next.delete('payment');
-          if (targetView === 'workflow' || targetView === 'checklist') next.set('scope', nextScope);
-          else next.delete('scope');
-          return next;
-        },
-        { replace: true }
-      );
+      // Each view change is a history entry, so the browser Back button returns to the previous view.
+      // The pipeline workspace owns submission_id.
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (targetView === 'overview') next.delete('tab');
+        else next.set('tab', targetView);
+        next.delete('view');
+        next.delete('step');
+        next.delete('submission_id');
+        next.delete('payment');
+        if (targetView === 'workflow' || targetView === 'checklist') next.set('scope', nextScope);
+        else next.delete('scope');
+        return next;
+      });
     },
     [auditScope, user?.hasCompletedAssessment, setSearchParams, navigate]
   );
@@ -432,12 +452,7 @@ export const PortalPage: React.FC = () => {
   // Synchronize state when URL search parameters change (back/forward navigation or Stripe checkout return)
   useEffect(() => {
     const tabParam = searchParams.get('tab') || searchParams.get('view');
-    if (tabParam) {
-      const validViews: DashboardView[] = ['overview', 'checklist', 'workflow', 'credentials', 'jobs', 'transactions', 'profile', 'embed', 'legal', 'fleet'];
-      if (validViews.includes(tabParam as DashboardView)) {
-        setActiveViewState(tabParam as DashboardView);
-      }
-    }
+    setActiveViewState(viewFromTab(tabParam));
     const scopeParam = searchParams.get('scope');
     if (scopeParam === 'JOB_REPORTING' || scopeParam === 'CARBON_EMISSION') {
       setAuditScope(scopeParam);
@@ -628,17 +643,6 @@ export const PortalPage: React.FC = () => {
             <span>Active Licensee</span>
           </div>
         </div>
-        {onNav && (
-          <button
-            type="button"
-            className="portal-mobile-profile-close-btn"
-            onClick={onNav}
-            aria-label="Close sidebar"
-            title="Close sidebar"
-          >
-            ✕
-          </button>
-        )}
       </div>
 
       {/* Modern Grouped Sidebar Nav Items */}
@@ -902,20 +906,10 @@ export const PortalPage: React.FC = () => {
             onClick={() => setMobileSidebarOpen(false)}
             aria-label="Close navigation"
           >
-            <span className="portal-drawer-cancel-x">✕</span>
-            <span className="portal-drawer-cancel-label">CLOSE</span>
+            <span className="portal-drawer-cancel-x" aria-hidden="true">✕</span>
           </button>
         </div>
         <SidebarContent onNav={() => setMobileSidebarOpen(false)} />
-        <div className="portal-drawer-bottom-close">
-          <button
-            type="button"
-            className="portal-drawer-full-close-btn"
-            onClick={() => setMobileSidebarOpen(false)}
-          >
-            ✕ Close Sidebar Menu
-          </button>
-        </div>
       </aside>
 
       {/* ── Left Sidebar: Desktop (always visible >= 961px) ───────────────────── */}
@@ -1027,99 +1021,33 @@ export const PortalPage: React.FC = () => {
           </div>
         )}
 
-        {/* Top Greeting Banner - Clean Google/Normative Enterprise Typography */}
-        <div className="portal-greeting-banner">
-          <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
-              {getGreeting()}, {displayName}
-            </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', fontSize: '0.84rem', color: '#4b5563' }}>
-              <span>{getFormattedDate()}</span>
-              <span>•</span>
-              <span className="badge badge-settled" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
-                ACTIVE LICENSEE
-              </span>
-              <span>•</span>
-              <span>ISO 19011:2026 Remote Auditing</span>
-              {user?.licenseeId && (
-                <button
-                  type="button"
-                  onClick={copyClientId}
-                  style={{
-                    fontSize: '0.72rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: '#334155',
-                    background: '#f1f5f9',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '4px',
-                    padding: '2px 8px',
-                    cursor: 'pointer',
-                  }}
-                  title="Click to copy License ID"
-                >
-                  {copiedClientId ? 'Copied!' : `ID: ${user.licenseeId.substring(0, 14)}...`}
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          </div>
-        </div>
-
-        {/* Workspace Header Bar - Clean Google Standard */}
+        {/* Page header: one title per view; the greeting sits under it on the overview */}
         <div className="portal-workspace-header">
           <div className="portal-header-left">
-            {/* Hamburger: mobile only */}
-            <button
-              type="button"
-              className="portal-hamburger-btn"
-              onClick={() => setMobileSidebarOpen(true)}
-              aria-label="Open navigation"
-              aria-expanded={mobileSidebarOpen}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-            <h1 className="portal-page-heading">
-              {getViewTitle()}
-            </h1>
-          </div>
-
-          {/* Enterprise Header Status & Context Actions */}
-          <div className="google-m3-scope-container">
+            <h1 className="portal-page-heading">{getViewTitle()}</h1>
             {activeView === 'overview' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.95rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '9999px', fontSize: '0.78rem', color: '#1e293b', fontWeight: 600 }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0284c7', display: 'inline-block' }} />
-                <span>Executive Assurance Registry · FY 2025-2026</span>
+              <div className="portal-page-subline">
+                <span>
+                  {getGreeting()}, {displayName}
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>{getFormattedDate()}</span>
+                {user?.licenseeId && (
+                  <button type="button" className="portal-client-id-btn" onClick={copyClientId} title="Copy client ID">
+                    {copiedClientId ? 'Copied' : `Client ID ${user.licenseeId.substring(0, 14)}...`}
+                  </button>
+                )}
               </div>
-            )}
-
-            {activeView === 'workflow' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.95rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '9999px', fontSize: '0.78rem', color: '#1e293b', fontWeight: 600 }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: auditScope === 'CARBON_EMISSION' ? '#16a34a' : '#2563eb', display: 'inline-block' }} />
-                <span>{auditScope === 'CARBON_EMISSION' ? 'GHG Assurance' : 'Workforce Assurance'}</span>
-              </div>
-            )}
-
-            {activeView === 'jobs' && (
-              <button
-                type="button"
-                onClick={() => setShowJobModal(true)}
-                className="btn btn-primary"
-                style={{
-                  borderRadius: '9999px',
-                  padding: '0.5rem 1.25rem',
-                  fontSize: '0.85rem',
-                }}
-              >
-                + Submit Job Filing
-              </button>
             )}
           </div>
+
+          {activeView === 'jobs' && (
+            <div className="google-m3-scope-container">
+              <button type="button" onClick={() => setShowJobModal(true)} className="btn btn-primary">
+                Submit job filing
+              </button>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -1310,7 +1238,6 @@ export const PortalPage: React.FC = () => {
           profileWebsiteUrl={profileWebsiteUrl}
           setProfileWebsiteUrl={setProfileWebsiteUrl}
           handleSaveProfile={handleSaveProfile}
-          onOpenEvidenceLocker={() => setActiveView('profile')}
         />
       )}
 

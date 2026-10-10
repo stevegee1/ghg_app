@@ -29,6 +29,8 @@ export const Layout: React.FC = () => {
     (location.pathname.startsWith('/portal') || location.pathname.startsWith('/admin')) &&
     !location.pathname.includes('/login')
   );
+  // Only the client portal has a navigation drawer, so only it gets the menu button.
+  const hasPortalDrawer = isConsoleView && /^\/portal\/?$/.test(location.pathname);
 
   const displayName = user?.companyName || (user?.email ? user.email.split('@')[0] : 'User');
   const userInitial = (user?.companyName?.[0] || user?.email?.[0] || 'U').toUpperCase();
@@ -93,7 +95,7 @@ export const Layout: React.FC = () => {
           
           {/* 1. Left Brand Identity */}
           <div className="brand-wrapper">
-            {isConsoleView && (
+            {hasPortalDrawer && (
               <button
                 type="button"
                 className="console-mobile-drawer-toggle"
@@ -242,9 +244,6 @@ export const Layout: React.FC = () => {
                           <NavLink to="/portal" className="nav-link" onClick={closeDropdowns}>
                             My Dashboard
                           </NavLink>
-                          <Link to="/portal?tab=evidence" className="nav-link" onClick={closeDropdowns}>
-                            Evidence Locker ↗
-                          </Link>
                         </>
                       )}
                       <button
@@ -385,14 +384,6 @@ export const Layout: React.FC = () => {
                             >
                               <span>My Dashboard</span>
                             </NavLink>
-                            <Link
-                              to="/portal?tab=evidence"
-                              className="google-popover-link"
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Evidence Locker</span>
-                              <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-                            </Link>
                           </>
                         )}
                       </div>
@@ -513,14 +504,6 @@ export const Layout: React.FC = () => {
                             >
                               <span>My Dashboard</span>
                             </NavLink>
-                            <Link
-                              to="/portal?tab=evidence"
-                              className="google-popover-link"
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Evidence Locker</span>
-                              <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>↗</span>
-                            </Link>
                           </>
                         )}
                       </div>

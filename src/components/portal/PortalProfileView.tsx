@@ -25,7 +25,6 @@ interface PortalProfileViewProps {
   profileWebsiteUrl: string;
   setProfileWebsiteUrl: (v: string) => void;
   handleSaveProfile: (e: React.FormEvent) => void;
-  onOpenEvidenceLocker: () => void;
 }
 
 export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
@@ -53,7 +52,6 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
   profileWebsiteUrl,
   setProfileWebsiteUrl,
   handleSaveProfile,
-  onOpenEvidenceLocker,
 }) => {
   return (
     <div>
@@ -311,28 +309,6 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
             </button>
           </div>
         </form>
-      </div>
-
-      {/* Evidence Locker Shortcut Card */}
-      <div className="persefoni-card" style={{ padding: '1.75rem', marginBottom: '1.75rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>
-              Client Evidence Locker
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-              Store, manage, and verify SHA-256 watermarked audit evidence documents, utility bills, and covenant filings.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenEvidenceLocker}
-            className="btn btn-primary"
-            style={{ fontSize: '0.85rem', padding: '0.6rem 1.25rem' }}
-          >
-            Open Evidence Locker &rarr;
-          </button>
-        </div>
       </div>
     </div>
   );

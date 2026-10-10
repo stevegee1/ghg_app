@@ -2565,7 +2565,8 @@ h4 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem 0.85rem;
+  width: 44px;
+  height: 44px;
   background-color: var(--bg-subtle);
   border: 1px solid var(--border-medium);
   border-radius: 8px;
@@ -2587,62 +2588,7 @@ h4 {
   line-height: 1;
 }
 
-.portal-drawer-cancel-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  margin-left: 0.35rem;
-  letter-spacing: 0.05em;
-}
-
-/* Close button inside profile card */
-.portal-mobile-profile-close-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid var(--border-medium);
-  background: var(--bg-subtle);
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-  margin-left: auto;
-}
-
-.portal-mobile-profile-close-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--google-red);
-  border-color: var(--google-red);
-}
-
-/* Bottom close button in drawer */
-.portal-drawer-bottom-close {
-  padding-top: 1rem;
-  margin-top: auto;
-  border-top: 1px solid var(--border-light);
-  flex-shrink: 0;
-  width: 100%;
-}
-
 /* ── Portal Semantic Layout Classes ─────────────────────────────────────── */
-
-/* Greeting banner: replaces top-of-workspace inline style object */
-.portal-greeting-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-2);
-  background-color: var(--bg-card);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
-  margin-bottom: var(--space-2);
-}
 
 /* Gate alert: amber gate warning boxes in steps 2, 3, 4 */
 .portal-gate-alert {
@@ -2751,54 +2697,35 @@ h4 {
   font-family: var(--font-mono);
 }
 
-.portal-drawer-full-close-btn {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-align: center;
-  border-radius: 8px;
-  background: var(--bg-subtle);
-  color: var(--text-main);
-  border: 1px solid var(--border-medium);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.portal-drawer-full-close-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--google-red);
-  border-color: var(--google-red);
-}
-
-/* ── Hamburger button ─────────────────────────────────────────────────────── */
-.portal-hamburger-btn {
-  display: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid var(--border-light);
-  background: transparent;
-  color: var(--text-muted);
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  flex-shrink: 0;
-}
-
-.portal-hamburger-btn:hover {
-  background: var(--bg-subtle);
-  color: var(--text-main);
-}
-
 .portal-header-left {
   display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.portal-header-left .portal-page-heading {
+  margin: 0;
+}
+
+.portal-page-subline {
+  display: flex;
   align-items: center;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.portal-client-id-btn {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
 }
 
 /* ── Responsive: tablet + mobile (≤ 960px) ────────────────────────────────── */
@@ -2825,11 +2752,6 @@ h4 {
 
   /* Drawer is mounted; open class slides it in */
   .portal-sidebar-drawer {
-    display: flex;
-  }
-
-  /* Show hamburger button */
-  .portal-hamburger-btn {
     display: flex;
   }
 
@@ -3017,20 +2939,6 @@ h4 {
 
 /* ── Semantic class mobile overrides (max-width: 640px) ─────────────────── */
 @media (max-width: 640px) {
-  /* Greeting banner: stack vertically, CTA spans full width */
-  .portal-greeting-banner {
-    flex-direction: column;
-    align-items: stretch;
-    padding: var(--space-2);
-  }
-
-  .portal-greeting-banner .btn-primary,
-  .portal-greeting-banner .btn-secondary {
-    width: 100%;
-    text-align: center;
-    justify-content: center;
-  }
-
   /* Credential studio grid: single column on mobile */
   .portal-credential-studio-grid {
     grid-template-columns: 1fr;
@@ -3069,8 +2977,7 @@ h4 {
   /* 44px minimum touch target compliance */
   .portal-nav-btn,
   .portal-stepper-step-btn,
-  .portal-answer-option-btn,
-  .portal-hamburger-btn {
+  .portal-answer-option-btn {
     min-height: 44px;
   }
 
