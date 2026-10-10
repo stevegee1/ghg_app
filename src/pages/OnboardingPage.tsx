@@ -210,11 +210,11 @@ export const OnboardingPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <img
               src="/images/nfty-logs-logo.png"
-              alt="GHGEmissionLogs"
+              alt="NFTYLOGS"
               style={{ width: '32px', height: '32px', objectFit: 'contain' }}
             />
             <span style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-              GHGEmissionLogs
+              NFTYLOGS
             </span>
             <span
               style={{

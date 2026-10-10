@@ -13,14 +13,14 @@
  *   </div>
  *
  * Features:
- *  - Dual logos: client logo + GHG Emissions Registered Trade Mark
+ *  - Dual logos: client logo + NFTYLOGS
  *  - Client attestation message
  *  - 1-Year statutory warranty countdown (live, updated every second)
  *  - Direct link to the public verification record
  *  - Full Shadow DOM isolation (host stylesheet cannot bleed in)
  *  - No dependencies. Vanilla JS only. Google SaaS standard aesthetic.
  *
- * UKIPO Nice Classes 25 & 35 | ISO 14001 | ISO 50001 | ISO 19011:2026
+ * ISO 14001 | ISO 50001 | ISO 19011:2026
  */
 (function () {
   'use strict';
@@ -40,7 +40,7 @@
   var VERIFY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>';
 
   // GHG logo placeholder SVG (inline) — shown if the server logo fails to load
-  var GHG_MARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40" width="56" height="28"><rect width="80" height="40" rx="6" fill="#10b981" opacity=".15"/><text x="40" y="14" font-family="sans-serif" font-size="7" font-weight="800" fill="#10b981" text-anchor="middle" letter-spacing="0.5">GHG EMISSIONS</text><text x="40" y="24" font-family="sans-serif" font-size="6" font-weight="700" fill="#10b981" text-anchor="middle">REGISTERED TRADE MARK</text><text x="40" y="35" font-family="sans-serif" font-size="5.5" fill="#10b981" text-anchor="middle" opacity=".7">UKIPO Classes 25 &amp; 35</text></svg>';
+  var GHG_MARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40" width="56" height="28"><rect width="80" height="40" rx="6" fill="#10b981" opacity=".15"/><text x="40" y="24" font-family="sans-serif" font-size="10" font-weight="800" fill="#10b981" text-anchor="middle" letter-spacing="0.5">NFTYLOGS</text></svg>';
 
   // ── Shadow DOM CSS ──────────────────────────────────────────────────────────
   var SHADOW_CSS = [
@@ -182,7 +182,7 @@
             '<div class="logos">',
               '<div class="ghg-mark">' + GHG_MARK_SVG + '</div>',
             '</div>',
-            '<div class="message">GHG Emissions Registered Trade Mark: Audit Verification Active</div>',
+            '<div class="message">NFTYLOGS audit verification active</div>',
             '<div class="meta">',
               '<span class="chip chip-green">ISO 14001 · ISO 50001</span>',
               '<span class="chip chip-sky">ISO 19011:2026</span>',
@@ -190,7 +190,7 @@
             '</div>',
           '</div>',
           '<div class="footer">',
-            '<span class="countdown">UKIPO Classes 25 &amp; 35</span>',
+            '<span class="countdown">NFTYLOGS</span>',
             '<a class="verify-link" href="' + escapeHtml(BASE_URL + '/transparency') + '" target="_blank" rel="noopener">' + VERIFY_SVG + ' Verify</a>',
           '</div>',
         '</div>',
@@ -219,7 +219,6 @@
               : '',
             '<div class="meta">',
               frameworkChips,
-              '<span class="chip chip-purple">UKIPO Classes 25 &amp; 35</span>',
             '</div>',
           '</div>',
           '<div class="footer">',

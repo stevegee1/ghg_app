@@ -243,7 +243,7 @@ export const VerifyEmailPage: React.FC = () => {
                   fontWeight: 500,
                 }}
               >
-                Return to GHGEmissionLogs Home
+                Return to NFTYLOGS Home
               </Link>
             </div>
           </div>

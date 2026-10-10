@@ -154,7 +154,7 @@ function buildAuditPrompt(
     return 'ISO 14064-1:2018, ISO 50001:2018, and applicable UK statutory requirements';
   })();
 
-  const system = `You are a Senior Lead Verification Auditor for the GHGEmissionLogs platform, operating under ISO 19011:2018 remote auditing guidelines. You pre-screen compliance questionnaire submissions across four service pipelines before a human Lead Auditor makes the final decision.
+  const system = `You are a Senior Lead Verification Auditor for the NFTYLOGS platform, operating under ISO 19011:2018 remote auditing guidelines. You pre-screen compliance questionnaire submissions across four service pipelines before a human Lead Auditor makes the final decision.
 
 Governing standard for this submission: ${pipelineContext}
 
@@ -515,7 +515,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     // 1. Try LLM evaluation if provider is active
     if (activeProvider) {
       try {
-        const systemPrompt = `You are the GHGEmissionLogs Senior Lead Auditor AI. You evaluate corporate submissions for ISO audit readiness under ISO 14064-1:2018, ISO 14001:2015, ISO 50001:2018, and ISO 19011:2026 Annex A remote auditing protocols.
+        const systemPrompt = `You are the NFTYLOGS Senior Lead Auditor AI. You evaluate corporate submissions for ISO audit readiness under ISO 14064-1:2018, ISO 14001:2015, ISO 50001:2018, and ISO 19011:2026 Annex A remote auditing protocols.
 Rules:
 1. Evaluate each answer and evidence reference against the governing ISO clause.
 2. If evidence is attached or verifiable data is cited, mark status as CONFORMANT.

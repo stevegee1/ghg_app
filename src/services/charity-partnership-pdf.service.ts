@@ -16,7 +16,7 @@ export async function generateCharityPartnershipPdf(charity: Charity): Promise<B
         .fontSize(20)
         .font('Helvetica-Bold')
         .fillColor('#0f172a')
-        .text('GHG Emissions Registered Trade Mark', { align: 'center' });
+        .text('NFTYLOGS', { align: 'center' });
       doc.moveDown(0.3);
 
       doc
@@ -30,7 +30,7 @@ export async function generateCharityPartnershipPdf(charity: Charity): Promise<B
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#64748b')
-        .text('UKIPO Registered Trade Mark UK00003980004 | 15% Statutory Charitable Routing Protocol', { align: 'center' });
+        .text('NFTYLOGS Limited | Registered in England and Wales, company no. 15230476', { align: 'center' });
       doc.moveDown(1.5);
 
       // Divider Line

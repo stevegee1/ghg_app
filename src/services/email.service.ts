@@ -32,7 +32,7 @@ export class EmailService {
    * Dispatches password reset instructions via configured production email provider
    */
   async sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<{ success: boolean; provider: string }> {
-    const { toEmail, resetUrl, appName = 'GHGEmissionLogs Assurance Suite', expiresInHours = 1 } = params;
+    const { toEmail, resetUrl, appName = 'NFTYLOGS Assurance Suite', expiresInHours = 1 } = params;
     const resendApiKey = process.env.RESEND_API_KEY;
     const sendgridApiKey = process.env.SENDGRID_API_KEY;
 
@@ -55,7 +55,7 @@ export class EmailService {
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
         <p style="color: #94a3b8; font-size: 11px; margin: 0;">
-          © 2026 GHG Emission Logs (NFTY LOGS®). Continuous Statutory ESG & Assurance Infrastructure.
+          © 2026 NFTYLOGS. Continuous Statutory ESG & Assurance Infrastructure.
         </p>
       </div>
     `;
@@ -130,7 +130,7 @@ export class EmailService {
    * Dispatches corporate work email verification instructions via configured production provider
    */
   async sendVerificationEmail(params: SendVerificationEmailParams): Promise<{ success: boolean; provider: string }> {
-    const { toEmail, verificationUrl, appName = 'GHGEmissionLogs Assurance Suite', expiresInHours = 24 } = params;
+    const { toEmail, verificationUrl, appName = 'NFTYLOGS Assurance Suite', expiresInHours = 24 } = params;
     const resendApiKey = process.env.RESEND_API_KEY;
     const sendgridApiKey = process.env.SENDGRID_API_KEY;
 
@@ -142,7 +142,7 @@ export class EmailService {
           <p style="color: #64748b; font-size: 13px; margin: 0;">${appName}</p>
         </div>
         <p style="color: #334155; font-size: 15px; line-height: 1.6;">
-          An account registration was initiated for <strong>${toEmail}</strong> on the GHGEmissionLogs Sovereign Provenance Platform.
+          An account registration was initiated for <strong>${toEmail}</strong> on the NFTYLOGS Sovereign Provenance Platform.
         </p>
         <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
           To verify ownership of this corporate domain and activate full cryptographic evidence-signing authority, please verify your email address below.
@@ -157,7 +157,7 @@ export class EmailService {
         </p>
         <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 24px 0;" />
         <p style="color: #64748b; font-size: 11px; margin: 0; line-height: 1.4;">
-          GHG Emission Logs (NFTY LOGS LABS LTD). UK Corporation No. 15230476. Registered UKIPO Trade Mark UK00003980004.
+          NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.
         </p>
       </div>
     `;
@@ -254,7 +254,7 @@ export class EmailService {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.SENDGRID_API_KEY}` },
           body: JSON.stringify({
             personalizations: [{ to: [{ email: toEmail }] }],
-            from: { email: from, name: 'GHGEmissionLogs' },
+            from: { email: from, name: 'NFTYLOGS' },
             subject,
             content: [{ type: 'text/html', value: html }],
           }),
@@ -276,7 +276,7 @@ export class EmailService {
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">Confirm your subscription</h2>
         <p style="color: #334155; font-size: 15px; line-height: 1.6;">
-          Someone, hopefully you, asked to receive the GHGEmissionLogs newsletter at <strong>${params.toEmail}</strong>:
+          Someone, hopefully you, asked to receive the NFTYLOGS newsletter at <strong>${params.toEmail}</strong>:
           product updates and guidance on emissions, fleet and workforce compliance.
         </p>
         <p style="margin: 24px 0; text-align: center;">
@@ -286,10 +286,10 @@ export class EmailService {
           If you did not ask for this, ignore this email and you will not be subscribed. The link expires in 7 days.
         </p>
         <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">
-          <a href="${params.unsubscribeUrl}" style="color: #64748b;">Unsubscribe</a> · NFTY LOGS LABS LTD, UK company no. 15230476
+          <a href="${params.unsubscribeUrl}" style="color: #64748b;">Unsubscribe</a> · NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.
         </p>
       </div>`;
-    return this.deliver(params.toEmail, 'Confirm your GHGEmissionLogs newsletter subscription', html, `Newsletter confirm: ${params.confirmUrl}`);
+    return this.deliver(params.toEmail, 'Confirm your NFTYLOGS newsletter subscription', html, `Newsletter confirm: ${params.confirmUrl}`);
   }
 }
 

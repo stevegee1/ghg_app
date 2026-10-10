@@ -177,7 +177,7 @@ export class IsoPdfReportService {
 
         // Section X Legal Boundary Block
         doc.fontSize(8).fillColor('#64748b').text(
-          'SECTION X LEGAL DISCLAIMER & STATUTORY ASSURANCE BOUNDARY: This document constitutes an administrative data assurance and readiness record under statutory data processing frameworks. GHG Logo Drop does not operate as an accredited ISO registrar or carbon credit broker. Final statutory certification requires third-party inspection by an accredited body under ISO 14065.',
+          'SECTION X LEGAL DISCLAIMER & STATUTORY ASSURANCE BOUNDARY: This document constitutes an administrative data assurance and readiness record under statutory data processing frameworks. NFTYLOGS does not operate as an accredited ISO registrar or carbon credit broker. Final statutory certification requires third-party inspection by an accredited body under ISO 14065.',
           { align: 'justify' }
         );
         doc.moveDown(0.5);

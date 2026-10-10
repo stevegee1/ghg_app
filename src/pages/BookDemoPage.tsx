@@ -4,7 +4,7 @@ import { BookDemoCard } from '../components/BookDemoCard';
 
 export const BookDemoPage: React.FC = () => {
   useEffect(() => {
-    document.title = 'Schedule an Enterprise Assurance Demo - GHGEmissionLogs';
+    document.title = 'Schedule an Enterprise Assurance Demo - NFTYLOGS';
     window.scrollTo(0, 0);
   }, []);
 

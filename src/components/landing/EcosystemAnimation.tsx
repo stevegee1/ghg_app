@@ -132,7 +132,7 @@ export const EcosystemAnimation: React.FC = () => {
   return (
     <figure className="eco" aria-labelledby="eco-caption">
       <svg className={`eco-svg${reducedMotion ? ' is-static' : ''}`} viewBox="0 0 600 480" role="img" aria-labelledby="eco-title eco-desc">
-        <title id="eco-title">How GHGEmissionLogs works</title>
+        <title id="eco-title">How NFTYLOGS works</title>
         <desc id="eco-desc">
           Energy bills, machine data and workforce records flow into the GHG, Fleet and Workforce services. The platform calculates
           emissions, a Lead Auditor reviews the evidence, and reports and credentials come out. Merch orders go to local delivery

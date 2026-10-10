@@ -41,10 +41,10 @@ export const ForgotPasswordPage: React.FC = () => {
           <Link to="/" className="cerebrium-auth-brand">
             <img
               src="/images/nfty-logs-logo.png"
-              alt="GHGEmissionLogs Logo"
+              alt="NFTYLOGS Logo"
               style={{ width: '32px', height: '32px', objectFit: 'contain' }}
             />
-            <span className="cerebrium-auth-brand-name">GHGEmissionLogs</span>
+            <span className="cerebrium-auth-brand-name">NFTYLOGS</span>
           </Link>
 
           <h1 className="cerebrium-auth-title">Reset your password</h1>

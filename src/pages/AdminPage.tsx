@@ -873,7 +873,7 @@ export const AdminPage: React.FC = () => {
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                               <a
-                                href={`mailto:${b.workEmail}?subject=GHGEmissionLogs%20Statutory%20Assurance%20Demonstration`}
+                                href={`mailto:${b.workEmail}?subject=NFTYLOGS%20Statutory%20Assurance%20Demonstration`}
                                 style={{ color: '#1a73e8', textDecoration: 'none', fontWeight: 600 }}
                               >
                                 {b.workEmail}
@@ -909,7 +909,7 @@ export const AdminPage: React.FC = () => {
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             <a
-                              href={`mailto:${b.workEmail}?subject=GHGEmissionLogs%20Statutory%20Assurance%20Session&body=Hi%20${encodeURIComponent(b.fullName)},%0A%0AThank%20you%20for%20scheduling%20an%20architectural%20walkthrough%20for%20${encodeURIComponent(b.companyName)}.%0A%0AWe%20look%20forward%20to%20meeting%20you.`}
+                              href={`mailto:${b.workEmail}?subject=NFTYLOGS%20Statutory%20Assurance%20Session&body=Hi%20${encodeURIComponent(b.fullName)},%0A%0AThank%20you%20for%20scheduling%20an%20architectural%20walkthrough%20for%20${encodeURIComponent(b.companyName)}.%0A%0AWe%20look%20forward%20to%20meeting%20you.`}
                               className="btn btn-secondary"
                               style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                             >
@@ -1942,7 +1942,7 @@ export const AdminPage: React.FC = () => {
                         </td>
                         <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
                           <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                            {order.eventName || order.itemTitle || order.itemType || 'GHG Logo Drop'}
+                            {order.eventName || order.itemTitle || order.itemType || 'NFTYLOGS'}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                             Qty: {order.logoDropCount || order.quantity || 1} · Total: <strong style={{ color: 'var(--color-green, #10b981)' }}>£{order.grossAmountCents ? (order.grossAmountCents / 100).toFixed(2) : (order.totalGbp ? Number(order.totalGbp).toFixed(2) : '0.00')}</strong>

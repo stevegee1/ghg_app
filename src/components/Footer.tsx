@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
-  const [consentText, setConsentText] = useState('I agree to receive the GHGEmissionLogs newsletter by email. I can unsubscribe at any time.');
+  const [consentText, setConsentText] = useState('I agree to receive the NFTYLOGS newsletter by email. I can unsubscribe at any time.');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
 
@@ -45,9 +45,9 @@ export const Footer: React.FC = () => {
       <div className="cerebrium-footer-container">
         <div className="cerebrium-footer-top">
           <div className="persefoni-footer-brand-col">
-            <Link to="/" className="persefoni-footer-brand" aria-label="GHGEmissionLogs Home">
+            <Link to="/" className="persefoni-footer-brand" aria-label="NFTYLOGS Home">
               <img src="/images/nfty-logs-logo.png" alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-              <span>GHGEmissionLogs</span>
+              <span>NFTYLOGS</span>
             </Link>
 
             <div className="persefoni-footer-newsletter">
@@ -188,7 +188,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="cerebrium-footer-bottom">
-          <div>© {new Date().getFullYear()} GHGEmissionLogs (NFTY LOGS LABS LTD). UK company no. 15230476. UKIPO trade mark UK00003980004.</div>
+          <div>© {new Date().getFullYear()} NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.</div>
           <div className="footer-legal-links">
             <Link to="/transparency" className="cerebrium-footer-link">Legal</Link>
             <Link to="/transparency" className="cerebrium-footer-link">Privacy</Link>

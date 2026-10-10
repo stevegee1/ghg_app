@@ -4,7 +4,7 @@ import { emailService } from './email.service';
 
 /** Shown next to the form and stored with each subscription as the consent given. */
 export const NEWSLETTER_CONSENT_TEXT =
-  'I agree to receive the GHGEmissionLogs newsletter by email. I can unsubscribe at any time.';
+  'I agree to receive the NFTYLOGS newsletter by email. I can unsubscribe at any time.';
 
 const CONFIRM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;

@@ -17,7 +17,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
   router.get('/api/preparation/pricing', (_req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
-      trademark: 'GHG Emissions Registered Trade Mark',
+      trademark: 'NFTYLOGS',
       remoteProtocol: '80% Remote Digital Data Protocol (ISO 19011:2026)',
       verificationStamp: 'Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A',
       tiers: [
@@ -125,7 +125,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
     return res.status(200).json({
       success: true,
-      trademark: 'GHG Emissions Registered Trade Mark (Nice Class 25)',
+      trademark: 'NFTYLOGS',
       studioName: 'Survivors Donation Keepsake',
       splitRule: '85% Supplier Production & Fulfillment / 15% Statutory Charity Endowment',
       products,
@@ -283,7 +283,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         const itemDesc = frenzyClub ? `${sportType} Keepsake: ${frenzyClub}` : `${sportType} Keepsake`;
         const sessionResult = await checkoutService.createCheckoutSession({
           licenseeId: licenseeId.trim(),
-          itemTitle: `NFTY LOGS Custom Keepsake (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
+          itemTitle: `NFTYLOGS Custom Keepsake (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
           grossAmountCents: preview.financialSummary.grossAmountCents,
           currency,
           successUrl: defaultSuccessUrl,
@@ -328,7 +328,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
    * Handles Event Souvenir Logo Drop ordering.
    * Users select: eventCategory (SPORTS|GALA|TECH_SUMMIT|WEDDING), eventName,
    * logoDropCount (10, 25, 50, 100, 250, 500), shippingAddress, customerEmail.
-   * No user artwork upload: GHG Logo Drop mark is applied by the printing store.
+   * No user artwork upload: NFTYLOGS mark is applied by the printing store.
    * Returns a Stripe Hosted Checkout URL and tracking URL.
    */
   router.post('/api/souvenirs/order', async (req: Request, res: Response) => {
@@ -388,7 +388,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
           update: {},
           create: {
             id: 'lic_ghg_official',
-            name: 'NFTY LOGS® Official Store',
+            name: 'NFTYLOGS Official Store',
             vertical: 'B2C_SPORTS_MERCH' as any,
             royaltyBps: 8500,
             pricePerDropCents: 500,
@@ -430,7 +430,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
         const sessionResult = await checkoutService.createCheckoutSession({
           licenseeId: targetLicensee.id,
-          itemTitle: `NFTY LOGS® Event Souvenir Logo Drop (${count} units) - ${eventName.trim()}`,
+          itemTitle: `NFTYLOGS Event Souvenir Logo Drop (${count} units) - ${eventName.trim()}`,
           grossAmountCents,
           currency,
           successUrl: `${origin}/track/${orderNumber}`,

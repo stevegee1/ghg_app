@@ -107,7 +107,7 @@ export async function generateCertificatePdf(data: CertificateAggregateData): Pr
     doc.on('error', (err: any) => reject(err));
 
     // Document Header
-    doc.fontSize(20).text('GHG Logo Drop: Compliance Certificate', { align: 'center' });
+    doc.fontSize(20).text('NFTYLOGS: Compliance Certificate', { align: 'center' });
     doc.moveDown();
 
     // Licensee & Date Range Scope

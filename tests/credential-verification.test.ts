@@ -205,7 +205,7 @@ describe('6. GET /api/credentials/:id/badge.svg (SVG badge)', () => {
   it('SVG contains the credential heading', async () => {
     const res = await request(testApp).get(`/api/credentials/${testCredentialId}/badge.svg`);
     const svgText = res.text || (Buffer.isBuffer(res.body) ? res.body.toString('utf8') : '');
-    expect(svgText).toContain('GHGEMISSIONLOGS AUDIT-READINESS CREDENTIAL');
+    expect(svgText).toContain('NFTYLOGS AUDIT-READINESS CREDENTIAL');
   });
 
   it('SVG contains the recorded framework', async () => {

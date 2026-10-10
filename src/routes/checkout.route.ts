@@ -72,7 +72,7 @@ export function createCheckoutRouter(
 
       const session = await checkoutService.createCheckoutSession({
         licenseeId: licenseeId.trim(),
-        itemTitle: itemTitle || 'NFTY LOGS® Climate Apparel',
+        itemTitle: itemTitle || 'NFTYLOGS Climate Apparel',
         grossAmountCents,
         currency: currency || 'GBP',
         successUrl: successUrl || defaultSuccessUrl,
@@ -208,7 +208,7 @@ export function createCheckoutRouter(
         const customerName = rawPayload.customerName || keepsakeSpec?.customerName || 'Verified Supporter';
         const eventName = keepsakeSpec
           ? `${keepsakeSpec.sportType || 'Official'} Keepsake: ${keepsakeSpec.frenzyClub || keepsakeSpec.garmentModel}`
-          : (rawPayload.itemTitle || 'NFTY LOGS® Climate Action Apparel');
+          : (rawPayload.itemTitle || 'NFTYLOGS Climate Action Apparel');
 
         const shippingAddress = rawPayload.shippingAddress || keepsakeSpec?.shippingAddress || null;
 

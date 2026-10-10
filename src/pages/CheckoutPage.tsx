@@ -25,7 +25,7 @@ interface OrderSummaryData {
 
 export const CheckoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const itemName = searchParams.get('item') || 'NFTY LOGS® Vagaries of GHG Emissions Embroidered Cap';
+  const itemName = searchParams.get('item') || 'NFTYLOGS Vagaries of GHG Emissions Embroidered Cap';
   const itemPriceGbp = parseFloat(searchParams.get('price') || '35.00');
   const grossAmountCents = Math.round(itemPriceGbp * 100);
 
@@ -194,11 +194,11 @@ export const CheckoutPage: React.FC = () => {
               boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.05), 0 0 1px rgba(0, 0, 0, 0.1)',
             }}
           >
-            {/* GHG / NFTY LOGS Brand Logo */}
+            {/* GHG / NFTYLOGS Brand Logo */}
             <div style={{ marginBottom: '1.75rem' }}>
               <img
                 src="/images/nfty-logs-logo.png"
-                alt="GHGEmissionLogs Official Logo"
+                alt="NFTYLOGS Official Logo"
                 style={{ width: '48px', height: '48px', objectFit: 'contain', display: 'block' }}
               />
             </div>
@@ -534,7 +534,7 @@ export const CheckoutPage: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>{itemName}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>NFTY LOGS® Official Store</div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>NFTYLOGS Official Store</div>
                   </div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
                     £{itemPriceGbp.toFixed(2)}

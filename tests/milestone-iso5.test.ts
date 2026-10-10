@@ -107,7 +107,7 @@ describe('Milestone ISO-5: Statutory Legal Firewall, CMA Validator & Onboarding 
       const res = await request(app)
         .post('/api/iso/cma/validate')
         .send({
-          text: 'Processes verified under the GHG Logo Drop methodology in strict accordance with ISO 14064-1 data.',
+          text: 'Processes verified under the NFTYLOGS methodology in strict accordance with ISO 14064-1 data.',
         });
 
       expect(res.status).toBe(200);

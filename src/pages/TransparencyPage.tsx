@@ -110,7 +110,7 @@ export const TransparencyPage: React.FC = () => {
     <div style={{ backgroundColor: 'var(--bg-card)', minHeight: '100vh', borderBottom: '1px solid var(--border-light)' }}>
       {/* Greenly-Style Breadcrumb Bar */}
       <div className="container-x frame-bordered" style={{ borderBottom: '1px solid var(--border-light)', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GHGEmissionLogs</Link>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>NFTYLOGS</Link>
         <span>&gt;</span>
         <span>Governance</span>
         <span>&gt;</span>

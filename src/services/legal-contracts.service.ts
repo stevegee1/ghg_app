@@ -31,7 +31,7 @@ export class LegalContractsService {
       description.toLowerCase().includes('carbon offset trading fee')
     ) {
       throw new Error(
-        'FINANCIAL FIREWALL VIOLATION: The GHG Logo Drop platform operates strictly under Software Assurance & Administrative Data Management. Percentage-based carbon credit brokerage or offset trading margins are strictly prohibited.'
+        'FINANCIAL FIREWALL VIOLATION: The NFTYLOGS platform operates strictly under Software Assurance & Administrative Data Management. Percentage-based carbon credit brokerage or offset trading margins are strictly prohibited.'
       );
     }
 
@@ -58,8 +58,8 @@ export class LegalContractsService {
 
 ---
 
-### SECTION 1: STATUTORY TRADEMARK & SERVICE SCOPE
-1.1 **Statutory Data Assurance Boundary**: The Client explicitly acknowledges and covenants that GHG Logo Drop (NFTY LOGS®) operates strictly as an administrative data aggregator, telemetry validation software provider, and continuous assurance engine under statutory Business Management, Administration, and Data Processing Services.
+### SECTION 1: STATUTORY SERVICE SCOPE
+1.1 **Statutory Data Assurance Boundary**: The Client explicitly acknowledges and covenants that NFTYLOGS operates strictly as an administrative data aggregator, telemetry validation software provider, and continuous assurance engine under statutory Business Management, Administration, and Data Processing Services.
 1.2 **Financial Separation Firewall**: The Service Provider does not act as a financial broker, dealer, carbon credit exchange, or custodian of financial securities. All fees payable hereunder are fixed software subscription fees and transaction assurance fees.
 
 ---
@@ -90,7 +90,7 @@ export class LegalContractsService {
 
 **EXECUTED AND AGREED BY:**
 
-For **GHG Logo Drop Ltd**  
+For **NFTYLOGS Limited**  
 *Lead Assurance Officer, GMC, LL.B.*  
 Date: ${dateStr}
 

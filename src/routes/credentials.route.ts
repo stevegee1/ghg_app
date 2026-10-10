@@ -43,7 +43,7 @@ function buildBadgeSvg(credential: BadgeSource, licenseeName: string): string {
   const statusLabel = isCredentialValid(credential) ? 'Readiness credential valid to' : 'Credential not currently valid. Expiry';
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="140" viewBox="0 0 480 140" role="img" aria-label="GHGEmissionLogs audit-readiness credential">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="140" viewBox="0 0 480 140" role="img" aria-label="NFTYLOGS audit-readiness credential">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0c1929"/>
@@ -52,7 +52,7 @@ function buildBadgeSvg(credential: BadgeSource, licenseeName: string): string {
   </defs>
   <rect width="480" height="140" rx="12" fill="url(#bg)"/>
   <rect width="480" height="4" rx="2" fill="#10b981"/>
-  <text x="20" y="30" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#10b981" letter-spacing="1.5">GHGEMISSIONLOGS AUDIT-READINESS CREDENTIAL</text>
+  <text x="20" y="30" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#10b981" letter-spacing="1.5">NFTYLOGS AUDIT-READINESS CREDENTIAL</text>
   <text x="20" y="52" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.9)">${escapeXml(licenseeName)}</text>
   <text x="20" y="70" font-family="system-ui,sans-serif" font-size="11" font-style="italic" fill="rgba(255,255,255,0.6)">${escapeXml(msg)}</text>
   <line x1="20" y1="82" x2="460" y2="82" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
@@ -236,7 +236,7 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
             }
           : null,
         scopeStatement:
-          'This credential records that the organisation completed a GHGEmissionLogs readiness review. It is not a third-party verification or certification under any ISO standard.',
+          'This credential records that the organisation completed a NFTYLOGS readiness review. It is not a third-party verification or certification under any ISO standard.',
       });
     } catch (err: unknown) {
       console.error('[CREDENTIALS VERIFY ERROR]', err);

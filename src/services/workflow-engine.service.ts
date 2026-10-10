@@ -591,7 +591,7 @@ export class WorkflowEngineService {
           .fontSize(22)
           .font('Helvetica-Bold')
           .fillColor('#0f172a')
-          .text('GHG Emissions Registered Trade Mark', { align: 'center' });
+          .text('NFTYLOGS', { align: 'center' });
         doc.moveDown(0.3);
 
         doc
@@ -605,7 +605,7 @@ export class WorkflowEngineService {
           .fontSize(9)
           .font('Helvetica')
           .fillColor('#64748b')
-          .text('UKIPO Registered Trade Mark UK00003980004 | ISO 19011:2026 Audit Protocol', { align: 'center' });
+          .text('NFTYLOGS Limited | Registered in England and Wales, company no. 15230476', { align: 'center' });
         doc.moveDown(1.2);
 
         doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e2e8f0').stroke();

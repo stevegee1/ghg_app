@@ -6,7 +6,7 @@ export const AboutPage: React.FC = () => {
     <div style={{ backgroundColor: 'var(--bg-card)', minHeight: '100vh', borderBottom: '1px solid var(--border-light)' }}>
       {/* Greenly-Style Breadcrumb Bar */}
       <div className="container-x frame-bordered" style={{ borderBottom: '1px solid var(--border-light)', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GHGEmissionLogs</Link>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>NFTYLOGS</Link>
         <span>&gt;</span>
         <span>Company</span>
         <span>&gt;</span>
@@ -34,14 +34,14 @@ export const AboutPage: React.FC = () => {
             }}
           >
             <span className="radar-pulse" />
-            <span>CONTINUOUS STATUTORY ASSURANCE & TRADEMARK AUTHENTICATION</span>
+            <span>CONTINUOUS STATUTORY ASSURANCE</span>
           </div>
 
           <h1 style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1.25, marginBottom: '0.75rem', color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
-            About GHG Logo Drop (NFTY LOGS®)
+            About NFTYLOGS
           </h1>
           <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '760px', margin: '0 auto', lineHeight: 1.6 }}>
-            Leveraging digital technology, trademark optics, and continuous telemetry verification to ensure audit-readiness and trigger direct 15% ESG support for verified environmental funds.
+            Leveraging digital technology, brand design, and continuous telemetry verification to ensure audit-readiness and trigger direct 15% ESG support for verified environmental funds.
           </p>
         </section>
 
@@ -53,7 +53,7 @@ export const AboutPage: React.FC = () => {
                 UNITED KINGDOM CORPORATE REGISTRATION
               </div>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-                NFTYLOGS LTD
+                NFTYLOGS Limited
               </h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: '0.35rem 0 0 0' }}>
                 Company Number: <strong>15230476</strong> • Incorporated on <strong>24 October 2023</strong>
@@ -84,21 +84,21 @@ export const AboutPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Trademark Logo Visual Symbol Explanation */}
+      {/* Logo story */}
       <section className="persefoni-card" style={{ marginBottom: '2.5rem', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', border: 'none', padding: '2.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
             <img
               src="/images/nfty-logs-logo.png"
-              alt="NFTY LOGS Official Trademark Logo"
+              alt="NFTYLOGS logo"
               style={{ width: '140px', height: '140px', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(56, 189, 248, 0.25))' }}
             />
           </div>
           <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-            TRADEMARK IDENTITY
+            OUR LOGO
           </div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-            The Story Behind Our Trademark Logo
+            The Story Behind Our Logo
           </h2>
           <p style={{ fontSize: '0.9rem', color: '#94a3b8', marginTop: '0.35rem' }}>
             A visual symbol of ancient Earth resilience and modern energy transition
@@ -219,7 +219,7 @@ export const AboutPage: React.FC = () => {
           Statutory Standards & UK CMA Governance
         </h2>
         <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '1.25rem' }}>
-          GHG Emission Logs operates strictly under international standard protocols and UK Competition and Markets Authority (CMA) Green Claims Code rules. All verified attestations require empirical, non-brokerage evidence.
+          NFTYLOGS operates strictly under international standard protocols and UK Competition and Markets Authority (CMA) Green Claims Code rules. All verified attestations require empirical, non-brokerage evidence.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
           <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
@@ -286,7 +286,7 @@ export const AboutPage: React.FC = () => {
         </h2>
         <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           <p>
-            NFTYLOGS LTD ("GHGEmissionLogs") adheres strictly to the UK Data Protection Act 2018 and the General Data Protection Regulation (GDPR). We collect and process corporate telemetry and authorized user account information solely to provide statutory climate assurance and workforce compliance services.
+            NFTYLOGS Limited adheres strictly to the UK Data Protection Act 2018 and the General Data Protection Regulation (GDPR). We collect and process corporate telemetry and authorized user account information solely to provide statutory climate assurance and workforce compliance services.
           </p>
           <p>
             <strong>Data Minimisation:</strong> We only process technical operational data (meter identifiers, kWh, gas purity, PUE metrics) and authorized auditor credentials. No consumer tracking cookies or unsolicited marketing profiling are employed.

@@ -48,10 +48,10 @@ export const CertificateViewPage: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <div>
             <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent-primary)', fontWeight: 700 }}>
-              Official Certificate of Trademark Licensing & Royalty Settlement
+              Official Certificate of Licensing Settlement
             </div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0.25rem 0' }}>
-              GHG Logo Drop Provenance Certificate
+              NFTYLOGS Provenance Certificate
             </h1>
             <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
               Licensee ID: <code>{transaction.licenseeId}</code>

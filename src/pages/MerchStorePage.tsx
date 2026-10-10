@@ -21,20 +21,20 @@ const CAP_ITEM_ID = 'item_nfty_cap';
 const MERCH_CATALOG: MerchItem[] = [
   {
     id: 'item_nfty_cap',
-    title: 'NFTY LOGS® Vagaries of GHG Emissions Embroidered Cap',
+    title: 'NFTYLOGS Vagaries of GHG Emissions Embroidered Cap',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: 3500, // £35.00 - fixed retail price
     imageUrl: '/images/merch/804c16c8-6d00-4596-b456-dfe607b635b7.jpeg',
     category: 'Official Headwear',
-    description: 'Black structured cotton cap with high-density embroidered multi-color NFTY LOGS® Vagaries of GHG Emissions accountability badge.',
+    description: 'Black structured cotton cap with high-density embroidered multi-color NFTYLOGS Vagaries of GHG Emissions accountability badge.',
     objectPosition: 'center 0%',
   },
   {
     id: 'item_nfty_volcano_hoodie',
-    title: 'NFTY LOGS® "Vibing The Vagaries" Heavyweight Hoodie',
+    title: 'NFTYLOGS "Vibing The Vagaries" Heavyweight Hoodie',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/a014f871-4e03-4f3d-a056-47f3f3dbe729.jpeg',
     category: 'Graphic Art Hoodies',
@@ -43,9 +43,9 @@ const MERCH_CATALOG: MerchItem[] = [
   },
   {
     id: 'item_nfty_tech_fleece',
-    title: 'NFTY LOGS® Tech Fleece Full-Zip Performance Hoodie',
+    title: 'NFTYLOGS Tech Fleece Full-Zip Performance Hoodie',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/09acb896-19df-488f-9a9b-ac1241c6dc97.jpeg',
     category: 'Performance Apparel',
@@ -54,7 +54,7 @@ const MERCH_CATALOG: MerchItem[] = [
   },
   {
     id: 'item_nfty_arsenal_hoodie',
-    title: 'NFTY LOGS® Arsenal FC Milestone Match Commemorative Hoodie',
+    title: 'NFTYLOGS Arsenal FC Milestone Match Commemorative Hoodie',
     licenseeId: 'lic_arsenal_fc',
     partnerName: 'Arsenal FC Merchandise',
     priceCents: null, // price TBC - contact for order
@@ -65,31 +65,31 @@ const MERCH_CATALOG: MerchItem[] = [
   },
   {
     id: 'item_nfty_puffer_jacket',
-    title: 'NFTY LOGS® Heavyweight Insulated Puffer Jacket',
+    title: 'NFTYLOGS Heavyweight Insulated Puffer Jacket',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/5df490db-a560-4754-924d-9a27581f0c23.jpeg',
     category: 'Premium Winterwear',
-    description: 'High-loft quilted puffer jacket with full-length storm zip, insulated hood, and embroidered NFTY LOGS® Greenhouse Gas accountability mark.',
+    description: 'High-loft quilted puffer jacket with full-length storm zip, insulated hood, and embroidered NFTYLOGS Greenhouse Gas accountability mark.',
     objectPosition: 'center 20%',
   },
   {
     id: 'item_nfty_softshell_vest',
-    title: 'NFTY LOGS® Provenance Embroidered Softshell Vest',
+    title: 'NFTYLOGS Provenance Embroidered Softshell Vest',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/ca6c871a-d643-4695-a605-9a357fb26ae3.jpeg',
     category: 'Official Outerwear',
-    description: 'Sleeveless softshell vest embroidered with the NFTY LOGS Labs provenance mark.',
+    description: 'Sleeveless softshell vest embroidered with the NFTYLOGS provenance mark.',
     objectPosition: 'center 25%',
   },
   {
     id: 'item_nfty_softshell_vest_back',
-    title: 'NFTY LOGS® Disaster Relief Charity Edition Softshell Vest',
+    title: 'NFTYLOGS Disaster Relief Charity Edition Softshell Vest',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/3bf3f794-fcb4-412a-a556-b3289bbebd39.jpeg',
     category: 'Official Outerwear',
@@ -98,24 +98,24 @@ const MERCH_CATALOG: MerchItem[] = [
   },
   {
     id: 'item_nfty_joggers',
-    title: 'NFTY LOGS® Premium Embroidered Fleece Joggers',
+    title: 'NFTYLOGS Premium Embroidered Fleece Joggers',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/66e17346-415e-4f20-9c86-3aa5c4587af6.jpeg',
     category: 'Loungewear & Bottoms',
-    description: 'Organic heavyweight French terry fleece sweatpants with embroidered NFTY LOGS® Vagaries of Greenhouse Gases [GHGs] thigh badge.',
+    description: 'Organic heavyweight French terry fleece sweatpants with embroidered NFTYLOGS Vagaries of Greenhouse Gases [GHGs] thigh badge.',
     objectPosition: 'center 15%',
   },
   {
     id: 'item_nfty_puffer_sleeve',
-    title: 'NFTY LOGS® Arm-Badge Puffer Jacket (Sleeve Detail Edition)',
+    title: 'NFTYLOGS Arm-Badge Puffer Jacket (Sleeve Detail Edition)',
     licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTY LOGS® Official Store',
+    partnerName: 'NFTYLOGS Official Store',
     priceCents: null, // price TBC - contact for order
     imageUrl: '/images/merch/82ccfad7-9e7b-4882-990d-f9805bc52a22.jpeg',
     category: 'Premium Winterwear',
-    description: 'Close-up sleeve edition showcasing the intricate multi-thread embroidery of the official NFTY LOGS® Vagaries of Greenhouse Gases mark.',
+    description: 'Close-up sleeve edition showcasing the intricate multi-thread embroidery of the official NFTYLOGS Vagaries of Greenhouse Gases mark.',
     objectPosition: 'center center',
   },
 ];
@@ -492,7 +492,7 @@ const PartnerNetworkCallout: React.FC = () => (
 
 export const MerchStorePage: React.FC = () => {
   useEffect(() => {
-    document.title = 'Support Extreme Weather Survivor - GHGEmissionLogs';
+    document.title = 'Support Extreme Weather Survivor - NFTYLOGS';
     window.scrollTo(0, 0);
   }, []);
 
@@ -690,7 +690,7 @@ export const MerchStorePage: React.FC = () => {
         }}
       >
         <Link to="/" style={{ color: 'var(--text-light)', textDecoration: 'none' }}>
-          GHGEmissionLogs
+          NFTYLOGS
         </Link>
         <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
         <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>Support Extreme Weather Survivor</span>

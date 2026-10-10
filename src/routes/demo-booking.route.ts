@@ -159,9 +159,9 @@ export function createDemoBookingRouter(prisma: PrismaClient): Router {
       const endDate = new Date(slotDate.getTime() + 25 * 60 * 1000); // 25 min walk-through
       const endTimeIso = endDate.toISOString().replace(/-|:|\.\d\d\d/g, '');
 
-      const calendarTitle = encodeURIComponent('GHGEmissionLogs Architectural Walkthrough');
+      const calendarTitle = encodeURIComponent('NFTYLOGS Architectural Walkthrough');
       const calendarDetails = encodeURIComponent(
-        `Automated Statutory Assurance & Continuous Ledger Walkthrough for ${companyName.trim()}.\n\nStatutory Scope: ${sanitizedScope}\nBooking Reference: ${booking.id}\nLead Auditor: GHGEmissionLogs Assurance Principal`
+        `Automated Statutory Assurance & Continuous Ledger Walkthrough for ${companyName.trim()}.\n\nStatutory Scope: ${sanitizedScope}\nBooking Reference: ${booking.id}\nLead Auditor: NFTYLOGS Assurance Principal`
       );
       const calendarLocation = encodeURIComponent(meetUrl || 'Google Meet (Provisioned via Calendar)');
 

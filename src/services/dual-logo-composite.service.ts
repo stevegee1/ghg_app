@@ -4,9 +4,9 @@
  *
  * Produces a 1024×1024 PNG compositing:
  *  1. Client corporate logo (PNG/JPG/SVG, max 400×200 px region)
- *  2. Official GHG Emissions Registered Trade Mark (right panel)
+ *  2. Official NFTYLOGS (right panel)
  *  3. Client short message (max 120 chars)
- *  4. Statutory Trade Mark designation + ISO 19011:2026 stamp
+ *  4. ISO 19011:2026 stamp
  *  5. 1-Year Warranty validity date
  *
  * Fallback: If node-canvas is unavailable (e.g. CI without libcairo),
@@ -156,8 +156,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
       ctx.fillStyle = '#10b981';
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('GHG EMISSIONS', rightCenterX, 135);
-      ctx.fillText('REGISTERED TRADE MARK', rightCenterX, 155);
+      ctx.fillText('NFTYLOGS', rightCenterX, 145);
     }
 
     // ── Client message ─────────────────────────────────────────────────────────
@@ -185,7 +184,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`UKIPO Statutory Mark | ${frameworkText}`, 40, HEIGHT - 40);
+    ctx.fillText(`${frameworkText}`, 40, HEIGHT - 40);
     ctx.textAlign = 'right';
     ctx.fillText(`Valid to: ${formatDate(expiresAt)}`, WIDTH - 40, HEIGHT - 40);
 
@@ -243,13 +242,13 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
   <!-- Client name -->
   <text x="252" y="296" font-family="sans-serif" font-size="13" font-weight="700" fill="rgba(255,255,255,0.6)" text-anchor="middle">${escapedName}</text>
   <!-- Right panel: GHG Mark -->
-  ${ghgLogoDataUri ? `<image clip-path="url(#rightClip)" href="${ghgLogoDataUri}" x="592" y="90" width="280" height="180" preserveAspectRatio="xMidYMid meet"/>` : `<rect x="660" y="90" width="200" height="100" rx="12" fill="rgba(16,185,129,0.1)"/><text x="760" y="135" font-family="sans-serif" font-size="14" font-weight="700" fill="#10b981" text-anchor="middle">GHG EMISSIONS</text><text x="760" y="155" font-family="sans-serif" font-size="11" fill="#10b981" text-anchor="middle">REGISTERED TRADE MARK</text>`}
+  ${ghgLogoDataUri ? `<image clip-path="url(#rightClip)" href="${ghgLogoDataUri}" x="592" y="90" width="280" height="180" preserveAspectRatio="xMidYMid meet"/>` : `<rect x="660" y="90" width="200" height="100" rx="12" fill="rgba(16,185,129,0.1)"/><text x="760" y="145" font-family="sans-serif" font-size="14" font-weight="700" fill="#10b981" text-anchor="middle">NFTYLOGS</text>`}
   <!-- Client message -->
   <foreignObject x="60" y="300" width="904" height="100">
     <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:sans-serif;font-size:17px;font-style:italic;color:rgba(255,255,255,0.85);text-align:center;word-break:break-word;">${escapedMsg}</div>
   </foreignObject>
   <!-- Footer -->
-  <text x="40" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)">UKIPO Statutory Mark | ${escapedFramework}</text>
+  <text x="40" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)">${escapedFramework}</text>
   <text x="984" y="472" font-family="sans-serif" font-size="11" fill="rgba(255,255,255,0.35)" text-anchor="end">Valid to: ${formatDate(expiresAt)}</text>
   <!-- Seal -->
   <text x="512" y="494" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.20)" text-anchor="middle">SHA-256: ${seal.substring(0, 40)}...</text>

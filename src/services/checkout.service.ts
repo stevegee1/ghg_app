@@ -51,7 +51,7 @@ export class CheckoutService {
         licensee = await this.prisma.licensee.create({
           data: {
             id: PLATFORM_LICENSEE_ID,
-            name: 'NFTY LOGS® Official Store',
+            name: 'NFTYLOGS Official Store',
             vertical: 'B2C_SPORTS_MERCH' as any,
             royaltyBps: 8500,
             pricePerDropCents: 500,
@@ -304,7 +304,7 @@ export class CheckoutService {
               currency: currency.toLowerCase(),
               product_data: {
                 name: itemTitle,
-                description: itemDescription || 'Authentic NFTY LOGS merchandise with verified 15% statutory ESG charitable split.',
+                description: itemDescription || 'Authentic NFTYLOGS merchandise with verified 15% statutory ESG charitable split.',
               },
               unit_amount: grossAmountCents,
             },

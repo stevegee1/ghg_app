@@ -17,7 +17,7 @@ export class CmaValidatorService {
     {
       regex: /\b(100%\s*(?:green|eco-friendly|clean|sustainable|carbon\s*neutral|zero\s*carbon))\b/gi,
       reason: 'Absolute claim "100% Green / Clean" prohibited under CMA Rule 1 unless verified across full cradle-to-grave lifecycle.',
-      replacement: 'processes verified under the GHG Logo Drop methodology in accordance with ISO 14064-1 data',
+      replacement: 'processes verified under the NFTYLOGS methodology in accordance with ISO 14064-1 data',
     },
     {
       regex: /\b(carbon\s*neutral\s*(?:event|match|derby|product|flight|garment))\b/gi,

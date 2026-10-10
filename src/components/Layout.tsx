@@ -113,14 +113,14 @@ export const Layout: React.FC = () => {
               to="/"
               className={isConsoleView ? 'brand' : 'brand cerebrium-brand-link'}
               onClick={closeDropdowns}
-              aria-label="GHGEmissionLogs Home"
+              aria-label="NFTYLOGS Home"
             >
               <img
                 src="/images/nfty-logs-logo.png"
-                alt="GHGEmissionLogs Official Logo"
+                alt="NFTYLOGS Official Logo"
                 style={{ width: '28px', height: '28px', objectFit: 'contain' }}
               />
-              <span className={!isConsoleView ? 'brand-text-white' : ''}>GHGEmissionLogs</span>
+              <span className={!isConsoleView ? 'brand-text-white' : ''}>NFTYLOGS</span>
             </Link>
             {isConsoleView && (
               <span className="console-mode-badge">Console</span>
@@ -582,12 +582,10 @@ export const Layout: React.FC = () => {
           <div className="console-minimal-footer-inner">
             <div className="console-footer-left">
               <span className="console-status-dot" />
-              <span>GHGEmissionLogs</span>
-              <span className="console-footer-sep">•</span>
-              <span>UKIPO trade mark UK00003980004</span>
+              <span>NFTYLOGS</span>
             </div>
             <div className="console-footer-right">
-              <span>© {new Date().getFullYear()} NFTY LOGS LABS LTD, UK company no. 15230476</span>
+              <span>© {new Date().getFullYear()} NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.</span>
             </div>
           </div>
         </footer>

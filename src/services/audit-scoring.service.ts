@@ -160,7 +160,7 @@ export class AuditScoringService {
             isoClauseLink: 'ISO 14025:2006 (Type III Eco-Labels) and ISO 14065',
             legalMandate: 'UK Consumer Protection from Unfair Trading Regulations',
             targetDepartment: 'Marketing / Corporate Legal Compliance',
-            questionText: 'Do all attendee-facing souvenir claims link directly to the public GHG Logo Drop transparency record?',
+            questionText: 'Do all attendee-facing souvenir claims link directly to the public NFTYLOGS transparency record?',
             objectiveEvidenceTypes: 'Public Transparency Record Links, SHA-256 Ledger Manifests',
             scorePoints: 5.0,
             complianceGrading: ConformanceGrade.CONFORMANT,

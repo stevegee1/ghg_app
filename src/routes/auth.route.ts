@@ -117,7 +117,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
       emailService.sendVerificationEmail({
         toEmail: normalizedEmail,
         verificationUrl,
-        appName: 'GHGEmissionLogs Assurance Suite',
+        appName: 'NFTYLOGS Assurance Suite',
         expiresInHours: 24,
       }).catch((emailErr) => console.error('[EMAIL VERIFICATION DISPATCH WARN]', emailErr));
 
@@ -641,7 +641,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
         await emailService.sendVerificationEmail({
           toEmail: user.email,
           verificationUrl,
-          appName: 'GHGEmissionLogs Assurance Suite',
+          appName: 'NFTYLOGS Assurance Suite',
           expiresInHours: 24,
         });
       }

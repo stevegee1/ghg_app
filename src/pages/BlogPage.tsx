@@ -23,7 +23,7 @@ const BLOG_POSTS: BlogPost[] = [
   },
   {
     id: 'blog_anomaly_lock',
-    title: 'GHGEmissionLogs Deploys Real-Time Anomaly Lock: Enforcing 15% Baseline Drift Freeze',
+    title: 'NFTYLOGS Deploys Real-Time Anomaly Lock: Enforcing 15% Baseline Drift Freeze',
     category: 'ISO Clause 10.2',
     summary: 'Autonomous ledger safeguards that freeze statutory exports (HTTP 423) whenever facility consumption drifts more than 15% from calibrated ISO baselines.',
   },
@@ -31,7 +31,7 @@ const BLOG_POSTS: BlogPost[] = [
     id: 'blog_1',
     title: 'Transforming Carbon-Footprint Culture Through Digital Provenance',
     category: 'Climate Action & Provenance',
-    summary: 'While we engage in daily activities, climate crisis impacts unfold across different geographical locations. Exploring how digital technology and trademark optics bridge awareness into direct disaster relief.',
+    summary: 'While we engage in daily activities, climate crisis impacts unfold across different geographical locations. Exploring how digital technology and brand design bridge awareness into direct disaster relief.',
   },
   {
     id: 'blog_2',
@@ -70,7 +70,7 @@ export const BlogPage: React.FC = () => {
         }}
       >
         <Link to="/" style={{ color: '#64748b', textDecoration: 'none' }}>
-          GHGEmissionLogs
+          NFTYLOGS
         </Link>
         <span>/</span>
         <span>Resources</span>
@@ -225,7 +225,7 @@ export const BlogPage: React.FC = () => {
                 }}
               >
                 <span style={{ color: '#64748b' }}>
-                  By: <strong style={{ color: '#090d1a', fontWeight: 700 }}>GHGEmissionLogs</strong>
+                  By: <strong style={{ color: '#090d1a', fontWeight: 700 }}>NFTYLOGS</strong>
                 </span>
 
                 <span

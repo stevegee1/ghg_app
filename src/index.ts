@@ -16,7 +16,7 @@ import { validateLlmProviderConfig } from './services/review-pipeline/llm-provid
 import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './services/platform-account.service';
 
 async function main() {
-  console.log('GHG Logo Drop Backend - Milestone 3 Initialized');
+  console.log('NFTYLOGS Backend - Milestone 3 Initialized');
 
   if (process.env.NODE_ENV === 'production') {
     if (!process.env.JWT_SECRET) {
@@ -96,7 +96,7 @@ async function main() {
       update: { stripeConnectedAccountId: getPlatformStripeAccountId() },
       create: {
         id: PLATFORM_LICENSEE_ID,
-        name: 'NFTY LOGS® Official Store',
+        name: 'NFTYLOGS Official Store',
         vertical: 'B2C_SPORTS_MERCH' as any,
         royaltyBps: 8500,
         pricePerDropCents: 500,

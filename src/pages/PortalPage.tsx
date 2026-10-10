@@ -891,10 +891,10 @@ export const PortalPage: React.FC = () => {
           <div className="portal-drawer-brand">
             <img
               src="/images/nfty-logs-logo.png"
-              alt="GHGEmissionLogs Logo"
+              alt="NFTYLOGS Logo"
               style={{ width: '24px', height: '24px', objectFit: 'contain' }}
             />
-            <span className="portal-drawer-brand-text">GHGEmissionLogs</span>
+            <span className="portal-drawer-brand-text">NFTYLOGS</span>
           </div>
           <button
             type="button"

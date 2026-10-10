@@ -137,7 +137,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       doc
         .fontSize(18)
         .font('Helvetica-Bold')
-        .text('GHG Emissions Registered Trade Mark', { align: 'center' });
+        .text('NFTYLOGS', { align: 'center' });
       doc.moveDown(0.25);
       doc
         .fontSize(12)
@@ -149,7 +149,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#64748b')
-        .text('UKIPO Registered Trade Mark  |  ISO 14067 Certified  |  85/15 Statutory Charitable Routing', { align: 'center' });
+        .text('NFTYLOGS Limited  |  Registered in England and Wales, company no. 15230476', { align: 'center' });
       doc.moveDown(1.5);
 
       // Order Reference
@@ -215,7 +215,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       doc
         .fontSize(8)
         .fillColor('#94a3b8')
-        .text('Official statutory ESG invoice issued under GHG Emissions Registered Trade Mark.', { align: 'center' });
+        .text('Invoice issued by NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.', { align: 'center' });
       doc.text('GHG App | ghgapp-production.up.railway.app', { align: 'center' });
 
       doc.end();
