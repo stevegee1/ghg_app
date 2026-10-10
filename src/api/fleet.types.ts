@@ -341,3 +341,34 @@ export interface FleetCostRun {
   recordSha256: string;
   createdAt: string;
 }
+
+export interface WeatherThresholdSet {
+  id: string;
+  version: string;
+  heatAboveC: string;
+  frostBelowC: string;
+  heavyRainMmPerHour: string;
+  highWindKmh: string;
+  source: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface FleetWeatherSummary {
+  configured: boolean;
+  activeThresholds: WeatherThresholdSet | null;
+  thresholdVersions: string[];
+  source: string;
+  assets: {
+    assetId: string;
+    assetTag: string;
+    name: string;
+    category: string;
+    daysMeasured: number;
+    operatingHours: string;
+    heatHours: string;
+    frostHours: string;
+    heavyRainHours: string;
+    highWindHours: string;
+  }[];
+}

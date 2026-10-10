@@ -17,6 +17,8 @@ import { validateFuelFeedConfig } from './services/market-index.service';
 import { scheduleMarketIndexJob } from './jobs/market-index.job';
 import { scheduleAnchorJob, scheduleAnchorPublishJob } from './jobs/anchor.job';
 import { validateAnchorConfig } from './services/anchor/anchor-publisher';
+import { validateWeatherConfig } from './services/fleet/weather-exposure.service';
+import { scheduleWeatherJob } from './jobs/weather.job';
 import { PLATFORM_LICENSEE_ID, getPlatformStripeAccountId } from './services/platform-account.service';
 
 async function main() {
@@ -72,6 +74,13 @@ async function main() {
     validateAnchorConfig();
   } catch (err) {
     console.error(`FATAL: Blockchain anchoring configuration is invalid. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
+
+  try {
+    validateWeatherConfig();
+  } catch (err) {
+    console.error(`FATAL: Weather provider configuration is invalid. ${(err as Error).message} Refusing to start.`);
     process.exit(1);
   }
 
@@ -206,6 +215,7 @@ async function main() {
     scheduleMarketIndexJob(prisma);
     scheduleAnchorJob(prisma);
     scheduleAnchorPublishJob(prisma);
+    scheduleWeatherJob(prisma);
   } catch (e: any) {
     console.error('[ERROR] DB connection failed (check DATABASE_URL):', e?.message ?? e);
     // Do not exit: server remains up to handle health checks and API errors gracefully

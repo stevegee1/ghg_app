@@ -1353,6 +1353,7 @@ model FleetAsset {
 
   readings  FleetReading[]
   projectAssignments FleetProjectAsset[]
+  weatherExposures   FleetWeatherExposure[]
   snapshots FleetTelemetrySnapshot[]
   faults    FleetFaultCode[]
   bindings  FleetDeviceBinding[]
@@ -1953,4 +1954,43 @@ model Scope3SupplierInvite {
   createdAt     DateTime    @default(now())
 
   @@index([licenseeId, chainId])
+}
+
+/// Weather conditions that count as harsh for machines. Versioned: every exposure figure records
+/// the set it was measured against. Set by administrators; nothing is measured until one exists.
+model WeatherThresholdSet {
+  id                 String   @id @default(cuid())
+  version            String   @unique
+  heatAboveC         Decimal  @db.Decimal(5, 2)
+  frostBelowC        Decimal  @db.Decimal(5, 2)
+  heavyRainMmPerHour Decimal  @db.Decimal(6, 2)
+  highWindKmh        Decimal  @db.Decimal(6, 2)
+  source             String
+  active             Boolean  @default(false)
+  createdByUserId    String
+  createdAt          DateTime @default(now())
+
+  exposures FleetWeatherExposure[]
+}
+
+/// Hours a machine worked on one day, and how many of them were in each harsh condition.
+/// Derived from telemetry location and hourly weather; the location itself is not stored here.
+model FleetWeatherExposure {
+  id               String              @id @default(cuid())
+  licenseeId       String
+  assetId          String
+  asset            FleetAsset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  date             DateTime            @db.Date
+  operatingHours   Decimal             @db.Decimal(8, 3)
+  heatHours        Decimal             @db.Decimal(8, 3)
+  frostHours       Decimal             @db.Decimal(8, 3)
+  heavyRainHours   Decimal             @db.Decimal(8, 3)
+  highWindHours    Decimal             @db.Decimal(8, 3)
+  thresholdSetId   String
+  thresholdSet     WeatherThresholdSet @relation(fields: [thresholdSetId], references: [id])
+  source           String
+  computedAt       DateTime            @default(now())
+
+  @@unique([assetId, date])
+  @@index([licenseeId, date])
 }

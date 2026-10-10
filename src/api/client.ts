@@ -6,6 +6,8 @@ import type {
   FleetProjectInput,
   FleetProjectMaterial,
   FleetCostRun,
+  FleetWeatherSummary,
+  WeatherThresholdSet,
   FleetAssetImportResult,
   FleetAssetInput,
   FleetEstimate,
@@ -1253,6 +1255,22 @@ export const api = {
   },
   async calculateFleetProjectCost(token: string, id: string, body: { from?: string; to?: string }): Promise<{ run: FleetCostRun }> {
     return apiRequest(`/api/fleet/projects/${encodeURIComponent(id)}/costs`, { token, method: 'POST', body });
+  },
+
+  async getFleetWeather(token: string, from: string, to: string): Promise<FleetWeatherSummary> {
+    return apiRequest(`/api/fleet/weather?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { token });
+  },
+  async getWeatherThresholds(token: string): Promise<{ configured: boolean; sets: WeatherThresholdSet[] }> {
+    return apiRequest('/api/admin/weather/thresholds', { token });
+  },
+  async createWeatherThresholds(
+    token: string,
+    body: { version: string; heatAboveC: string; frostBelowC: string; heavyRainMmPerHour: string; highWindKmh: string; source: string }
+  ): Promise<{ set: WeatherThresholdSet }> {
+    return apiRequest('/api/admin/weather/thresholds', { token, method: 'POST', body });
+  },
+  async recomputeWeather(token: string, from: string, to: string): Promise<{ machineDays: number; skipped: string | null }> {
+    return apiRequest('/api/admin/weather/recompute', { token, method: 'POST', body: { from, to } });
   },
 
   async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {

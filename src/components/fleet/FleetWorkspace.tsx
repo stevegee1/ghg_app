@@ -7,13 +7,15 @@ import { FleetUploads } from './FleetUploads';
 import { FleetSubscription } from './FleetSubscription';
 import { FleetApiAccess } from './FleetApiAccess';
 import { FleetProjects } from './FleetProjects';
+import { FleetWeather } from './FleetWeather';
 
-export type FleetTab = 'dashboard' | 'assets' | 'projects' | 'uploads' | 'api' | 'subscription';
+export type FleetTab = 'dashboard' | 'assets' | 'projects' | 'weather' | 'uploads' | 'api' | 'subscription';
 
 const TABS: { id: FleetTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'assets', label: 'Assets' },
   { id: 'projects', label: 'Projects' },
+  { id: 'weather', label: 'Weather' },
   { id: 'uploads', label: 'Data uploads' },
   { id: 'api', label: 'API access' },
   { id: 'subscription', label: 'Subscription' },
@@ -115,6 +117,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
         {overview && tab === 'dashboard' && <FleetDashboard key={refreshKey} token={token} onSubscribe={() => setTab('subscription')} />}
         {overview && tab === 'assets' && <FleetAssets token={token} onChanged={refresh} />}
         {overview && tab === 'projects' && <FleetProjects token={token} onSubscribe={() => setTab('subscription')} />}
+        {overview && tab === 'weather' && <FleetWeather token={token} onSubscribe={() => setTab('subscription')} />}
         {overview && tab === 'uploads' && <FleetUploads token={token} onSubscribe={() => setTab('subscription')} onImported={refresh} />}
         {overview && tab === 'api' && <FleetApiAccess token={token} />}
         {overview && tab === 'subscription' && <FleetSubscription token={token} overview={overview} onAddAssets={() => setTab('assets')} />}
