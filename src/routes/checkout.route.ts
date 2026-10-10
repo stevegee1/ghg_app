@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType } from '@prisma/client';
+import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, MerchProductKind } from '@prisma/client';
 import Stripe from 'stripe';
 import { CheckoutService } from '../services/checkout.service';
 import { generateOrderNumber } from './orders.route';
+import { MerchCatalogueError, priceOrder } from '../services/merch-catalogue.service';
 
 export function createCheckoutRouter(
   checkoutService: CheckoutService,
-  prisma?: PrismaClient,
+  prisma: PrismaClient,
   stripe?: Stripe
 ): Router {
   const router = Router();
@@ -55,34 +56,31 @@ export function createCheckoutRouter(
 
   /**
    * POST /api/checkout/session
-   * Generates a direct Stripe Checkout Session URL for real hosted card payments
+   * Creates a Stripe Checkout Session for a catalogue item. The price comes from the merch catalogue
+   * on the server; the request names only the product and quantity.
    */
   router.post('/api/checkout/session', async (req: Request, res: Response) => {
-    const { licenseeId, itemTitle, grossAmountCents, currency, successUrl, cancelUrl } = req.body || {};
-
-    if (!licenseeId || !grossAmountCents || typeof grossAmountCents !== 'number') {
-      return res.status(400).json({ error: 'licenseeId and grossAmountCents are required.' });
-    }
+    const { productId, quantity } = req.body || {};
 
     try {
-      const host = req.get('host') || 'localhost:8080';
-      const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-      const defaultSuccessUrl = `${protocol}://${host}/checkout/success`;
-      const defaultCancelUrl = `${protocol}://${host}/merch`;
+      const order = await priceOrder(prisma, { productId, quantity, kind: MerchProductKind.CATALOGUE });
+      const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
 
       const session = await checkoutService.createCheckoutSession({
-        licenseeId: licenseeId.trim(),
-        itemTitle: itemTitle || 'NFTYLOGS Climate Apparel',
-        grossAmountCents,
-        currency: currency || 'GBP',
-        successUrl: successUrl || defaultSuccessUrl,
-        cancelUrl: cancelUrl || defaultCancelUrl,
+        licenseeId: order.product.licenseeId,
+        itemTitle: order.quantity > 1 ? `${order.product.title} x ${order.quantity}` : order.product.title,
+        grossAmountCents: order.grossAmountPence,
+        currency: order.product.currency,
+        successUrl: `${baseUrl}/checkout/success`,
+        cancelUrl: `${baseUrl}/merch`,
+        metadata: { merchProductId: order.product.id, quantity: String(order.quantity) },
       });
 
       return res.status(200).json(session);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (err instanceof MerchCatalogueError) return res.status(err.status).json({ error: err.message });
       console.error('[CHECKOUT SESSION ROUTE ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to create Stripe checkout session' });
+      return res.status(500).json({ error: 'Failed to start checkout. Please try again.' });
     }
   });
 

@@ -7,6 +7,7 @@ import { AdminReadinessTracker } from '../components/admin/AdminReadinessTracker
 import { ReviewQueue } from '../components/admin/review/ReviewQueue';
 import { FleetSetupRequestsAdmin } from '../components/admin/FleetSetupRequestsAdmin';
 import { FleetProvidersAdmin } from '../components/admin/FleetProvidersAdmin';
+import { MerchProductsAdmin } from '../components/admin/MerchProductsAdmin';
 import { DeliveryPartnersAdmin } from '../components/admin/DeliveryPartnersAdmin';
 
 // Google SaaS Standard SVG Icons (Zero Emojis)
@@ -95,7 +96,7 @@ export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS'>('READINESS_TRACKER');
+  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES'>('READINESS_TRACKER');
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -650,6 +651,7 @@ export const AdminPage: React.FC = () => {
             { key: 'SUBMISSIONS', label: 'Review Queue', badge: null },
             { key: 'DEMOS', label: 'Demo Leads', badge: demoBookings.length },
             { key: 'MERCH_ENQUIRIES', label: 'Merch Enquiries', badge: merchEnquiries.filter((e) => e.status === 'PENDING').length },
+            { key: 'MERCH_PRICES', label: 'Merch Prices', badge: null },
             { key: 'MERCH_ORDERS', label: 'Merch Orders', badge: souvenirOrders.length },
             { key: 'KEEPSAKE_ORDERS', label: 'Keepsake Fulfil', badge: keepsakeOrders.length },
             { key: 'CHARITIES', label: 'Charities', badge: charityDashboard?.committedCount ?? (charityDashboard?.slots ? charityDashboard.slots.filter((s: any) => s.status === 'ACTIVE').length : 0) },
@@ -2069,6 +2071,7 @@ export const AdminPage: React.FC = () => {
       {activeAdminTab === 'FLEET_SETUP' && token && <FleetSetupRequestsAdmin token={token} />}
 
       {activeAdminTab === 'FLEET_DEVICES' && token && <FleetProvidersAdmin token={token} />}
+      {activeAdminTab === 'MERCH_PRICES' && token && <MerchProductsAdmin token={token} />}
 
       {activeAdminTab === 'DELIVERY_PARTNERS' && token && <DeliveryPartnersAdmin token={token} />}
 

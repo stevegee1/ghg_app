@@ -30,6 +30,7 @@ import { createWorkflowRouter } from './routes/workflow.route';
 import { createFleetRouter } from './routes/fleet.route';
 import { createMerchEnquiryRouter } from './routes/merch-enquiry.route';
 import { createPartnerNetworkRouter } from './routes/partner-network.route';
+import { createMerchCatalogueRouter } from './routes/merch-catalogue.route';
 import { createAssessmentRouter } from './routes/assessment.route';
 import { createPreparationChecklistRouter } from './routes/preparation-checklist.route';
 import { CheckoutService } from './services/checkout.service';
@@ -181,6 +182,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createPublicSiteRouter(prisma));
   app.use(createMerchEnquiryRouter(prisma));
   app.use(createPartnerNetworkRouter(prisma));
+  app.use(createMerchCatalogueRouter(prisma));
   app.use(createAssessmentRouter(prisma));
   app.use(createPreparationChecklistRouter(prisma));
 

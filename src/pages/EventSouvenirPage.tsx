@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
+import { formatPence, useMerchProducts } from '../components/merch/useMerchProducts';
+import { useSiteFacts } from '../components/landing/useSiteFacts';
 
 type EventCategory = 'SPORTS' | 'GALA' | 'TECH_SUMMIT' | 'WEDDING';
 type LogoDropCount = 10 | 25 | 50 | 100 | 250 | 500;
@@ -30,7 +32,6 @@ const CATEGORY_META: Record<EventCategory, { label: string; description: string;
 };
 
 const DROP_COUNTS: LogoDropCount[] = [10, 25, 50, 100, 250, 500];
-const UNIT_PRICE_GBP = 5.0; // £5.00 per logo drop unit
 
 export const EventSouvenirPage: React.FC = () => {
   const navigate = useNavigate();
@@ -53,9 +54,14 @@ export const EventSouvenirPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successOrder, setSuccessOrder] = useState<any | null>(null);
 
-  const grossCents = logoDropCount * UNIT_PRICE_GBP * 100;
-  const licensorCents = Math.round((grossCents * 8500) / 10000);
-  const charityCents = grossCents - licensorCents;
+  // Unit price from the merch catalogue and charity share from the active split; the server prices the order.
+  const catalogue = useMerchProducts();
+  const { charityShare } = useSiteFacts();
+  const logoDrop = catalogue.status === 'ready' ? catalogue.products.find((p) => p.kind === 'EVENT_SOUVENIR') : undefined;
+  const unitPence = logoDrop?.pricePence ?? null;
+  const grossCents = unitPence === null ? 0 : logoDropCount * unitPence;
+  const charityCents = charityShare ? Math.round((grossCents * Number(charityShare)) / 100) : 0;
+  const licensorCents = grossCents - charityCents;
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +114,7 @@ export const EventSouvenirPage: React.FC = () => {
           Event Souvenir Logo Drops
         </h1>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: '750px', margin: '0 0 1.25rem 0' }}>
-          Select an event category and required logo drop volume. Orders are processed with the certified GHG accountability mark and include statutory 15% ESG charitable routing.
+          Select an event category and required logo drop volume. A share of every order goes to our charity partners.
         </p>
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -249,7 +255,7 @@ export const EventSouvenirPage: React.FC = () => {
                 ))}
               </div>
               <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                Unit price: £{UNIT_PRICE_GBP.toFixed(2)} • Order subtotal: <strong style={{ color: 'var(--text-main)' }}>£{(logoDropCount * UNIT_PRICE_GBP).toFixed(2)}</strong>
+                {unitPence === null ? (catalogue.status === 'loading' ? 'Loading price...' : 'Event orders are not available right now.') : <>Unit price: {formatPence(unitPence)} • Order subtotal: <strong style={{ color: 'var(--text-main)' }}>{formatPence(grossCents)}</strong></>}
               </div>
             </div>
 
@@ -362,7 +368,7 @@ export const EventSouvenirPage: React.FC = () => {
             </div>
 
             <div style={{ backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)', borderRadius: '8px', padding: '0.875rem 1.25rem', marginBottom: '1.5rem', fontSize: '0.8125rem', color: 'var(--color-green-dark)', fontWeight: 500, lineHeight: 1.5 }}>
-              15% of this transaction is automatically routed to verified statutory environmental restoration funds. A formal GHG Tax Invoice will be generated and dispatched to {customerEmail}.
+              {charityShare ? `${charityShare}% of this order goes to our charity partners. ` : 'A share of this order goes to our charity partners. '}An invoice will be sent to {customerEmail}.
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -371,7 +377,7 @@ export const EventSouvenirPage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || unitPence === null}
                 style={{
                   flex: '3 1 240px', padding: '0.8125rem 1.25rem',
                   backgroundColor: '#635BFF', color: '#ffffff', fontWeight: 600,

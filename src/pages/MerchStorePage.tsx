@@ -3,134 +3,30 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 import { StatusBadge } from '../components/StatusBadge';
+import { useMerchProducts } from '../components/merch/useMerchProducts';
+import { useSiteFacts } from '../components/landing/useSiteFacts';
 
 interface MerchItem {
   id: string;
   title: string;
-  licenseeId: string;
   partnerName: string;
-  priceCents: number | null; // null = price not yet determined, shows Contact for Order
+  priceCents: number | null; // null = sold by enquiry only, shows Contact for Order
   imageUrl: string;
   category: string;
   description: string;
   objectPosition?: string;
 }
 
-const CAP_ITEM_ID = 'item_nfty_cap';
+interface GarmentOption {
+  id: string;
+  label: string;
+  priceCents: number;
+  baseLca: number;
+  laborHours: number;
+}
 
-const MERCH_CATALOG: MerchItem[] = [
-  {
-    id: 'item_nfty_cap',
-    title: 'NFTYLOGS Vagaries of GHG Emissions Embroidered Cap',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: 3500, // £35.00 - fixed retail price
-    imageUrl: '/images/merch/804c16c8-6d00-4596-b456-dfe607b635b7.jpeg',
-    category: 'Official Headwear',
-    description: 'Black structured cotton cap with high-density embroidered multi-color NFTYLOGS Vagaries of GHG Emissions accountability badge.',
-    objectPosition: 'center 0%',
-  },
-  {
-    id: 'item_nfty_volcano_hoodie',
-    title: 'NFTYLOGS "Vibing The Vagaries" Heavyweight Hoodie',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/a014f871-4e03-4f3d-a056-47f3f3dbe729.jpeg',
-    category: 'Graphic Art Hoodies',
-    description: 'Heavyweight black pullover hoodie with embroidered "Re-awakened Volcanoes, Melting Glaciers" chest artwork and dual GHG logo drops.',
-    objectPosition: 'center 20%',
-  },
-  {
-    id: 'item_nfty_tech_fleece',
-    title: 'NFTYLOGS Tech Fleece Full-Zip Performance Hoodie',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/09acb896-19df-488f-9a9b-ac1241c6dc97.jpeg',
-    category: 'Performance Apparel',
-    description: 'Charcoal tech fleece full-zip hoodie with zippered sleeve utility pocket, tailored seamlines, and embroidered GHG accountability badges.',
-    objectPosition: 'center 25%',
-  },
-  {
-    id: 'item_nfty_arsenal_hoodie',
-    title: 'NFTYLOGS Arsenal FC Milestone Match Commemorative Hoodie',
-    licenseeId: 'lic_arsenal_fc',
-    partnerName: 'Arsenal FC Merchandise',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/fa1c261d-9fd9-4cb7-a5c3-a4425c641db7.jpeg',
-    category: 'Special Edition Sports',
-    description: 'Commemorative dark fleece hoodie celebrating the 2025 West Ham derby milestone with embroidered match narrative and official GHG badge.',
-    objectPosition: 'center 25%',
-  },
-  {
-    id: 'item_nfty_puffer_jacket',
-    title: 'NFTYLOGS Heavyweight Insulated Puffer Jacket',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/5df490db-a560-4754-924d-9a27581f0c23.jpeg',
-    category: 'Premium Winterwear',
-    description: 'High-loft quilted puffer jacket with full-length storm zip, insulated hood, and embroidered NFTYLOGS Greenhouse Gas accountability mark.',
-    objectPosition: 'center 20%',
-  },
-  {
-    id: 'item_nfty_softshell_vest',
-    title: 'NFTYLOGS Provenance Embroidered Softshell Vest',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/ca6c871a-d643-4695-a605-9a357fb26ae3.jpeg',
-    category: 'Official Outerwear',
-    description: 'Sleeveless softshell vest embroidered with the NFTYLOGS provenance mark.',
-    objectPosition: 'center 25%',
-  },
-  {
-    id: 'item_nfty_softshell_vest_back',
-    title: 'NFTYLOGS Disaster Relief Charity Edition Softshell Vest',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/3bf3f794-fcb4-412a-a556-b3289bbebd39.jpeg',
-    category: 'Official Outerwear',
-    description: 'Embroidered with the worldwide extreme weather survivor succour donation mandate and "While..." prompt statement.',
-    objectPosition: 'center 25%',
-  },
-  {
-    id: 'item_nfty_joggers',
-    title: 'NFTYLOGS Premium Embroidered Fleece Joggers',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/66e17346-415e-4f20-9c86-3aa5c4587af6.jpeg',
-    category: 'Loungewear & Bottoms',
-    description: 'Organic heavyweight French terry fleece sweatpants with embroidered NFTYLOGS Vagaries of Greenhouse Gases [GHGs] thigh badge.',
-    objectPosition: 'center 15%',
-  },
-  {
-    id: 'item_nfty_puffer_sleeve',
-    title: 'NFTYLOGS Arm-Badge Puffer Jacket (Sleeve Detail Edition)',
-    licenseeId: 'lic_ghg_official',
-    partnerName: 'NFTYLOGS Official Store',
-    priceCents: null, // price TBC - contact for order
-    imageUrl: '/images/merch/82ccfad7-9e7b-4882-990d-f9805bc52a22.jpeg',
-    category: 'Premium Winterwear',
-    description: 'Close-up sleeve edition showcasing the intricate multi-thread embroidery of the official NFTYLOGS Vagaries of Greenhouse Gases mark.',
-    objectPosition: 'center center',
-  },
-];
+const STORE_NAME = 'NFTYLOGS Official Store';
 
-const GARMENT_OPTIONS = [
-  { id: 'T_SHIRT', label: 'Organic Cotton T-Shirt', supplierCostCents: 2200, priceCents: 2588, baseLca: 290, laborHours: 0.8 },
-  { id: 'PUFF_JACKET', label: 'Recycled Down Puffer Jacket', supplierCostCents: 6500, priceCents: 7647, baseLca: 780, laborHours: 3.0 },
-  { id: 'HOODIE', label: 'Heavyweight Commemorative Hoodie', supplierCostCents: 4200, priceCents: 4941, baseLca: 520, laborHours: 2.0 },
-  { id: 'BACKPACK', label: 'Industrial Canvas Backpack', supplierCostCents: 3800, priceCents: 4471, baseLca: 680, laborHours: 2.2 },
-  { id: 'SCHOOL_BAG', label: 'Student & Youth School Bag', supplierCostCents: 2800, priceCents: 3294, baseLca: 540, laborHours: 1.8 },
-  { id: 'SOCKS', label: 'Performance Technical Socks', supplierCostCents: 1200, priceCents: 1412, baseLca: 120, laborHours: 0.5 },
-  { id: 'HEAVYWEIGHT_HOODIE', label: 'Archival Matchday Hoodie', supplierCostCents: 4200, priceCents: 4941, baseLca: 520, laborHours: 2.0 },
-  { id: 'INSULATED_PUFFER_JACKET', label: 'Extreme Climate Puffer Jacket', supplierCostCents: 6500, priceCents: 7647, baseLca: 780, laborHours: 3.0 },
-  { id: 'STRUCTURED_CAP', label: 'Structured Cotton Cap', supplierCostCents: 1800, priceCents: 2118, baseLca: 210, laborHours: 1.0 },
-];
 
 const THREAD_COLORS = [
   { id: 'SIGNATURE_MAGENTA', label: 'Signature Magenta', hex: '#FF2D8D', previewBg: '#111726' },
@@ -416,7 +312,7 @@ const CharityAllocationCallout: React.FC = () => (
         Registered Charity or Trust?
       </div>
       <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '2px', lineHeight: 1.3 }}>
-        Apply for 15% statutory checkout allocation
+        Apply to receive a share of every payment
       </div>
     </div>
     <Link
@@ -500,7 +396,28 @@ export const MerchStorePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'goal_frenzy'>('catalog');
 
   // Standard Catalog State
-  const [selectedItem, setSelectedItem] = useState<MerchItem>(MERCH_CATALOG[0]);
+  // Products and prices come from the merch catalogue API; checkout is priced on the server.
+  const catalogue = useMerchProducts();
+  const { charityShare } = useSiteFacts();
+  const products = catalogue.status === 'ready' ? catalogue.products : [];
+  const MERCH_CATALOG: MerchItem[] = products
+    .filter((p) => p.kind === 'CATALOGUE' && p.imageUrl)
+    .map((p) => ({
+      id: p.id,
+      title: p.title,
+      partnerName: STORE_NAME,
+      priceCents: p.pricePence,
+      imageUrl: p.imageUrl as string,
+      category: p.category ?? 'Merch',
+      description: p.description ?? '',
+      objectPosition: p.imagePosition ?? undefined,
+    }));
+  const GARMENT_OPTIONS: GarmentOption[] = products
+    .filter((p) => p.kind === 'CUSTOM_GARMENT' && p.pricePence !== null)
+    .map((p) => ({ id: p.id, label: p.title, priceCents: p.pricePence as number, baseLca: p.lcaGrams ?? 0, laborHours: p.laborHours ?? 0 }));
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const setSelectedItem = (item: MerchItem) => setSelectedItemId(item.id);
+  const selectedItem: MerchItem | undefined = MERCH_CATALOG.find((i) => i.id === selectedItemId) ?? MERCH_CATALOG[0];
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [lightboxImage, setLightboxImage] = useState<MerchItem | null>(null);
 
@@ -550,37 +467,24 @@ export const MerchStorePage: React.FC = () => {
     : MERCH_CATALOG.filter((i) => i.category === selectedCategory);
 
   const activeClubName = customClub.trim() ? customClub.trim() : frenzyClub;
-  const activeGarment = GARMENT_OPTIONS.find((g) => g.id === garmentModel) || GARMENT_OPTIONS[0];
+  const activeGarment: GarmentOption | undefined = GARMENT_OPTIONS.find((g) => g.id === garmentModel) || GARMENT_OPTIONS[0];
   const activeThread = THREAD_COLORS.find((t) => t.id === threadColor) || THREAD_COLORS[0];
-  const frenzyGrossCents = activeGarment.priceCents * frenzyQuantity;
-  const frenzyCharityCents = Math.round(frenzyGrossCents * 0.15);
+  const frenzyGrossCents = (activeGarment?.priceCents ?? 0) * frenzyQuantity;
+  const frenzyCharityCents = charityShare ? Math.round((frenzyGrossCents * Number(charityShare)) / 100) : 0;
   const frenzyLicensorCents = frenzyGrossCents - frenzyCharityCents;
 
   // Standard Catalog Stripe Hosted Checkout (cap only - priceCents must be non-null)
   const handleCatalogStripeHostedCheckout = async () => {
-    if (selectedItem.priceCents === null) {
+    if (!selectedItem || selectedItem.priceCents === null) {
       setError('This item is not yet available for direct purchase. Please use the Contact for Order form.');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const session = await api.createCheckoutSession({
-        licenseeId: selectedItem.licenseeId,
-        itemTitle: selectedItem.title,
-        grossAmountCents: selectedItem.priceCents,
-        currency: 'GBP',
-      });
-      if (session?.sessionUrl) {
-        window.location.href = session.sessionUrl;
-      } else {
-        const result = await api.checkout({
-          licenseeId: selectedItem.licenseeId,
-          grossAmountCents: selectedItem.priceCents,
-          checkoutReferenceId: `ref_merch_${Date.now()}`,
-        });
-        setSuccessResult(result);
-      }
+      const session = await api.createCheckoutSession({ productId: selectedItem.id });
+      if (!session?.sessionUrl) throw new Error('Checkout is unavailable right now. Please try again later.');
+      window.location.href = session.sessionUrl;
     } catch (err: any) {
       setError(err.message || 'Failed to initiate Stripe checkout');
     } finally {
@@ -633,15 +537,12 @@ export const MerchStorePage: React.FC = () => {
 
     try {
       const res = await api.checkoutCustomKeepsake({
-        licenseeId: 'lic_ghg_official',
-        garmentModel,
+        garmentModel: activeGarment?.id ?? garmentModel,
         inscribedText: quoteText,
         threadColor,
         placement,
         quantity: frenzyQuantity,
-        unitPriceCents: activeGarment.priceCents,
-        currency: 'GBP',
-        checkoutReferenceId: `frenzy_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        checkoutReferenceId: `frenzy_${crypto.randomUUID()}`,
         isGoalFrenzy: true,
         frenzyClub: activeClubName,
         frenzyOpponent: frenzyOpponent || undefined,
@@ -668,6 +569,16 @@ export const MerchStorePage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (catalogue.status !== 'ready' || !selectedItem || !activeGarment) {
+    return (
+      <main className="merch-state container-x" aria-live="polite">
+        {catalogue.status === 'loading' && <p>Loading the store...</p>}
+        {catalogue.status === 'error' && <p role="alert">The store could not be loaded. Please refresh the page.</p>}
+        {catalogue.status === 'ready' && <p>No products are available right now.</p>}
+      </main>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: 'var(--bg-page)', minHeight: '100vh', color: 'var(--text-main)', position: 'relative', overflow: 'hidden' }}>
@@ -735,7 +646,7 @@ export const MerchStorePage: React.FC = () => {
               margin: 0,
             }}
           >
-            Bespoke apparel and extreme weather survivor support. Unit prices are determined by supplier base production specifications, with an immediate contractual 85% supplier fulfillment / 15% statutory charity split at checkout.
+            Bespoke apparel and extreme weather survivor support. A share of every purchase goes to our charity partners.
           </p>
 
           {/* Segmented Tab Switcher matching portal/login */}
@@ -1079,7 +990,7 @@ export const MerchStorePage: React.FC = () => {
                   Order &amp; ESG Routing
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>
-                  Complete purchase with automated 15% charity split
+                  Complete your purchase securely with Stripe
                 </p>
               </div>
 
@@ -1140,7 +1051,7 @@ export const MerchStorePage: React.FC = () => {
                     </div>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.85rem' }}>Verified GHG Accountability Mark</div>
                     <div style={{ color: 'var(--text-light)', marginTop: '0.25rem', lineHeight: 1.4, fontSize: '0.8rem' }}>
-                      Exact 15% of purchase is automatically routed to verified local environmental restoration and extreme weather relief funds.
+                      {charityShare ? `${charityShare}% of this purchase goes to our charity partners.` : 'A share of this purchase goes to our charity partners.'}
                     </div>
                   </div>
 
@@ -1400,7 +1311,7 @@ export const MerchStorePage: React.FC = () => {
               Sports Milestone Commemoration Studio
             </h2>
             <p style={{ fontSize: '0.925rem', color: 'var(--text-light)', maxWidth: '780px', lineHeight: 1.6, margin: 0 }}>
-              Configure bespoke commemorative club apparel celebrating milestone matches and defining moments. Every garment is crafted from certified organic textiles with automated 15% statutory ESG charitable routing.
+              Configure bespoke commemorative club apparel celebrating milestone matches and defining moments. Every garment is made from certified organic textiles, and a share of every order goes to our charity partners.
             </p>
           </div>
 
@@ -1810,7 +1721,7 @@ export const MerchStorePage: React.FC = () => {
                   Bespoke Commemoration
                 </h2>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>
-                  Custom embroidery with verified 15% ESG charitable routing
+                  Custom embroidery, with a share of every order going to charity
                 </p>
               </div>
 
@@ -1909,7 +1820,7 @@ export const MerchStorePage: React.FC = () => {
                     </div>
                     <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.85rem' }}>Verified GHG Accountability Mark</div>
                     <div style={{ color: 'var(--text-light)', marginTop: '0.25rem', lineHeight: 1.4, fontSize: '0.8rem' }}>
-                      Exact £{(frenzyCharityCents / 100).toFixed(2)} (15%) automatically routed to verified community and reforestation partners.
+                      £{(frenzyCharityCents / 100).toFixed(2)}{charityShare ? ` (${charityShare}%)` : ''} of this order goes to our charity partners.
                     </div>
                   </div>
 

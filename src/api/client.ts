@@ -23,6 +23,7 @@ import type {
 } from './fleet.types';
 import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
+import type { AdminMerchProduct, MerchProduct } from './merch.types';
 
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -67,12 +68,27 @@ export const api = {
     return res.json();
   },
 
-  async createCheckoutSession(params: {
-    licenseeId: string;
-    itemTitle: string;
-    grossAmountCents: number;
-    currency?: string;
-  }) {
+  /** GET /api/merch/products - active merch items and their current prices */
+  async getMerchProducts(): Promise<{ products: MerchProduct[] }> {
+    return apiRequest('/api/merch/products');
+  },
+
+  /** GET /api/admin/merch/products - every product, including inactive ones */
+  async getAdminMerchProducts(token: string): Promise<{ products: AdminMerchProduct[] }> {
+    return apiRequest('/api/admin/merch/products', { token });
+  },
+
+  /** PATCH /api/admin/merch/products/:id */
+  async updateMerchProduct(
+    token: string,
+    id: string,
+    change: { title?: string; description?: string | null; pricePence?: number | null; active?: boolean; sortOrder?: number }
+  ): Promise<{ product: AdminMerchProduct }> {
+    return apiRequest(`/api/admin/merch/products/${encodeURIComponent(id)}`, { token, method: 'PATCH', body: change });
+  },
+
+  /** Starts Stripe Checkout for a catalogue item. The server sets the price from the merch catalogue. */
+  async createCheckoutSession(params: { productId: string; quantity?: number }) {
     const res = await fetch('/api/checkout/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -302,7 +318,6 @@ export const api = {
     threadColor: string;
     placement: string;
     quantity?: number;
-    unitPriceCents?: number;
   }) {
     const res = await fetch('/api/custom-merch/preview', {
       method: 'POST',
@@ -318,14 +333,11 @@ export const api = {
 
   /** POST /api/custom-merch/checkout */
   async checkoutCustomKeepsake(params: {
-    licenseeId: string;
     garmentModel: string;
     inscribedText: string;
     threadColor: string;
     placement: string;
     quantity?: number;
-    unitPriceCents?: number;
-    currency?: string;
     checkoutReferenceId?: string;
     isGoalFrenzy?: boolean;
     frenzyClub?: string;

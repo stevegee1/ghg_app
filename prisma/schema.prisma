@@ -1646,3 +1646,34 @@ model NewsletterSubscriber {
 
   @@index([status])
 }
+
+enum MerchProductKind {
+  CATALOGUE
+  CUSTOM_GARMENT
+  EVENT_SOUVENIR
+}
+
+/// A merch item and its price. Administrators edit prices; checkout reads them on the server.
+/// A null price means the item is sold by enquiry only.
+model MerchProduct {
+  id                String           @id
+  kind              MerchProductKind
+  title             String
+  description       String?
+  category          String?
+  imageUrl          String?
+  imagePosition     String?
+  pricePence        Int?
+  supplierCostPence Int?
+  lcaGrams          Int?
+  laborHours        Float?
+  licenseeId        String
+  currency          String           @default("GBP")
+  active            Boolean          @default(true)
+  sortOrder         Int              @default(0)
+  updatedByUserId   String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+
+  @@index([kind, active, sortOrder])
+}

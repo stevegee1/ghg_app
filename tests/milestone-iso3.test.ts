@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { resolveActiveSplitConfig } from '../src/services/split-config.service';
 import { PrismaClient, Vertical, ConformanceGrade, RiskLevel, VerificationSource, DeliveryType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -221,7 +222,7 @@ describe('Milestone ISO-3: Industrial, Event & Custom Keepsake Scoring Engine', 
   });
 
   describe('3. Custom Milestone Keepsake Studio (Goal/Moment on Apparel)', () => {
-    it('should generate live keepsake preview with 15% charity split and ISO 14067 LCA carbon grams', async () => {
+    it('should generate live keepsake preview priced from the catalogue with ISO 14067 LCA carbon grams', async () => {
       const res = await request(app)
         .post('/api/custom-merch/preview')
         .send({
@@ -235,11 +236,13 @@ describe('Milestone ISO-3: Industrial, Event & Custom Keepsake Scoring Engine', 
 
       expect(res.status).toBe(200);
       const preview = res.body.preview;
-      expect(preview.financialSummary.grossAmountCents).toBe(18000); // 2 * 9000
-      expect(preview.financialSummary.charityGiftCents).toBe(2700); // 15% of 18000
-      expect(preview.financialSummary.charityPercentage).toBe(15);
-      expect(preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(1040); // 520g * 2
-      expect(preview.dualImpactMetrics.artisanLaborHours).toBe(4.0);
+      const garment = await prisma.merchProduct.findUniqueOrThrow({ where: { id: 'HEAVYWEIGHT_HOODIE' } });
+      const split = await resolveActiveSplitConfig(prisma, garment.licenseeId);
+      // The client's £90.00 is ignored; the catalogue price applies.
+      expect(preview.financialSummary.grossAmountCents).toBe(garment.pricePence! * 2);
+      expect(preview.financialSummary.charityPercentage).toBe((10000 - split.royaltyBps) / 100);
+      expect(preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(garment.lcaGrams! * 2);
+      expect(preview.dualImpactMetrics.artisanLaborHours).toBe(garment.laborHours! * 2);
       expect(preview.canvasRenderSpec.threadHex).toBe('#D4AF37');
     });
 
@@ -260,7 +263,11 @@ describe('Milestone ISO-3: Industrial, Event & Custom Keepsake Scoring Engine', 
       expect(res.status).toBe(201);
       expect(res.body.transactionId).toBeDefined();
       expect(res.body.clientSecret).toBe('pi_iso3_mock_secret');
-      expect(res.body.financialSummary.charityGiftCents).toBe(1275); // 15% of 8500
+      const garment = await prisma.merchProduct.findUniqueOrThrow({ where: { id: 'HEAVYWEIGHT_HOODIE' } });
+      expect(res.body.financialSummary.grossAmountCents).toBe(garment.pricePence);
+      const tx = await prisma.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
+      expect(tx.grossAmountCents).toBe(garment.pricePence);
+      expect(tx.licenseeId).toBe(garment.licenseeId);
       expect(res.body.keepsakeSpec.inscribedText).toBe('Sarah & Alex Wedding — 28 August 2026');
 
       // Verify in DB that CustomKeepsakeSpec exists

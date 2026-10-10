@@ -1,163 +1,40 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, VerificationSource, DeliveryType, FulfillmentStatus, TransactionStatus } from '@prisma/client';
+import crypto from 'crypto';
+import { PrismaClient, VerificationSource, DeliveryType, FulfillmentStatus, TransactionStatus, MerchProductKind } from '@prisma/client';
 import { CustomKeepsakeService } from '../services/custom-keepsake.service';
 import { CheckoutService } from '../services/checkout.service';
 import { authenticateToken as verifyJwt } from '../middleware/auth.middleware';
+import { MerchCatalogueError, priceOrder } from '../services/merch-catalogue.service';
+import { resolveActiveSplitConfig } from '../services/split-config.service';
 
 
 export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService: CheckoutService): Router {
   const router = Router();
   const keepsakeService = new CustomKeepsakeService(prisma);
 
-  /**
-   * GET /api/preparation/pricing
-   * Returns official SaaS preparation services pricing schedule under ISO 14001/50001
-   * and ISO 19011:2026 Remote Auditing guidelines.
-   */
-  router.get('/api/preparation/pricing', (_req: Request, res: Response) => {
-    return res.status(200).json({
-      success: true,
-      trademark: 'NFTYLOGS',
-      remoteProtocol: '80% Remote Digital Data Protocol (ISO 19011:2026)',
-      verificationStamp: 'Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A',
-      tiers: [
-        {
-          id: 'TIER_1_READINESS',
-          name: 'Single-Site Remote Readiness',
-          priceGbp: 1250,
-          billingPeriod: 'per assessment',
-          isoAlignment: ['ISO 14001', 'ISO 50001', 'ISO 19011:2026 Annex A'],
-          turnaroundHours: 72,
-        },
-        {
-          id: 'TIER_2_CONTINUOUS',
-          name: 'Continuous Assurance Protocol',
-          priceGbp: 3500,
-          billingPeriod: 'per quarter',
-          isoAlignment: ['ISO 17025', 'ISO 50001', 'ISO 19011:2026', 'UK SECR', 'UAE SCA'],
-          isRecommended: true,
-        },
-        {
-          id: 'TIER_3_GLOBAL',
-          name: 'Enterprise Multi-Jurisdiction Dossier',
-          priceGbp: 8500,
-          billingPeriod: 'per year',
-          isoAlignment: ['UK SECR', 'EU CSRD', 'California SB 253/261', 'UAE Net Zero 2050', 'ISO 14064'],
-        },
-      ],
-    });
-  });
-
-  /**
-   * GET /api/custom-merch/products
-   * Returns available products with base supplier production cost
-   * and automated 15% charity split computation.
-   */
-  router.get('/api/custom-merch/products', (_req: Request, res: Response) => {
-    const products = [
-      {
-        id: 'T_SHIRT',
-        name: 'Organic Cotton T-Shirt',
-        description: '100% GOTS certified organic combed cotton with bespoke embroidery.',
-        baseSupplierCostCents: 2200,
-        retailPriceCents: Math.round(2200 / 0.85),
-        charityGiftCents: Math.round(2200 / 0.85) - 2200,
-        supplierSharePct: 85,
-        charitySharePct: 15,
-        lcaGrams: 290,
-      },
-      {
-        id: 'PUFF_JACKET',
-        name: 'Recycled Down Puffer Jacket',
-        description: 'Post-consumer recycled ripstop with 700 fill ethical down.',
-        baseSupplierCostCents: 6500,
-        retailPriceCents: Math.round(6500 / 0.85),
-        charityGiftCents: Math.round(6500 / 0.85) - 6500,
-        supplierSharePct: 85,
-        charitySharePct: 15,
-        lcaGrams: 780,
-      },
-      {
-        id: 'HOODIE',
-        name: 'Heavyweight Commemorative Hoodie',
-        description: '450gsm cross-grain French terry fleece with high-density gold stitch.',
-        baseSupplierCostCents: 4200,
-        retailPriceCents: Math.round(4200 / 0.85),
-        charityGiftCents: Math.round(4200 / 0.85) - 4200,
-        supplierSharePct: 85,
-        charitySharePct: 15,
-        lcaGrams: 520,
-      },
-      {
-        id: 'BACKPACK',
-        name: 'Industrial Canvas Backpack',
-        description: 'Water-resistant 16oz recycled canvas with padded laptop compartment.',
-        baseSupplierCostCents: 3800,
-        retailPriceCents: Math.round(3800 / 0.85),
-        charityGiftCents: Math.round(3800 / 0.85) - 3800,
-        supplierSharePct: 85,
-        charitySharePct: 15,
-        lcaGrams: 680,
-      },
-      {
-        id: 'SCHOOL_BAG',
-        name: 'Student & Youth School Bag',
-        description: 'Ergonomic dual-compartment school bag with reflective safety trim.',
-        baseSupplierCostCents: 2800,
-        retailPriceCents: Math.round(2800 / 0.85),
-        charityGiftCents: Math.round(2800 / 0.85) - 2800,
-        supplierSharePct: 85,
-        charitySharePct: 15,
-        lcaGrams: 540,
-      },
-      {
-        id: 'SOCKS',
-        name: 'Performance Technical Socks',
-        description: 'Merino wool blend anti-blister technical sports socks (pair).',
-        baseSupplierCostCents: 1200,
-        retailPriceCents: Math.round(1200 / 0.85),
-        charityGiftCents: Math.round(1200 / 0.85) - 1200,
-        supplierSharePct: 85,
-        charitySharePct: 15,
-        lcaGrams: 120,
-      },
-    ];
-
-    return res.status(200).json({
-      success: true,
-      trademark: 'NFTYLOGS',
-      studioName: 'Survivors Donation Keepsake',
-      splitRule: '85% Supplier Production & Fulfillment / 15% Statutory Charity Endowment',
-      products,
-    });
-  });
+  /** Prices a custom garment order from the merch catalogue and the active split. */
+  const priceGarment = async (garmentModel: unknown, quantity: unknown) => {
+    const order = await priceOrder(prisma, { productId: garmentModel, quantity, kind: MerchProductKind.CUSTOM_GARMENT });
+    const split = await resolveActiveSplitConfig(prisma, order.product.licenseeId);
+    return { order, royaltyBps: split.royaltyBps };
+  };
 
   /**
    * POST /api/custom-merch/preview
-   * Generates live canvas embroidery configuration, LCA carbon grams, and 15% charity split.
+   * Generates the embroidery configuration, LCA carbon grams and the price split for a catalogue garment.
    */
-  router.post('/api/custom-merch/preview', (req: Request, res: Response) => {
+  router.post('/api/custom-merch/preview', async (req: Request, res: Response) => {
     try {
-      const {
-        garmentModel,
-        inscribedText,
-        threadColor,
-        placement,
-        quantity,
-        unitPriceCents,
-      } = req.body || {};
-
-      const preview = keepsakeService.generateKeepsakePreview({
-        garmentModel,
-        inscribedText,
-        threadColor,
-        placement,
-        quantity,
-        unitPriceCents,
-      });
-
+      const { garmentModel, inscribedText, threadColor, placement, quantity } = req.body || {};
+      const { order, royaltyBps } = await priceGarment(garmentModel, quantity);
+      const preview = keepsakeService.generateKeepsakePreview(
+        { inscribedText, threadColor, placement, quantity: order.quantity },
+        order.product,
+        royaltyBps
+      );
       return res.status(200).json({ preview });
     } catch (err: any) {
+      if (err instanceof MerchCatalogueError) return res.status(err.status).json({ error: err.message });
       return res.status(400).json({ error: err.message || 'Failed to generate keepsake preview.' });
     }
   });
@@ -171,15 +48,12 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
   router.post('/api/custom-merch/checkout', async (req: Request, res: Response) => {
     try {
       const {
-        licenseeId,
         checkoutReferenceId,
         garmentModel,
         inscribedText,
         threadColor,
         placement,
         quantity = 1,
-        unitPriceCents = 8500,
-        currency = 'GBP',
         // Sports Custom Studio fields
         isGoalFrenzy = false,
         sportType = 'Football',
@@ -195,10 +69,6 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         shippingAddress,
       } = req.body || {};
 
-      if (!licenseeId || typeof licenseeId !== 'string') {
-        return res.status(400).json({ error: 'Invalid input: licenseeId is required.' });
-      }
-
       if (!inscribedText || typeof inscribedText !== 'string') {
         return res.status(400).json({ error: 'Invalid input: inscribedText is required.' });
       }
@@ -207,21 +77,27 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         return res.status(400).json({ error: 'Invalid input: frenzyClub is required for Goal Frenzy orders.' });
       }
 
-      // Generate preview metrics
-      const preview = keepsakeService.generateKeepsakePreview({
-        garmentModel: garmentModel || 'HEAVYWEIGHT_HOODIE',
-        inscribedText,
-        threadColor: threadColor || 'GOLD_METALLIC',
-        placement: placement || 'LEFT_CHEST',
-        quantity,
-        unitPriceCents,
-      });
+      // Price from the catalogue; the request never sets the price or the seller.
+      const { order, royaltyBps } = await priceGarment(garmentModel, quantity);
+      const licenseeId = order.product.licenseeId;
+      const currency = order.product.currency;
+      const preview = keepsakeService.generateKeepsakePreview(
+        {
+          inscribedText,
+          threadColor: threadColor || 'GOLD_METALLIC',
+          placement: placement || 'LEFT_CHEST',
+          quantity: order.quantity,
+        },
+        order.product,
+        royaltyBps
+      );
 
-      const uniqueRef = checkoutReferenceId || `keepsake_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const uniqueRef =
+        typeof checkoutReferenceId === 'string' && checkoutReferenceId.trim() ? checkoutReferenceId.trim() : `keepsake_${crypto.randomUUID()}`;
 
       // 1. Invoke CheckoutService to handle transaction and 15% statutory split
       const checkoutResult = await checkoutService.initiateCheckout({
-        licenseeId: licenseeId.trim(),
+        licenseeId,
         checkoutReferenceId: uniqueRef,
         grossAmountCents: preview.financialSummary.grossAmountCents,
         currency,
@@ -282,7 +158,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       try {
         const itemDesc = frenzyClub ? `${sportType} Keepsake: ${frenzyClub}` : `${sportType} Keepsake`;
         const sessionResult = await checkoutService.createCheckoutSession({
-          licenseeId: licenseeId.trim(),
+          licenseeId,
           itemTitle: `NFTYLOGS Custom Keepsake (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
           grossAmountCents: preview.financialSummary.grossAmountCents,
           currency,
@@ -318,6 +194,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         keepsakeSpec,
       });
     } catch (err: any) {
+      if (err instanceof MerchCatalogueError) return res.status(err.status).json({ error: err.message });
       console.error('[CUSTOM KEEPSAKE CHECKOUT ERROR]', err);
       return res.status(400).json({ error: err.message || 'Failed to initiate custom keepsake checkout.' });
     }
@@ -340,7 +217,6 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         eventName,
         logoDropCount,
         shippingAddress,
-        currency = 'GBP',
       } = req.body || {};
 
       // --- Validation ---
@@ -371,38 +247,22 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         return res.status(400).json({ error: 'shippingAddress object is required (street, city, country, postalCode).' });
       }
 
-      // --- Pricing: £5.00 per logo drop unit ---
-      const unitPriceCents = 500; // £5.00
-      const grossAmountCents = count * unitPriceCents;
-      const licensorCents = Math.round((grossAmountCents * 8500) / 10000); // 85%
-      const charityCents = grossAmountCents - licensorCents; // 15%
-
-      // --- Find platform licensee ---
-      let targetLicensee = await prisma.licensee.findFirst({
-        where: { stripeConnectedAccountId: { not: null } },
-      });
-
-      if (!targetLicensee) {
-        targetLicensee = await prisma.licensee.upsert({
-          where: { id: 'lic_ghg_official' },
-          update: {},
-          create: {
-            id: 'lic_ghg_official',
-            name: 'NFTYLOGS Official Store',
-            vertical: 'B2C_SPORTS_MERCH' as any,
-            royaltyBps: 8500,
-            pricePerDropCents: 500,
-            stripeConnectedAccountId: process.env.STRIPE_PLATFORM_ACCOUNT_ID || null,
-          },
-        });
+      // --- Pricing: per-unit price from the merch catalogue, split from the active configuration ---
+      const product = await prisma.merchProduct.findUnique({ where: { id: 'EVENT_LOGO_DROP' } });
+      if (!product || !product.active || product.kind !== MerchProductKind.EVENT_SOUVENIR || product.pricePence === null) {
+        return res.status(409).json({ error: 'Event souvenir orders are not available right now.' });
       }
+      const currency = product.currency;
+      const grossAmountCents = count * product.pricePence;
+      const split = await resolveActiveSplitConfig(prisma, product.licenseeId);
+      const licensorCents = Math.round((grossAmountCents * split.royaltyBps) / 10000);
+      const charityCents = grossAmountCents - licensorCents;
 
       // --- Generate order number ---
       const year = new Date().getFullYear();
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      const suffix = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      const suffix = Array.from({ length: 5 }, () => chars[crypto.randomInt(chars.length)]).join('');
       const orderNumber = `GHG-ORD-${year}-${suffix}`;
-      const refId = `souvenir_${Date.now()}_${suffix.toLowerCase()}`;
 
       // --- Create SouvenirOrder record in DB (pre-payment) ---
       const souvenirOrder = await prisma.souvenirOrder.create({
@@ -429,7 +289,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       try {
         const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
         const sessionResult = await checkoutService.createCheckoutSession({
-          licenseeId: targetLicensee.id,
+          licenseeId: product.licenseeId,
           itemTitle: `NFTYLOGS Event Souvenir Logo Drop (${count} units) - ${eventName.trim()}`,
           grossAmountCents,
           currency,

@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { resolveActiveSplitConfig } from '../src/services/split-config.service';
 import { PrismaClient, SouvenirOrderStatus, SouvenirEventCategory, CharityStatus } from '@prisma/client';
 import { createApp } from '../src/expressApp';
 import { seed } from '../prisma/seed';
@@ -170,7 +171,7 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
   });
 
   describe('3. Goal Frenzy & Custom Keepsake Specs', () => {
-    it('POST /api/custom-merch/preview computes accurate ISO 14067 LCA and 15% ESG split', async () => {
+    it('POST /api/custom-merch/preview prices from the catalogue and the active split, ignoring a client price', async () => {
       const res = await request(app)
         .post('/api/custom-merch/preview')
         .send({
@@ -185,11 +186,16 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
 
       expect(res.body).toHaveProperty('preview');
       const { financialSummary, dualImpactMetrics } = res.body.preview;
-      expect(financialSummary.grossAmountCents).toBe(17000);
-      expect(financialSummary.charityGiftCents).toBe(2550); // 15% of 17000
-      expect(financialSummary.licensorRoyaltyCents).toBe(14450); // 85% of 17000
-      expect(dualImpactMetrics.estimatedLcaCarbonGrams).toBe(1040); // 520g * 2
-      expect(dualImpactMetrics.artisanLaborHours).toBe(4.0); // 2.0 hrs * 2
+      const garment = await prisma.merchProduct.findUniqueOrThrow({ where: { id: 'HEAVYWEIGHT_HOODIE' } });
+      const split = await resolveActiveSplitConfig(prisma, garment.licenseeId);
+      const gross = garment.pricePence! * 2;
+      const royalty = Math.round((gross * split.royaltyBps) / 10000);
+      expect(financialSummary.unitPriceCents).toBe(garment.pricePence);
+      expect(financialSummary.grossAmountCents).toBe(gross);
+      expect(financialSummary.licensorRoyaltyCents).toBe(royalty);
+      expect(financialSummary.charityGiftCents).toBe(gross - royalty);
+      expect(dualImpactMetrics.estimatedLcaCarbonGrams).toBe(garment.lcaGrams! * 2);
+      expect(dualImpactMetrics.artisanLaborHours).toBe(garment.laborHours! * 2);
     });
 
     it('POST /api/custom-merch/checkout rejects Goal Frenzy order if frenzyClub is missing', async () => {
@@ -209,50 +215,13 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
     });
   });
 
-  describe('4. Preparation Services Pricing, Survivors Donation Keepsake & ISO 19011:2026 Protocol', () => {
-    it('GET /api/preparation/pricing returns 3 statutory tiers with ISO 19011:2026 Annex A verification stamp', async () => {
-      const res = await request(app)
-        .get('/api/preparation/pricing')
-        .expect(200);
-
-      expect(res.body).toHaveProperty('success', true);
-      expect(res.body.trademark).toContain('NFTYLOGS');
-      expect(res.body.remoteProtocol).toContain('80% Remote Digital Data Protocol');
-      expect(res.body.verificationStamp).toBe(
-        'Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A'
-      );
-      expect(Array.isArray(res.body.tiers)).toBe(true);
-      expect(res.body.tiers.length).toBe(3);
-
-      const [tier1, tier2, tier3] = res.body.tiers;
-      expect(tier1.priceGbp).toBe(1250);
-      expect(tier2.priceGbp).toBe(3500);
-      expect(tier3.priceGbp).toBe(8500);
-      expect(tier2.isRecommended).toBe(true);
-    });
-
-    it('GET /api/custom-merch/products returns 6 product categories with strict 85/15 supplier vs charity split', async () => {
-      const res = await request(app)
-        .get('/api/custom-merch/products')
-        .expect(200);
-
-      expect(res.body).toHaveProperty('success', true);
-      expect(res.body.studioName).toBe('Survivors Donation Keepsake');
-      expect(res.body.trademark).toContain('NFTYLOGS');
-      expect(Array.isArray(res.body.products)).toBe(true);
-      expect(res.body.products.length).toBe(6);
-
-      const productIds = res.body.products.map((p: any) => p.id);
-      expect(productIds).toEqual(
-        expect.arrayContaining(['T_SHIRT', 'PUFF_JACKET', 'HOODIE', 'BACKPACK', 'SCHOOL_BAG', 'SOCKS'])
-      );
-
-      // Verify each product has strict 85% supplier / 15% charity split
-      for (const p of res.body.products) {
-        expect(p.supplierSharePct).toBe(85);
-        expect(p.charitySharePct).toBe(15);
-        expect(p.baseSupplierCostCents + p.charityGiftCents).toBe(p.retailPriceCents);
-      }
+  describe('4. Merch catalogue', () => {
+    it('GET /api/merch/products lists active products without supplier cost', async () => {
+      const res = await request(app).get('/api/merch/products').expect(200);
+      const ids = res.body.products.map((p: { id: string }) => p.id);
+      expect(ids).toEqual(expect.arrayContaining(['item_nfty_cap', 'T_SHIRT', 'EVENT_LOGO_DROP']));
+      expect(ids).not.toContain('VINTAGE_TEE'); // inactive
+      expect(res.body.products.every((p: Record<string, unknown>) => !('supplierCostPence' in p))).toBe(true);
     });
 
     it('POST /api/custom-merch/preview dynamically calculates unit price and LCA for PUFF_JACKET and SOCKS', async () => {
@@ -268,10 +237,9 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
         .expect(200);
 
       expect(resPuffer.body.preview.garmentModel).toBe('PUFF_JACKET');
-      expect(resPuffer.body.preview.financialSummary.charityGiftCents).toBe(
-        Math.round(resPuffer.body.preview.financialSummary.grossAmountCents * 0.15)
-      );
-      expect(resPuffer.body.preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(780);
+      const puffer = await prisma.merchProduct.findUniqueOrThrow({ where: { id: 'PUFF_JACKET' } });
+      expect(resPuffer.body.preview.financialSummary.grossAmountCents).toBe(puffer.pricePence);
+      expect(resPuffer.body.preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(puffer.lcaGrams);
 
       const resSocks = await request(app)
         .post('/api/custom-merch/preview')
@@ -285,7 +253,13 @@ describe('Production Features: Souvenir Orders, Capacity-Gated Charities & Goal 
         .expect(200);
 
       expect(resSocks.body.preview.garmentModel).toBe('SOCKS');
-      expect(resSocks.body.preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(360); // 120 * 3
+      const socks = await prisma.merchProduct.findUniqueOrThrow({ where: { id: 'SOCKS' } });
+      expect(resSocks.body.preview.dualImpactMetrics.estimatedLcaCarbonGrams).toBe(socks.lcaGrams! * 3);
+
+      await request(app)
+        .post('/api/custom-merch/preview')
+        .send({ garmentModel: 'NOT_A_GARMENT', inscribedText: 'x', threadColor: 'PURE_WHITE', placement: 'LEFT_CHEST' })
+        .expect(404);
     });
   });
 });

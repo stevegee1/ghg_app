@@ -10944,6 +10944,73 @@ a:not([class]):hover {
   }
 }
 
+/* Merch store loading and empty states */
+.merch-state {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+  color: var(--text-muted);
+}
+
+/* Admin: merch prices */
+.merch-admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.merch-admin-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.merch-admin-row:last-child {
+  border-bottom: none;
+}
+
+.merch-admin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.merch-admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.merch-admin-field input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.merch-admin-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: 0.85rem;
+}
+
+.merch-admin-row > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .merch-admin-row {
+    grid-template-columns: minmax(0, 2fr) minmax(120px, 1fr) auto auto;
+  }
+}
+
 /* Checkout page: shown when there is no order to display */
 .checkout-message {
   background: var(--bg-card);
