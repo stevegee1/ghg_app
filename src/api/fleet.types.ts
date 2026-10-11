@@ -372,3 +372,22 @@ export interface FleetWeatherSummary {
     highWindHours: string;
   }[];
 }
+
+export interface FleetAssetFinance {
+  assetId: string;
+  currency: string;
+  acquisitionCostPence: number;
+  acquisitionDate: string;
+  expectedLifeYears: string;
+  expectedLifeHours: string | null;
+  residualValuePence: number;
+}
+
+export interface FleetAssetFinanceRow {
+  assetId: string;
+  assetTag: string;
+  name: string;
+  category: string;
+  active: boolean;
+  finance: FleetAssetFinance | null;
+}

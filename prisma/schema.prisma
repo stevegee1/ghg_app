@@ -1354,6 +1354,7 @@ model FleetAsset {
   readings  FleetReading[]
   projectAssignments FleetProjectAsset[]
   weatherExposures   FleetWeatherExposure[]
+  finance            FleetAssetFinance?
   snapshots FleetTelemetrySnapshot[]
   faults    FleetFaultCode[]
   bindings  FleetDeviceBinding[]
@@ -1993,4 +1994,22 @@ model FleetWeatherExposure {
 
   @@unique([assetId, date])
   @@index([licenseeId, date])
+}
+
+/// What a machine cost and how long it is expected to last, for value and ownership cost estimates.
+model FleetAssetFinance {
+  id                   String     @id @default(cuid())
+  licenseeId           String
+  assetId              String     @unique
+  asset                FleetAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  currency             String
+  acquisitionCostPence BigInt
+  acquisitionDate      DateTime   @db.Date
+  expectedLifeYears    Decimal    @db.Decimal(5, 2)
+  /// Optional: expected working life in operating hours; when set, base depreciation follows hours run
+  expectedLifeHours    Decimal?   @db.Decimal(10, 1)
+  residualValuePence   BigInt
+  updatedAt            DateTime   @default(now()) @updatedAt
+
+  @@index([licenseeId])
 }

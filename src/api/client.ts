@@ -8,6 +8,8 @@ import type {
   FleetCostRun,
   FleetWeatherSummary,
   WeatherThresholdSet,
+  FleetAssetFinance,
+  FleetAssetFinanceRow,
   FleetAssetImportResult,
   FleetAssetInput,
   FleetEstimate,
@@ -1271,6 +1273,17 @@ export const api = {
   },
   async recomputeWeather(token: string, from: string, to: string): Promise<{ machineDays: number; skipped: string | null }> {
     return apiRequest('/api/admin/weather/recompute', { token, method: 'POST', body: { from, to } });
+  },
+
+  async listFleetFinance(token: string): Promise<{ assets: FleetAssetFinanceRow[]; defaultCurrency: string }> {
+    return apiRequest('/api/fleet/finance', { token });
+  },
+  async setFleetFinance(
+    token: string,
+    assetId: string,
+    body: { currency: string; acquisitionCostPence: number; acquisitionDate: string; expectedLifeYears: string; expectedLifeHours?: string; residualValuePence: number }
+  ): Promise<{ finance: FleetAssetFinance }> {
+    return apiRequest(`/api/fleet/finance/${encodeURIComponent(assetId)}`, { token, method: 'PUT', body });
   },
 
   async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {
