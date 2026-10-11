@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { createApp } from '../src/expressApp';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 const app = createApp();

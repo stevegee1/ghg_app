@@ -6,9 +6,9 @@ import { createApp } from './expressApp';
 import { scheduleReconciliationJob } from './jobs/reconcile.job';
 import { scheduleFleetRetentionJob } from './jobs/fleet-retention.job';
 import { LOCATION_RETENTION_DAYS } from './services/fleet/fleet-retention.service';
-import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
-import { PortalRole } from '@prisma/client';
+import { Vertical } from '@prisma/client';
+import { syncFrameworkRegistry } from './services/framework-registry';
+import { ensureAdministrator } from './services/admin-bootstrap.service';
 import { validateAssuranceFeeConfig } from './services/assurance-fee.service';
 import { validateFileStorage } from './services/file-storage.service';
 import { validateSecretBoxKey } from './services/secret-box.service';
@@ -115,8 +115,8 @@ async function main() {
     }
   }
 
-  // 2. Ensure the platform licensee exists and settles to the configured platform Stripe account.
-  // Charities and split configurations are managed by administrators and are never seeded here.
+  // 2. Platform records that every deployment needs. Nothing here is sample data: the platform store
+  // licensee, the compliance framework registry shipped with this release, and the administrator.
   try {
     await prisma.licensee.upsert({
       where: { id: PLATFORM_LICENSEE_ID },
@@ -124,91 +124,34 @@ async function main() {
       create: {
         id: PLATFORM_LICENSEE_ID,
         name: 'NFTYLOGS Official Store',
-        vertical: 'B2C_SPORTS_MERCH' as any,
-        royaltyBps: 8500,
-        pricePerDropCents: 500,
+        vertical: Vertical.B2C_SPORTS_MERCH,
         stripeConnectedAccountId: getPlatformStripeAccountId(),
       },
     });
+  } catch (err) {
+    console.error('FATAL: The platform store record could not be prepared.', err);
+    process.exit(1);
+  }
 
-    // 3. Ensure Lead Auditor / Administrator account exists (Google SaaS Standard)
-    const isProd = process.env.NODE_ENV === 'production';
-    const adminEmail = process.env.ADMIN_EMAIL || (isProd ? 'admin@ghglogodrop.com' : 'admin@ghglogodrop.com');
-    let adminPassword = process.env.ADMIN_PASSWORD;
-    let generatedOneTimeBootstrap = false;
+  try {
+    await syncFrameworkRegistry(prisma);
+  } catch (err) {
+    console.error(`FATAL: The compliance framework registry could not be synced. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
 
-    if (!adminPassword) {
-      if (isProd) {
-        // Google Cloud / Workspace Standard: Generate high-entropy CSPRNG bootstrap secret
-        adminPassword = crypto.randomBytes(18).toString('base64url') + '!A9';
-        generatedOneTimeBootstrap = true;
-      } else {
-        adminPassword = 'LocalDevPassword123!';
-      }
-    } else if (isProd && adminPassword.length < 14) {
-      console.warn('⚠️  [SECURITY AUDIT WARNING] ADMIN_PASSWORD should be at least 14 characters long according to NIST SP 800-63B standards.');
-    }
+  try {
+    const admin = await ensureAdministrator(prisma);
+    if (admin.action !== 'unchanged') console.log(`[INFO] Administrator ${admin.action}: ${admin.email}`);
+  } catch (err) {
+    console.error(`FATAL: ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
 
-    const saltRounds = isProd ? 12 : 10;
-    const passwordHash = await bcrypt.hash(adminPassword, saltRounds);
-
-    try {
-      const existingByEmail = await prisma.portalUser.findUnique({
-        where: { email: adminEmail },
-      });
-
-      if (existingByEmail) {
-        await prisma.portalUser.update({
-          where: { id: existingByEmail.id },
-          data: {
-            role: PortalRole.ADMIN,
-            passwordHash,
-          },
-        });
-      } else {
-        const existingById = await prisma.portalUser.findUnique({
-          where: { id: 'usr_admin_001' },
-        });
-
-        if (existingById) {
-          await prisma.portalUser.update({
-            where: { id: 'usr_admin_001' },
-            data: {
-              email: adminEmail,
-              role: PortalRole.ADMIN,
-              passwordHash,
-            },
-          });
-        } else {
-          await prisma.portalUser.create({
-            data: {
-              id: 'usr_admin_001',
-              email: adminEmail,
-              passwordHash,
-              role: PortalRole.ADMIN,
-            },
-          });
-        }
-      }
-
-      if (generatedOneTimeBootstrap) {
-        console.log('════════════════════════════════════════════════════════════════════════════');
-        console.log('🔐 [ENTERPRISE BOOTSTRAP] Production Lead Auditor Initialized via CSPRNG:');
-        console.log(`   Admin Email:    ${adminEmail}`);
-        console.log(`   One-Time Token: ${adminPassword}`);
-        console.log('   Action:         Set ADMIN_PASSWORD in Railway Variables to pin your own.');
-        console.log('════════════════════════════════════════════════════════════════════════════');
-      } else {
-        console.log(`✅ Production Administrator account verified for: ${adminEmail}`);
-      }
-    } catch (adminErr: any) {
-      console.warn('⚠️  [ADMIN BOOTSTRAP WARNING] Non-blocking admin init notice:', adminErr?.message || adminErr);
-    }
-
+  try {
     const licenseeCount = await prisma.licensee.count();
     const transactionCount = await prisma.transaction.count();
     console.log(`[INFO] Database connected: ${licenseeCount} Licensees, ${transactionCount} Transactions`);
-    console.log(`[INFO] Default Admin user initialized: ${adminEmail}`);
 
     scheduleFleetRetentionJob(prisma);
     console.log(`[INFO] Fleet location retention scheduled: ${LOCATION_RETENTION_DAYS} days.`);

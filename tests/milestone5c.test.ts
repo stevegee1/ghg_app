@@ -4,7 +4,7 @@ import { PrismaClient, VerificationSource, DeliveryType } from '@prisma/client';
 import { CheckoutService } from '../src/services/checkout.service';
 import { resolveActiveSplitConfig, SplitConfigMissingError } from '../src/services/split-config.service';
 import { createApp } from '../src/expressApp';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 

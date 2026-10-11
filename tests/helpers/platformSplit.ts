@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { seed } from '../../prisma/seed';
+import { seed } from '../fixtures/sample-data';
 
 /**
  * Ensures an active platform-default split configuration backed by ACTIVE charity rows exists.

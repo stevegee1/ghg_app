@@ -5,7 +5,7 @@ import { CheckoutService } from '../src/services/checkout.service';
 import { computeCharityAllocations, getOrComputeDefaultCharityAllocations } from '../src/services/charity-allocation.service';
 import { createApp } from '../src/expressApp';
 import { runReconciliation } from '../src/jobs/reconcile.job';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 

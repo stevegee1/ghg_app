@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { resolveStorageKey } from '../src/services/file-storage.service';
-import { seedFrameworks } from '../prisma/seeds/framework-seed';
+import { syncFrameworkRegistry as seedFrameworks } from '../src/services/framework-registry';
 import { grantPipelineAccess } from './helpers/pipelineAccess';
 
 const prisma = new PrismaClient();

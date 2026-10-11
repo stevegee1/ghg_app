@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 import { PrismaClient } from '@prisma/client';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 

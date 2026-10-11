@@ -28,7 +28,7 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
-import { seedFrameworks } from '../prisma/seeds/framework-seed';
+import { syncFrameworkRegistry as seedFrameworks } from '../src/services/framework-registry';
 
 const prisma = new PrismaClient();
 

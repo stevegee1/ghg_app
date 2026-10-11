@@ -6,7 +6,7 @@ import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { getCertificateAggregateData } from '../src/services/certificate.service';
 import { runWithRls } from '../src/db/rls';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 const app = createApp();

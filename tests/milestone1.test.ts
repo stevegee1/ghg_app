@@ -1,6 +1,6 @@
 import { PrismaClient, VerificationSource, TransactionStatus, DeliveryType } from '@prisma/client';
 import { TransactionService } from '../src/services/transaction.service';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 const transactionService = new TransactionService(prisma);

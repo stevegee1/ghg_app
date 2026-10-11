@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { questionSetHash } from '../src/services/framework-version.service';
-import { FrameworkSeedRecord, PublishedVersionChangedError, seedFrameworks } from '../prisma/seeds/framework-seed';
+import { FrameworkSeedRecord, PublishedVersionChangedError, syncFrameworkRegistry as seedFrameworks } from '../src/services/framework-registry';
 
 const prisma = new PrismaClient();
 const app = createApp();

@@ -1,7 +1,8 @@
 /**
- * framework-seed.ts
+ * framework-registry.ts
  *
- * Seeds the DB-backed framework registry:
+ * Compliance framework reference data that ships with each release and is synced at startup
+ * (not sample data). Keeps the DB-backed framework registry in step with this file:
  *   WorkflowFramework  - one row per compliance standard
  *   WorkflowQuestion   - one row per question per standard
  *
@@ -17,7 +18,7 @@
  */
 
 import { PrismaClient, WorkflowType, WorkflowAnswerType } from '@prisma/client';
-import { questionSetHash } from '../../src/services/framework-version.service';
+import { questionSetHash } from './framework-version.service';
 
 export interface FrameworkVersionSeed {
   /** Our version label, e.g. "2026.1". Never reuse a label for different questions. */
@@ -470,8 +471,8 @@ export class PublishedVersionChangedError extends Error {
  * questions in the database differ from this file, seeding stops. To change a standard, give the
  * framework a new version label and new question ids; earlier versions stay as they are.
  */
-export async function seedFrameworks(prisma: PrismaClient, data: FrameworkSeedRecord[] = FRAMEWORK_SEED_DATA): Promise<void> {
-  console.log('[SEED] Seeding framework registry...');
+export async function syncFrameworkRegistry(prisma: PrismaClient, data: FrameworkSeedRecord[] = FRAMEWORK_SEED_DATA): Promise<void> {
+  console.log('[FRAMEWORKS] Syncing the framework registry...');
 
   for (const fw of data) {
     const { questions, version: declared, ...frameworkFields } = fw;
@@ -509,7 +510,7 @@ export async function seedFrameworks(prisma: PrismaClient, data: FrameworkSeedRe
       if (!existing.contentHash) {
         await prisma.workflowFrameworkVersion.update({ where: { id: existing.id }, data: { contentHash: storedHash } });
       }
-      console.log(`[SEED]   ${fw.code} ${meta.version}: published, unchanged`);
+      console.log(`[FRAMEWORKS]   ${fw.code} ${meta.version}: published, unchanged`);
       continue;
     }
 
@@ -534,8 +535,8 @@ export async function seedFrameworks(prisma: PrismaClient, data: FrameworkSeedRe
         },
       },
     });
-    console.log(`[SEED]   ${fw.code} ${meta.version}: published with ${questions.length} questions`);
+    console.log(`[FRAMEWORKS]   ${fw.code} ${meta.version}: published with ${questions.length} questions`);
   }
 
-  console.log(`[SEED] Framework registry complete: ${data.length} frameworks`);
+  console.log(`[FRAMEWORKS] Framework registry complete: ${data.length} frameworks`);
 }

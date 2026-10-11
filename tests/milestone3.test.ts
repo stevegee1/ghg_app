@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { PrismaClient, VerificationSource } from '@prisma/client';
 import { createApp } from '../src/expressApp';
 import { CheckoutService } from '../src/services/checkout.service';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 

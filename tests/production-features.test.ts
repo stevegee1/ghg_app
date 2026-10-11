@@ -2,7 +2,7 @@ import request from 'supertest';
 import { resolveActiveSplitConfig } from '../src/services/split-config.service';
 import { PrismaClient, SouvenirOrderStatus, SouvenirEventCategory, CharityStatus } from '@prisma/client';
 import { createApp } from '../src/expressApp';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 

@@ -5,7 +5,7 @@ import { CheckoutService } from '../src/services/checkout.service';
 import { TransactionService } from '../src/services/transaction.service';
 import { generateCertificatePdf, getCertificateAggregateData } from '../src/services/certificate.service';
 import { createApp } from '../src/expressApp';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 

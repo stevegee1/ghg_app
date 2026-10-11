@@ -1,13 +1,12 @@
-import 'dotenv/config';
 import { PrismaClient, Vertical, TransactionStatus, VerificationSource, PortalRole, DeliveryType, CharityStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { seedFrameworks } from './seeds/framework-seed';
+import { syncFrameworkRegistry } from '../../src/services/framework-registry';
 
 const prisma = new PrismaClient();
 
 /**
- * Development and test fixtures only: sample companies, users and test-only B2B keys whose plain
- * values are in this file. Never run against production.
+ * Test fixtures only: sample companies, users, transactions and test-only B2B keys whose plain
+ * values are in this file. Used by the test suite; never run against any deployed database.
  */
 export async function seed() {
   if (process.env.NODE_ENV === 'production') {
@@ -32,7 +31,7 @@ export async function seed() {
   }
 
   // Framework registry (idempotent - safe on every deploy)
-  await seedFrameworks(prisma);
+  await syncFrameworkRegistry(prisma);
 
   // 0. Seed Charities
   const charitiesData = [
@@ -404,15 +403,4 @@ export async function seed() {
   }
 
   console.log('Seeding completed successfully.');
-}
-
-if (require.main === module) {
-  seed()
-    .catch((e) => {
-      console.error(e);
-      process.exit(1);
-    })
-    .finally(async () => {
-      await prisma.$disconnect();
-    });
 }

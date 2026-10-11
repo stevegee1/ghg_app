@@ -21,7 +21,8 @@ Enterprise compliance SaaS. Production code only. Every change must be shippable
 - Server dev: `npm run dev`   Client dev: `npm run frontend`
 - Typecheck: `npx tsc --noEmit -p tsconfig.json`
 - Test: `npm test`   Build: `npm run build`
-- Migrate: `npm run migrate`   Seed: `npm run seed`
+- Migrate: `npm run migrate`. There is no seed: sample data lives only in tests/fixtures, and
+  compliance frameworks are reference data in src/services/framework-registry.ts, synced at startup.
 
 ## Definition of done (every task, no exceptions)
 1. Typecheck passes with zero errors. Paste the output.

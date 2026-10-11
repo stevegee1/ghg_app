@@ -1,4 +1,4 @@
-import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, FulfillmentStatus } from '@prisma/client';
+import { PrismaClient, TransactionStatus, VerificationSource, DeliveryType, FulfillmentStatus, Vertical } from '@prisma/client';
 import crypto from 'crypto';
 import Stripe from 'stripe';
 import { TransactionService } from './transaction.service';
@@ -55,9 +55,7 @@ export class CheckoutService {
           data: {
             id: PLATFORM_LICENSEE_ID,
             name: 'NFTYLOGS Official Store',
-            vertical: 'B2C_SPORTS_MERCH' as any,
-            royaltyBps: 8500,
-            pricePerDropCents: 500,
+            vertical: Vertical.B2C_SPORTS_MERCH,
             stripeConnectedAccountId: getPlatformStripeAccountId(),
           },
         });

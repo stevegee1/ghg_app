@@ -3,7 +3,7 @@ import { PrismaClient, PeriodType, ReportSource } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { createApp } from '../src/expressApp';
-import { seed } from '../prisma/seed';
+import { seed } from './fixtures/sample-data';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
 const prisma = new PrismaClient();
