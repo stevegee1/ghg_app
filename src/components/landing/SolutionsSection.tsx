@@ -68,7 +68,7 @@ export const SolutionsSection: React.FC<{ charityShare: string | null }> = ({ ch
       <div className="container-x">
         <header className="landing-section-head">
           <p className="landing-eyebrow">What we do</p>
-          <h2 id="solutions-title">Four solutions, one platform</h2>
+          <h2 id="solutions-title">Different solutions, one platform</h2>
           <p>Start with the one you need now. Each runs on its own, and you can add the others when you are ready.</p>
         </header>
         <div className="landing-solutions">
