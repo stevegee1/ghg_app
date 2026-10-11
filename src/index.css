@@ -912,9 +912,8 @@ h4 {
   }
 }
 
-/* Small phones: drop the Website link and the Console badge so the account button stays on screen */
+/* Small phones: drop the Console badge so the account button stays on screen */
 @media (max-width: 480px) {
-  .navbar-console-mode .btn-audit-cta,
   .navbar-console-mode .console-mode-badge {
     display: none;
   }

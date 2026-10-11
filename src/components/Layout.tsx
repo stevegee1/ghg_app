@@ -289,16 +289,6 @@ export const Layout: React.FC = () => {
           <div className="navbar-actions-desktop">
             {isConsoleView ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <Link
-                  to="/"
-                  className="btn-audit-cta"
-                  style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem' }}
-                  title="View Public Website"
-                >
-                  <span>Website</span>
-                  <span>↗</span>
-                </Link>
-
                 {/* Google Account Profile Button */}
                 <div className="google-account-container" ref={accountMenuRef}>
                   <button
@@ -386,6 +376,9 @@ export const Layout: React.FC = () => {
                             </NavLink>
                           </>
                         )}
+                        <Link to="/" className="google-popover-link" onClick={() => setAccountMenuOpen(false)}>
+                          <span>Go to website</span>
+                        </Link>
                       </div>
 
                       <div className="google-popover-footer">
