@@ -38,6 +38,7 @@ import { createAnchorRouter } from './routes/anchor.route';
 import { createAnchorVerifyRouter } from './routes/anchor-verify.route';
 import { createScope3Router } from './routes/scope3.route';
 import { createWeatherRouter } from './routes/weather.route';
+import { createMcpRouter } from './routes/mcp.route';
 import { createAssessmentRouter } from './routes/assessment.route';
 import { createPreparationChecklistRouter } from './routes/preparation-checklist.route';
 import { CheckoutService } from './services/checkout.service';
@@ -197,6 +198,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createAnchorVerifyRouter(prisma));
   app.use(createScope3Router(prisma));
   app.use(createWeatherRouter(prisma));
+  app.use(createMcpRouter(prisma));
   app.use(createAssessmentRouter(prisma));
   app.use(createPreparationChecklistRouter(prisma));
 

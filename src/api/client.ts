@@ -1304,6 +1304,10 @@ export const api = {
     return apiRequest<{ set: { id: string; version: string } }>('/api/admin/wear-coefficients', { token, method: 'POST', body });
   },
 
+  async getMcpLog(token: string): Promise<{ entries: { id: string; method: string; tool: string | null; ok: boolean; error: string | null; createdAt: string }[] }> {
+    return apiRequest('/api/fleet/mcp-log', { token });
+  },
+
   async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {
     return apiRequest('/api/fleet/assets', { token });
   },

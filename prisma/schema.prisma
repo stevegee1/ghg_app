@@ -2059,3 +2059,19 @@ model FleetAssetValuation {
 
   @@index([licenseeId, assetId, createdAt])
 }
+
+/// Every request an AI client makes to the MCP server: which key, which method or tool, the arguments
+/// and whether it succeeded. Kept for the client's own audit trail.
+model McpQueryLog {
+  id         String   @id @default(cuid())
+  licenseeId String
+  apiKeyId   String
+  method     String
+  tool       String?
+  arguments  Json?
+  ok         Boolean
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([licenseeId, createdAt])
+}

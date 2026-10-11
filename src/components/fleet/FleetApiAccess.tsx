@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { FleetApiKeyRecord, FleetApiScope } from '../../api/fleet.types';
 import { formatDate } from './fleetFormat';
+import { FleetMcpPanel } from './FleetMcpPanel';
 
 const SCOPES: { id: FleetApiScope; label: string; help: string }[] = [
   { id: 'telemetry:write', label: 'Send telemetry', help: 'Post machine snapshots from your systems or telematics bridge.' },
@@ -194,6 +195,8 @@ export const FleetApiAccess: React.FC<{ token: string }> = ({ token }) => {
           <code>{example}</code>
         </pre>
       </div>
+
+      <FleetMcpPanel token={token} />
     </div>
   );
 };
