@@ -119,7 +119,9 @@ export const AdminPage: React.FC = () => {
 
   // Split configuration state
   const [history, setHistory] = useState<any[]>([]);
-  const [royaltyBps, setRoyaltyBps] = useState<number>(8500); // 85% default
+  // Loaded from the active configuration; null until one exists or the administrator enters a value.
+  const [royaltyBps, setRoyaltyBps] = useState<number | null>(null);
+  const bps = royaltyBps ?? 0;
   const [licenseeId, setLicenseeId] = useState<string>(''); // empty = platform default
   const [availableLicensees, setAvailableLicensees] = useState<Array<{ id: string; name: string; vertical?: string }>>([]);
 
@@ -196,14 +198,14 @@ export const AdminPage: React.FC = () => {
       try {
         const [res, charitiesRes] = await Promise.all([
           api.getSplitConfigHistory(token, licenseeId || undefined),
-          api.getActiveCharities().catch(() => ({ charities: [] })),
+          api.getActiveCharities(),
         ]);
         const list = Array.isArray(res) ? res : (res?.history || []);
         if (isMounted) {
           setHistory(list);
           const activeCfg = list.find((c: any) => c.isActive) || list[0];
           if (activeCfg && Array.isArray(activeCfg.charityAllocationBps) && activeCfg.charityAllocationBps.length > 0) {
-            setRoyaltyBps(activeCfg.royaltyBps ?? 8500);
+            setRoyaltyBps(typeof activeCfg.royaltyBps === 'number' ? activeCfg.royaltyBps : null);
             setCharities(
               activeCfg.charityAllocationBps.map((c: any) => ({
                 charityId: c.charityId,
@@ -244,6 +246,10 @@ export const AdminPage: React.FC = () => {
     setError(null);
     setSuccessMsg(null);
 
+    if (royaltyBps === null || royaltyBps < 0 || royaltyBps > 10000) {
+      setError('Enter the licensor royalty in basis points (0 to 10000).');
+      return;
+    }
     if (charityBpsSum !== 10000) {
       setError(`Charity allocation basis points must sum to exactly 10000 (100.0%). Current sum: ${charityBpsSum} bps.`);
       return;
@@ -252,7 +258,7 @@ export const AdminPage: React.FC = () => {
   };
 
   const handleConfirmSubmit = async () => {
-    if (!token) return;
+    if (!token || royaltyBps === null) return;
     setSubmitting(true);
     setError(null);
     setShowConfirmModal(false);
@@ -352,7 +358,7 @@ export const AdminPage: React.FC = () => {
         if (res?.enquiries) {
           setMerchEnquiries(res.enquiries);
         }
-      }).catch(() => {});
+      }).catch(() => setError('Failed to load merch enquiries.'));
     }
   }, [token, isAdmin]);
 
@@ -597,10 +603,6 @@ export const AdminPage: React.FC = () => {
             <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#1a73e8', backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
               Administration Console
             </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
-              Production Active
-            </span>
           </div>
           <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
             Executive Administration Console
@@ -622,7 +624,7 @@ export const AdminPage: React.FC = () => {
               if (activeAdminTab === 'SPLITS') {
                 api.getSplitConfigHistory(token!, licenseeId || undefined).then((res) => {
                   setHistory(Array.isArray(res) ? res : (res.history || []));
-                }).catch(() => {});
+                }).catch(() => setError('Failed to refresh split configuration history.'));
               }
             }}
             className="btn btn-secondary"
@@ -1024,7 +1026,7 @@ export const AdminPage: React.FC = () => {
                       min="0"
                       max="10000"
                       step="50"
-                      value={royaltyBps}
+                      value={bps}
                       onChange={(e) => setRoyaltyBps(parseInt(e.target.value, 10) || 0)}
                       style={{ flex: 1, accentColor: '#1a73e8', cursor: 'pointer', height: '6px' }}
                     />
@@ -1035,8 +1037,9 @@ export const AdminPage: React.FC = () => {
                         min="0"
                         max="10000"
                         step="50"
-                        value={royaltyBps}
-                        onChange={(e) => setRoyaltyBps(parseInt(e.target.value, 10) || 0)}
+                        value={royaltyBps ?? ''}
+                        placeholder="Not set"
+                        onChange={(e) => setRoyaltyBps(e.target.value === '' ? null : parseInt(e.target.value, 10))}
                         className="form-input"
                         style={{ width: '90px', fontWeight: 700, textAlign: 'right', padding: '0.45rem 0.6rem', borderRadius: '6px' }}
                       />
@@ -1051,10 +1054,10 @@ export const AdminPage: React.FC = () => {
                         Licensor Royalty
                       </div>
                       <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1e40af', marginTop: '2px' }}>
-                        {(royaltyBps / 100).toFixed(1)}%
+                        {royaltyBps === null ? 'Not set' : `${(bps / 100).toFixed(1)}%`}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#3b82f6', marginTop: '2px' }}>
-                        £{(royaltyBps / 100).toFixed(2)} per £100 gross
+                        {royaltyBps === null ? 'Enter the royalty above' : `£${(bps / 100).toFixed(2)} per £100 gross`}
                       </div>
                     </div>
 
@@ -1063,10 +1066,10 @@ export const AdminPage: React.FC = () => {
                         Statutory Charity Pool
                       </div>
                       <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#065f46', marginTop: '2px' }}>
-                        {((10000 - royaltyBps) / 100).toFixed(1)}%
+                        {royaltyBps === null ? 'Not set' : `${((10000 - bps) / 100).toFixed(1)}%`}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#059669', marginTop: '2px' }}>
-                        £{((10000 - royaltyBps) / 100).toFixed(2)} per £100 gross
+                        {royaltyBps === null ? 'Enter the royalty above' : `£${((10000 - bps) / 100).toFixed(2)} per £100 gross`}
                       </div>
                     </div>
                   </div>
@@ -1079,8 +1082,8 @@ export const AdminPage: React.FC = () => {
                   </div>
                   <FinancialSplitBar
                     grossAmountCents={10000}
-                    licensorRoyaltyCents={Math.round((10000 * royaltyBps) / 10000)}
-                    charityGiftCents={10000 - Math.round((10000 * royaltyBps) / 10000)}
+                    licensorRoyaltyCents={Math.round((10000 * bps) / 10000)}
+                    charityGiftCents={10000 - Math.round((10000 * bps) / 10000)}
                   />
                 </div>
 
@@ -1299,8 +1302,8 @@ export const AdminPage: React.FC = () => {
                 </p>
 
                 <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem', fontSize: '0.875rem' }}>
-                  <div>• <strong>Licensor Royalty:</strong> {royaltyBps} bps ({(royaltyBps / 100).toFixed(1)}%)</div>
-                  <div>• <strong>Charity Gift Share:</strong> {10000 - royaltyBps} bps ({((10000 - royaltyBps) / 100).toFixed(1)}%)</div>
+                  <div>• <strong>Licensor Royalty:</strong> {bps} bps ({(bps / 100).toFixed(1)}%)</div>
+                  <div>• <strong>Charity Gift Share:</strong> {10000 - bps} bps ({((10000 - bps) / 100).toFixed(1)}%)</div>
                   <div>• <strong>Previous Active Config:</strong> Will be deactivated (`isActive = false`) and chained in audit history.</div>
                 </div>
 

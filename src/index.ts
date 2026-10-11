@@ -143,6 +143,7 @@ async function main() {
   try {
     const admin = await ensureAdministrator(prisma);
     if (admin.action !== 'unchanged') console.log(`[INFO] Administrator ${admin.action}: ${admin.email}`);
+    if (admin.retiredSeedAdmin) console.log('[INFO] The development seed administrator account was retired.');
   } catch (err) {
     console.error(`FATAL: ${(err as Error).message} Refusing to start.`);
     process.exit(1);
