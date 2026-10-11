@@ -2544,6 +2544,16 @@ h4 {
   transform: translateX(0);
 }
 
+/* The drawer scrolls as a whole: its sections keep their full height instead of shrinking and clipping. */
+.portal-sidebar-drawer > * {
+  flex-shrink: 0;
+}
+
+.portal-sidebar-drawer {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ── Top Bar inside Mobile Drawer ────────────────────────────────────────── */
 .portal-drawer-topbar {
   display: flex;
