@@ -5,7 +5,14 @@ import { seedFrameworks } from './seeds/framework-seed';
 
 const prisma = new PrismaClient();
 
+/**
+ * Development and test fixtures only: sample companies, users and test-only B2B keys whose plain
+ * values are in this file. Never run against production.
+ */
 export async function seed() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('The seed contains test fixtures and test-only keys; it must not run in production.');
+  }
   console.log('Seeding database...');
 
   // Ensure ghg_app_user role exists for RLS
