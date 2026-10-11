@@ -1355,6 +1355,7 @@ model FleetAsset {
   projectAssignments FleetProjectAsset[]
   weatherExposures   FleetWeatherExposure[]
   finance            FleetAssetFinance?
+  valuations         FleetAssetValuation[]
   snapshots FleetTelemetrySnapshot[]
   faults    FleetFaultCode[]
   bindings  FleetDeviceBinding[]
@@ -1825,6 +1826,7 @@ enum AnchorRecordKind {
   EVIDENCE_FILE
   CREDENTIAL
   SCOPE3_RECORD
+  FLEET_ASSET_VALUATION
 }
 
 enum AnchorBatchStatus {
@@ -2012,4 +2014,48 @@ model FleetAssetFinance {
   updatedAt            DateTime   @default(now()) @updatedAt
 
   @@index([licenseeId])
+}
+
+/// Extra wear from harsh weather, per equipment type, as a percentage of a machine's depreciable value
+/// (purchase cost less residual) per hour worked in that condition. Published by administrators from a
+/// named source as immutable versions; one is active.
+model WearCoefficientSet {
+  id              String            @id @default(cuid())
+  version         String            @unique
+  source          String
+  active          Boolean           @default(false)
+  createdByUserId String
+  createdAt       DateTime          @default(now())
+  coefficients    WearCoefficient[]
+}
+
+model WearCoefficient {
+  id          String             @id @default(cuid())
+  setId       String
+  set         WearCoefficientSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  category    FleetAssetCategory
+  heatPctPerHour  Decimal        @db.Decimal(9, 6)
+  frostPctPerHour Decimal        @db.Decimal(9, 6)
+  rainPctPerHour  Decimal        @db.Decimal(9, 6)
+  windPctPerHour  Decimal        @db.Decimal(9, 6)
+
+  @@unique([setId, category])
+}
+
+/// One immutable estimate of a machine's value and total cost of ownership to a date, with its inputs
+/// and a SHA-256 of the canonical record.
+model FleetAssetValuation {
+  id            String     @id @default(cuid())
+  licenseeId    String
+  assetId       String
+  asset         FleetAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  asOf          DateTime   @db.Date
+  methodVersion String
+  inputs        Json
+  results       Json
+  recordSha256  String
+  createdById   String
+  createdAt     DateTime   @default(now())
+
+  @@index([licenseeId, assetId, createdAt])
 }

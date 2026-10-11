@@ -1,11 +1,51 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
-import type { FleetAssetFinanceRow } from '../../api/fleet.types';
+import type { FleetAssetFinanceRow, FleetValuation } from '../../api/fleet.types';
 
 const money = (pence: number, currency: string) => new Intl.NumberFormat('en-GB', { style: 'currency', currency, maximumFractionDigits: 0 }).format(pence / 100);
 const toPence = (text: string) => {
   const clean = text.replace(/[,\s£]/g, '');
   return /^\d+(\.\d{1,2})?$/.test(clean) ? Math.round(Number(clean) * 100) : null;
+};
+
+const ValuationView: React.FC<{ v: FleetValuation }> = ({ v }) => {
+  const r = v.results;
+  return (
+    <div className="fleet-costs-result">
+      <dl className="fleet-costs-grid">
+        <div>
+          <dt>Estimated value</dt>
+          <dd>{money(r.estimatedValuePence, r.currency)}</dd>
+        </div>
+        <div>
+          <dt>Of which weather wear</dt>
+          <dd>{money(r.weatherWearPence, r.currency)}</dd>
+        </div>
+        <div>
+          <dt>Total cost of ownership to date</dt>
+          <dd>{money(r.totalCostOfOwnershipPence, r.currency)}</dd>
+        </div>
+        <div>
+          <dt>Per operating hour</dt>
+          <dd>{r.tcoPerOperatingHourPence === null ? 'No hours' : money(r.tcoPerOperatingHourPence, r.currency)}</dd>
+        </div>
+      </dl>
+      <p className="fleet-muted">
+        Estimate as of {v.asOf} · value lost {money(r.valueLostPence, r.currency)} (use {money(r.baseWearPence, r.currency)} by{' '}
+        {r.baseWearBasis === 'OPERATING_HOURS' ? `${r.operatingHours} operating hours` : `${r.ageYears} years of age`}, weather {money(r.weatherWearPence, r.currency)}) · fuel{' '}
+        {money(r.fuel.costPence, r.currency)} · carbon {money(r.carbon.costPence, r.currency)} · not included: {r.notIncluded.join(', ')} · method {v.methodVersion}
+        {v.inputs.wearCoefficients ? `, wear coefficients ${v.inputs.wearCoefficients.version}` : ''}
+      </p>
+      {r.warnings.length > 0 && (
+        <ul className="fleet-costs-warnings">
+          {r.warnings.map((w) => (
+            <li key={w}>{w}</li>
+          ))}
+        </ul>
+      )}
+      <p className="fleet-muted fleet-costs-hash">Record SHA-256 {v.recordSha256}</p>
+    </div>
+  );
 };
 
 const FinanceForm: React.FC<{ token: string; row: FleetAssetFinanceRow; currency: string; onSaved: () => void }> = ({ token, row, currency, onSaved }) => {
@@ -100,11 +140,16 @@ const FinanceForm: React.FC<{ token: string; row: FleetAssetFinanceRow; currency
 /** Purchase cost, life and residual value per machine: the basis for value and ownership cost estimates. */
 export const FleetValue: React.FC<{ token: string; onSubscribe: () => void }> = ({ token, onSubscribe }) => {
   const [data, setData] = useState<{ assets: FleetAssetFinanceRow[]; defaultCurrency: string } | null>(null);
+  const [valuations, setValuations] = useState<Record<string, FleetValuation>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [calcError, setCalcError] = useState<Record<string, string>>({});
   const [error, setError] = useState<{ message: string; needsSubscription: boolean } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setData(await api.listFleetFinance(token));
+      const [finance, vals] = await Promise.all([api.listFleetFinance(token), api.listFleetValuations(token)]);
+      setData(finance);
+      setValuations(Object.fromEntries(vals.valuations.map((v) => [v.assetId, v])));
     } catch (err) {
       const e = err as Error & { status?: number };
       setError({ message: e.message, needsSubscription: e.status === 402 });
@@ -137,7 +182,41 @@ export const FleetValue: React.FC<{ token: string; onSubscribe: () => void }> = 
       {data.assets
         .filter((a) => a.active)
         .map((a) => (
-          <FinanceForm key={a.assetId} token={token} row={a} currency={data.defaultCurrency} onSaved={load} />
+          <div key={a.assetId} className="fleet-stack">
+            <FinanceForm token={token} row={a} currency={data.defaultCurrency} onSaved={load} />
+            {a.finance && (
+              <div className="fleet-panel">
+                <div className="fleet-costs-head">
+                  <h4 className="fleet-costs-title">Value and cost of ownership</h4>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={busyId === a.assetId}
+                    onClick={async () => {
+                      setBusyId(a.assetId);
+                      setCalcError((prev) => ({ ...prev, [a.assetId]: '' }));
+                      try {
+                        const r = await api.calculateFleetValuation(token, a.assetId);
+                        setValuations((prev) => ({ ...prev, [a.assetId]: r.valuation }));
+                      } catch (err) {
+                        setCalcError((prev) => ({ ...prev, [a.assetId]: (err as Error).message }));
+                      } finally {
+                        setBusyId(null);
+                      }
+                    }}
+                  >
+                    {busyId === a.assetId ? 'Calculating...' : 'Calculate now'}
+                  </button>
+                </div>
+                {calcError[a.assetId] && (
+                  <p className="fleet-error-text" role="alert">
+                    {calcError[a.assetId]}
+                  </p>
+                )}
+                {valuations[a.assetId] ? <ValuationView v={valuations[a.assetId]} /> : <p className="fleet-muted">Not calculated yet.</p>}
+              </div>
+            )}
+          </div>
         ))}
     </div>
   );

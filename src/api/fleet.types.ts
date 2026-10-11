@@ -391,3 +391,38 @@ export interface FleetAssetFinanceRow {
   active: boolean;
   finance: FleetAssetFinance | null;
 }
+
+export interface FleetValuation {
+  id: string;
+  assetId: string;
+  asOf: string;
+  methodVersion: string;
+  recordSha256: string;
+  createdAt: string;
+  inputs: { wearCoefficients: { version: string; source: string } | null; weatherThresholdVersions: string[] };
+  results: {
+    currency: string;
+    estimatedValuePence: number;
+    valueLostPence: number;
+    baseWearPence: number;
+    weatherWearPence: number;
+    baseWearBasis: 'OPERATING_HOURS' | 'AGE';
+    operatingHours: string;
+    ageYears: string;
+    fuel: { litres: string; costPence: number; unpricedLitres: string };
+    carbon: { tonnesCo2e: string; costPence: number };
+    totalCostOfOwnershipPence: number;
+    tcoPerOperatingHourPence: number | null;
+    notIncluded: string[];
+    warnings: string[];
+  };
+}
+
+export interface WearCoefficientSetView {
+  id: string;
+  version: string;
+  source: string;
+  active: boolean;
+  createdAt: string;
+  coefficients: { category: string; heatPctPerHour: string; frostPctPerHour: string; rainPctPerHour: string; windPctPerHour: string }[];
+}

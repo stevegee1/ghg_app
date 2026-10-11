@@ -36,6 +36,10 @@ const SOURCES: { kind: AnchorRecordKind; sql: Prisma.Sql }[] = [
     sql: Prisma.sql`SELECT "id", "licenseeId", "recordSha256" AS "hash" FROM "Scope3Record"`,
   },
   {
+    kind: AnchorRecordKind.FLEET_ASSET_VALUATION,
+    sql: Prisma.sql`SELECT "id", "licenseeId", "recordSha256" AS "hash" FROM "FleetAssetValuation"`,
+  },
+  {
     kind: AnchorRecordKind.CREDENTIAL,
     sql: Prisma.sql`SELECT "id", "licenseeId", "verificationSeal" AS "hash" FROM "AuditWarrantyCredential" WHERE "status" = 'ISSUED'`,
   },

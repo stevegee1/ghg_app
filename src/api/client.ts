@@ -10,6 +10,8 @@ import type {
   WeatherThresholdSet,
   FleetAssetFinance,
   FleetAssetFinanceRow,
+  FleetValuation,
+  WearCoefficientSetView,
   FleetAssetImportResult,
   FleetAssetInput,
   FleetEstimate,
@@ -1284,6 +1286,22 @@ export const api = {
     body: { currency: string; acquisitionCostPence: number; acquisitionDate: string; expectedLifeYears: string; expectedLifeHours?: string; residualValuePence: number }
   ): Promise<{ finance: FleetAssetFinance }> {
     return apiRequest(`/api/fleet/finance/${encodeURIComponent(assetId)}`, { token, method: 'PUT', body });
+  },
+
+  async listFleetValuations(token: string): Promise<{ valuations: FleetValuation[] }> {
+    return apiRequest('/api/fleet/value', { token });
+  },
+  async calculateFleetValuation(token: string, assetId: string): Promise<{ valuation: FleetValuation }> {
+    return apiRequest(`/api/fleet/value/${encodeURIComponent(assetId)}`, { token, method: 'POST', body: {} });
+  },
+  async getWearCoefficients(token: string): Promise<{ sets: WearCoefficientSetView[] }> {
+    return apiRequest('/api/admin/wear-coefficients', { token });
+  },
+  async publishWearCoefficients(
+    token: string,
+    body: { version: string; source: string; coefficients: { category: string; heatPctPerHour: string; frostPctPerHour: string; rainPctPerHour: string; windPctPerHour: string }[] }
+  ) {
+    return apiRequest<{ set: { id: string; version: string } }>('/api/admin/wear-coefficients', { token, method: 'POST', body });
   },
 
   async listFleetAssets(token: string): Promise<{ assets: FleetAsset[] }> {

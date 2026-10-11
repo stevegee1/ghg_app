@@ -22,6 +22,7 @@ import {
 } from '../services/fleet/fleet-project-cost.service';
 import { buildClimateLedger, ledgerToCsv } from '../services/fleet/fleet-ledger.service';
 import { listAssetFinance, setAssetFinance } from '../services/fleet/fleet-asset-finance.service';
+import { calculateValuation, latestValuations } from '../services/fleet/fleet-valuation.service';
 import { parseRange } from './fleet.route';
 
 /** Client projects (contracts) and which machines work on them. Requires an active Fleet subscription. */
@@ -42,6 +43,7 @@ export function createFleetProjectRouter(prisma: PrismaClient): Router {
   router.use('/api/fleet/projects', authenticateToken, requireFleetClient);
   router.use('/api/fleet/ledger', authenticateToken, requireFleetClient);
   router.use('/api/fleet/finance', authenticateToken, requireFleetClient);
+  router.use('/api/fleet/value', authenticateToken, requireFleetClient);
 
   const run = (label: string, fn: (req: Request) => Promise<unknown>, status = 200) => async (req: Request, res: Response) => {
     try {
@@ -111,6 +113,14 @@ export function createFleetProjectRouter(prisma: PrismaClient): Router {
   router.put('/api/fleet/finance/:assetId', run('FLEET FINANCE SET', async (req) => ({
     finance: await runWithRls(prisma, req.user!, (tx) => setAssetFinance(tx, lic(req), req.params.assetId, req.body || {})),
   })));
+
+  router.get('/api/fleet/value', run('FLEET VALUATIONS', async (req) => ({
+    valuations: await runWithRls(prisma, req.user!, (tx) => latestValuations(tx, lic(req))),
+  })));
+
+  router.post('/api/fleet/value/:assetId', run('FLEET VALUATION CALCULATE', async (req) => ({
+    valuation: await runWithRls(prisma, req.user!, (tx) => calculateValuation(tx, lic(req), req.params.assetId, req.body || {}, req.user!.userId)),
+  }), 201));
 
   /**
    * GET /api/fleet/ledger?from=YYYY-MM-DD&to=YYYY-MM-DD&format=json|csv

@@ -5,6 +5,8 @@ import { runWithRls } from '../db/rls';
 import { parseRange } from './fleet.route';
 import { LOCATION_RETENTION_DAYS } from '../services/fleet/fleet-retention.service';
 import { computeExposureForDate, exposureSummary, readWeatherConfig } from '../services/fleet/weather-exposure.service';
+import { publishWearCoefficients } from '../services/fleet/fleet-valuation.service';
+import { FleetValidationError } from '../services/fleet/fleet-asset.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ADMIN_SCOPE = { role: 'ADMIN', licenseeId: null };
@@ -75,6 +77,33 @@ export function createWeatherRouter(prisma: PrismaClient): Router {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return res.status(409).json({ error: 'That version already exists.' });
       console.error('[WEATHER THRESHOLDS CREATE]', err);
       return res.status(500).json({ error: 'Failed to save thresholds.' });
+    }
+  });
+
+  router.get('/api/admin/wear-coefficients', authenticateToken, requireAdmin, async (_req: Request, res: Response) => {
+    const sets = await prisma.wearCoefficientSet.findMany({ orderBy: { createdAt: 'desc' }, include: { coefficients: { orderBy: { category: 'asc' } } } });
+    return res.json({
+      sets: sets.map((s) => ({
+        ...s,
+        coefficients: s.coefficients.map((c) => ({
+          category: c.category,
+          heatPctPerHour: c.heatPctPerHour.toString(),
+          frostPctPerHour: c.frostPctPerHour.toString(),
+          rainPctPerHour: c.rainPctPerHour.toString(),
+          windPctPerHour: c.windPctPerHour.toString(),
+        })),
+      })),
+    });
+  });
+
+  router.post('/api/admin/wear-coefficients', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const set = await publishWearCoefficients(prisma, (req.body || {}) as Record<string, unknown>, req.user!.userId);
+      return res.status(201).json({ set: { id: set.id, version: set.version, active: set.active, count: set.coefficients.length } });
+    } catch (err) {
+      if (err instanceof FleetValidationError) return res.status(err.status).json({ error: err.message });
+      console.error('[WEAR COEFFICIENTS CREATE]', err);
+      return res.status(500).json({ error: 'Failed to publish coefficients.' });
     }
   });
 
