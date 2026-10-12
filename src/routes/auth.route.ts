@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { IndustrySector, PrimaryRole, PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -438,6 +438,13 @@ export function createAuthRouter(prisma: PrismaClient): Router {
         companyRegistrationNo,
       } = req.body || {};
 
+      if (primaryRole !== undefined && !(Object.values(PrimaryRole) as string[]).includes(primaryRole)) {
+        return res.status(400).json({ error: 'Choose a role from the list.' });
+      }
+      if (industrySector !== undefined && industrySector !== null && !(Object.values(IndustrySector) as string[]).includes(industrySector)) {
+        return res.status(400).json({ error: 'Choose an industry from the list.' });
+      }
+
       const user = await prisma.portalUser.findUnique({
         where: { id: decoded.userId },
         include: { licensee: true },
@@ -501,8 +508,9 @@ export function createAuthRouter(prisma: PrismaClient): Router {
         },
       });
     } catch (err: any) {
+      if (err instanceof jwt.JsonWebTokenError) return res.status(401).json({ error: 'Your session has expired. Sign in again.' });
       console.error('[PROFILE UPDATE ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to update profile' });
+      return res.status(500).json({ error: 'Your profile could not be saved. Please try again.' });
     }
   };
 

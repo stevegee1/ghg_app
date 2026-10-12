@@ -1,4 +1,5 @@
 import React from 'react';
+import { INDUSTRY_SECTOR_OPTIONS, PRIMARY_ROLE_OPTIONS } from './profileOptions';
 
 interface PortalProfileViewProps {
   user: any;
@@ -233,12 +234,11 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
                 onChange={(e) => setProfilePrimaryRole(e.target.value)}
                 style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
               >
-                <option value="COMPLIANCE_OFFICER">Compliance / Legal Officer</option>
-                <option value="SUSTAINABILITY_DIRECTOR">Sustainability Director / ESG Lead</option>
-                <option value="MANAGING_DIRECTOR">Managing Director / C-Suite Executive</option>
-                <option value="OPERATIONS_MANAGER">Operations / Facility Manager</option>
-                <option value="AUDITOR">Internal / External Auditor</option>
-                <option value="OTHER">Other Authorized Representative</option>
+                {PRIMARY_ROLE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -271,16 +271,11 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
                 onChange={(e) => setProfileIndustry(e.target.value)}
                 style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-subtle)', color: 'var(--text-main)', fontSize: '0.85rem' }}
               >
-                <option value="MANUFACTURING">Manufacturing &amp; Heavy Industry</option>
-                <option value="ENERGY">Energy, Utilities &amp; Clean Tech</option>
-                <option value="CONSTRUCTION">Construction &amp; Real Estate Development</option>
-                <option value="TRANSPORT">Transport, Logistics &amp; Fleet</option>
-                <option value="TECH">Technology, Software &amp; Data Centers</option>
-                <option value="PROFESSIONAL_SERVICES">Professional Services &amp; Consultancy</option>
-                <option value="PUBLIC_SECTOR">Public Sector &amp; Local Authorities</option>
-                <option value="RETAIL">Retail &amp; Consumer Goods</option>
-                <option value="AGRICULTURE">Agriculture, Food &amp; Land Use</option>
-                <option value="OTHER">Other Specialized Sector</option>
+                {INDUSTRY_SECTOR_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
