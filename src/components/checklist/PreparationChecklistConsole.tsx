@@ -252,7 +252,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       'ISO 22628': 'Vehicle & Fleet Recyclability',
       'ISO 19880 / Clean Fuels': 'Green Hydrogen & Clean Fuels',
       'Social Value Act & Fair Work Job Verification': 'Workforce & Fair Work Verification',
-      'UK Public Procurement Carbon Reduction Plan (PPN 06/21)': 'Public Procurement Carbon Plan (PPN 06/21)',
+      'UK Public Procurement Carbon Reduction Plan (PPN 006)': 'Public Procurement Carbon Plan (PPN 006)',
       'CMA Green Claims Code & Anti-Greenwashing Compliance': 'Green Claims & Marketing (CMA)',
     };
     return map[rawName] || rawName;

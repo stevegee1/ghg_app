@@ -6,7 +6,7 @@
  */
 
 /** How reviews are carried out. ISO 19011 is guidance, so it is followed, never "complied with". */
-export const REVIEW_METHOD_STATEMENT = 'Reviewed remotely following the guidance on remote audit methods in ISO 19011:2018.';
+export const REVIEW_METHOD_STATEMENT = 'Reviewed remotely following the guidance on remote audit methods in ISO 19011:2026.';
 
 /** What a credential records, and what it does not. */
 export const REVIEW_SCOPE_STATEMENT =

@@ -159,7 +159,7 @@ describe('Health check', () => {
 
 describe('Claims the platform must not make', () => {
   // NFTYLOGS is not an accredited certification or verification body (see src/utils/reviewScope.ts).
-  const FORBIDDEN = [/19011:2026/, /ISO 19011 Guarantee/i, /statutory split/i, /statutory 15%/i, /statutory ESG/i, /statutory intake/i, /Verified Ledger/i, /in strict compliance with ISO/i, /provides independent verification/i];
+  const FORBIDDEN = [/19011:2018/, /compl(y|ies|iance) with ISO 19011/i, /ISO 19011 Guarantee/i, /statutory split/i, /statutory 15%/i, /statutory ESG/i, /statutory intake/i, /Verified Ledger/i, /in strict compliance with ISO/i, /provides independent verification/i];
 
   function sourceFiles(dir: string): string[] {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -169,7 +169,7 @@ describe('Claims the platform must not make', () => {
     });
   }
 
-  it('never claims certification, guarantees or a non-existent ISO edition anywhere in the app', () => {
+  it('never claims certification, guarantees or the superseded 2018 edition of ISO 19011 anywhere in the app', () => {
     const offending = sourceFiles(path.join(process.cwd(), 'src')).flatMap((file) => {
       const text = fs.readFileSync(file, 'utf8');
       return FORBIDDEN.filter((re) => re.test(text)).map((re) => `${path.relative(process.cwd(), file)}: ${re}`);

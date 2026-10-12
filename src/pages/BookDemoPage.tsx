@@ -36,7 +36,7 @@ export const BookDemoPage: React.FC = () => {
           </div>
           <div className="trust-item">
             <span className="trust-dot">&bull;</span>
-            <span>Remote review following ISO 19011:2018 guidance</span>
+            <span>Remote review following ISO 19011:2026 guidance</span>
           </div>
           <div className="trust-item">
             <span className="trust-dot">&bull;</span>

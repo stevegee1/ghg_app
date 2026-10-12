@@ -259,7 +259,7 @@ export const FRAMEWORK_CHECKLIST_TEMPLATES: Record<string, ChecklistItemTemplate
       itemCode: 'SV_LOCAL_PAYROLL',
       plainEnglishLabel: 'Real Living Wage and local workforce payroll summary',
       plainEnglishGuidance: 'Upload an anonymized payroll statement confirming Real Living Wage compliance and percentage of staff hired from the local economic area.',
-      isoClauseReference: 'Public Services (Social Value) Act 2012 / PPN 06/20 Theme 2',
+      isoClauseReference: 'Public Services (Social Value) Act 2012 / PPN 002 Social Value Model',
       dataType: ChecklistItemDataType.DOCUMENT_UPLOAD,
       isMandatory: true,
     },

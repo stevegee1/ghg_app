@@ -5,7 +5,7 @@ This workflow delivers an end-to-end continuous carbon assurance pipeline adheri
 - **GHG Protocol Corporate Standard** (Scope 1 Direct, Scope 2 Indirect Energy, Scope 3 Value Chain)
 - **ISO 14064-1:2018** (Specification with guidance at the organization level for quantification and reporting of greenhouse gas emissions and removals)
 - **ISO 50001:2018** (Energy management systems - Requirements with guidance for use)
-- **ISO 19011:2018** (Guidelines for auditing management systems - specifically Annex A remote audit methodologies)
+- **ISO 19011:2026** (Guidelines for auditing management systems - including its guidance on remote and hybrid audit methods)
 - **UK SECR** (Streamlined Energy and Carbon Reporting under Companies Act 2006)
 
 ---
@@ -72,7 +72,7 @@ flowchart TD
 - [x] **Side-by-Side Review Workspace**:
   - Diagnostic answers, attached evidence documents with SHA-256 digests.
   - Section 2b: AI Assurance Agent Screening Docket with clause-by-clause matrix, confidence indicators, and on-demand re-screening.
-- [x] **Digital Sign-Off**: Lead Auditor supplies formal auditor credentials (`leadAuditorName`, `leadAuditorAccreditation`) and cryptographic attestation signature under ISO 19011:2018 statutory guidelines.
+- [x] **Digital Sign-Off**: Lead Auditor supplies formal auditor credentials (`leadAuditorName`, `leadAuditorAccreditation`) and cryptographic attestation signature following ISO 19011:2026 guidance.
 
 ### 4.4 Payment Gate & Dual-Logo Certification
 - [x] **Stripe Checkout Webhook**: In [`webhooks.stripe.ts`](file:///Users/mac/ghg_app/src/routes/webhooks.stripe.ts), on `checkout.session.completed`, advance status from `APPROVED` to `PAID`.

@@ -154,7 +154,7 @@ function buildAuditPrompt(
     return 'ISO 14064-1:2018, ISO 50001:2018, and applicable UK statutory requirements';
   })();
 
-  const system = `You are a Senior Lead Verification Auditor for the NFTYLOGS platform, operating under ISO 19011:2018 remote auditing guidelines. You pre-screen compliance questionnaire submissions across four service pipelines before a human Lead Auditor makes the final decision.
+  const system = `You are a Senior Lead Verification Auditor for the NFTYLOGS platform, operating under ISO 19011:2026 remote auditing guidelines. You pre-screen compliance questionnaire submissions across four service pipelines before a human Lead Auditor makes the final decision.
 
 Governing standard for this submission: ${pipelineContext}
 
@@ -165,7 +165,7 @@ For each question-answer pair you receive:
 4. Produce a concise, objective auditor-grade finding (2-4 sentences, professional register)
 5. Assign a confidence score (0.0 to 1.0)
 
-Scoring thresholds (ISO 19011:2018 Clause 6.4):
+Scoring thresholds (NFTYLOGS review rules):
 - CONFORMANT with evidence = 5 points
 - CONFORMANT without evidence (non-evidence-required clause) = 3 points
 - INSUFFICIENT_EVIDENCE = 1 point
@@ -408,7 +408,7 @@ export class AiAuditReviewer implements IAuditReviewer {
       nonConformantCount === 0 && overallScore >= 75 ? 'APPROVE' : 'REQUIRE_REVISION';
 
     const executiveSummary =
-      `Deterministic ISO 19011:2018 rules-based pre-screen completed for ${submission.licensee.name}. ` +
+      `Deterministic ISO 19011:2026 rules-based pre-screen completed for ${submission.licensee.name}. ` +
       `${clauseFindings.filter((f) => f.status === 'CONFORMANT').length} of ${questions.length} clauses evaluated as conformant. ` +
       `${nonConformantCount} clause(s) require attention. ` +
       `Overall pre-screen score: ${overallScore}%. ` +
@@ -486,7 +486,7 @@ export class AiAuditReviewer implements IAuditReviewer {
 
   /**
    * Evaluates an ISO audit-readiness diagnostic submission using Google Gemini
-   * (or deterministic fallback), following ISO 19011:2018 guidance on remote audit methods.
+   * (or deterministic fallback), following ISO 19011:2026 guidance on remote audit methods.
    */
   async evaluateIsoSubmission(params: {
     licenseeName: string;
@@ -515,7 +515,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     // 1. Try LLM evaluation if provider is active
     if (activeProvider) {
       try {
-        const systemPrompt = `You are the NFTYLOGS Senior Lead Auditor AI. You evaluate corporate submissions for ISO audit readiness under ISO 14064-1:2018, ISO 14001:2015, ISO 50001:2018, and the ISO 19011:2018 guidance on remote auditing protocols.
+        const systemPrompt = `You are the NFTYLOGS Senior Lead Auditor AI. You evaluate corporate submissions for ISO audit readiness under ISO 14064-1:2018, ISO 14001:2026, ISO 50001:2018, and the ISO 19011:2026 guidance on remote auditing protocols.
 Rules:
 1. Evaluate each answer and evidence reference against the governing ISO clause.
 2. If evidence is attached or verifiable data is cited, mark status as CONFORMANT.
@@ -582,7 +582,7 @@ Evidence Files Attached: ${(params.evidenceFileNames || []).join(', ') || 'None'
       }
     }
 
-    // 2. Deterministic Rules Engine (ISO 19011:2018) - active when no LLM key is configured
+    // 2. Deterministic Rules Engine (ISO 19011:2026) - active when no LLM key is configured
     const clauseFindings = answers.map((a) => {
       const wordCount = (a.answer || '').trim().split(/\s+/).filter(Boolean).length;
       // hasEvidenceDocument / evidenceDocumentId is set by the route when a file is attached
@@ -595,11 +595,11 @@ Evidence Files Attached: ${(params.evidenceFileNames || []).join(', ') || 'None'
 
       return {
         questionId: a.questionId,
-        isoClause: a.isoClause || 'ISO 19011:2018',
+        isoClause: a.isoClause || 'ISO 19011:2026',
         status,
         findings: isConformant
           ? `Response meets minimum documentary threshold for ${a.isoClause || 'this clause'}. ${hasEvidence ? 'Supporting evidence document registered in the evidence locker.' : 'Narrative response provided; evidence document recommended for a stronger audit trail.'}`
-          : `Response for ${a.isoClause || 'this clause'} is insufficient (${wordCount} words, no evidence attached). A substantive response with supporting documentation is required under ISO 19011:2018 Clause 6.4.`,
+          : `Response for ${a.isoClause || 'this clause'} is insufficient (${wordCount} words, no evidence attached). A substantive response with supporting documentation is required for this review.`,
         evidenceVerified: hasEvidence,
       };
     });

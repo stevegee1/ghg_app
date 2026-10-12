@@ -229,7 +229,7 @@ export const FRAMEWORK_SEED_DATA: FrameworkSeedRecord[] = [
     workflowType: WorkflowType.CARBON,
     code: 'UK_PPN_006',
     name: 'Carbon Reduction Plan (Cabinet Office PPN 006)',
-    governingBody: 'Cabinet Office / Crown Commercial Service',
+    governingBody: 'Cabinet Office',
     jurisdiction: 'United Kingdom',
     description: 'Mandatory Carbon Reduction Plan for UK public sector suppliers with contracts over £5m. Requires publication of Scope 1, 2, and five mandated Scope 3 categories with a net zero 2050 commitment.',
     questions: [

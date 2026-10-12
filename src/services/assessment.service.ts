@@ -94,7 +94,7 @@ export class AssessmentDecisionEngine {
       });
     }
 
-    // 2. UK Public Procurement Notice (PPN 06/21)
+    // 2. UK Procurement Policy Note PPN 006 (replaced PPN 06/21 from 24 February 2025)
     if (input.isUKPublicContractor) {
       list.push({
         frameworkCode: 'UK_PPN_006',
@@ -102,10 +102,10 @@ export class AssessmentDecisionEngine {
         workflowType: WorkflowType.CARBON,
         isLegallyMandatory: true,
         plainEnglishWhy:
-          'You hold or bid for UK public sector contracts. Under Crown Commercial Service PPN 006 (formerly PPN 06/21), you must publish a board-signed Carbon Reduction Plan covering Scope 1, 2, and mandated Scope 3 categories on your company website.',
+          'You hold or bid for UK public sector contracts. Under Cabinet Office PPN 006 (which replaced PPN 06/21 for procurements started from 24 February 2025), you must publish a board-signed Carbon Reduction Plan covering Scope 1, 2, and mandated Scope 3 categories on your company website.',
         consequenceIfSkipped:
           'Mandatory disqualification from bidding on UK Central Government contracts valued at £5m per annum or above.',
-        enforcementBody: 'Cabinet Office / Crown Commercial Service',
+        enforcementBody: 'Cabinet Office',
         estimatedEffort: ComplianceEffort.MEDIUM,
       });
     }
@@ -187,9 +187,9 @@ export class AssessmentDecisionEngine {
         workflowType: WorkflowType.GHG,
         isLegallyMandatory: false,
         plainEnglishWhy:
-          'Your operations feature high energy density or automated metering infrastructure. ISO 50001 certification grants full statutory exemption from costly UK ESOS Phase 3 energy audits.',
+          'Your operations feature high energy density or automated metering infrastructure. An ISO 50001 certificate covering all of your organisation\'s energy use is an accepted route to ESOS compliance, in place of a separate ESOS audit.',
         consequenceIfSkipped:
-          'Mandatory separate UK ESOS Phase 3 audit filings with external assessors and potential £50,000 Environment Agency non-compliance penalties.',
+          'If you are in ESOS scope, a separate ESOS assessment signed off by a lead assessor, and Environment Agency penalties of up to £50,000 for non-compliance.',
         enforcementBody: 'Environment Agency (UK) & Accredited Registrars',
         estimatedEffort: ComplianceEffort.HIGH,
       });

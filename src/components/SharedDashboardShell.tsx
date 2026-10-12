@@ -475,7 +475,7 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
                 borderRadius: 'var(--radius-pill)', border: '1px solid #99f6e4',
               }}>
                 <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#14b8a6', flexShrink: 0 }} />
-                UK Section 106 &bull; Social Value PPN 06/20
+                UK Section 106 &bull; Social Value PPN 002
               </div>
               {auditCards.job.latestDraftId && (
                 <span style={{

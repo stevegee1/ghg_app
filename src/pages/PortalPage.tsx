@@ -1112,7 +1112,7 @@ export const PortalPage: React.FC = () => {
                 Complete your 3-minute intake assessment
               </div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '680px' }}>
-                Determine which statutory carbon and workforce frameworks apply to your operating boundary (SECR, PPN 06/21, ISO 14064-1, Green Claims) and generate your tailored preparation roadmap.
+                Find out which carbon and workforce frameworks apply to your organisation (SECR, PPN 006, ISO 14064-1, Green Claims) and generate your tailored preparation roadmap.
               </div>
             </div>
 
