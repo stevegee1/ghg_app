@@ -12983,3 +12983,34 @@ a:not([class]):hover {
     grid-template-columns: 320px minmax(0, 1fr);
   }
 }
+
+/* Admin: newsletter subscribers */
+.newsletter-admin-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+.newsletter-admin-bar .merch-filters {
+  margin-bottom: 0;
+  min-width: 0;
+}
+.newsletter-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.newsletter-admin-table th,
+.newsletter-admin-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+}
+.newsletter-admin-table th {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}

@@ -94,6 +94,13 @@ export interface MyCredential {
   createdAt: string;
 }
 
+export type NewsletterSubscriberStatus = 'PENDING' | 'CONFIRMED' | 'UNSUBSCRIBED';
+
+export interface NewsletterSubscriberListing {
+  counts: Record<NewsletterSubscriberStatus, number>;
+  subscribers: { email: string; status: NewsletterSubscriberStatus; confirmedAt: string | null; consentAt: string; source: string }[];
+}
+
 export interface CharityReserveView {
   balances: { currency: string; totalCents: number; paymentCount: number }[];
   assignments: {
@@ -230,6 +237,11 @@ export const api = {
     token: string
   ): Promise<{ currency: string; licensees: { id: string; name: string; pricePerDropCents: number | null }[] }> {
     return apiRequest('/api/admin/logo-drop/prices', { token });
+  },
+
+  /** GET /api/admin/newsletter/subscribers */
+  async getNewsletterSubscribers(token: string, status?: NewsletterSubscriberStatus): Promise<NewsletterSubscriberListing> {
+    return apiRequest(`/api/admin/newsletter/subscribers${status ? `?status=${status}` : ''}`, { token });
   },
 
   /** GET /api/admin/charity-reserve: charity share held while no charity was set, by currency. */

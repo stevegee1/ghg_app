@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 import { EmissionFactorsAdmin } from '../components/admin/EmissionFactorsAdmin';
 import { CharityReserveAdmin } from '../components/admin/CharityReserveAdmin';
+import { NewsletterAdmin } from '../components/admin/NewsletterAdmin';
 import { AdminReadinessTracker } from '../components/admin/AdminReadinessTracker';
 import { ReviewQueue } from '../components/admin/review/ReviewQueue';
 import { FleetSetupRequestsAdmin } from '../components/admin/FleetSetupRequestsAdmin';
@@ -100,7 +101,7 @@ export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES' | 'MARKET_INPUTS' | 'ANCHORS' | 'WEATHER_WEAR'>('READINESS_TRACKER');
+  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES' | 'MARKET_INPUTS' | 'ANCHORS' | 'WEATHER_WEAR' | 'NEWSLETTER'>('READINESS_TRACKER');
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -670,6 +671,7 @@ export const AdminPage: React.FC = () => {
             { key: 'ANCHORS', label: 'Blockchain Anchors', badge: null },
             { key: 'WEATHER_WEAR', label: 'Weather & Wear', badge: null },
             { key: 'DELIVERY_PARTNERS', label: 'Delivery Partners', badge: null },
+            { key: 'NEWSLETTER', label: 'Newsletter', badge: null },
             { key: 'SPLITS', label: 'Royalty Splits', badge: null },
           ] as const).map(({ key, label, badge }) => {
             const isActive = activeAdminTab === key;
@@ -2090,6 +2092,7 @@ export const AdminPage: React.FC = () => {
       {activeAdminTab === 'WEATHER_WEAR' && token && <WeatherWearAdmin token={token} />}
 
       {activeAdminTab === 'DELIVERY_PARTNERS' && token && <DeliveryPartnersAdmin token={token} />}
+      {activeAdminTab === 'NEWSLETTER' && token && <NewsletterAdmin token={token} />}
 
       {activeAdminTab === 'CHARITIES' && (
         <div>

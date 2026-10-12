@@ -79,3 +79,32 @@ export async function unsubscribe(prisma: PrismaClient, token: unknown): Promise
   }
   return true;
 }
+
+export interface SubscriberListing {
+  counts: Record<NewsletterStatus, number>;
+  subscribers: { email: string; status: NewsletterStatus; confirmedAt: Date | null; consentAt: Date; source: string }[];
+}
+
+/** For administrators: everyone on the list with their status, newest first, and a count per status. */
+export async function listSubscribers(prisma: PrismaClient, status?: NewsletterStatus): Promise<SubscriberListing> {
+  const [grouped, subscribers] = await Promise.all([
+    prisma.newsletterSubscriber.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.newsletterSubscriber.findMany({
+      where: status ? { status } : undefined,
+      orderBy: { createdAt: 'desc' },
+      select: { email: true, status: true, confirmedAt: true, consentAt: true, source: true },
+    }),
+  ]);
+  const counts = { PENDING: 0, CONFIRMED: 0, UNSUBSCRIBED: 0 } as Record<NewsletterStatus, number>;
+  for (const g of grouped) counts[g.status] = g._count._all;
+  return { counts, subscribers };
+}
+
+/** CSV of confirmed subscribers only, with the consent they gave, for import into an email tool. */
+export function confirmedSubscribersCsv(subscribers: SubscriberListing['subscribers']): string {
+  const quote = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const rows = subscribers
+    .filter((s) => s.status === NewsletterStatus.CONFIRMED)
+    .map((s) => [s.email, s.confirmedAt?.toISOString() ?? '', s.consentAt.toISOString(), s.source].map(quote).join(','));
+  return ['email,confirmed_at,consent_at,source', ...rows].join('\r\n') + '\r\n';
+}

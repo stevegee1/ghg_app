@@ -25,6 +25,7 @@ import { createOrdersRouter } from './routes/orders.route';
 import { createCharitiesRouter } from './routes/charities.route';
 import { createAdminCharitiesRouter } from './routes/admin-charities.route';
 import { createAdminCharityReserveRouter } from './routes/admin-charity-reserve.route';
+import { createAdminNewsletterRouter } from './routes/admin-newsletter.route';
 import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { createDemoBookingRouter } from './routes/demo-booking.route';
@@ -182,6 +183,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createCharitiesRouter(prisma));
   app.use(createAdminCharitiesRouter(prisma, stripe));
   app.use(createAdminCharityReserveRouter(prisma, stripe));
+  app.use(createAdminNewsletterRouter(prisma));
   app.use(createCredentialsRouter(prisma));
   app.use(createBadgeEmbedRouter(prisma));
   app.use(createDemoBookingRouter(prisma));

@@ -1,6 +1,8 @@
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
+import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { emailService } from '../src/services/email.service';
 import { NEWSLETTER_CONSENT_TEXT } from '../src/services/newsletter.service';
 
@@ -80,6 +82,37 @@ describe('Newsletter double opt-in', () => {
     const res = await request(app).post('/api/newsletter/subscribe').send({ email: 'third.' + EMAIL, consent: true }).expect(503);
     expect(res.body.error).toMatch(/could not send/);
     await prisma.newsletterSubscriber.deleteMany({ where: { email: 'third.' + EMAIL } });
+  });
+});
+
+describe('Newsletter subscribers for administrators', () => {
+  const adminToken = jwt.sign({ userId: 'admin', role: 'ADMIN', licenseeId: '' }, JWT_SECRET, { expiresIn: '1h' });
+  const clientToken = jwt.sign({ userId: 'client', role: 'PARTNER', licenseeId: 'lic_x' }, JWT_SECRET, { expiresIn: '1h' });
+  const pendingEmail = `pending.${Date.now().toString(36)}@example.com`;
+
+  beforeAll(async () => {
+    await prisma.newsletterSubscriber.create({
+      data: { email: pendingEmail, status: 'PENDING', consentText: NEWSLETTER_CONSENT_TEXT, consentAt: new Date(), unsubscribeTokenHash: `h_${pendingEmail}` },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.newsletterSubscriber.deleteMany({ where: { email: pendingEmail } });
+  });
+
+  it('lists subscribers by status for administrators only', async () => {
+    await request(app).get('/api/admin/newsletter/subscribers').set('Authorization', `Bearer ${clientToken}`).expect(403);
+    await request(app).get('/api/admin/newsletter/subscribers?status=BOGUS').set('Authorization', `Bearer ${adminToken}`).expect(400);
+    const res = await request(app).get('/api/admin/newsletter/subscribers?status=PENDING').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    expect(res.body.subscribers.map((s: { email: string }) => s.email)).toContain(pendingEmail);
+    expect(res.body.counts.PENDING).toBeGreaterThanOrEqual(1);
+  });
+
+  it('exports confirmed subscribers only, never pending ones', async () => {
+    const res = await request(app).get('/api/admin/newsletter/subscribers.csv').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    expect(res.headers['content-type']).toMatch(/text\/csv/);
+    expect(res.text.split('\r\n')[0]).toBe('email,confirmed_at,consent_at,source');
+    expect(res.text).not.toContain(pendingEmail);
   });
 });
 
