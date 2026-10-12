@@ -13,6 +13,15 @@ import {
   setTrainingConsent,
 } from '../services/fleet/fleet-maintenance.service';
 import { clientConditions, publishRuleSet } from '../services/fleet/maintenance-insight.service';
+import {
+  getPublishedModel,
+  parseTrainingSettings,
+  predictMachine,
+  publishModel,
+  retirePublishedModel,
+  trainModel,
+  trainingDataSummary,
+} from '../services/fleet/maintenance-training.service';
 
 /** Service intervals, maintenance events and training consent for Fleet clients. Pattern: fleet-project.route.ts. */
 export function createFleetMaintenanceRouter(prisma: PrismaClient): Router {
@@ -83,7 +92,13 @@ export function createFleetMaintenanceRouter(prisma: PrismaClient): Router {
   /** The condition of each machine under the active rule set, worst first. */
   router.get('/api/fleet/maintenance/insights', requireFleet, async (req: Request, res: Response) => {
     try {
-      const result = await runWithRls(prisma, req.user!, (tx) => clientConditions(tx, req.user!.licenseeId!));
+      const result = await runWithRls(prisma, req.user!, async (tx) => {
+        const model = await getPublishedModel(tx);
+        const predictor = model
+          ? { windows: model.ruleSet, model: { version: model.version, horizonDays: model.horizonDays }, predict: predictMachine.bind(null, model) }
+          : undefined;
+        return clientConditions(tx, req.user!.licenseeId!, new Date(), predictor);
+      });
       if (!result) return res.json({ configured: false, conditions: [] });
       return res.json({ configured: true, ...result });
     } catch (err) {
@@ -105,6 +120,54 @@ export function createFleetMaintenanceRouter(prisma: PrismaClient): Router {
       return res.status(201).json({ set });
     } catch (err) {
       return sendError(res, err, '[MAINTENANCE RULES PUBLISH]');
+    }
+  });
+
+  /** Trained models, newest first, and what a new training run would have to work with. */
+  router.get('/api/admin/maintenance/models', async (_req: Request, res: Response) => {
+    try {
+      const [models, data] = await Promise.all([
+        prisma.fleetMaintenanceModel.findMany({
+          orderBy: { trainedAt: 'desc' },
+          take: 50,
+          select: {
+            id: true, version: true, featureSetId: true, horizonDays: true, settings: true, trainMetrics: true, testMetrics: true,
+            clientCount: true, machineCount: true, sampleCount: true, positiveCount: true, datasetSha256: true,
+            passedGate: true, gateNotes: true, status: true, trainedAt: true, publishedAt: true, ruleSet: { select: { version: true } },
+          },
+        }),
+        trainingDataSummary(prisma),
+      ]);
+      return res.json({ models, data });
+    } catch (err) {
+      return sendError(res, err, '[MAINTENANCE MODELS LIST]');
+    }
+  });
+
+  router.post('/api/admin/maintenance/models/train', async (req: Request, res: Response) => {
+    try {
+      const model = await trainModel(prisma, parseTrainingSettings(req.body || {}), req.user!.userId);
+      return res.status(201).json({ model: { id: model.id, version: model.version, passedGate: model.passedGate, gateNotes: model.gateNotes, testMetrics: model.testMetrics, trainMetrics: model.trainMetrics } });
+    } catch (err) {
+      return sendError(res, err, '[MAINTENANCE MODEL TRAIN]');
+    }
+  });
+
+  router.post('/api/admin/maintenance/models/:id/publish', async (req: Request, res: Response) => {
+    try {
+      const model = await publishModel(prisma, req.params.id, req.user!.userId);
+      return res.json({ model: { id: model.id, version: model.version, status: model.status } });
+    } catch (err) {
+      return sendError(res, err, '[MAINTENANCE MODEL PUBLISH]');
+    }
+  });
+
+  router.post('/api/admin/maintenance/models/retire', async (_req: Request, res: Response) => {
+    try {
+      const result = await retirePublishedModel(prisma);
+      return res.json({ retired: result.count });
+    } catch (err) {
+      return sendError(res, err, '[MAINTENANCE MODEL RETIRE]');
     }
   });
 

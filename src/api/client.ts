@@ -101,6 +101,51 @@ export interface NewsletterSubscriberListing {
   subscribers: { email: string; status: NewsletterSubscriberStatus; confirmedAt: string | null; consentAt: string; source: string }[];
 }
 
+export interface MaintenanceRuleSetView {
+  id: string;
+  version: string;
+  source: string;
+  lookbackDays: number;
+  baselineDays: number;
+  dueSoonHours: string;
+  fuelDriftPct: string;
+  idleRatioPct: string;
+  faultRecurrenceCount: number;
+  staleDataHours: number;
+  highSeverityLabels: string[];
+  active: boolean;
+  createdAt: string;
+}
+
+export interface ModelMetrics {
+  samples: number;
+  positives: number;
+  auc: number | null;
+  brier: number;
+  precision: number | null;
+  recall: number | null;
+}
+
+export interface MaintenanceModelView {
+  id: string;
+  version: string;
+  horizonDays: number;
+  settings: { minAuc: number; minPositives: number; alertProbability: number; holdoutFraction: number; sampleEveryDays: number; l2: number };
+  trainMetrics: ModelMetrics;
+  testMetrics: ModelMetrics;
+  clientCount: number;
+  machineCount: number;
+  sampleCount: number;
+  positiveCount: number;
+  datasetSha256: string;
+  passedGate: boolean;
+  gateNotes: string;
+  status: 'TRAINED' | 'PUBLISHED' | 'RETIRED';
+  trainedAt: string;
+  publishedAt: string | null;
+  ruleSet: { version: string };
+}
+
 export interface CharityReserveView {
   balances: { currency: string; totalCents: number; paymentCount: number }[];
   assignments: {
@@ -237,6 +282,30 @@ export const api = {
     token: string
   ): Promise<{ currency: string; licensees: { id: string; name: string; pricePerDropCents: number | null }[] }> {
     return apiRequest('/api/admin/logo-drop/prices', { token });
+  },
+
+  async getMaintenanceRuleSets(token: string): Promise<{ sets: MaintenanceRuleSetView[] }> {
+    return apiRequest('/api/admin/maintenance/rules', { token });
+  },
+
+  async publishMaintenanceRuleSet(token: string, body: Record<string, unknown>) {
+    return apiRequest<{ set: MaintenanceRuleSetView }>('/api/admin/maintenance/rules', { token, method: 'POST', body });
+  },
+
+  async getMaintenanceModels(token: string): Promise<{ models: MaintenanceModelView[]; data: { consentingClients: number; machines: number; failureEvents: number } }> {
+    return apiRequest('/api/admin/maintenance/models', { token });
+  },
+
+  async trainMaintenanceModel(token: string, body: Record<string, unknown>) {
+    return apiRequest<{ model: { id: string; version: string; passedGate: boolean; gateNotes: string } }>('/api/admin/maintenance/models/train', { token, method: 'POST', body });
+  },
+
+  async publishMaintenanceModel(token: string, id: string) {
+    return apiRequest(`/api/admin/maintenance/models/${encodeURIComponent(id)}/publish`, { token, method: 'POST' });
+  },
+
+  async retireMaintenanceModel(token: string) {
+    return apiRequest('/api/admin/maintenance/models/retire', { token, method: 'POST' });
   },
 
   /** GET /api/admin/newsletter/subscribers */

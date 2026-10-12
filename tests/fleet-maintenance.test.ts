@@ -10,6 +10,8 @@ import { evaluateCondition } from '../src/services/fleet/maintenance-insight.ser
 import { FLEET_SCHEMA_VERSION_ID } from '../src/services/fleet/fleet-schema';
 import type { MaintenanceRuleSet } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { MODEL_FEATURES, auc, predict, train as trainModel_ } from '../src/services/fleet/maintenance-model';
+import { trainModel as trainModelRun } from '../src/services/fleet/maintenance-training.service';
 
 const prisma = new PrismaClient();
 const app = createApp({ webhooks: { constructEvent: jest.fn() } } as unknown as Stripe);
@@ -285,5 +287,161 @@ describe('Maintenance insights API', () => {
 
     const other = await request(app).get('/api/fleet/maintenance/insights').set(auth(b)).expect(200);
     expect(other.body.conditions.every((c: { assetId: string }) => c.assetId !== a.assetId)).toBe(true);
+  });
+});
+
+describe('Predictive model maths', () => {
+  it('measures AUC correctly, counting ties as half', () => {
+    expect(auc([0.1, 0.4, 0.35, 0.8], [0, 0, 1, 1])).toBe(0.75);
+    expect(auc([0.5, 0.5], [0, 1])).toBe(0.5);
+    expect(auc([0.2, 0.3], [0, 0])).toBeNull();
+  });
+
+  it('learns a real signal, deterministically', () => {
+    // Seeded: the outcome depends on the first input only.
+    let seed = 7;
+    const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    const X: number[][] = [];
+    const y: number[] = [];
+    for (let i = 0; i < 400; i++) {
+      const signal = rand() * 10;
+      const noise = rand() * 10;
+      X.push([signal, noise, ...new Array(MODEL_FEATURES.length - 2).fill(0).map(() => rand())]);
+      y.push(signal + (rand() - 0.5) * 3 > 6 ? 1 : 0);
+    }
+    const opts = { l2: 1, maxIterations: 50, tolerance: 1e-6 };
+    const m1 = trainModel_(X.slice(0, 300), y.slice(0, 300), opts);
+    const m2 = trainModel_(X.slice(0, 300), y.slice(0, 300), opts);
+    expect(m1.coefficients).toEqual(m2.coefficients);
+    expect(Math.abs(m1.coefficients[0])).toBeGreaterThan(Math.abs(m1.coefficients[1]) * 3);
+    const scores = X.slice(300).map((x) => predict(m1, x));
+    expect(auc(scores, y.slice(300))!).toBeGreaterThan(0.85);
+  });
+});
+
+describe('Training and publishing the shared model', () => {
+  const until = new Date('2026-09-30T00:00:00Z');
+  let consenting: Client;
+  let declined: Client;
+  let ruleSetId: string;
+
+  /** Seeded fault and breakdown history: bursts of high-severity faults are followed by a breakdown. */
+  async function seedHistory(c: Client, machines: number, seed0: number) {
+    let seed = seed0;
+    const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    for (let m = 0; m < machines; m++) {
+      const asset =
+        m === 0
+          ? { id: c.assetId }
+          : await prisma.fleetAsset.create({
+              data: { licenseeId: c.licenseeId, assetTag: `EX-${m + 1}`, name: `Machine ${m + 1}`, category: 'EXCAVATOR', fuelType: 'DIESEL_MINERAL', ownership: 'OWNED', operationalControl: true },
+            });
+      const faults: Prisma.FleetFaultCodeCreateManyInput[] = [];
+      const events: Prisma.FleetMaintenanceEventCreateManyInput[] = [];
+      for (let cycle = 0; cycle < 8; cycle++) {
+        const start = until.getTime() - (250 - cycle * 30) * DAY;
+        const bad = rand() < 0.35;
+        for (let d = 0; d < 4; d++) {
+          faults.push({
+            licenseeId: c.licenseeId,
+            assetId: asset.id,
+            source: 'CLIENT_API',
+            observedAt: new Date(start + d * DAY + m * 1000),
+            code: bad ? 'E900' : 'I100',
+            severity: bad ? 'HIGH' : 'info',
+          });
+        }
+        if (bad) {
+          events.push({ licenseeId: c.licenseeId, assetId: asset.id, type: 'BREAKDOWN', occurredAt: new Date(start + 8 * DAY), source: 'PORTAL', createdByUserId: c.userId });
+        }
+      }
+      await prisma.fleetFaultCode.createMany({ data: faults });
+      await prisma.fleetMaintenanceEvent.createMany({ data: events });
+    }
+  }
+
+  beforeAll(async () => {
+    consenting = await makeClient('train', true);
+    declined = await makeClient('declined', true);
+    await seedHistory(consenting, 10, 11);
+    await seedHistory(declined, 6, 23);
+    await prisma.modelTrainingConsent.create({ data: { licenseeId: consenting.licenseeId, consentText: MODEL_TRAINING_CONSENT_TEXT, grantedAt: new Date(), grantedByUserId: consenting.userId } });
+    await prisma.maintenanceRuleSet.updateMany({ where: { active: true }, data: { active: false } });
+    const rules = await prisma.maintenanceRuleSet.create({
+      data: {
+        version: `train-${suffix}`,
+        source: 'test',
+        lookbackDays: 7,
+        baselineDays: 14,
+        dueSoonHours: new Prisma.Decimal('50'),
+        fuelDriftPct: new Prisma.Decimal('15'),
+        idleRatioPct: new Prisma.Decimal('40'),
+        faultRecurrenceCount: 3,
+        staleDataHours: 48,
+        highSeverityLabels: ['HIGH'],
+        active: true,
+        createdByUserId: adminUserId,
+      },
+    });
+    ruleSetId = rules.id;
+  });
+
+  afterAll(async () => {
+    await prisma.fleetMaintenanceModel.deleteMany({ where: { ruleSetId } });
+    await prisma.maintenanceRuleSet.delete({ where: { id: ruleSetId } });
+    const ids = [consenting.licenseeId, declined.licenseeId];
+    await prisma.portalUser.deleteMany({ where: { licenseeId: { in: ids } } });
+    await prisma.licensee.deleteMany({ where: { id: { in: ids } } });
+  });
+
+  const settings = { horizonDays: 10, sampleEveryDays: 2, holdoutFraction: 0.3, l2: 1, alertProbability: 0.5 };
+
+  it('trains on consenting clients only, measures held-back accuracy, and records an anonymous fingerprint', async () => {
+    const model = await trainModelRun(prisma, { ...settings, version: `pm-${suffix}-a`, minPositives: 1, minAuc: 0.7 }, adminUserId, until);
+    expect(model.clientCount).toBe(1);
+    expect(model.machineCount).toBe(10);
+    expect(model.positiveCount).toBeGreaterThan(0);
+    expect(model.datasetSha256).toMatch(/^[a-f0-9]{64}$/);
+    const test = model.testMetrics as { auc: number; positives: number };
+    expect(test.positives).toBeGreaterThan(0);
+    expect(test.auc).toBeGreaterThan(0.7);
+    expect(model.passedGate).toBe(true);
+    expect(JSON.stringify(model.weights)).not.toContain(consenting.licenseeId);
+  });
+
+  it('records a model that misses its minimums but refuses to publish it', async () => {
+    await request(app)
+      .post('/api/admin/maintenance/models/train')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...settings, version: `pm-${suffix}-bad`, minPositives: 1, minAuc: 0.3 })
+      .expect(400);
+    await request(app).post('/api/admin/maintenance/models/train').set(auth(consenting)).send({ ...settings, version: 'x', minPositives: 1, minAuc: 0.7 }).expect(403);
+    const strict = await trainModelRun(prisma, { ...settings, version: `pm-${suffix}-b`, minPositives: 100000, minAuc: 0.99 }, adminUserId, until);
+    expect(strict.passedGate).toBe(false);
+    expect(strict.gateNotes).toMatch(/Not publishable/);
+    await request(app).post(`/api/admin/maintenance/models/${strict.id}/publish`).set('Authorization', `Bearer ${adminToken}`).expect(409);
+    await request(app).post(`/api/admin/maintenance/models/${strict.id}/publish`).set(auth(consenting)).expect(403);
+  });
+
+  it('publishes a passing model and shows each machine its breakdown probability with the reasons', async () => {
+    const good = await prisma.fleetMaintenanceModel.findUniqueOrThrow({ where: { version: `pm-${suffix}-a` } });
+    await request(app).post(`/api/admin/maintenance/models/${good.id}/publish`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+
+    const list = await request(app).get('/api/admin/maintenance/models').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    expect(list.body.data.consentingClients).toBeGreaterThanOrEqual(1);
+    expect(list.body.models.find((m: { version: string }) => m.version === `pm-${suffix}-a`).status).toBe('PUBLISHED');
+
+    // A client who declined training still benefits from the published model.
+    const res = await request(app).get('/api/fleet/maintenance/insights').set(auth(declined)).expect(200);
+    expect(res.body.model).toEqual({ version: `pm-${suffix}-a`, horizonDays: 10 });
+    const machine = res.body.conditions[0];
+    expect(machine.prediction.probability).toBeGreaterThanOrEqual(0);
+    expect(machine.prediction.probability).toBeLessThanOrEqual(1);
+    expect(machine.prediction.horizonDays).toBe(10);
+    expect(Array.isArray(machine.prediction.factors)).toBe(true);
+
+    await request(app).post('/api/admin/maintenance/models/retire').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    const after = await request(app).get('/api/fleet/maintenance/insights').set(auth(declined)).expect(200);
+    expect(after.body.model).toBeNull();
   });
 });

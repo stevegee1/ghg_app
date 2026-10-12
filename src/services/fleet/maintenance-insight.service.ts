@@ -149,18 +149,42 @@ export async function getActiveRuleSet(db: Db) {
   return db.maintenanceRuleSet.findFirst({ where: { active: true } });
 }
 
-/** The condition of every active machine a client has, worst first. Null when no rule set is published. */
-export async function clientConditions(db: Db, licenseeId: string, at = new Date()) {
+/** Adds a model prediction to a machine's condition; supplied by the caller so this module stays model-agnostic. */
+export interface ConditionPredictor<P> {
+  windows: Pick<MaintenanceRuleSet, 'lookbackDays' | 'baselineDays'>;
+  model: { version: string; horizonDays: number };
+  predict: (history: MachineHistory, at: Date) => P;
+}
+
+/**
+ * The condition of every active machine a client has, worst first, with the published model's
+ * prediction when there is one. Null when no rule set is published.
+ */
+export async function clientConditions<P>(db: Db, licenseeId: string, at = new Date(), predictor?: ConditionPredictor<P>) {
   const rules = await getActiveRuleSet(db);
   if (!rules) return null;
   const assets = await db.fleetAsset.findMany({ where: { licenseeId, active: true }, select: { id: true, assetTag: true, name: true }, orderBy: { assetTag: 'asc' } });
-  const histories = await loadHistories(db, assets.map((a) => a.id), historyStart(rules, at), at);
-  const conditions: MachineCondition[] = assets.map((a) => {
-    const features = computeFeatures(histories.get(a.id)!, at, rules);
-    return { assetId: a.id, assetTag: a.assetTag, name: a.name, features, ...evaluateCondition(features, rules, at) };
+  const since = predictor ? new Date(Math.min(historyStart(rules, at).getTime(), historyStart(predictor.windows, at).getTime())) : historyStart(rules, at);
+  const histories = await loadHistories(db, assets.map((a) => a.id), since, at);
+  const conditions: (MachineCondition & { prediction: P | null })[] = assets.map((a) => {
+    const history = histories.get(a.id)!;
+    const features = computeFeatures(history, at, rules);
+    return {
+      assetId: a.id,
+      assetTag: a.assetTag,
+      name: a.name,
+      features,
+      ...evaluateCondition(features, rules, at),
+      prediction: predictor ? predictor.predict(history, at) : null,
+    };
   });
   conditions.sort((x, y) => RANK[y.priority] - RANK[x.priority] || x.assetTag.localeCompare(y.assetTag));
-  return { ruleSet: { id: rules.id, version: rules.version, source: rules.source }, evaluatedAt: at.toISOString(), conditions };
+  return {
+    ruleSet: { id: rules.id, version: rules.version, source: rules.source },
+    model: predictor ? predictor.model : null,
+    evaluatedAt: at.toISOString(),
+    conditions,
+  };
 }
 
 const int = (v: unknown, field: string, min: number, max: number) => {

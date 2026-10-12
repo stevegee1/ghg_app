@@ -2195,4 +2195,45 @@ model MaintenanceRuleSet {
   active               Boolean  @default(false)
   createdByUserId      String
   createdAt            DateTime @default(now())
+
+  models FleetMaintenanceModel[]
+}
+
+enum MaintenanceModelStatus {
+  TRAINED
+  PUBLISHED
+  RETIRED
+}
+
+/// One training run of the shared predictive maintenance model: its settings, weights, measured
+/// accuracy on held-back recent data and a SHA-256 of the anonymised training set. Only one model
+/// is published at a time; earlier ones are kept for audit.
+model FleetMaintenanceModel {
+  id                String                 @id @default(cuid())
+  version           String                 @unique
+  featureSetId      String
+  ruleSetId         String
+  ruleSet           MaintenanceRuleSet     @relation(fields: [ruleSetId], references: [id])
+  /// Days ahead the model predicts a breakdown or unplanned repair
+  horizonDays       Int
+  /// Training settings chosen by the administrator
+  settings          Json
+  weights           Json
+  trainMetrics      Json
+  testMetrics       Json
+  clientCount       Int
+  machineCount      Int
+  sampleCount       Int
+  positiveCount     Int
+  datasetSha256     String
+  /// Whether the held-back accuracy met the administrator's minimums; only then can it be published
+  passedGate        Boolean
+  gateNotes         String
+  status            MaintenanceModelStatus @default(TRAINED)
+  trainedByUserId   String
+  trainedAt         DateTime               @default(now())
+  publishedByUserId String?
+  publishedAt       DateTime?
+
+  @@index([status])
 }
