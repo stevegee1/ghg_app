@@ -33,6 +33,7 @@ import {
 } from '../services/workflow-client-view.service';
 import { currentVersionInclude } from '../services/framework-version.service';
 import { getReviewDossier, getReviewerProfile, isReviewQueueStage, listReviewQueue } from '../services/workflow-review-view.service';
+import { scanUploadedFile } from '../middleware/virus-scan.middleware';
 
 export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: CheckoutService): Router {
   const router = Router();
@@ -818,7 +819,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
    * Multipart: clientLogo (image file) and clientMessage. Issues the dual-logo credential
    * for a PAID submission and transitions it to BADGE_ISSUED.
    */
-  router.post('/api/workflow/submissions/:id/badge-setup', authenticateToken, logoUpload.single('clientLogo'), discardLogoOnFailure, async (req: Request, res: Response) => {
+  router.post('/api/workflow/submissions/:id/badge-setup', authenticateToken, logoUpload.single('clientLogo'), scanUploadedFile, discardLogoOnFailure, async (req: Request, res: Response) => {
     const { id } = req.params;
     const user = req.user!;
     const clientMessage = typeof req.body?.clientMessage === 'string' ? req.body.clientMessage : '';

@@ -1,10 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { validateFileStorage } from '../services/file-storage.service';
+import { pingScanner } from '../services/virus-scan.service';
 
 /**
  * GET /healthz: whether this instance can serve requests. Checks the database answers and file
  * storage is present and writable. Reports pass or fail per check only; detail goes to the logs.
+ * The virus scanner is reported ("off" when not configured) but does not fail the check: while it is
+ * down, uploads are refused, but the rest of the app keeps serving.
  */
 export function createHealthRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -24,8 +27,9 @@ export function createHealthRouter(prisma: PrismaClient): Router {
       console.error('[HEALTH] File storage check failed:', (err as Error).message);
     }
     const ok = checks.database && checks.fileStorage;
+    const scanner = await pingScanner();
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'unavailable', checks });
+    return res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'unavailable', checks: { ...checks, virusScanner: scanner === null ? 'off' : scanner } });
   });
 
   return router;

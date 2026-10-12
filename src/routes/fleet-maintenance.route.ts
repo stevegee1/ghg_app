@@ -14,6 +14,7 @@ import {
 } from '../services/fleet/fleet-maintenance.service';
 import { publishRuleSet } from '../services/fleet/maintenance-insight.service';
 import { fleetDataSources } from '../services/fleet/fleet-data-sources.service';
+import { scanUploadedFile } from '../middleware/virus-scan.middleware';
 import {
   clientInsights,
   parseTrainingSettings,
@@ -75,7 +76,7 @@ export function createFleetMaintenanceRouter(prisma: PrismaClient): Router {
       csvUpload.single('file')(req, res, (err: unknown) => {
         if (err) return res.status(400).json({ error: (err as Error).message });
         if (!req.file) return res.status(400).json({ error: 'Attach the CSV file in the "file" field.' });
-        next();
+        void scanUploadedFile(req, res, next);
       }),
     async (req: Request, res: Response) => {
       try {

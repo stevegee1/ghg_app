@@ -16,6 +16,7 @@ import { authenticateToken } from '../middleware/auth.middleware';
 import { runWithRls } from '../db/rls';
 import { discardLogoOnFailure, logoUpload } from '../middleware/logo-upload.middleware';
 import { REVIEW_METHOD_STATEMENT, REVIEW_SCOPE_STATEMENT } from '../utils/reviewScope';
+import { scanUploadedFile } from '../middleware/virus-scan.middleware';
 
 interface BadgeSource {
   id: string;
@@ -105,6 +106,7 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
     '/api/credentials/issue',
     authenticateToken,
     logoUpload.single('clientLogo'),
+    scanUploadedFile,
     discardLogoOnFailure,
     async (req: Request, res: Response) => {
       const user = req.user;

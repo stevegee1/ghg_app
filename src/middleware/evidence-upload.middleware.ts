@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { EVIDENCE_MAX_BYTES, isAllowedEvidenceFile } from '../services/evidence-file.service';
+import { scanUploadedFile } from './virus-scan.middleware';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -21,6 +22,6 @@ export function evidenceUpload(req: Request, res: Response, next: NextFunction) 
       return res.status(400).json({ error: message });
     }
     if (!req.file) return res.status(400).json({ error: 'Attach the evidence file in the "file" field.' });
-    next();
+    void scanUploadedFile(req, res, next);
   });
 }

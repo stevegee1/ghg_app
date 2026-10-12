@@ -4,6 +4,7 @@ import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
+import { validateSentryConfig } from '../src/observability/sentry';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { emailService } from '../src/services/email.service';
 import { NEWSLETTER_CONSENT_TEXT } from '../src/services/newsletter.service';
@@ -139,7 +140,7 @@ describe('Public site data', () => {
 describe('Health check', () => {
   it('reports ok when the database and file storage are available', async () => {
     const res = await request(app).get('/healthz').expect(200);
-    expect(res.body).toEqual({ status: 'ok', checks: { database: true, fileStorage: true } });
+    expect(res.body).toEqual({ status: 'ok', checks: { database: true, fileStorage: true, virusScanner: 'off' } });
     expect(res.headers['cache-control']).toBe('no-store');
   });
 
@@ -148,7 +149,7 @@ describe('Health check', () => {
     process.env.FILE_STORAGE_DIR = `${saved}-missing-${Date.now()}`;
     try {
       const res = await request(app).get('/healthz').expect(503);
-      expect(res.body).toEqual({ status: 'unavailable', checks: { database: true, fileStorage: false } });
+      expect(res.body).toEqual({ status: 'unavailable', checks: { database: true, fileStorage: false, virusScanner: 'off' } });
       expect(JSON.stringify(res.body)).not.toContain('missing');
     } finally {
       process.env.FILE_STORAGE_DIR = saved;
@@ -174,5 +175,37 @@ describe('Claims the platform must not make', () => {
       return FORBIDDEN.filter((re) => re.test(text)).map((re) => `${path.relative(process.cwd(), file)}: ${re}`);
     });
     expect(offending).toEqual([]);
+  });
+});
+
+describe('Error reporting settings', () => {
+  const saved = { dsn: process.env.SENTRY_DSN, env: process.env.SENTRY_ENVIRONMENT };
+  afterEach(() => {
+    if (saved.dsn === undefined) delete process.env.SENTRY_DSN;
+    else process.env.SENTRY_DSN = saved.dsn;
+    if (saved.env === undefined) delete process.env.SENTRY_ENVIRONMENT;
+    else process.env.SENTRY_ENVIRONMENT = saved.env;
+  });
+
+  it('gives the browser no reporting settings when Sentry is off', async () => {
+    delete process.env.SENTRY_DSN;
+    const res = await request(app).get('/api/public/client-config').expect(200);
+    expect(res.body).toEqual({ sentry: null });
+  });
+
+  it('shares the public DSN and environment with the browser when Sentry is on', async () => {
+    process.env.SENTRY_DSN = 'https://abc123@o1.ingest.sentry.io/42';
+    process.env.SENTRY_ENVIRONMENT = 'production';
+    const res = await request(app).get('/api/public/client-config').expect(200);
+    expect(res.body.sentry).toMatchObject({ dsn: 'https://abc123@o1.ingest.sentry.io/42', environment: 'production' });
+  });
+
+  it('refuses a malformed DSN or a DSN without an environment', () => {
+    process.env.SENTRY_DSN = 'not-a-dsn';
+    process.env.SENTRY_ENVIRONMENT = 'production';
+    expect(() => validateSentryConfig()).toThrow(/SENTRY_DSN/);
+    process.env.SENTRY_DSN = 'https://abc123@o1.ingest.sentry.io/42';
+    delete process.env.SENTRY_ENVIRONMENT;
+    expect(() => validateSentryConfig()).toThrow(/SENTRY_ENVIRONMENT/);
   });
 });

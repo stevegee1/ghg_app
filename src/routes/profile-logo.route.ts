@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { discardLogoOnFailure, logoUpload } from '../middleware/logo-upload.middleware';
 import { profileLogoFile, removeProfileLogo, setProfileLogo } from '../services/profile-logo.service';
+import { scanUploadedFile } from '../middleware/virus-scan.middleware';
 
 /** The signed-in client's profile logo. Pattern: evidence-file.route.ts (private, owner-only streaming). */
 export function createProfileLogoRouter(prisma: PrismaClient): Router {
@@ -45,6 +46,7 @@ export function createProfileLogoRouter(prisma: PrismaClient): Router {
         }
         next();
       }),
+    scanUploadedFile,
     discardLogoOnFailure,
     async (req: Request, res: Response) => {
       if (!req.file) return res.status(400).json({ error: 'Attach the logo in the "logo" field.' });

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { NEWSLETTER_CONSENT_TEXT, NewsletterError, confirmSubscription, requestSubscription, unsubscribe } from '../services/newsletter.service';
+import { readSentryConfig } from '../observability/sentry';
 
 /** Public endpoints behind the marketing site: newsletter double opt-in and the live charity share. */
 export function createPublicSiteRouter(prisma: PrismaClient): Router {
@@ -62,6 +63,15 @@ export function createPublicSiteRouter(prisma: PrismaClient): Router {
       console.error('[PUBLIC CHARITY SHARE ERROR]', err);
       return res.status(500).json({ error: 'Unavailable.' });
     }
+  });
+
+  /** GET /api/public/client-config: settings the browser needs at start-up. A Sentry DSN is public by design. */
+  router.get('/api/public/client-config', (_req: Request, res: Response) => {
+    const sentry = readSentryConfig();
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return res.status(200).json({
+      sentry: sentry ? { dsn: sentry.dsn, environment: sentry.environment, release: process.env.RAILWAY_GIT_COMMIT_SHA ?? null } : null,
+    });
   });
 
   return router;

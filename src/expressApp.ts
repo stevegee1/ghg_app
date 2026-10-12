@@ -25,6 +25,7 @@ import { createAdminCharityReserveRouter } from './routes/admin-charity-reserve.
 import { createAdminNewsletterRouter } from './routes/admin-newsletter.route';
 import { createFleetMaintenanceRouter } from './routes/fleet-maintenance.route';
 import { createHealthRouter } from './routes/health.route';
+import { Sentry, isSentryEnabled } from './observability/sentry';
 import { createProfileLogoRouter } from './routes/profile-logo.route';
 import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
@@ -218,6 +219,14 @@ export function createApp(stripeInstance?: Stripe): Express {
         );
       }
     });
+  });
+
+  // Errors that escape a route: reported (when Sentry is on), then a generic reply.
+  if (isSentryEnabled()) Sentry.setupExpressErrorHandler(app);
+  app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (res.headersSent) return next(err);
+    console.error('[UNHANDLED ROUTE ERROR]', err);
+    return res.status(500).json({ error: 'The request could not be completed.' });
   });
 
   return app;

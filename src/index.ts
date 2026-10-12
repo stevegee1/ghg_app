@@ -1,3 +1,4 @@
+import './instrument';
 import 'dotenv/config';
 import { prisma } from './db';
 import { TransactionService } from './services/transaction.service';
@@ -13,6 +14,7 @@ import { validateAssuranceFeeConfig } from './services/assurance-fee.service';
 import { isBillingEnabled, validateBillingConfig } from './services/billing-config.service';
 import { activatePendingFleetWithoutBilling } from './services/service-routing.service';
 import { validateFileStorage } from './services/file-storage.service';
+import { isVirusScanEnabled, validateVirusScanConfig } from './services/virus-scan.service';
 import { validateSecretBoxKey } from './services/secret-box.service';
 import { validateLlmProviderConfig } from './services/review-pipeline/llm-provider.interface';
 import { validateFuelFeedConfig } from './services/market-index.service';
@@ -60,6 +62,14 @@ async function main() {
     console.error(`FATAL: Assurance fee configuration is invalid. ${(err as Error).message} Refusing to start.`);
     process.exit(1);
   }
+
+  try {
+    validateVirusScanConfig();
+  } catch (err) {
+    console.error(`FATAL: Virus scanner configuration is invalid. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
+  if (!isVirusScanEnabled()) console.warn('[WARN] Virus scanning is off: set CLAMAV_HOST and CLAMAV_PORT to scan uploads.');
 
   try {
     validateFileStorage();

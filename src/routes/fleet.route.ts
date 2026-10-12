@@ -24,6 +24,7 @@ import {
 import { MAINTENANCE_CSV_COLUMNS } from '../services/fleet/fleet-maintenance.service';
 import { getFleetSummary, buildFleetReportPdf, estimateFuelEmissions } from '../services/fleet/fleet-reporting.service';
 import { EmissionFactorMissingError } from '../services/fleet/emission-factor.service';
+import { scanUploadedFile } from '../middleware/virus-scan.middleware';
 import {
   FleetBillingError,
   createFleetSubscriptionCheckout,
@@ -102,7 +103,7 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
     csvUpload.single('file')(req, res, (err: unknown) => {
       if (err) return res.status(400).json({ error: (err as Error).message });
       if (!req.file) return res.status(400).json({ error: 'Attach the CSV file in the "file" field.' });
-      next();
+      void scanUploadedFile(req, res, next);
     });
   };
 
