@@ -24,6 +24,7 @@ import { createAdminCharitiesRouter } from './routes/admin-charities.route';
 import { createAdminCharityReserveRouter } from './routes/admin-charity-reserve.route';
 import { createAdminNewsletterRouter } from './routes/admin-newsletter.route';
 import { createFleetMaintenanceRouter } from './routes/fleet-maintenance.route';
+import { createHealthRouter } from './routes/health.route';
 import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { createDemoBookingRouter } from './routes/demo-booking.route';
@@ -70,6 +71,8 @@ export function createApp(stripeInstance?: Stripe): Express {
 
   // Serve static files from Vite's 'dist' output and 'public'. Uploaded files live in private
   // storage and are only streamed through authenticated endpoints.
+  // Health check first: no rate limit, no static lookup.
+  app.use(createHealthRouter(prisma));
   app.use(express.static(distDir));
   app.use(express.static(path.join(process.cwd(), 'public')));
 

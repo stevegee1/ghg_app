@@ -133,3 +133,23 @@ describe('Public site data', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/stripeConnectedAccountId|acct_/);
   });
 });
+
+describe('Health check', () => {
+  it('reports ok when the database and file storage are available', async () => {
+    const res = await request(app).get('/healthz').expect(200);
+    expect(res.body).toEqual({ status: 'ok', checks: { database: true, fileStorage: true } });
+    expect(res.headers['cache-control']).toBe('no-store');
+  });
+
+  it('reports unavailable when file storage is missing, without exposing paths', async () => {
+    const saved = process.env.FILE_STORAGE_DIR;
+    process.env.FILE_STORAGE_DIR = `${saved}-missing-${Date.now()}`;
+    try {
+      const res = await request(app).get('/healthz').expect(503);
+      expect(res.body).toEqual({ status: 'unavailable', checks: { database: true, fileStorage: false } });
+      expect(JSON.stringify(res.body)).not.toContain('missing');
+    } finally {
+      process.env.FILE_STORAGE_DIR = saved;
+    }
+  });
+});
