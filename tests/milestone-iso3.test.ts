@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import request from 'supertest';
 import { resolveActiveSplitConfig } from '../src/services/split-config.service';
 import { PrismaClient, Vertical, ConformanceGrade, RiskLevel, VerificationSource, DeliveryType } from '@prisma/client';
@@ -18,12 +19,14 @@ function createMockStripe() {
     })
   );
   const mockPaymentIntentsRetrieve = jest.fn();
+  const mockSessionsCreate = jest.fn();
 
   const mockStripe = {
     paymentIntents: {
       create: mockPaymentIntentsCreate,
       retrieve: mockPaymentIntentsRetrieve,
     },
+    checkout: { sessions: { create: mockSessionsCreate } },
     webhooks: {
       constructEvent: jest.fn(),
     },
@@ -38,6 +41,14 @@ function createMockStripe() {
 
 const { stripe, mockPaymentIntentsCreate } = createMockStripe();
 const app = createApp(stripe);
+
+// jest resetMocks clears implementations before each test, so the session double is armed here.
+beforeEach(() => {
+  (stripe.checkout.sessions.create as jest.Mock).mockImplementation(async () => ({
+    id: `cs_iso3_${crypto.randomUUID()}`,
+    url: 'https://checkout.stripe.com/c/pay/cs_iso3',
+  }));
+});
 
 describe('Milestone ISO-3: Industrial, Event & Custom Keepsake Scoring Engine', () => {
   let licenseeA: any;
@@ -262,7 +273,10 @@ describe('Milestone ISO-3: Industrial, Event & Custom Keepsake Scoring Engine', 
 
       expect(res.status).toBe(201);
       expect(res.body.transactionId).toBeDefined();
-      expect(res.body.clientSecret).toBe('pi_iso3_mock_secret');
+      expect(res.body.sessionUrl).toBe('https://checkout.stripe.com/c/pay/cs_iso3');
+      // One transaction per order: the Checkout Session's, carrying the keepsake.
+      const session = (stripe.checkout.sessions.create as jest.Mock).mock.calls.at(-1)[0];
+      expect(session.metadata.transactionId).toBe(res.body.transactionId);
       const garment = await prisma.merchProduct.findUniqueOrThrow({ where: { id: 'HEAVYWEIGHT_HOODIE' } });
       expect(res.body.financialSummary.grossAmountCents).toBe(garment.pricePence);
       const tx = await prisma.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
@@ -276,6 +290,22 @@ describe('Milestone ISO-3: Industrial, Event & Custom Keepsake Scoring Engine', 
       });
       expect(savedSpec).not.toBeNull();
       expect(savedSpec?.garmentModel).toBe('HEAVYWEIGHT_HOODIE');
+    });
+  });
+
+  describe('3b. Keepsake checkout when Stripe is unavailable', () => {
+    it('reports the failure and records no keepsake order, instead of showing a placed order', async () => {
+      (stripe.checkout.sessions.create as jest.Mock).mockRejectedValueOnce(new Error('Stripe unavailable'));
+      const before = await prisma.customKeepsakeSpec.count();
+      const res = await request(app).post('/api/custom-merch/checkout').send({
+        garmentModel: 'HEAVYWEIGHT_HOODIE',
+        inscribedText: 'Stripe outage test',
+        threadColor: 'STERLING_SILVER',
+        placement: 'LEFT_CHEST',
+      });
+      expect(res.status).toBe(502);
+      expect(res.body.sessionUrl).toBeUndefined();
+      expect(await prisma.customKeepsakeSpec.count()).toBe(before);
     });
   });
 

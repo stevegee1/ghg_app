@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { PrismaClient, VerificationSource, DeliveryType, FulfillmentStatus, TransactionStatus, MerchProductKind } from '@prisma/client';
+import { PrismaClient, DeliveryType, MerchProductKind } from '@prisma/client';
+import { SplitConfigMissingError } from '../services/split-config.service';
 import { CustomKeepsakeService } from '../services/custom-keepsake.service';
 import { CheckoutService } from '../services/checkout.service';
 import { authenticateToken as verifyJwt } from '../middleware/auth.middleware';
@@ -48,7 +49,6 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
   router.post('/api/custom-merch/checkout', async (req: Request, res: Response) => {
     try {
       const {
-        checkoutReferenceId,
         garmentModel,
         inscribedText,
         threadColor,
@@ -92,41 +92,45 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         royaltyBps
       );
 
-      const uniqueRef =
-        typeof checkoutReferenceId === 'string' && checkoutReferenceId.trim() ? checkoutReferenceId.trim() : `keepsake_${crypto.randomUUID()}`;
-
-      // 1. Invoke CheckoutService to handle transaction and 15% statutory split
-      const checkoutResult = await checkoutService.initiateCheckout({
-        licenseeId,
-        checkoutReferenceId: uniqueRef,
-        grossAmountCents: preview.financialSummary.grossAmountCents,
-        currency,
-        triggerEvent: {
-          verificationSource: VerificationSource.CONSUMER_OPT_IN,
+      // 1. One pending transaction and its Stripe Checkout Session. The session collects payment and
+      // delivery; without it there is no order, so a Stripe failure is reported, never hidden.
+      const itemDesc = frenzyClub ? `${sportType} Keepsake: ${frenzyClub}` : `${sportType} Keepsake`;
+      const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
+      let session: { sessionUrl: string | null; sessionId: string | null; transactionId: string };
+      try {
+        session = await checkoutService.createCheckoutSession({
+          licenseeId,
+          itemTitle: `NFTYLOGS Custom Keepsake (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
+          grossAmountCents: preview.financialSummary.grossAmountCents,
+          currency,
+          successUrl: `${origin}/checkout/success`,
+          cancelUrl: `${origin}/merch`,
+          customerEmail: customerEmail || undefined,
           deliveryType: DeliveryType.PHYSICAL,
-          fulfillmentStatus: FulfillmentStatus.PENDING,
-          rawPayload: {
+          shippingAddress: shippingAddress || undefined,
+          metadata: {
             garmentModel: preview.garmentModel,
-            garmentSize,
+            garmentSize: garmentSize || 'M',
             inscribedText: preview.inscribedText,
-            threadColor: preview.threadColor,
-            placement: preview.placement,
-            sportType,
-            frenzyClub: frenzyClub || null,
-            frenzyOpponent: frenzyOpponent || null,
-            frenzyMinute: frenzyMinute || null,
-            frenzyMoment: frenzyMoment || null,
-            frenzyQuote: frenzyQuote || null,
-            customerName: customerName || null,
-            customerEmail: customerEmail || null,
-            shippingAddress: shippingAddress || null,
+            sportType: sportType || 'Football',
+            frenzyClub: frenzyClub || '',
+            recipientName: shippingAddress?.recipientName || customerName || '',
           },
-        },
-      });
+        });
+      } catch (stripeErr) {
+        if (stripeErr instanceof SplitConfigMissingError) {
+          return res.status(503).json({ error: 'The shop cannot take payments yet. Please try again later.' });
+        }
+        console.error('[CUSTOM KEEPSAKE STRIPE SESSION ERROR]', stripeErr);
+        return res.status(502).json({ error: 'Checkout is unavailable right now. Please try again later.' });
+      }
+      if (!session.sessionUrl) {
+        return res.status(502).json({ error: 'Checkout is unavailable right now. Please try again later.' });
+      }
 
       // 2. Persist CustomKeepsakeSpec with full milestone, sizing, and shipping specs
       const keepsakeSpec = await keepsakeService.recordKeepsakeSpec({
-        transactionId: checkoutResult.transactionId,
+        transactionId: session.transactionId,
         garmentModel: preview.garmentModel,
         inscribedText: preview.inscribedText,
         threadColor: preview.threadColor,
@@ -147,48 +151,11 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         fulfillmentStatus: 'PENDING',
       });
 
-      // 3. Create Stripe Checkout Session for hosted checkout option with shipping collection
-      const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
-      const defaultSuccessUrl = `${origin}/checkout/success`;
-      const defaultCancelUrl = `${origin}/merch`;
-
-      let sessionUrl: string | null = null;
-      let sessionId: string | null = null;
-
-      try {
-        const itemDesc = frenzyClub ? `${sportType} Keepsake: ${frenzyClub}` : `${sportType} Keepsake`;
-        const sessionResult = await checkoutService.createCheckoutSession({
-          licenseeId,
-          itemTitle: `NFTYLOGS Custom Keepsake (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
-          grossAmountCents: preview.financialSummary.grossAmountCents,
-          currency,
-          successUrl: defaultSuccessUrl,
-          cancelUrl: defaultCancelUrl,
-          customerEmail: customerEmail || undefined,
-          deliveryType: DeliveryType.PHYSICAL,
-          shippingAddress: shippingAddress || undefined,
-          metadata: {
-            transactionId: checkoutResult.transactionId,
-            garmentModel: preview.garmentModel,
-            garmentSize: garmentSize || 'M',
-            inscribedText: preview.inscribedText,
-            sportType: sportType || 'Football',
-            frenzyClub: frenzyClub || '',
-            recipientName: shippingAddress?.recipientName || customerName || '',
-          },
-        });
-        sessionUrl = sessionResult.sessionUrl;
-        sessionId = sessionResult.sessionId;
-      } catch (stripeErr: any) {
-        console.warn('[CUSTOM KEEPSAKE STRIPE SESSION WARN]', stripeErr?.message);
-      }
-
       return res.status(201).json({
         message: 'Custom milestone keepsake order successfully initiated.',
-        transactionId: checkoutResult.transactionId,
-        clientSecret: checkoutResult.clientSecret,
-        sessionUrl,
-        sessionId,
+        transactionId: session.transactionId,
+        sessionUrl: session.sessionUrl,
+        sessionId: session.sessionId,
         financialSummary: preview.financialSummary,
         dualImpactMetrics: preview.dualImpactMetrics,
         keepsakeSpec,
