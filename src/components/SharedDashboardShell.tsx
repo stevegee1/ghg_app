@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { saveBlob } from './fleet/fleetFormat';
 
 export interface ActivityItem {
   id: string;
@@ -24,7 +25,8 @@ export interface CredentialItem {
   status: string;
   badgeImageUrl?: string | null;
   verifyUrl?: string | null;
-  pdfDownloadUrl: string;
+  /** Null when no PDF exists for this credential. */
+  pdfDownloadUrl: string | null;
 }
 
 export interface ClientDashboardData {
@@ -85,6 +87,16 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
   services,
 }) => {
   const { token, user } = useAuth();
+  // PDFs need the login token, which a plain link cannot send.
+  const downloadPdf = async (url: string) => {
+    if (!token) return;
+    try {
+      const { blob, fileName } = await api.downloadFile(token, url);
+      saveBlob(blob, fileName);
+    } catch (err) {
+      window.alert((err as Error).message);
+    }
+  };
   const navigate = useNavigate();
 
   const [data, setData] = useState<ClientDashboardData | null>(initialData || null);
@@ -704,10 +716,12 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
                       Issued: {new Date(cred.issuedAt).toLocaleDateString('en-GB')}
                     </span>
                   )}
-                  <a
-                    href={cred.pdfDownloadUrl}
-                    download
+                  {cred.pdfDownloadUrl && (
+                  <button
+                    type="button"
+                    onClick={() => downloadPdf(cred.pdfDownloadUrl as string)}
                     style={{
+                      background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit',
                       color: 'var(--accent-primary)', fontWeight: 600, textDecoration: 'none',
                       display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                     }}
@@ -718,7 +732,8 @@ export const SharedDashboardShell: React.FC<SharedDashboardShellProps> = ({
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
-                  </a>
+                  </button>
+                  )}
                 </div>
               </div>
             ))}

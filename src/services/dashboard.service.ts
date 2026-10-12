@@ -21,7 +21,8 @@ export interface CredentialItem {
   status: string;
   badgeImageUrl?: string | null;
   verifyUrl?: string | null;
-  pdfDownloadUrl: string;
+  /** Null when no PDF exists for this credential. */
+  pdfDownloadUrl: string | null;
 }
 
 export interface ClientDashboardData {
@@ -249,15 +250,14 @@ export class DashboardService {
         credentials.push({
           id: cred.id,
           type: 'AUDIT_BADGE',
-          title: cred.clientMessage || 'Statutory ISO Audit Assurance Badge',
-          frameworkOrScope: cred.selectedFrameworks.join(', ') || 'ISO 14001:2015 & ISO 50001:2018',
+          title: cred.clientMessage || 'Readiness credential',
+          frameworkOrScope: cred.selectedFrameworks.join(', ') || 'Framework not recorded',
           issuedAt: cred.createdAt.toISOString(),
           status: cred.status,
           badgeImageUrl: cred.compositeBadgeUrl || `/api/credentials/${cred.id}/badge.svg`,
           verifyUrl: cred.status === CredentialStatus.ISSUED ? `/api/credentials/${cred.id}/verify` : null,
-          pdfDownloadUrl: cred.workflowSubmissionId
-            ? `/api/workflow/submissions/${cred.workflowSubmissionId}/pdf`
-            : `/api/portal/iso/report/${cred.submissionId}`,
+          // Legacy readiness credentials have no PDF; only workflow credentials do.
+          pdfDownloadUrl: cred.workflowSubmissionId ? `/api/workflow/submissions/${cred.workflowSubmissionId}/pdf` : null,
         });
       }
     }

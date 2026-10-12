@@ -5,7 +5,6 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
-import { AuditScoringService } from '../src/services/audit-scoring.service';
 
 const prisma = new PrismaClient();
 const app = createApp();
@@ -82,16 +81,34 @@ describe('Milestone ISO-4: Evidence Locker & Executive/Event PDF Generator', () 
     tokenA = jwt.sign({ userId: partnerUserA.id, licenseeId: licenseeA.id, role: 'PARTNER' }, JWT_SECRET);
     tokenB = jwt.sign({ userId: partnerUserB.id, licenseeId: licenseeB.id, role: 'PARTNER' }, JWT_SECRET);
 
-    // 4. Seed Audit Report for Licensee A
-    const templateRows = AuditScoringService.getTemplateRowsForFacility('DATA_CENTRE');
-    const scoringService = new AuditScoringService(prisma);
-    reportA = await scoringService.evaluateAuditReport({
-      licenseeId: licenseeA.id,
-      auditRefId: 'AR-2026-DH-01',
-      facilityType: 'DATA_CENTRE',
-      leadAuditorName: 'Lead Assurance Officer, GMC, LL.B.',
-      evaluationDate: new Date(),
-      rows: templateRows,
+    // 4. A legacy audit report for Licensee A, as the retired ISO pipeline stored them
+    reportA = await prisma.auditInspectionReport.create({
+      data: {
+        licenseeId: licenseeA.id,
+        auditRefId: 'AR-2026-DH-01',
+        facilityType: 'DATA_CENTRE',
+        leadAuditorName: 'Lead Assurance Officer',
+        evaluationDate: new Date(),
+        weightedScore: 4.5,
+        overallGrade: 'CONFORMANT',
+        greenwashingRiskLevel: 'LOW_RISK_CONFORMANT',
+        matrixRows: {
+          create: [
+            {
+              pillarIndex: 1,
+              pillarName: 'Power Usage Effectiveness',
+              isoClauseLink: 'ISO 50001:2018 Clause 9.1.1',
+              legalMandate: 'UK SECR',
+              targetDepartment: 'IT Infrastructure',
+              questionText: 'Is PUE metered and reported?',
+              objectiveEvidenceTypes: 'Sub-meter readings',
+              scorePoints: 4.5,
+              complianceGrading: 'CONFORMANT',
+              weight: 1,
+            },
+          ],
+        },
+      },
     });
   });
 
@@ -223,13 +240,14 @@ describe('Milestone ISO-4: Evidence Locker & Executive/Event PDF Generator', () 
   });
 
   describe('4. Multi-Tenant Row-Level Security on Evidence & PDF Exports', () => {
-    it('should forbid Partner B from downloading Partner A PDF audit report (403 Forbidden)', async () => {
+    it('reports Partner A audit report as not found to Partner B, without revealing that it exists', async () => {
       const res = await request(app)
         .get(`/api/portal/iso/reports/${reportA.id}/pdf`)
         .set('Authorization', `Bearer ${tokenB}`); // Partner B token
 
-      expect(res.status).toBe(403);
-      expect(res.body.error).toContain('Forbidden');
+      // Row-level security hides other organisations' records, as on every other tenant endpoint.
+      expect(res.status).toBe(404);
+      expect(res.headers['content-type']).not.toMatch(/pdf/);
     });
 
     it('should forbid Partner B from querying Partner A evidence locker (403 Forbidden)', async () => {
