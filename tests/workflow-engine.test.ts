@@ -1,6 +1,7 @@
 import request from 'supertest';
 import Stripe from 'stripe';
 import path from 'path';
+import fs from 'fs';
 import {
   PrismaClient,
   WorkflowType,
@@ -1155,12 +1156,17 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
           reviewedAt: new Date(),
         },
       });
+      const logoDir = path.join(process.env.FILE_STORAGE_DIR as string, 'logos', licenseeA.id);
+      const filesBefore = fs.existsSync(logoDir) ? fs.readdirSync(logoDir).length : 0;
       const res = await request(app)
         .post(`/api/workflow/submissions/${sub.id}/badge-setup`)
         .set('Authorization', `Bearer ${partnerTokenA}`)
         .field('clientMessage', 'Trying to skip payment')
         .attach('clientLogo', LOGO_PATH);
       expect(res.status).toBeGreaterThanOrEqual(400);
+      // The refused upload is removed from storage.
+      await new Promise((r) => setTimeout(r, 100));
+      expect(fs.readdirSync(logoDir).length).toBe(filesBefore);
       const row = await prisma.workflowSubmission.findUnique({ where: { id: sub.id } });
       expect(row!.status).toBe(WorkflowStatus.APPROVED);
     });

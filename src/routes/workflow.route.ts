@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { PrismaClient, WorkflowType, WorkflowStatus, DeliveryType, EvidenceCategory } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
-import { logoUpload } from '../middleware/logo-upload.middleware';
+import { discardLogoOnFailure, logoUpload } from '../middleware/logo-upload.middleware';
 import { evidenceUpload } from '../middleware/evidence-upload.middleware';
 import { storeEvidenceFile } from '../services/evidence-file.service';
 import {
@@ -816,7 +816,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
    * Multipart: clientLogo (image file) and clientMessage. Issues the dual-logo credential
    * for a PAID submission and transitions it to BADGE_ISSUED.
    */
-  router.post('/api/workflow/submissions/:id/badge-setup', authenticateToken, logoUpload.single('clientLogo'), async (req: Request, res: Response) => {
+  router.post('/api/workflow/submissions/:id/badge-setup', authenticateToken, logoUpload.single('clientLogo'), discardLogoOnFailure, async (req: Request, res: Response) => {
     const { id } = req.params;
     const user = req.user!;
     const clientMessage = typeof req.body?.clientMessage === 'string' ? req.body.clientMessage : '';
@@ -852,7 +852,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       });
     } catch (err: unknown) {
       if (err instanceof InvalidWorkflowTransitionError) {
-        return res.status(409).json({ error: 'A credential can only be issued once, after payment is confirmed.' });
+        return res.status(409).json({ error: 'A credential can be issued once, when the submission is ready for it (approved, and paid where the service charges).' });
       }
       if (err instanceof WorkflowForbiddenError) {
         return res.status(403).json({ error: err.message });

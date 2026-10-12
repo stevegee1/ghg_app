@@ -1,3 +1,5 @@
+import fs from 'fs';
+import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import crypto from 'crypto';
@@ -35,3 +37,18 @@ export const logoUpload = multer({
     }
   },
 });
+
+/**
+ * Deletes the uploaded logo when the request ends in an error, so refused or failed credential
+ * requests leave no orphan files in storage. Place it straight after logoUpload.
+ */
+export function discardLogoOnFailure(req: Request, res: Response, next: NextFunction) {
+  res.on('finish', () => {
+    if (res.statusCode >= 400 && req.file?.path) {
+      fs.unlink(req.file.path, (err) => {
+        if (err && err.code !== 'ENOENT') console.error('[LOGO CLEANUP ERROR]', err.code);
+      });
+    }
+  });
+  next();
+}

@@ -14,7 +14,7 @@ import { PrismaClient, CredentialStatus } from '@prisma/client';
 import { compositeAuditBadge } from '../services/dual-logo-composite.service';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { runWithRls } from '../db/rls';
-import { logoUpload } from '../middleware/logo-upload.middleware';
+import { discardLogoOnFailure, logoUpload } from '../middleware/logo-upload.middleware';
 
 interface BadgeSource {
   id: string;
@@ -104,6 +104,7 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
     '/api/credentials/issue',
     authenticateToken,
     logoUpload.single('clientLogo'),
+    discardLogoOnFailure,
     async (req: Request, res: Response) => {
       const user = req.user;
       if (!user?.licenseeId) {
