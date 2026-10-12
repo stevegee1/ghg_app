@@ -38,7 +38,7 @@ export const STATUS_LABELS: Record<WorkflowStatus, string> = {
   SUBMITTED: 'In review',
   AI_SCREENED: 'In review',
   UNDER_REVIEW: 'In review',
-  APPROVED: 'Approved, payment due',
+  APPROVED: 'Approved',
   REJECTED: 'Revision requested',
   PAID: 'Paid, credential to set up',
   BADGE_ISSUED: 'Credential issued',

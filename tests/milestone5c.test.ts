@@ -494,7 +494,9 @@ describe('Milestone 5c: Versioned Split Configuration & Audit Trail Tests', () =
       .send({ currency, charityAllocationBps: [{ charityId: 'charity_green_earth', bps: 10000 }] })
       .expect(409);
 
-    // Deactivate this licensee's split so later tests fall back to the platform default.
+    // Deactivate this licensee's split so later tests fall back to the platform default, and remove the
+    // assignment record so suites that clear all users are not blocked by it.
     await prisma.splitConfigHistory.updateMany({ where: { licenseeId }, data: { isActive: false } });
+    await prisma.charityReserveAssignment.delete({ where: { id: assigned.body.assignmentId } });
   });
 });

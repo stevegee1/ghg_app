@@ -709,8 +709,8 @@ export const OnboardingPage: React.FC = () => {
           <div className="onb-fleet-done">
             <h2 className="onb-step-title">Your Fleet service is set up</h2>
             <p className="onb-help">
-              Next, register your machines and vehicles, choose your subscription and connect your data. Your Fleet
-              dashboard walks you through each step.
+              Next, register your machines and vehicles and connect your data. Your Fleet dashboard walks you through
+              each step.
             </p>
             <button type="button" className="btn btn-primary" onClick={() => navigate(SERVICE_DESTINATIONS.FLEET)}>
               Go to Fleet

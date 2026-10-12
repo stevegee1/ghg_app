@@ -25,6 +25,7 @@ import { PLATFORM_LICENSEE_ID } from '../src/services/platform-account.service';
 import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 import { resolveActiveSplitConfig } from '../src/services/split-config.service';
 import { createApp } from '../src/expressApp';
+import { activatePendingFleetWithoutBilling, enableClientService } from '../src/services/service-routing.service';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
@@ -605,3 +606,76 @@ describe('Fleet Emissions: HTTP API', () => {
   });
 });
 
+describe('Fleet Emissions: billing switched off', () => {
+  let saved: { flag: string | undefined; price: string | undefined };
+  let app: ReturnType<typeof createApp>;
+  let client: { licenseeId: string; userId: string; token: string };
+  const prices = { retrieve: jest.fn() };
+
+  beforeAll(async () => {
+    saved = { flag: process.env.FLEET_BILLING_ENABLED, price: process.env.STRIPE_FLEET_PRICE_ID };
+    app = createApp({ prices, webhooks: { constructEvent: jest.fn() } } as unknown as Stripe);
+    const suffix = `off.${Date.now().toString(36)}`;
+    const licensee = await prisma.licensee.create({ data: { name: `Fleet ${suffix}`, vertical: Vertical.B2B_HEAVY_MANUFACTURING } });
+    const user = await prisma.portalUser.create({ data: { email: `fleet.${suffix}@test.example`, passwordHash: 'x', role: 'PARTNER', licenseeId: licensee.id } });
+    client = { licenseeId: licensee.id, userId: user.id, token: jwt.sign({ userId: user.id, role: 'PARTNER', licenseeId: licensee.id }, JWT_SECRET, { expiresIn: '1h' }) };
+  });
+
+  beforeEach(() => {
+    process.env.FLEET_BILLING_ENABLED = 'false';
+    // With Fleet billing off no Stripe price is needed.
+    delete process.env.STRIPE_FLEET_PRICE_ID;
+  });
+
+  afterEach(() => {
+    process.env.FLEET_BILLING_ENABLED = saved.flag;
+    process.env.STRIPE_FLEET_PRICE_ID = saved.price;
+  });
+
+  afterAll(async () => {
+    await prisma.serviceRoutingEvent.deleteMany({ where: { licenseeId: client.licenseeId } });
+    await prisma.serviceEntitlement.deleteMany({ where: { licenseeId: client.licenseeId } });
+    await prisma.portalUser.deleteMany({ where: { id: client.userId } });
+    await prisma.licensee.deleteMany({ where: { id: client.licenseeId } });
+  });
+
+  it('activates Fleet at onboarding instead of waiting for a subscription', async () => {
+    const result = await enableClientService(prisma, { licenseeId: client.licenseeId, service: 'FLEET', actor: client.userId, reason: 'test' });
+    expect(result.activated).toEqual(['FLEET']);
+    expect(result.pending).toEqual([]);
+    const entitlement = await prisma.serviceEntitlement.findUniqueOrThrow({
+      where: { licenseeId_serviceLine: { licenseeId: client.licenseeId, serviceLine: 'FLEET' } },
+    });
+    expect(entitlement.status).toBe('ACTIVE');
+  });
+
+  it('activates Fleet entitlements left waiting for a subscription, and logs each one', async () => {
+    await prisma.serviceEntitlement.update({
+      where: { licenseeId_serviceLine: { licenseeId: client.licenseeId, serviceLine: 'FLEET' } },
+      data: { status: 'PENDING' },
+    });
+    expect(await activatePendingFleetWithoutBilling(prisma)).toBeGreaterThanOrEqual(1);
+    const entitlement = await prisma.serviceEntitlement.findUniqueOrThrow({
+      where: { licenseeId_serviceLine: { licenseeId: client.licenseeId, serviceLine: 'FLEET' } },
+    });
+    expect(entitlement.status).toBe('ACTIVE');
+    const event = await prisma.serviceRoutingEvent.findFirst({
+      where: { licenseeId: client.licenseeId, actor: 'system:fleet-billing-off' },
+    });
+    expect(event?.eventType).toBe('SERVICE_ACTIVATED');
+
+    process.env.FLEET_BILLING_ENABLED = 'true';
+    expect(await activatePendingFleetWithoutBilling(prisma)).toBe(0);
+  });
+
+  it('hides pricing and subscription routes and tells the dashboard billing is off', async () => {
+    await request(app).get('/api/fleet/pricing').expect(404);
+    await request(app).post('/api/fleet/subscription/checkout').set('Authorization', `Bearer ${client.token}`).expect(404);
+    await request(app).post('/api/fleet/subscription/portal').set('Authorization', `Bearer ${client.token}`).expect(404);
+    expect(prices.retrieve).not.toHaveBeenCalled();
+
+    const overview = await request(app).get('/api/fleet/overview').set('Authorization', `Bearer ${client.token}`).expect(200);
+    expect(overview.body.billingEnabled).toBe(false);
+    expect(overview.body.entitlementStatus).toBe('ACTIVE');
+  });
+});

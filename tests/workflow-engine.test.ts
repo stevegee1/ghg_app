@@ -17,6 +17,7 @@ import { syncFrameworkRegistry as seedFrameworks } from '../src/services/framewo
 import { grantPipelineAccess } from './helpers/pipelineAccess';
 import { ensurePlatformSplitConfig } from './helpers/platformSplit';
 import { getAssuranceFee, validateAssuranceFeeConfig } from '../src/services/assurance-fee.service';
+import { validateBillingConfig } from '../src/services/billing-config.service';
 import { AiAuditReviewer, RULES_ENGINE_REVIEWER } from '../src/services/review-pipeline/ai-audit-reviewer.service';
 
 const prisma = new PrismaClient();
@@ -1075,6 +1076,100 @@ describe('Part B.1–B.3: Workflow Engine & Data Model', () => {
         .send(JSON.stringify({}))
         .expect(400);
       expect(res.text).toBe('Webhook Error: Invalid signature');
+    });
+  });
+
+  describe('9b. Billing switched off for a service', () => {
+    let saved: Record<string, string | undefined>;
+    let approvedId: string;
+
+    beforeAll(async () => {
+      saved = {
+        flag: process.env.GHG_BILLING_ENABLED,
+        fee: process.env.GHG_ASSURANCE_FEE_PENCE,
+      };
+      const sub = await prisma.workflowSubmission.create({
+        data: {
+          licenseeId: licenseeA.id,
+          workflowType: WorkflowType.GHG,
+          frameworkId: 'fwk_iso_14064',
+          frameworkVersionId: 'fwk_iso_14064_v2026_1',
+          status: WorkflowStatus.APPROVED,
+          submittedAt: new Date(),
+          reviewedAt: new Date(),
+        },
+      });
+      approvedId = sub.id;
+    });
+
+    beforeEach(() => {
+      process.env.GHG_BILLING_ENABLED = 'false';
+      // A service that does not charge needs no fee configured.
+      delete process.env.GHG_ASSURANCE_FEE_PENCE;
+    });
+
+    afterEach(() => {
+      process.env.GHG_BILLING_ENABLED = saved.flag;
+      process.env.GHG_ASSURANCE_FEE_PENCE = saved.fee;
+    });
+
+    it('validates without a GHG fee and reports no fee for GHG, while Workforce keeps its fee', async () => {
+      expect(() => validateAssuranceFeeConfig()).not.toThrow();
+      const res = await request(app).get('/api/workflow/fees').set('Authorization', `Bearer ${partnerTokenA}`).expect(200);
+      expect(res.body.fees.GHG).toBeNull();
+      expect(res.body.fees.WORKFORCE.amountPence).toBe(Number(process.env.WORKFORCE_ASSURANCE_FEE_PENCE));
+    });
+
+    it('refuses to open a checkout for a service that does not charge', async () => {
+      await request(app)
+        .post(`/api/workflow/submissions/${approvedId}/checkout-session`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .expect(409);
+    });
+
+    it('issues the credential straight from APPROVED and logs the transition from APPROVED', async () => {
+      const res = await request(app)
+        .post(`/api/workflow/submissions/${approvedId}/badge-setup`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .field('clientMessage', 'Reviewed and approved')
+        .attach('clientLogo', LOGO_PATH)
+        .expect(201);
+      expect(res.body.submission.status).toBe(WorkflowStatus.BADGE_ISSUED);
+
+      const last = await prisma.workflowTransitionLog.findFirst({ where: { submissionId: approvedId }, orderBy: { timestamp: 'desc' } });
+      expect(last!.previousStatus).toBe(WorkflowStatus.APPROVED);
+      expect(last!.newStatus).toBe(WorkflowStatus.BADGE_ISSUED);
+    });
+
+    it('with billing on, an APPROVED submission still cannot skip payment', async () => {
+      process.env.GHG_BILLING_ENABLED = 'true';
+      process.env.GHG_ASSURANCE_FEE_PENCE = saved.fee;
+      const sub = await prisma.workflowSubmission.create({
+        data: {
+          licenseeId: licenseeA.id,
+          workflowType: WorkflowType.GHG,
+          frameworkId: 'fwk_iso_14064',
+          frameworkVersionId: 'fwk_iso_14064_v2026_1',
+          status: WorkflowStatus.APPROVED,
+          submittedAt: new Date(),
+          reviewedAt: new Date(),
+        },
+      });
+      const res = await request(app)
+        .post(`/api/workflow/submissions/${sub.id}/badge-setup`)
+        .set('Authorization', `Bearer ${partnerTokenA}`)
+        .field('clientMessage', 'Trying to skip payment')
+        .attach('clientLogo', LOGO_PATH);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      const row = await prisma.workflowSubmission.findUnique({ where: { id: sub.id } });
+      expect(row!.status).toBe(WorkflowStatus.APPROVED);
+    });
+
+    it('the billing switch must be set explicitly to true or false', () => {
+      process.env.GHG_BILLING_ENABLED = 'yes';
+      expect(() => validateBillingConfig()).toThrow(/GHG_BILLING_ENABLED/);
+      delete process.env.GHG_BILLING_ENABLED;
+      expect(() => validateBillingConfig()).toThrow(/GHG_BILLING_ENABLED/);
     });
   });
 

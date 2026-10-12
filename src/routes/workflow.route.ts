@@ -18,6 +18,7 @@ import {
 import { CheckoutService } from '../services/checkout.service';
 import { runWithRls } from '../db/rls';
 import { getAssuranceFee } from '../services/assurance-fee.service';
+import { isWorkflowBillingEnabled } from '../services/billing-config.service';
 import { PLATFORM_LICENSEE_ID } from '../services/platform-account.service';
 import { configuredLlmProviderId } from '../services/review-pipeline/llm-provider.interface';
 import {
@@ -761,6 +762,10 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return res.status(409).json({
           error: `Cannot initiate checkout for submission in '${submission.status}' status. Submission must be 'APPROVED'.`,
         });
+      }
+
+      if (!isWorkflowBillingEnabled(submission.workflowType)) {
+        return res.status(409).json({ error: 'This service has no assurance fee. Set up your credential instead.' });
       }
 
       const fee = getAssuranceFee(submission.workflowType);

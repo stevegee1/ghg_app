@@ -6,8 +6,19 @@ const prisma = new PrismaClient();
 const s = Date.now().toString(36);
 const email = `owner.${s}@nftylogs-test.example`;
 
+// Retiring the seed administrator rewrites a fixture other suites sign in with, so it is put back afterwards.
+let seedAdmin: { email: string; passwordHash: string; role: 'ADMIN' | 'PARTNER'; licenseeId: string | null } | null = null;
+
+beforeAll(async () => {
+  seedAdmin = await prisma.portalUser.findUnique({
+    where: { id: LEGACY_SEED_ADMIN_ID },
+    select: { email: true, passwordHash: true, role: true, licenseeId: true },
+  });
+});
+
 afterAll(async () => {
   await prisma.portalUser.deleteMany({ where: { email } });
+  if (seedAdmin) await prisma.portalUser.update({ where: { id: LEGACY_SEED_ADMIN_ID }, data: seedAdmin });
   await prisma.$disconnect();
 });
 

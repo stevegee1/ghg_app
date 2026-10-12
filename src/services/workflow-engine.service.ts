@@ -7,6 +7,7 @@ import {
   ReviewOverallDecision,
   EvidenceCategory,
 } from '@prisma/client';
+import { isWorkflowBillingEnabled } from './billing-config.service';
 import crypto from 'crypto';
 import { currentVersionInclude, describeVersion, getCurrentVersion } from './framework-version.service';
 import PDFDocument from 'pdfkit';
@@ -95,7 +96,8 @@ export const VALID_TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
   [WorkflowStatus.AI_SCREENED]: [WorkflowStatus.UNDER_REVIEW, WorkflowStatus.APPROVED, WorkflowStatus.REJECTED],
   [WorkflowStatus.UNDER_REVIEW]: [WorkflowStatus.APPROVED, WorkflowStatus.REJECTED],
   [WorkflowStatus.REJECTED]: [WorkflowStatus.SUBMITTED],
-  [WorkflowStatus.APPROVED]: [WorkflowStatus.PAID],
+  // BADGE_ISSUED straight from APPROVED only when the service's billing is off (see setupBadge).
+  [WorkflowStatus.APPROVED]: [WorkflowStatus.PAID, WorkflowStatus.BADGE_ISSUED],
   [WorkflowStatus.PAID]: [WorkflowStatus.BADGE_ISSUED],
   [WorkflowStatus.BADGE_ISSUED]: [],
 };
@@ -494,7 +496,9 @@ export class WorkflowEngineService {
       throw new WorkflowForbiddenError('You do not have access to this submission.');
     }
 
-    if (submission.status !== WorkflowStatus.PAID) {
+    // A credential follows payment; where the service does not charge, it follows approval.
+    const readyStatus = isWorkflowBillingEnabled(submission.workflowType) ? WorkflowStatus.PAID : WorkflowStatus.APPROVED;
+    if (submission.status !== readyStatus) {
       throw new InvalidWorkflowTransitionError(submission.status, WorkflowStatus.BADGE_ISSUED);
     }
 
@@ -509,7 +513,7 @@ export class WorkflowEngineService {
     return this.atomic(async (tx) => {
       // Conditional update so two concurrent requests cannot both issue a credential.
       const claimed = await tx.workflowSubmission.updateMany({
-        where: { id: submissionId, status: WorkflowStatus.PAID },
+        where: { id: submissionId, status: readyStatus },
         data: {
           status: WorkflowStatus.BADGE_ISSUED,
           clientMessage,
@@ -538,7 +542,7 @@ export class WorkflowEngineService {
       await tx.workflowTransitionLog.create({
         data: {
           submissionId,
-          previousStatus: WorkflowStatus.PAID,
+          previousStatus: readyStatus,
           newStatus: WorkflowStatus.BADGE_ISSUED,
           triggeredBy: actor.userId,
           triggerReason: `Credential ${credential.id} issued with SHA-256 seal ${compositeResult.verificationSeal.slice(0, 16)}`,

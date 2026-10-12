@@ -1,4 +1,8 @@
 import { EntitlementStatus, Prisma, PrismaClient, RoutingEventType, ServiceLine } from '@prisma/client';
+import { isBillingEnabled } from './billing-config.service';
+
+/** Recorded as the actor when Fleet is activated because Fleet billing is off. */
+const FLEET_BILLING_OFF_ACTOR = 'system:fleet-billing-off';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -41,7 +45,8 @@ export async function recordRoutingEvent(
 
 /**
  * Turns on the entitlements behind a chosen service.
- * GHG and Workforce activate immediately. Fleet stays PENDING until its subscription activates it.
+ * GHG and Workforce activate immediately. Fleet stays PENDING until its subscription activates it,
+ * or activates immediately when Fleet billing is off.
  * An entitlement an administrator has SUSPENDED or REVOKED is never reactivated here; the attempt is logged.
  */
 export async function enableClientService(
@@ -68,7 +73,8 @@ export async function enableClientService(
       continue;
     }
 
-    if (serviceLine === ServiceLine.FLEET) {
+    // Fleet waits for its subscription only when Fleet billing is on.
+    if (serviceLine === ServiceLine.FLEET && isBillingEnabled('FLEET')) {
       if (!existing) {
         await db.serviceEntitlement.create({
           data: { licenseeId: params.licenseeId, serviceLine, status: EntitlementStatus.PENDING },
@@ -99,4 +105,31 @@ export async function enableClientService(
   }
 
   return result;
+}
+
+/**
+ * With Fleet billing off, Fleet entitlements still waiting for a subscription are activated. Run at
+ * start-up so turning billing off takes effect for existing clients. Each activation is logged.
+ */
+export async function activatePendingFleetWithoutBilling(db: Db): Promise<number> {
+  if (isBillingEnabled('FLEET')) return 0;
+  const pending = await db.serviceEntitlement.findMany({
+    where: { serviceLine: ServiceLine.FLEET, status: EntitlementStatus.PENDING },
+    select: { licenseeId: true },
+  });
+  const now = new Date();
+  for (const { licenseeId } of pending) {
+    await db.serviceEntitlement.update({
+      where: { licenseeId_serviceLine: { licenseeId, serviceLine: ServiceLine.FLEET } },
+      data: { status: EntitlementStatus.ACTIVE, grantedAt: now, grantedBy: FLEET_BILLING_OFF_ACTOR },
+    });
+    await recordRoutingEvent(db, {
+      licenseeId,
+      eventType: RoutingEventType.SERVICE_ACTIVATED,
+      serviceLine: ServiceLine.FLEET,
+      actor: FLEET_BILLING_OFF_ACTOR,
+      detail: { reason: 'Fleet billing is off for this environment' },
+    });
+  }
+  return pending.length;
 }

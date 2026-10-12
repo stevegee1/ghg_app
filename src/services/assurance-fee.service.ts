@@ -1,4 +1,5 @@
 import { WorkflowType } from '@prisma/client';
+import { isWorkflowBillingEnabled } from './billing-config.service';
 
 export interface AssuranceFee {
   amountPence: number;
@@ -6,7 +7,7 @@ export interface AssuranceFee {
 }
 
 /**
- * Each client pipeline is charged one flat assurance fee, configured per environment.
+ * Each client pipeline with billing on is charged one flat assurance fee, configured per environment.
  * GHG covers the GHG and CARBON frameworks; Workforce covers JOB frameworks.
  */
 const FEE_ENV_BY_WORKFLOW: Record<WorkflowType, string> = {
@@ -47,12 +48,20 @@ export function getAssuranceFee(workflowType: WorkflowType): AssuranceFee {
   };
 }
 
+/** The fee for a workflow type, or null when its service does not charge. */
+export function getAssuranceFeeIfBilled(workflowType: WorkflowType): AssuranceFee | null {
+  return isWorkflowBillingEnabled(workflowType) ? getAssuranceFee(workflowType) : null;
+}
+
 /**
  * Throws with every configuration problem listed, so a misconfigured deploy fails at boot.
+ * Only services with billing on need a fee; the currency is needed when any of them does.
  */
 export function validateAssuranceFeeConfig(): void {
   const problems: string[] = [];
-  for (const envName of new Set(Object.values(FEE_ENV_BY_WORKFLOW))) {
+  const billed = (Object.keys(FEE_ENV_BY_WORKFLOW) as WorkflowType[]).filter(isWorkflowBillingEnabled);
+  if (billed.length === 0) return;
+  for (const envName of new Set(billed.map((t) => FEE_ENV_BY_WORKFLOW[t]))) {
     try {
       readAmount(envName);
     } catch (err) {

@@ -10,6 +10,8 @@ import { Vertical } from '@prisma/client';
 import { syncFrameworkRegistry } from './services/framework-registry';
 import { ensureAdministrator } from './services/admin-bootstrap.service';
 import { validateAssuranceFeeConfig } from './services/assurance-fee.service';
+import { isBillingEnabled, validateBillingConfig } from './services/billing-config.service';
+import { activatePendingFleetWithoutBilling } from './services/service-routing.service';
 import { validateFileStorage } from './services/file-storage.service';
 import { validateSecretBoxKey } from './services/secret-box.service';
 import { validateLlmProviderConfig } from './services/review-pipeline/llm-provider.interface';
@@ -35,7 +37,17 @@ async function main() {
     }
   }
 
-  for (const name of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PLATFORM_ACCOUNT_ID', 'STRIPE_FLEET_PRICE_ID']) {
+  try {
+    validateBillingConfig();
+  } catch (err) {
+    console.error(`FATAL: Billing configuration is invalid. ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
+
+  // Merch always takes payment, so Stripe is always required; the Fleet price only when Fleet charges.
+  const requiredStripeEnv = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PLATFORM_ACCOUNT_ID'];
+  if (isBillingEnabled('FLEET')) requiredStripeEnv.push('STRIPE_FLEET_PRICE_ID');
+  for (const name of requiredStripeEnv) {
     if (!process.env[name]) {
       console.error(`FATAL: ${name} environment variable must be set. Refusing to start.`);
       process.exit(1);
@@ -146,6 +158,14 @@ async function main() {
     if (admin.retiredSeedAdmin) console.log('[INFO] The development seed administrator account was retired.');
   } catch (err) {
     console.error(`FATAL: ${(err as Error).message} Refusing to start.`);
+    process.exit(1);
+  }
+
+  try {
+    const activated = await activatePendingFleetWithoutBilling(prisma);
+    if (activated > 0) console.log(`[INFO] Fleet billing is off: activated Fleet for ${activated} client(s).`);
+  } catch (err) {
+    console.error(`FATAL: Fleet entitlements could not be reconciled with the billing setting. ${(err as Error).message} Refusing to start.`);
     process.exit(1);
   }
 

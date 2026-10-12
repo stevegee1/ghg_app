@@ -1154,7 +1154,8 @@ export const api = {
     return apiRequest(`/api/workflow/my-frameworks?service=${service}`, { token });
   },
 
-  async getPipelineFees(token: string): Promise<{ fees: Record<PipelineService, PipelineFee> }> {
+  /** A null fee means the service does not charge in this environment. */
+  async getPipelineFees(token: string): Promise<{ fees: Record<PipelineService, PipelineFee | null> }> {
     return apiRequest('/api/workflow/fees', { token });
   },
 

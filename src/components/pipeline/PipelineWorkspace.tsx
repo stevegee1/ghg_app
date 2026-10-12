@@ -31,7 +31,8 @@ export const PipelineWorkspace: React.FC<Props> = ({ token, service, onPrepare }
   const paymentReturn = paymentParam === 'success' || paymentParam === 'cancelled' ? paymentParam : null;
 
   const [frameworks, setFrameworks] = useState<ClientFramework[] | null>(null);
-  const [fee, setFee] = useState<PipelineFee | null>(null);
+  // undefined until loaded; null when this service does not charge.
+  const [fee, setFee] = useState<PipelineFee | null | undefined>(undefined);
   const [submission, setSubmission] = useState<ClientSubmission | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState<string | null>(null);
@@ -136,7 +137,7 @@ export const PipelineWorkspace: React.FC<Props> = ({ token, service, onPrepare }
           {frameworks && (
             <PipelineFrameworkList
               frameworks={frameworks}
-              fee={fee}
+              fee={fee ?? null}
               starting={starting}
               onStart={start}
               onOpen={openSubmission}
@@ -176,11 +177,13 @@ export const PipelineWorkspace: React.FC<Props> = ({ token, service, onPrepare }
             <PipelineInReview submission={submission} />
           )}
 
-          {submission.status === 'APPROVED' && (
+          {submission.status === 'APPROVED' && fee !== undefined && fee !== null && (
             <PipelinePayment token={token} submission={submission} fee={fee} paymentReturn={paymentReturn} onRefresh={refreshSubmission} />
           )}
 
-          {submission.status === 'PAID' && <PipelineCredentialSetup token={token} submission={submission} onIssued={refreshSubmission} />}
+          {(submission.status === 'PAID' || (submission.status === 'APPROVED' && fee === null)) && (
+            <PipelineCredentialSetup token={token} submission={submission} onIssued={refreshSubmission} />
+          )}
 
           {submission.status === 'BADGE_ISSUED' && <PipelineCredentialIssued token={token} submission={submission} />}
 

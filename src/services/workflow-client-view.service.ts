@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient, ServiceLine, WorkflowStatus, WorkflowType } from '@prisma/client';
 import { currentRecommendationWhere } from './assessment-scope';
 import { currentVersionInclude } from './framework-version.service';
-import { AssuranceFee, getAssuranceFee } from './assurance-fee.service';
+import { AssuranceFee, getAssuranceFeeIfBilled } from './assurance-fee.service';
 import { ClientService, SERVICE_LINES } from './service-routing.service';
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -19,11 +19,11 @@ export function pipelineWorkflowTypes(service: PipelineService): WorkflowType[] 
   return SERVICE_LINES[service as ClientService].map((line) => line as string as WorkflowType);
 }
 
-/** One flat assurance fee per pipeline, from env. GHG and CARBON share the GHG fee. */
-export function pipelineFees(): Record<PipelineService, AssuranceFee> {
+/** One flat assurance fee per pipeline, from env; null where the service does not charge. GHG and CARBON share the GHG fee. */
+export function pipelineFees(): Record<PipelineService, AssuranceFee | null> {
   return {
-    GHG: getAssuranceFee(WorkflowType.GHG),
-    WORKFORCE: getAssuranceFee(WorkflowType.JOB),
+    GHG: getAssuranceFeeIfBilled(WorkflowType.GHG),
+    WORKFORCE: getAssuranceFeeIfBilled(WorkflowType.JOB),
   };
 }
 

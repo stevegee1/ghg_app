@@ -137,6 +137,8 @@ export interface FleetOverview {
   activeAssets: number;
   totalAssets: number;
   entitlementStatus: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REVOKED' | null;
+  /** False when Fleet does not charge in this environment: no subscription or price is shown. */
+  billingEnabled: boolean;
   subscription: { status: FleetSubscriptionStatus; quantity: number; currentPeriodEnd: string | null } | null;
   lastImportAt: string | null;
   lastTelemetryAt: string | null;

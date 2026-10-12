@@ -140,7 +140,7 @@ export const ReviewDossierView: React.FC<Props> = ({ token, submissionId, onBack
             return d.accepted ? { questionId: q.id, accepted: true } : { questionId: q.id, accepted: false, reasonIfRejected: d.reason.trim() };
           }),
         }),
-      overall === 'APPROVED' ? 'Approved. The client has been asked to pay the assurance fee.' : 'Revision requested. The client sees your reasons against each question.'
+      overall === 'APPROVED' ? 'Approved. The client can now complete the next step to receive the credential.' : 'Revision requested. The client sees your reasons against each question.'
     );
   };
 

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import Stripe from 'stripe';
 import { EntitlementStatus, FleetFuelType, Prisma, PrismaClient, ServiceLine } from '@prisma/client';
+import { isBillingEnabled } from '../services/billing-config.service';
 import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { runWithRls } from '../db/rls';
 import {
@@ -177,6 +178,7 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
         activeAssets: overview.activeAssets,
         totalAssets: overview.totalAssets,
         entitlementStatus: entitlement?.status ?? null,
+        billingEnabled: isBillingEnabled('FLEET'),
         subscription: overview.subscription
           ? {
               status: overview.subscription.status,
@@ -326,7 +328,13 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
     }
   });
 
-  router.get('/api/fleet/pricing', async (_req: Request, res: Response) => {
+  /** Subscription and pricing routes exist only while Fleet billing is on. */
+  const requireFleetBilling = (_req: Request, res: Response, next: NextFunction) => {
+    if (!isBillingEnabled('FLEET')) return res.status(404).json({ error: 'Fleet has no subscription in this environment.' });
+    next();
+  };
+
+  router.get('/api/fleet/pricing', requireFleetBilling, async (_req: Request, res: Response) => {
     try {
       return res.status(200).json(await getFleetPricing(stripe));
     } catch (err) {
@@ -334,7 +342,7 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
     }
   });
 
-  router.post('/api/fleet/subscription/checkout', authenticateToken, requireLicensee, async (req: Request, res: Response) => {
+  router.post('/api/fleet/subscription/checkout', requireFleetBilling, authenticateToken, requireLicensee, async (req: Request, res: Response) => {
     const user = req.user!;
     const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
     try {
@@ -352,7 +360,7 @@ export function createFleetRouter(prisma: PrismaClient, stripe: Stripe): Router 
     }
   });
 
-  router.post('/api/fleet/subscription/portal', authenticateToken, requireLicensee, async (req: Request, res: Response) => {
+  router.post('/api/fleet/subscription/portal', requireFleetBilling, authenticateToken, requireLicensee, async (req: Request, res: Response) => {
     const user = req.user!;
     const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
     try {

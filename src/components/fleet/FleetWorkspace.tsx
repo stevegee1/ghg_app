@@ -54,7 +54,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
     ? [
         { done: overview.activeAssets > 0, label: 'Register your assets', tab: 'assets' as FleetTab },
         { done: overview.activeAssets > 0 && overview.unconfirmedAssets === 0, label: 'Confirm how each machine connects', tab: 'assets' as FleetTab },
-        { done: isActive, label: 'Subscribe per active asset', tab: 'subscription' as FleetTab },
+        ...(overview.billingEnabled ? [{ done: isActive, label: 'Subscribe per active asset', tab: 'subscription' as FleetTab }] : []),
         { done: overview.lastImportAt !== null || overview.lastTelemetryAt !== null, label: 'Send fuel data (upload or API)', tab: 'uploads' as FleetTab },
       ]
     : [];
@@ -98,7 +98,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
       )}
 
       <div className="fleet-tabs" role="tablist" aria-label="Fleet sections">
-        {TABS.map((t) => (
+        {TABS.filter((t) => t.id !== 'subscription' || overview?.billingEnabled).map((t) => (
           <button
             key={t.id}
             type="button"
@@ -123,7 +123,7 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
         {overview && tab === 'weather' && <FleetWeather token={token} onSubscribe={() => setTab('subscription')} />}
         {overview && tab === 'uploads' && <FleetUploads token={token} onSubscribe={() => setTab('subscription')} onImported={refresh} />}
         {overview && tab === 'api' && <FleetApiAccess token={token} />}
-        {overview && tab === 'subscription' && <FleetSubscription token={token} overview={overview} onAddAssets={() => setTab('assets')} />}
+        {overview && overview.billingEnabled && tab === 'subscription' && <FleetSubscription token={token} overview={overview} onAddAssets={() => setTab('assets')} />}
       </div>
     </section>
   );
