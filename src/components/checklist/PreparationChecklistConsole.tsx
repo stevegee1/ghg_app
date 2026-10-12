@@ -152,7 +152,9 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
         file,
         category: 'UTILITY_BILL',
       });
-      const doc = docRes.document || docRes;
+      // The upload route answers { message, evidenceDoc }.
+      const doc = docRes.evidenceDoc;
+      if (!doc?.id) throw new Error('The file was uploaded but could not be linked. Please refresh and try again.');
 
       // 2. Link uploaded doc to checklist item and mark as ready/verified
       await api.updateChecklistItem(token, item.id, {
@@ -189,7 +191,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
         })
       );
 
-      setSuccessMessage(`Document "${file.name}" uploaded and verified with SHA-256 integrity.`);
+      setSuccessMessage(`Document "${file.name}" uploaded. SHA-256 recorded.`);
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       setError(err.message || 'Failed to upload evidence file');
@@ -858,7 +860,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
                               <polyline points="17 8 12 3 7 8" />
                               <line x1="12" y1="3" x2="12" y2="15" />
                             </svg>
-                            {isUploading ? 'Computing SHA-256...' : 'Select Evidence File'}
+                            {isUploading ? 'Uploading...' : 'Select Evidence File'}
                           </button>
                         </div>
                       )}

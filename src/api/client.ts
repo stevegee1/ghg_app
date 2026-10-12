@@ -42,6 +42,9 @@ import type { MarketIndex, MarketIndexValue } from './market.types';
 import type { AnchorBatch, AnchorOverview, VerifyResult } from './anchor.types';
 import type { Scope3ChainDetail, Scope3ChainSummary, Scope3Record, Scope3RecordInput } from './scope3.types';
 
+/** Longest an evidence upload may take (25 MB on a slow connection) before it is stopped. */
+const EVIDENCE_UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+
 function getAuthHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -771,11 +774,21 @@ export const api = {
     if (params.reportId) form.append('reportId', params.reportId);
     if (params.category) form.append('category', params.category);
 
-    const res = await fetch('/api/portal/iso/evidence/upload-file', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
+    // Without a time limit a stalled connection leaves the upload button spinning forever.
+    let res: Response;
+    try {
+      res = await fetch('/api/portal/iso/evidence/upload-file', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+        signal: AbortSignal.timeout(EVIDENCE_UPLOAD_TIMEOUT_MS),
+      });
+    } catch (err) {
+      if (err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+        throw new Error('The upload took too long and was stopped. Check your connection, or try a smaller file.');
+      }
+      throw new Error('The upload could not reach the server. Check your connection and try again.');
+    }
     const text = await res.text();
     let data: any = {};
     try {
