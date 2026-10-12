@@ -249,6 +249,8 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { createApp } from '../src/expressApp';
+import { evidenceCategoryFor } from '../src/utils/evidenceCategory';
+import { EvidenceCategory } from '@prisma/client';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
 describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
@@ -497,6 +499,36 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
       expect(updatedItem).toBeDefined();
       expect(updatedItem.status).toBe('COMPLETE');
       expect(updatedItem.completedAt).toBeDefined();
+    });
+
+    it('uploads evidence from the checklist and links it to the item', async () => {
+      const checklist = (await request(testApp).get(`/api/checklists/${checklistId}`).set('Authorization', `Bearer ${partnerToken}`)).body.checklist;
+      const item = checklist.items[1] ?? checklist.items[0];
+
+      // Same call the checklist console makes.
+      const upload = await request(testApp)
+        .post('/api/portal/iso/evidence/upload-file')
+        .set('Authorization', `Bearer ${partnerToken}`)
+        .field('category', evidenceCategoryFor(item.itemCode))
+        .attach('file', Buffer.from('%PDF-1.4 checklist proof'), { filename: 'proof.pdf', contentType: 'application/pdf' });
+      expect(upload.status).toBe(201);
+      const docId = upload.body.evidenceDoc.id;
+
+      const linked = await request(testApp)
+        .patch(`/api/checklists/items/${item.id}`)
+        .set('Authorization', `Bearer ${partnerToken}`)
+        .send({ status: 'COMPLETE', linkedEvidenceDocId: docId });
+      expect(linked.status).toBe(200);
+      const updated = linked.body.checklist.items.find((i: any) => i.id === item.id);
+      expect(updated.linkedEvidenceDocId).toBe(docId);
+      expect(updated.linkedEvidenceDoc?.sha256Hash).toMatch(/^[0-9a-f]{64}$/);
+    });
+
+    it('sends a category the server accepts for every checklist item', () => {
+      const allowed = Object.values(EvidenceCategory) as string[];
+      const codes = Object.values(FRAMEWORK_CHECKLIST_TEMPLATES).flat().map((t: any) => t.itemCode);
+      expect(codes.length).toBeGreaterThan(0);
+      for (const code of codes) expect(allowed).toContain(evidenceCategoryFor(code));
     });
   });
 

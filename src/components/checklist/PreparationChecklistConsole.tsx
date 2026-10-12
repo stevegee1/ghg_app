@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { evidenceCategoryFor } from '../../utils/evidenceCategory';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/client';
@@ -150,7 +151,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
       // 1. Upload proof file to evidence vault
       const docRes = await api.uploadEvidenceProofFile(token, {
         file,
-        category: 'UTILITY_BILL',
+        category: evidenceCategoryFor(item.itemCode),
       });
       // The upload route answers { message, evidenceDoc }.
       const doc = docRes.evidenceDoc;
