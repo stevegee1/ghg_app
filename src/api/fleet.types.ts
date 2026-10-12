@@ -428,3 +428,70 @@ export interface WearCoefficientSetView {
   createdAt: string;
   coefficients: { category: string; heatPctPerHour: string; frostPctPerHour: string; rainPctPerHour: string; windPctPerHour: string }[];
 }
+
+export type MaintenancePriority = 'HIGH' | 'MEDIUM' | 'LOW';
+export type MaintenanceEventType = 'SCHEDULED_SERVICE' | 'INSPECTION' | 'BREAKDOWN' | 'UNPLANNED_REPAIR';
+
+export const MAINTENANCE_EVENT_LABELS: Record<MaintenanceEventType, string> = {
+  SCHEDULED_SERVICE: 'Scheduled service',
+  INSPECTION: 'Inspection',
+  BREAKDOWN: 'Breakdown',
+  UNPLANNED_REPAIR: 'Unplanned repair',
+};
+
+export interface MachineConditionView {
+  assetId: string;
+  assetTag: string;
+  name: string;
+  priority: MaintenancePriority;
+  findings: { code: string; priority: MaintenancePriority; message: string }[];
+  nextService: { hoursRemaining: number; projectedDate: string | null } | null;
+  features: { operatingHours: number; hoursSinceService: number | null; serviceIntervalHours: number | null; faultCount: number };
+  prediction: {
+    probability: number;
+    alert: boolean;
+    horizonDays: number;
+    modelVersion: string;
+    factors: { key: string; label: string; value: number; effect: number }[];
+  } | null;
+}
+
+export type MaintenanceInsights =
+  | { configured: false; conditions: [] }
+  | {
+      configured: true;
+      ruleSet: { id: string; version: string; source: string };
+      model: { version: string; horizonDays: number } | null;
+      evaluatedAt: string;
+      conditions: MachineConditionView[];
+    };
+
+export interface MaintenanceRecords {
+  plans: { assetId: string; serviceIntervalHours: string; intervalSource: string; updatedAt: string }[];
+  events: {
+    id: string;
+    assetId: string;
+    type: MaintenanceEventType;
+    occurredAt: string;
+    operatingHours: string | null;
+    downtimeHours: string | null;
+    component: string | null;
+    description: string | null;
+    source: 'PORTAL' | 'CSV_IMPORT';
+    asset: { assetTag: string; name: string };
+  }[];
+}
+
+export interface FleetDataSourcesView {
+  apiKeys: { name: string; keyPrefix: string; scopes: string[]; createdAt: string; lastUsedAt: string | null }[];
+  telemetry: { source: string; snapshots: number; machines: number; lastReceivedAt: string | null }[];
+  connectedDevices: { provider: string; count: number }[];
+  uploads: { files: number; lastAt: string | null };
+  maintenanceRecords: { count: number; lastAt: string | null };
+}
+
+export interface TrainingConsentView {
+  text: string;
+  granted: boolean;
+  consent: { grantedAt: string; withdrawnAt: string | null } | null;
+}

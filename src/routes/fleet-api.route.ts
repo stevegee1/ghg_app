@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { EntitlementStatus, FleetReadingSource, PrismaClient, ServiceLine } from '@prisma/client';
+import { clientInsights } from '../services/fleet/maintenance-training.service';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { requireFleetApiKey } from '../middleware/fleet-api-key.middleware';
 import { runWithRls } from '../db/rls';
@@ -140,6 +141,17 @@ export function createFleetApiRouter(prisma: PrismaClient): Router {
       }
     }
   );
+
+  /** GET /api/fleet/v1/maintenance: each machine's condition, next service and, when published, the model's prediction. */
+  router.get('/api/fleet/v1/maintenance', requireFleetApiKey(prisma, 'fleet:read'), requireApiEntitlement, async (req: Request, res: Response) => {
+    const { licenseeId } = req.fleetApiClient!;
+    try {
+      return res.status(200).json(await runWithRls(prisma, asClient(licenseeId), (tx) => clientInsights(tx, licenseeId)));
+    } catch (err) {
+      console.error('[FLEET API MAINTENANCE ERROR]', err);
+      return res.status(500).json({ error: 'The request could not be completed.' });
+    }
+  });
 
   // ── API key management (portal login) ───────────────────────────────────
 

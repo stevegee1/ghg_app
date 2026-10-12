@@ -30,6 +30,10 @@ import type {
   AdminFleetBinding,
   AdminTrackingAsset,
   MappingTestResult,
+  MaintenanceInsights,
+  MaintenanceRecords,
+  FleetDataSourcesView,
+  TrainingConsentView,
 } from './fleet.types';
 import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
 import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
@@ -282,6 +286,42 @@ export const api = {
     token: string
   ): Promise<{ currency: string; licensees: { id: string; name: string; pricePerDropCents: number | null }[] }> {
     return apiRequest('/api/admin/logo-drop/prices', { token });
+  },
+
+  // ── Fleet maintenance (client) ─────────────────────────────────────────
+
+  async getMaintenanceInsights(token: string): Promise<MaintenanceInsights> {
+    return apiRequest('/api/fleet/maintenance/insights', { token });
+  },
+
+  async getMaintenanceRecords(token: string): Promise<MaintenanceRecords> {
+    return apiRequest('/api/fleet/maintenance', { token });
+  },
+
+  async setMaintenancePlan(token: string, body: { assetId: string; serviceIntervalHours: string; intervalSource: string }) {
+    return apiRequest('/api/fleet/maintenance/plans', { token, method: 'PUT', body });
+  },
+
+  async logMaintenanceEvent(token: string, body: Record<string, unknown>) {
+    return apiRequest('/api/fleet/maintenance/events', { token, method: 'POST', body });
+  },
+
+  async importMaintenanceHistory(token: string, file: File): Promise<{ rowsReceived: number; rowsAccepted: number; duplicates: number; rejections: { line: number; reason: string }[] }> {
+    const form = new FormData();
+    form.append('file', file);
+    return apiRequest('/api/fleet/maintenance/import', { token, method: 'POST', form, acceptStatus: [422] });
+  },
+
+  async getFleetDataSources(token: string): Promise<FleetDataSourcesView> {
+    return apiRequest('/api/fleet/maintenance/data-sources', { token });
+  },
+
+  async getTrainingConsent(token: string): Promise<TrainingConsentView> {
+    return apiRequest('/api/fleet/model-consent', { token });
+  },
+
+  async setTrainingConsent(token: string, granted: boolean): Promise<TrainingConsentView> {
+    return apiRequest('/api/fleet/model-consent', { token, method: 'PUT', body: { granted } });
   },
 
   async getMaintenanceRuleSets(token: string): Promise<{ sets: MaintenanceRuleSetView[] }> {

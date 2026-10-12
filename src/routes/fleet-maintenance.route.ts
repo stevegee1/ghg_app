@@ -12,11 +12,11 @@ import {
   setMaintenancePlan,
   setTrainingConsent,
 } from '../services/fleet/fleet-maintenance.service';
-import { clientConditions, publishRuleSet } from '../services/fleet/maintenance-insight.service';
+import { publishRuleSet } from '../services/fleet/maintenance-insight.service';
+import { fleetDataSources } from '../services/fleet/fleet-data-sources.service';
 import {
-  getPublishedModel,
+  clientInsights,
   parseTrainingSettings,
-  predictMachine,
   publishModel,
   retirePublishedModel,
   trainModel,
@@ -92,17 +92,18 @@ export function createFleetMaintenanceRouter(prisma: PrismaClient): Router {
   /** The condition of each machine under the active rule set, worst first. */
   router.get('/api/fleet/maintenance/insights', requireFleet, async (req: Request, res: Response) => {
     try {
-      const result = await runWithRls(prisma, req.user!, async (tx) => {
-        const model = await getPublishedModel(tx);
-        const predictor = model
-          ? { windows: model.ruleSet, model: { version: model.version, horizonDays: model.horizonDays }, predict: predictMachine.bind(null, model) }
-          : undefined;
-        return clientConditions(tx, req.user!.licenseeId!, new Date(), predictor);
-      });
-      if (!result) return res.json({ configured: false, conditions: [] });
-      return res.json({ configured: true, ...result });
+      return res.json(await runWithRls(prisma, req.user!, (tx) => clientInsights(tx, req.user!.licenseeId!)));
     } catch (err) {
       return sendError(res, err, '[FLEET MAINTENANCE INSIGHTS]');
+    }
+  });
+
+  /** Every source feeding the client's Fleet data, what it has sent and when it last did. */
+  router.get('/api/fleet/maintenance/data-sources', requireFleet, async (req: Request, res: Response) => {
+    try {
+      return res.json(await runWithRls(prisma, req.user!, (tx) => fleetDataSources(tx, req.user!.licenseeId!)));
+    } catch (err) {
+      return sendError(res, err, '[FLEET DATA SOURCES]');
     }
   });
 

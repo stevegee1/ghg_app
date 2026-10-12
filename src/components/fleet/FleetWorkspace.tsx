@@ -9,11 +9,15 @@ import { FleetApiAccess } from './FleetApiAccess';
 import { FleetProjects } from './FleetProjects';
 import { FleetWeather } from './FleetWeather';
 import { FleetValue } from './FleetValue';
+import { FleetMaintenance } from './FleetMaintenance';
+import { FleetDataSources } from './FleetDataSources';
 
-export type FleetTab = 'dashboard' | 'assets' | 'projects' | 'weather' | 'value' | 'uploads' | 'api' | 'subscription';
+export type FleetTab = 'dashboard' | 'maintenance' | 'sources' | 'assets' | 'projects' | 'weather' | 'value' | 'uploads' | 'api' | 'subscription';
 
 const TABS: { id: FleetTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'maintenance', label: 'Maintenance' },
+  { id: 'sources', label: 'Data sources' },
   { id: 'assets', label: 'Assets' },
   { id: 'projects', label: 'Projects' },
   { id: 'weather', label: 'Weather' },
@@ -117,6 +121,8 @@ export const FleetWorkspace: React.FC<Props> = ({ token, initialTab = 'dashboard
       <div role="tabpanel" id={`fleet-panel-${tab}`} aria-labelledby={`fleet-tab-${tab}`}>
         {!overview && !error && <div className="fleet-panel fleet-state">Loading Fleet...</div>}
         {overview && tab === 'dashboard' && <FleetDashboard key={refreshKey} token={token} onSubscribe={() => setTab('subscription')} />}
+        {overview && tab === 'maintenance' && <FleetMaintenance token={token} />}
+        {overview && tab === 'sources' && <FleetDataSources token={token} onOpenApi={() => setTab('api')} />}
         {overview && tab === 'assets' && <FleetAssets token={token} onChanged={refresh} />}
         {overview && tab === 'projects' && <FleetProjects token={token} onSubscribe={() => setTab('subscription')} />}
         {overview && tab === 'value' && <FleetValue token={token} onSubscribe={() => setTab('subscription')} />}

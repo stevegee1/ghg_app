@@ -4,7 +4,7 @@ import { runWithRls } from '../../db/rls';
 import { FleetValidationError } from './fleet-asset.service';
 import { FAILURE_EVENT_TYPES } from './fleet-maintenance.service';
 import { MachineHistory, computeFeatures } from './maintenance-features';
-import { getActiveRuleSet, loadHistories } from './maintenance-insight.service';
+import { clientConditions, getActiveRuleSet, loadHistories } from './maintenance-insight.service';
 import { FEATURE_SET_ID, MODEL_FEATURES, ModelWeights, evaluate, predict, topContributions, train, vectorize } from './maintenance-model';
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -217,4 +217,14 @@ export function predictMachine(model: FleetMaintenanceModel & { ruleSet: Mainten
     modelVersion: model.version,
     factors: topContributions(weights, x, FACTORS_SHOWN),
   };
+}
+
+/** A client's machine conditions with the published model's predictions, as the portal and the API serve them. */
+export async function clientInsights(db: Db, licenseeId: string, at = new Date()) {
+  const model = await getPublishedModel(db);
+  const predictor = model
+    ? { windows: model.ruleSet, model: { version: model.version, horizonDays: model.horizonDays }, predict: (h: MachineHistory, t: Date) => predictMachine(model, h, t) }
+    : undefined;
+  const result = await clientConditions(db, licenseeId, at, predictor);
+  return result ? { configured: true as const, ...result } : { configured: false as const, conditions: [] };
 }

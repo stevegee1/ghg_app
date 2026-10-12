@@ -12,6 +12,7 @@ import type { MaintenanceRuleSet } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { MODEL_FEATURES, auc, predict, train as trainModel_ } from '../src/services/fleet/maintenance-model';
 import { trainModel as trainModelRun } from '../src/services/fleet/maintenance-training.service';
+import { createFleetApiKey } from '../src/services/fleet/fleet-api-key.service';
 
 const prisma = new PrismaClient();
 const app = createApp({ webhooks: { constructEvent: jest.fn() } } as unknown as Stripe);
@@ -68,6 +69,7 @@ afterAll(async () => {
   await prisma.maintenanceRuleSet.deleteMany({ where: { createdByUserId: adminUserId } });
   await prisma.portalUser.deleteMany({ where: { id: adminUserId } });
   const ids = [a.licenseeId, b.licenseeId, inactive.licenseeId];
+  await prisma.fleetApiKey.deleteMany({ where: { licenseeId: { in: ids } } });
   await prisma.portalUser.deleteMany({ where: { licenseeId: { in: ids } } });
   await prisma.licensee.deleteMany({ where: { id: { in: ids } } });
   await prisma.$disconnect();
@@ -287,6 +289,25 @@ describe('Maintenance insights API', () => {
 
     const other = await request(app).get('/api/fleet/maintenance/insights').set(auth(b)).expect(200);
     expect(other.body.conditions.every((c: { assetId: string }) => c.assetId !== a.assetId)).toBe(true);
+  });
+});
+
+describe('Data sources and the maintenance API', () => {
+  it('lists what each source has sent, showing keys by prefix only', async () => {
+    const { key } = await createFleetApiKey(prisma, a.licenseeId, a.userId, { name: 'ERP link', scopes: ['fleet:read'] });
+    const res = await request(app).get('/api/fleet/maintenance/data-sources').set(auth(a)).expect(200);
+    expect(res.body.telemetry).toEqual([expect.objectContaining({ source: 'CLIENT_API', machines: 1, snapshots: 1 })]);
+    expect(res.body.apiKeys[0]).toMatchObject({ name: 'ERP link', keyPrefix: key.slice(0, 12) });
+    expect(JSON.stringify(res.body)).not.toContain(key);
+    expect(res.body.maintenanceRecords.count).toBeGreaterThan(0);
+  });
+
+  it('serves the same insights to the client systems through their API key', async () => {
+    const { key } = await createFleetApiKey(prisma, a.licenseeId, a.userId, { name: 'BI tool', scopes: ['fleet:read'] });
+    const res = await request(app).get('/api/fleet/v1/maintenance').set('Authorization', `Bearer ${key}`).expect(200);
+    expect(res.body.configured).toBe(true);
+    expect(res.body.conditions.map((c: { assetId: string }) => c.assetId)).toContain(a.assetId);
+    await request(app).get('/api/fleet/v1/maintenance').set('Authorization', 'Bearer not-a-key').expect(401);
   });
 });
 
