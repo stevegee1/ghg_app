@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { EntitlementStatus, PrismaClient, ServiceLine } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth.middleware';
+import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { runWithRls } from '../db/rls';
 import { csvUpload, sendError } from './fleet.route';
 import {
@@ -12,6 +12,7 @@ import {
   setMaintenancePlan,
   setTrainingConsent,
 } from '../services/fleet/fleet-maintenance.service';
+import { clientConditions, publishRuleSet } from '../services/fleet/maintenance-insight.service';
 
 /** Service intervals, maintenance events and training consent for Fleet clients. Pattern: fleet-project.route.ts. */
 export function createFleetMaintenanceRouter(prisma: PrismaClient): Router {
@@ -78,6 +79,34 @@ export function createFleetMaintenanceRouter(prisma: PrismaClient): Router {
       }
     }
   );
+
+  /** The condition of each machine under the active rule set, worst first. */
+  router.get('/api/fleet/maintenance/insights', requireFleet, async (req: Request, res: Response) => {
+    try {
+      const result = await runWithRls(prisma, req.user!, (tx) => clientConditions(tx, req.user!.licenseeId!));
+      if (!result) return res.json({ configured: false, conditions: [] });
+      return res.json({ configured: true, ...result });
+    } catch (err) {
+      return sendError(res, err, '[FLEET MAINTENANCE INSIGHTS]');
+    }
+  });
+
+  router.use('/api/admin/maintenance', authenticateToken, requireAdmin);
+
+  router.get('/api/admin/maintenance/rules', async (_req: Request, res: Response) => {
+    const sets = await prisma.maintenanceRuleSet.findMany({ orderBy: { createdAt: 'desc' } });
+    return res.json({ sets });
+  });
+
+  /** Publishes a new rule set version and makes it active. Earlier versions stay for the insights that used them. */
+  router.post('/api/admin/maintenance/rules', async (req: Request, res: Response) => {
+    try {
+      const set = await publishRuleSet(prisma, req.body || {}, req.user!.userId);
+      return res.status(201).json({ set });
+    } catch (err) {
+      return sendError(res, err, '[MAINTENANCE RULES PUBLISH]');
+    }
+  });
 
   router.get('/api/fleet/model-consent', requireFleet, async (req: Request, res: Response) => {
     try {

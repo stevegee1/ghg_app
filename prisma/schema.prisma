@@ -2169,3 +2169,30 @@ model ModelTrainingConsent {
   withdrawnByUserId String?
   updatedAt         DateTime  @updatedAt
 }
+
+/// Thresholds for the rule-based maintenance check, published by administrators. Each insight
+/// records the version it used; old versions are kept.
+model MaintenanceRuleSet {
+  id                   String   @id @default(cuid())
+  version              String   @unique
+  source               String
+  /// Days of recent data each check looks at
+  lookbackDays         Int
+  /// Days before the lookback window used as the machine's own fuel-burn baseline
+  baselineDays         Int
+  /// Engine hours before a service is due at which it is flagged as due soon
+  dueSoonHours         Decimal  @db.Decimal(10, 2)
+  /// Rise in litres per engine hour against the baseline, in percent, that is flagged
+  fuelDriftPct         Decimal  @db.Decimal(6, 2)
+  /// Idle hours as a percent of engine hours that is flagged
+  idleRatioPct         Decimal  @db.Decimal(6, 2)
+  /// Times one fault code must recur within the lookback window to be flagged
+  faultRecurrenceCount Int
+  /// Hours without new data after which a machine is flagged as not reporting
+  staleDataHours       Int
+  /// Fault severity labels (as machines report them) treated as high severity
+  highSeverityLabels   String[]
+  active               Boolean  @default(false)
+  createdByUserId      String
+  createdAt            DateTime @default(now())
+}

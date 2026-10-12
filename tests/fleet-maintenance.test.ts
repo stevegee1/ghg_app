@@ -5,6 +5,11 @@ import { PrismaClient, Vertical } from '@prisma/client';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 import { MODEL_TRAINING_CONSENT_TEXT } from '../src/services/fleet/fleet-maintenance.service';
+import { MachineHistory, computeFeatures } from '../src/services/fleet/maintenance-features';
+import { evaluateCondition } from '../src/services/fleet/maintenance-insight.service';
+import { FLEET_SCHEMA_VERSION_ID } from '../src/services/fleet/fleet-schema';
+import type { MaintenanceRuleSet } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const app = createApp({ webhooks: { constructEvent: jest.fn() } } as unknown as Stripe);
@@ -49,9 +54,17 @@ beforeAll(async () => {
   a = await makeClient('a', true);
   b = await makeClient('b', true);
   inactive = await makeClient('off', false);
+  const admin = await prisma.portalUser.create({ data: { email: `maint.admin.${suffix}@test.example`, passwordHash: 'x', role: 'ADMIN' } });
+  adminUserId = admin.id;
+  adminToken = jwt.sign({ userId: admin.id, role: 'ADMIN', licenseeId: '' }, JWT_SECRET, { expiresIn: '1h' });
 });
 
+let adminToken: string;
+let adminUserId: string;
+
 afterAll(async () => {
+  await prisma.maintenanceRuleSet.deleteMany({ where: { createdByUserId: adminUserId } });
+  await prisma.portalUser.deleteMany({ where: { id: adminUserId } });
   const ids = [a.licenseeId, b.licenseeId, inactive.licenseeId];
   await prisma.portalUser.deleteMany({ where: { licenseeId: { in: ids } } });
   await prisma.licensee.deleteMany({ where: { id: { in: ids } } });
@@ -130,5 +143,147 @@ describe('Fleet maintenance records', () => {
     const withdrawn = await request(app).put('/api/fleet/model-consent').set(auth(a)).send({ granted: false }).expect(200);
     expect(withdrawn.body.granted).toBe(false);
     expect(withdrawn.body.consent.withdrawnAt).not.toBeNull();
+  });
+});
+
+const DAY = 24 * 3600 * 1000;
+const RULES = {
+  id: 'rs_test',
+  version: 't1',
+  source: 'test',
+  lookbackDays: 30,
+  baselineDays: 60,
+  dueSoonHours: new Prisma.Decimal('50'),
+  fuelDriftPct: new Prisma.Decimal('15'),
+  idleRatioPct: new Prisma.Decimal('40'),
+  faultRecurrenceCount: 3,
+  staleDataHours: 48,
+  highSeverityLabels: ['HIGH', 'Red'],
+  active: true,
+  createdByUserId: 'x',
+  createdAt: new Date(),
+} as MaintenanceRuleSet;
+
+describe('Condition features and rules', () => {
+  const at = new Date('2026-06-30T00:00:00Z');
+  const day = (n: number) => new Date(at.getTime() - n * DAY);
+  const history: MachineHistory = {
+    serviceIntervalHours: 500,
+    usage: [
+      // Baseline: 10 litres per engine hour
+      { periodStart: day(80), periodEnd: day(40), fuel: 2000, engineHours: 200, idleHours: 40 },
+      // Recent: 12 litres per engine hour, half the time idling
+      { periodStart: day(30), periodEnd: day(0), fuel: 1200, engineHours: 100, idleHours: 50 },
+    ],
+    faults: [
+      { observedAt: day(5), code: 'E101', severity: 'red' },
+      { observedAt: day(4), code: 'E202', severity: 'low' },
+      { observedAt: day(3), code: 'E202', severity: 'low' },
+      { observedAt: day(2), code: 'E202', severity: 'low' },
+      // After the evaluation time: must be ignored
+      { observedAt: new Date(at.getTime() + DAY), code: 'E999', severity: 'HIGH' },
+    ],
+    maintenance: [
+      { type: 'SCHEDULED_SERVICE', occurredAt: day(100), operatingHours: 1000 },
+      { type: 'BREAKDOWN', occurredAt: day(200), operatingHours: null },
+      { type: 'BREAKDOWN', occurredAt: new Date(at.getTime() + DAY), operatingHours: null },
+    ],
+    meters: [{ observedAt: day(1), receivedAt: day(1), cumulativeOperatingHours: 1480 }],
+    weather: [{ date: day(10), harshHours: 6 }, { date: day(40), harshHours: 9 }],
+  };
+
+  it('computes each feature from data before the evaluation time only', () => {
+    const f = computeFeatures(history, at, RULES);
+    expect(f.operatingHours).toBe(100);
+    expect(f.fuelPerHour).toBe(12);
+    expect(f.baselineFuelPerHour).toBe(10);
+    expect(f.fuelDriftPct).toBe(20);
+    expect(f.idleRatioPct).toBe(50);
+    expect(f.faultCount).toBe(4);
+    expect(f.highSeverityFaults).toBe(1);
+    expect(f).toMatchObject({ maxFaultRecurrence: 3, mostRecurrentFaultCode: 'E202' });
+    expect(f.hoursSinceService).toBe(480);
+    expect(f.serviceIntervalUsed).toBe(0.96);
+    expect(f.harshWeatherHours).toBe(6);
+    expect(f.priorFailures365).toBe(1);
+    expect(f.hoursSinceData).toBe(0);
+  });
+
+  it('turns the features into findings with the worst priority on top', () => {
+    const f = computeFeatures(history, at, RULES);
+    const result = evaluateCondition(f, RULES, at);
+    expect(result.priority).toBe('HIGH');
+    expect(result.findings.map((x) => x.code).sort()).toEqual(['FUEL_BURN_RISING', 'HIGH_IDLE', 'HIGH_SEVERITY_FAULT', 'RECURRING_FAULT', 'SERVICE_DUE_SOON']);
+    expect(result.nextService).toEqual({ hoursRemaining: 20, projectedDate: '2026-07-06' });
+  });
+
+  it('says what is missing instead of guessing', () => {
+    const empty: MachineHistory = { serviceIntervalHours: null, usage: [], faults: [], maintenance: [], meters: [], weather: [] };
+    const result = evaluateCondition(computeFeatures(empty, at, RULES), RULES, at);
+    expect(result.findings.map((x) => x.code)).toEqual(['NO_SERVICE_PLAN', 'NOT_REPORTING']);
+    expect(result.nextService).toBeNull();
+  });
+});
+
+describe('Maintenance insights API', () => {
+  it('reports that no rule set is published yet, rather than inventing thresholds', async () => {
+    await prisma.maintenanceRuleSet.updateMany({ where: { active: true }, data: { active: false } });
+    const res = await request(app).get('/api/fleet/maintenance/insights').set(auth(a)).expect(200);
+    expect(res.body).toEqual({ configured: false, conditions: [] });
+  });
+
+  it('lets only administrators publish thresholds, with validation', async () => {
+    const body = {
+      version: `t-${suffix}`,
+      source: 'Maker service guidance and fleet manager review',
+      lookbackDays: 30,
+      baselineDays: 60,
+      dueSoonHours: '50',
+      fuelDriftPct: '15',
+      idleRatioPct: '40',
+      faultRecurrenceCount: 3,
+      staleDataHours: 48,
+      highSeverityLabels: ['HIGH', 'RED'],
+    };
+    await request(app).post('/api/admin/maintenance/rules').set(auth(a)).send(body).expect(403);
+    await request(app).post('/api/admin/maintenance/rules').set('Authorization', `Bearer ${adminToken}`).send({ ...body, idleRatioPct: '140' }).expect(400);
+    await request(app).post('/api/admin/maintenance/rules').set('Authorization', `Bearer ${adminToken}`).send({ ...body, highSeverityLabels: [] }).expect(400);
+    const res = await request(app).post('/api/admin/maintenance/rules').set('Authorization', `Bearer ${adminToken}`).send(body).expect(201);
+    expect(res.body.set.active).toBe(true);
+  });
+
+  it('flags an overdue service from the hours meter and a high-severity fault', async () => {
+    const now = Date.now();
+    await prisma.fleetTelemetrySnapshot.create({
+      data: {
+        licenseeId: a.licenseeId,
+        assetId: a.assetId,
+        schemaVersionId: FLEET_SCHEMA_VERSION_ID,
+        source: 'CLIENT_API',
+        observedAt: new Date(now - 3600 * 1000),
+        cumulativeOperatingHours: new Prisma.Decimal('1300'),
+        payloadSha256: 'a'.repeat(64),
+      },
+    });
+    await prisma.fleetFaultCode.create({
+      data: { licenseeId: a.licenseeId, assetId: a.assetId, source: 'CLIENT_API', observedAt: new Date(now - 2 * 3600 * 1000), code: 'P0217', severity: 'red' },
+    });
+    // Plan of 500 hours (set earlier); last service logged at 500 hours, so 800 hours have run.
+    await request(app)
+      .post('/api/fleet/maintenance/events')
+      .set(auth(a))
+      .send({ assetId: a.assetId, type: 'SCHEDULED_SERVICE', occurredAt: new Date(now - 20 * DAY).toISOString(), operatingHours: '500' })
+      .expect(201);
+
+    const res = await request(app).get('/api/fleet/maintenance/insights').set(auth(a)).expect(200);
+    expect(res.body.configured).toBe(true);
+    expect(res.body.ruleSet.version).toBe(`t-${suffix}`);
+    const machine = res.body.conditions.find((c: { assetId: string }) => c.assetId === a.assetId);
+    expect(machine.priority).toBe('HIGH');
+    expect(machine.findings.map((x: { code: string }) => x.code)).toEqual(expect.arrayContaining(['SERVICE_OVERDUE', 'HIGH_SEVERITY_FAULT']));
+    expect(machine.nextService.hoursRemaining).toBe(-300);
+
+    const other = await request(app).get('/api/fleet/maintenance/insights').set(auth(b)).expect(200);
+    expect(other.body.conditions.every((c: { assetId: string }) => c.assetId !== a.assetId)).toBe(true);
   });
 });
