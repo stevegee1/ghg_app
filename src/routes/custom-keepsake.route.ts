@@ -42,7 +42,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
   /**
    * POST /api/custom-merch/checkout
-   * Initiates bespoke keepsake checkout, creating the Transaction, 15% FinancialSplit,
+   * Initiates bespoke keepsake checkout, creating the Transaction, the FinancialSplit from the active split,
    * TriggerEvent, and CustomKeepsakeSpec atomically.
    * Supports Goal Frenzy fields for sports moment merchandise.
    */
@@ -297,7 +297,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
         licensorCents,
         charityCents,
         status: souvenirOrder.status,
-        message: '15% statutory ESG charitable routing applied. Track your order at /track/' + orderNumber,
+        message: 'Order recorded. Track it at /track/' + orderNumber,
       });
     } catch (err: any) {
       console.error('[EVENT SOUVENIR ORDER ERROR]', err);

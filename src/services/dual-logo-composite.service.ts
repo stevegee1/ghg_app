@@ -1,12 +1,12 @@
 /**
  * dual-logo-composite.service.ts
- * Server-side canvas compositor for the GHG Audit Warranty Badge.
+ * Server-side canvas compositor for the credential badge image.
  *
  * Produces a 1024×1024 PNG compositing:
  *  1. Client corporate logo (PNG/JPG/SVG, max 400×200 px region)
  *  2. Official NFTYLOGS (right panel)
  *  3. Client short message (max 120 chars)
- *  4. ISO 19011:2026 stamp
+ *  4. The framework reviewed against
  *  5. 1-Year Warranty validity date
  *
  * Fallback: If node-canvas is unavailable (e.g. CI without libcairo),
@@ -17,6 +17,7 @@
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { FRAMEWORK_NOT_RECORDED } from '../utils/reviewScope';
 
 export interface CompositeInput {
   /** Absolute path to the client's uploaded logo file */
@@ -81,7 +82,7 @@ export async function compositeAuditBadge(input: CompositeInput): Promise<Compos
   const seal = buildVerificationSeal(licenseeName, safeMessage, expiresAt);
   const frameworkText = (selectedFrameworks && selectedFrameworks.length > 0)
     ? selectedFrameworks.join(' / ')
-    : 'ISO 14064-1 / ISO 50001 / ISO 19011:2026';
+    : FRAMEWORK_NOT_RECORDED;
 
   try {
     // Dynamic import: node-canvas is optional; if absent, falls to SVG path

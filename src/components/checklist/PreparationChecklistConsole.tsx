@@ -530,7 +530,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
           </div>
           <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1.25rem 0' }}>
             {isJobPipeline
-              ? 'Complete your Section 106 and workforce statutory intake assessment to provision preparation evidence tasks.'
+              ? 'Complete the Section 106 and workforce intake assessment to set up your preparation tasks.'
               : 'Complete your carbon management and emissions boundary assessment to provision corporate GHG evidence tasks.'}
           </p>
           <button
@@ -547,7 +547,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               cursor: 'pointer',
             }}
           >
-            Open Statutory Intake Assessment &rarr;
+            Open the intake assessment &rarr;
           </button>
         </div>
       ) : (

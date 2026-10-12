@@ -579,7 +579,7 @@ export const PortalPage: React.FC = () => {
           ? 'Workforce & Social Value Assurance'
           : 'GHG & Carbon Emissions Assurance';
       case 'credentials':
-        return 'Issued Audit Warranty Credentials';
+        return 'Your credentials';
       case 'jobs':
         return 'Section 106 Filings & Local Labour Ledger';
       case 'embed':
@@ -587,7 +587,7 @@ export const PortalPage: React.FC = () => {
       case 'transactions':
         return 'Payments';
       case 'legal':
-        return 'ISO 19011:2026 Annex A Remote Auditing Guarantee';
+        return 'How we review';
       case 'profile':
         return 'Client Profile';
       case 'fleet':
@@ -876,7 +876,7 @@ export const PortalPage: React.FC = () => {
           onClick={() => { setActiveView('legal'); onNav?.(); }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Shield /></span>
-          <span className="portal-nav-label">ISO 19011 Guarantee</span>
+          <span className="portal-nav-label">How We Review</span>
         </button>
       </nav>
 
@@ -989,7 +989,7 @@ export const PortalPage: React.FC = () => {
                   Action Required: Corporate Email Verification Pending
                 </div>
                 <div style={{ fontSize: '0.82rem', color: '#78350f', lineHeight: 1.45 }}>
-                  A verification link was dispatched to <strong>{user.email}</strong>. Corporate email verification is required to unlock statutory ISO 19011 warranty claims, S106 filings, and credential issuance.
+                  A verification link was dispatched to <strong>{user.email}</strong>. Verify your work email to submit for review and receive credentials.
                 </div>
                 {resendStatus && (
                   <div style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 600, marginTop: '0.35rem' }}>
@@ -1085,7 +1085,7 @@ export const PortalPage: React.FC = () => {
           </div>
         )}
 
-        {/* ── STATUTORY INTAKE PROMPT (State A: ASSESSMENT_PENDING) ── */}
+        {/* ── INTAKE PROMPT (State A: ASSESSMENT_PENDING) ── */}
         {!user?.hasCompletedAssessment && (
           <div
             style={{
@@ -1106,10 +1106,10 @@ export const PortalPage: React.FC = () => {
             <div style={{ flex: 1, minWidth: '300px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '3px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
                 <span className="pe-live-beacon" style={{ width: '6px', height: '6px', background: '#10b981' }} />
-                <span>ASSESSMENT PENDING &bull; MANDATORY STATUTORY INTAKE</span>
+                <span>ASSESSMENT PENDING</span>
               </div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.45rem', lineHeight: 1.25 }}>
-                Complete your 3-Minute Statutory Intake Assessment
+                Complete your 3-minute intake assessment
               </div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '680px' }}>
                 Determine which statutory carbon and workforce frameworks apply to your operating boundary (SECR, PPN 06/21, ISO 14064-1, Green Claims) and generate your tailored preparation roadmap.

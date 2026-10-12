@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { currentVersionInclude, describeVersion, getCurrentVersion } from './framework-version.service';
 import PDFDocument from 'pdfkit';
 import { compositeAuditBadge } from './dual-logo-composite.service';
+import { REVIEW_METHOD_STATEMENT, REVIEW_SCOPE_STATEMENT } from '../utils/reviewScope';
 
 export class InvalidWorkflowTransitionError extends Error {
   constructor(public currentStatus: WorkflowStatus, public targetStatus: WorkflowStatus) {
@@ -602,7 +603,7 @@ export class WorkflowEngineService {
           .fontSize(13)
           .font('Helvetica')
           .fillColor('#059669')
-          .text('Official Audit Readiness & Conformance Warranty Certificate', { align: 'center' });
+          .text('Readiness Review Record', { align: 'center' });
         doc.moveDown(0.2);
 
         doc
@@ -685,7 +686,7 @@ export class WorkflowEngineService {
           .font('Helvetica-Oblique')
           .fillColor('#64748b')
           .text(
-            'STATUTORY NOTICE: GHG Platform provides independent verification and compliance tracking. Verification badges issued through this platform reflect compliance with the selected framework criteria and do not replace formal ISO certification by an accredited certification body.',
+            `${REVIEW_METHOD_STATEMENT} ${REVIEW_SCOPE_STATEMENT} For certification or verified statements, use an accredited certification or verification body.`,
             { align: 'justify' }
           );
 

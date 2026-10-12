@@ -329,7 +329,7 @@ describe('Part C — ESG Split Engine & Charity Lifecycle', () => {
         .expect(200);
 
       expect(res.headers['content-type']).toBe('application/pdf');
-      expect(res.headers['content-disposition']).toContain(`GHG-Charity-Partnership-${activeCharityId}.pdf`);
+      expect(res.headers['content-disposition']).toContain(`NFTYLOGS-Charity-Partnership-${activeCharityId}.pdf`);
       // PDF file signature begins with %PDF-
       expect(res.body.slice(0, 5).toString('ascii')).toBe('%PDF-');
     });

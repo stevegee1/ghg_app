@@ -75,7 +75,6 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           id: licenseeId,
           name: companyName.trim(),
           vertical: 'B2B_CLEAN_TECH',
-          royaltyBps: 1500, // 15% statutory ESG split
           isPubliclyVisible: true,
           stripeConnectedAccountId: getPlatformStripeAccountId(),
           organisationCountry: (organisationCountry?.trim() || 'GB').toUpperCase().slice(0, 2),

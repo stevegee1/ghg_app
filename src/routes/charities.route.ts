@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { validateWorkEmail } from '../utils/emailValidation';
 import { sendPartnerVerification } from '../services/partner-email-verification.service';
 import { PrismaClient, CharityFocusPillar, CharityApplicationStatus, CharityStatus } from '@prisma/client';
+import { SplitConfigMissingError, resolveActiveSplitConfig } from '../services/split-config.service';
 import { generateCharityPartnershipPdf } from '../services/charity-partnership-pdf.service';
 
 const MAX_ACTIVE_CHARITIES = 3;
@@ -333,12 +334,21 @@ export function createCharitiesRouter(prisma: PrismaClient): Router {
         return res.status(404).json({ error: 'Charity not found.' });
       }
 
-      const pdfBuffer = await generateCharityPartnershipPdf(charity);
+      // This charity's share under the active platform split, if it is in it.
+      let sharePercent: number | null = null;
+      try {
+        const split = await resolveActiveSplitConfig(prisma, null);
+        const entry = split.charityAllocationBps.find((c) => (c.charityId || c.id) === charity.id);
+        if (entry) sharePercent = Math.round(((10000 - split.royaltyBps) * entry.bps) / 1000000) / 100;
+      } catch (err) {
+        if (!(err instanceof SplitConfigMissingError)) throw err;
+      }
+      const pdfBuffer = await generateCharityPartnershipPdf(charity, sharePercent);
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="GHG-Charity-Partnership-${charity.id}.pdf"`
+        `attachment; filename="NFTYLOGS-Charity-Partnership-${charity.id}.pdf"`
       );
       return res.status(200).send(pdfBuffer);
     } catch (err: any) {

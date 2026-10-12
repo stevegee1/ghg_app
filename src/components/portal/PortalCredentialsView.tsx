@@ -28,7 +28,7 @@ export const PortalCredentialsView: React.FC<PortalCredentialsViewProps> = ({
       >
         <div>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.25rem 0' }}>
-            Issued Audit Warranty Credentials
+            Your credentials
           </h2>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
             Dual-logo readiness credentials with a 1-year audit warranty and public verification record

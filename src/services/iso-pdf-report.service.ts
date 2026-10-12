@@ -146,7 +146,7 @@ export class IsoPdfReportService {
         doc.fontSize(12).text('2. DUAL-IMPACT PERFORMANCE (CARBON + JOBS)', { underline: true });
         doc.moveDown(0.3);
         doc.fontSize(9).text(`• Total Settled Environmental Licensing Drops: ${totalSettledCount}`);
-        doc.text(`• Total 15% Charitable Gift Routed: £${(totalCharityCents / 100).toFixed(2)} (${totalCharityCents} cents)`);
+        doc.text(`• Total charitable gift routed: £${(totalCharityCents / 100).toFixed(2)} (${totalCharityCents} cents)`);
         if (totalJobsCreated !== null) {
           doc.text(`• Verified Green Jobs Created (Quarterly Filing): ${totalJobsCreated} jobs`);
         }

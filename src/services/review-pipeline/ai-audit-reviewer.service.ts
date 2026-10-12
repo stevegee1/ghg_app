@@ -486,7 +486,7 @@ export class AiAuditReviewer implements IAuditReviewer {
 
   /**
    * Evaluates an ISO audit-readiness diagnostic submission using Google Gemini
-   * (or deterministic fallback) under ISO 19011:2026 remote audit protocols.
+   * (or deterministic fallback), following ISO 19011:2018 guidance on remote audit methods.
    */
   async evaluateIsoSubmission(params: {
     licenseeName: string;
@@ -515,7 +515,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     // 1. Try LLM evaluation if provider is active
     if (activeProvider) {
       try {
-        const systemPrompt = `You are the NFTYLOGS Senior Lead Auditor AI. You evaluate corporate submissions for ISO audit readiness under ISO 14064-1:2018, ISO 14001:2015, ISO 50001:2018, and ISO 19011:2026 Annex A remote auditing protocols.
+        const systemPrompt = `You are the NFTYLOGS Senior Lead Auditor AI. You evaluate corporate submissions for ISO audit readiness under ISO 14064-1:2018, ISO 14001:2015, ISO 50001:2018, and the ISO 19011:2018 guidance on remote auditing protocols.
 Rules:
 1. Evaluate each answer and evidence reference against the governing ISO clause.
 2. If evidence is attached or verifiable data is cited, mark status as CONFORMANT.
@@ -558,7 +558,7 @@ Evidence Files Attached: ${(params.evidenceFileNames || []).join(', ') || 'None'
           questionId: String(f.questionId || ''),
           isoClause: String(f.isoClause || ''),
           status: ['CONFORMANT', 'NON_CONFORMANT', 'INSUFFICIENT_EVIDENCE'].includes(f.status) ? f.status : 'INSUFFICIENT_EVIDENCE',
-          findings: String(f.findings || 'Evidence assessed under ISO 19011:2026.'),
+          findings: String(f.findings || 'Evidence reviewed; no specific finding recorded.'),
           evidenceVerified: Boolean(f.evidenceVerified),
         }));
 
@@ -572,7 +572,7 @@ Evidence Files Attached: ${(params.evidenceFileNames || []).join(', ') || 'None'
           decision: isApproved ? 'APPROVE' : 'REQUIRE_REVISION',
           targetStatus: isApproved ? 'AUDIT_READY' : 'REVISION_REQUIRED',
           complianceScore: score,
-          reviewerNotes: parsed.executiveSummary || (isApproved ? 'ISO 19011:2026 conformance threshold verified.' : 'Revision required to reach 80% statutory threshold.'),
+          reviewerNotes: parsed.executiveSummary || (isApproved ? 'Pre-screen passed. The Lead Auditor makes the decision.' : 'Pre-screen found gaps to address before the Lead Auditor review.'),
           clauseFindings,
           reviewedBy: `${activeProvider.providerName} (${result.model})`,
           reviewedAt: new Date(),

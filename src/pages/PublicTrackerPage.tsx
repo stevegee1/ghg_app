@@ -5,7 +5,7 @@ import { FinancialSplitBar } from '../components/FinancialSplitBar';
 
 const STATUS_STEPS = [
   { key: 'ORDER_PLACED', label: 'Order Placed', detail: 'Payment received and order registered.' },
-  { key: 'SPLIT_DISBURSED', label: 'ESG Split Locked', detail: '15% automatically disbursed to verified ESG charities.' },
+  { key: 'SPLIT_DISBURSED', label: 'Charity share paid', detail: 'The charity share of this order has been paid to our partner charities.' },
   { key: 'QUEUED_FOR_PRINT', label: 'Queued for Print', detail: 'Your batch has been allocated to the printing queue.' },
   { key: 'IN_PRODUCTION', label: 'In Production', detail: 'Artisans are applying the GHG certified logo drop mark.' },
   { key: 'QUALITY_INSPECTED', label: 'ISO Quality Check', detail: 'ISO 14067 LCA certificate generated and batch verified.' },

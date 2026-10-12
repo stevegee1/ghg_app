@@ -1,7 +1,8 @@
 import PDFDocument from 'pdfkit';
 import { Charity } from '@prisma/client';
 
-export async function generateCharityPartnershipPdf(charity: Charity): Promise<Buffer> {
+/** sharePercent: this charity's share of each payment under the active split, or null when it has none. */
+export async function generateCharityPartnershipPdf(charity: Charity, sharePercent: number | null): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -23,7 +24,7 @@ export async function generateCharityPartnershipPdf(charity: Charity): Promise<B
         .fontSize(13)
         .font('Helvetica')
         .fillColor('#0284c7')
-        .text('Official Statutory ESG Charity Partner Certificate', { align: 'center' });
+        .text('Charity Partnership Record', { align: 'center' });
       doc.moveDown(0.3);
 
       doc
@@ -68,10 +69,10 @@ export async function generateCharityPartnershipPdf(charity: Charity): Promise<B
       if (charity.registeredCharityNumber) {
         doc.text(`Charity Reg Number:       ${charity.registeredCharityNumber}`);
       }
-      doc.text(`Statutory Status:         ${charity.status}`);
-      doc.text(`Statutory ESG Share:      Equal 1/3 share of the 15% platform-wide ESG split (5.00%)`);
+      doc.text(`Status:                   ${charity.status}`);
+      doc.text(`Share of each payment:    ${sharePercent === null ? 'Not in the current split' : `${sharePercent}%`}`);
       doc.text(`Contract Term Start:      ${startDateStr}`);
-      doc.text(`Contract Term End:        ${endDateStr} (1-year statutory tenure)`);
+      doc.text(`Contract Term End:        ${endDateStr}`);
       if (charity.stripeConnectedAccountId) {
         doc.text(`Stripe Connected ID:      ${charity.stripeConnectedAccountId}`);
       }
@@ -92,7 +93,7 @@ export async function generateCharityPartnershipPdf(charity: Charity): Promise<B
         .fontSize(8)
         .font('Helvetica')
         .fillColor('#94a3b8')
-        .text('Statutory ESG charitable routing. Figures reflect settled platform transactions and direct Stripe Connect disbursements. The platform provides automated routing infrastructure and does not independently audit third-party charitable operations.');
+        .text('Shares follow the platform split in force when each payment is taken. Figures reflect settled transactions and Stripe Connect transfers. NFTYLOGS routes payments and does not audit the operations of partner charities.');
 
       doc.end();
     } catch (err) {

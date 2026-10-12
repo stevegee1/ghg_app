@@ -49,7 +49,7 @@ export const LandingPage: React.FC = () => {
       <section className="landing-hero" aria-labelledby="hero-title">
         <div className="container-x landing-hero-grid">
           <div className="landing-hero-copy">
-            <p className="landing-eyebrow">Emissions · Fleet · Workforce · Merch</p>
+            <p className="landing-eyebrow">Emissions · Donations · Workforce · Merch · Financial Reporting </p>
             <h1 id="hero-title">
               Measure, prove and report your impact. <span>In one place.</span>
             </h1>

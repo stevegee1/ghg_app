@@ -13244,3 +13244,47 @@ a:not([class]):hover {
   gap: 0.5rem;
   font-weight: 500;
 }
+
+/* Portal: how we review */
+.review-terms-head h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.25rem;
+}
+.review-terms-head p {
+  margin: 0 0 1.5rem;
+  max-width: 44rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.review-terms-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+.review-terms-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.review-terms-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+.review-terms-card p {
+  margin: 0 0 0.6rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.review-terms-card p:last-child {
+  margin-bottom: 0;
+}
+.review-terms-card-notice {
+  border-left: 4px solid var(--google-amber);
+}
+@media (min-width: 900px) {
+  .review-terms-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

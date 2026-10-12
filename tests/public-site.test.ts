@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
@@ -151,5 +153,26 @@ describe('Health check', () => {
     } finally {
       process.env.FILE_STORAGE_DIR = saved;
     }
+  });
+});
+
+describe('Claims the platform must not make', () => {
+  // NFTYLOGS is not an accredited certification or verification body (see src/utils/reviewScope.ts).
+  const FORBIDDEN = [/19011:2026/, /ISO 19011 Guarantee/i, /statutory split/i, /statutory 15%/i, /statutory ESG/i, /statutory intake/i, /Verified Ledger/i, /in strict compliance with ISO/i, /provides independent verification/i];
+
+  function sourceFiles(dir: string): string[] {
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) return sourceFiles(full);
+      return /\.(ts|tsx)$/.test(e.name) ? [full] : [];
+    });
+  }
+
+  it('never claims certification, guarantees or a non-existent ISO edition anywhere in the app', () => {
+    const offending = sourceFiles(path.join(process.cwd(), 'src')).flatMap((file) => {
+      const text = fs.readFileSync(file, 'utf8');
+      return FORBIDDEN.filter((re) => re.test(text)).map((re) => `${path.relative(process.cwd(), file)}: ${re}`);
+    });
+    expect(offending).toEqual([]);
   });
 });

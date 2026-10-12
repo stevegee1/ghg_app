@@ -160,7 +160,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
       if (!licensee?.hasCompletedAssessment) {
         return res.status(403).json({
-          error: 'Statutory intake assessment required before initializing workflow draft.',
+          error: 'Complete the intake assessment before starting this framework.',
           code: 'INTAKE_ASSESSMENT_REQUIRED',
         });
       }
@@ -883,7 +883,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * Screen 9 & 10: GET /api/workflow/submissions/:id/pdf & /download-pdf
-   * Streams downloadable PDF Proof of Audit and Badge Warranty Certificate.
+   * Streams the downloadable readiness review record (PDF).
    */
   router.get(['/api/workflow/submissions/:id/pdf', '/api/workflow/submissions/:id/download-pdf'], authenticateToken, async (req: Request, res: Response) => {
     const { id } = req.params;

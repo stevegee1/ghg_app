@@ -182,15 +182,17 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       // Financial Summary
       doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e2e8f0').stroke();
       doc.moveDown(0.75);
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Financial Summary: 85/15 Statutory Split');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Financial Summary');
       doc.moveDown(0.25);
       doc.fontSize(10).font('Helvetica').fillColor('#334155');
       const gross = (order.grossAmountCents / 100).toFixed(2);
       const licensor = (order.licensorCents / 100).toFixed(2);
       const charity = (order.charityCents / 100).toFixed(2);
-      doc.text(`Gross Payment:                    £${gross}`);
-      doc.text(`Supplier Production & Licensor (85%): £${licensor}`);
-      doc.text(`Statutory ESG Charity Pool (15%): £${charity}`);
+      // Shares come from this order's recorded split, never a fixed percentage.
+      const share = (cents: number) => (order.grossAmountCents > 0 ? `${Math.round((cents / order.grossAmountCents) * 1000) / 10}%` : '0%');
+      doc.text(`Gross payment: £${gross}`);
+      doc.text(`Production and licensor (${share(order.licensorCents)}): £${licensor}`);
+      doc.text(`Charity partners (${share(order.charityCents)}): £${charity}`);
       doc.moveDown(0.75);
 
       if (order.transaction?.financialSplit?.charityAllocations?.length) {
@@ -208,15 +210,10 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e2e8f0').stroke();
       doc.moveDown(0.75);
       doc
-        .fontSize(8.5)
-        .fillColor('#0284c7')
-        .text('Evidence verified via Remote ICT Review in strict compliance with ISO 19011:2026 Annex A.', { align: 'center' });
-      doc.moveDown(0.25);
-      doc
         .fontSize(8)
         .fillColor('#94a3b8')
         .text('Invoice issued by NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.', { align: 'center' });
-      doc.text('GHG App | ghgapp-production.up.railway.app', { align: 'center' });
+      if (process.env.APP_BASE_URL) doc.text(process.env.APP_BASE_URL.replace(/^https?:\/\//, ''), { align: 'center' });
 
       doc.end();
     } catch (err: any) {

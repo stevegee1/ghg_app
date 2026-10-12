@@ -55,7 +55,7 @@ export class EmailService {
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
         <p style="color: #94a3b8; font-size: 11px; margin: 0;">
-          © 2026 NFTYLOGS. Continuous Statutory ESG & Assurance Infrastructure.
+          NFTYLOGS Limited, company no. 15230476.
         </p>
       </div>
     `;

@@ -237,7 +237,7 @@ export const Layout: React.FC = () => {
                             Audit Review Queue
                           </NavLink>
                           <NavLink to="/admin?tab=SPLITS" className="nav-link" onClick={closeDropdowns}>
-                            Statutory ESG Splits
+                            Royalty splits
                           </NavLink>
                           <NavLink to="/admin?tab=DEMOS" className="nav-link" onClick={closeDropdowns}>
                             Demo Inquiries
@@ -359,7 +359,7 @@ export const Layout: React.FC = () => {
                               className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
                               onClick={() => setAccountMenuOpen(false)}
                             >
-                              <span>Statutory ESG Splits</span>
+                              <span>Royalty splits</span>
                             </NavLink>
                             <NavLink
                               to="/admin?tab=DEMOS"
@@ -482,7 +482,7 @@ export const Layout: React.FC = () => {
                               className="google-popover-link"
                               onClick={() => setAccountMenuOpen(false)}
                             >
-                              <span>Statutory ESG Splits</span>
+                              <span>Royalty splits</span>
                             </NavLink>
                             <NavLink
                               to="/admin?tab=DEMOS"

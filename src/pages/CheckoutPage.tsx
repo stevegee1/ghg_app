@@ -148,7 +148,7 @@ export const CheckoutPage: React.FC = () => {
                 fontWeight: 400,
               }}
             >
-              Authentic climate action merchandise with verified statutory ESG charitable routing:
+              NFTYLOGS merchandise, with a share of every payment going to our charity partners:
             </p>
 
             {/* Clean Feature List with Black Checkmark Icons */}

@@ -15,6 +15,7 @@ import { compositeAuditBadge } from '../services/dual-logo-composite.service';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { runWithRls } from '../db/rls';
 import { discardLogoOnFailure, logoUpload } from '../middleware/logo-upload.middleware';
+import { REVIEW_METHOD_STATEMENT, REVIEW_SCOPE_STATEMENT } from '../utils/reviewScope';
 
 interface BadgeSource {
   id: string;
@@ -236,8 +237,8 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
               versionEffectiveFrom: assessed.frameworkVersion.effectiveFrom.toISOString(),
             }
           : null,
-        scopeStatement:
-          'This credential records that the organisation completed a NFTYLOGS readiness review. It is not a third-party verification or certification under any ISO standard.',
+        method: REVIEW_METHOD_STATEMENT,
+        scopeStatement: REVIEW_SCOPE_STATEMENT,
       });
     } catch (err: unknown) {
       console.error('[CREDENTIALS VERIFY ERROR]', err);

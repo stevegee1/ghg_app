@@ -28,23 +28,23 @@ export const BookDemoPage: React.FC = () => {
           <BookDemoCard isModal={false} />
         </div>
 
-        {/* Enterprise statutory assurance trust footer */}
+        {/* What the service does, stated plainly */}
         <div className="book-demo-trust-footer">
           <div className="trust-item">
             <span className="trust-dot">&bull;</span>
-            <span>UK CMA Green Claims Code Conforming</span>
+            <span>Reviews against ISO 14064-1, SECR and the Green Claims Code</span>
           </div>
           <div className="trust-item">
             <span className="trust-dot">&bull;</span>
-            <span>ISO 14064-3 &amp; ISO 50001 Verified Ledger</span>
+            <span>Remote review following ISO 19011:2018 guidance</span>
           </div>
           <div className="trust-item">
             <span className="trust-dot">&bull;</span>
-            <span>Strict Pre-Audit Mutual NDA Protection</span>
+            <span>Mutual NDA available before the demo</span>
           </div>
           <div className="trust-item">
             <span className="trust-dot">&bull;</span>
-            <span>Publicly Verifiable Dual-Logo Credentials</span>
+            <span>Credentials anyone can check online</span>
           </div>
         </div>
       </div>
