@@ -67,6 +67,19 @@ async function apiRequest<T>(
   return data as T;
 }
 
+export interface CharityReserveView {
+  balances: { currency: string; totalCents: number; paymentCount: number }[];
+  assignments: {
+    id: string;
+    currency: string;
+    totalCents: number;
+    paymentCount: number;
+    charityAllocationBps: { charityId: string; bps: number }[];
+    assignedBy: string;
+    createdAt: string;
+  }[];
+}
+
 export const api = {
   async checkout(params: { licenseeId: string; grossAmountCents: number; checkoutReferenceId?: string }) {
     const res = await fetch('/api/checkout', {
@@ -190,6 +203,19 @@ export const api = {
     token: string
   ): Promise<{ currency: string; licensees: { id: string; name: string; pricePerDropCents: number | null }[] }> {
     return apiRequest('/api/admin/logo-drop/prices', { token });
+  },
+
+  /** GET /api/admin/charity-reserve: charity share held while no charity was set, by currency. */
+  async getCharityReserve(token: string): Promise<CharityReserveView> {
+    return apiRequest('/api/admin/charity-reserve', { token });
+  },
+
+  /** POST /api/admin/charity-reserve/assign: assigns a currency's held balance and pays the charities. */
+  async assignCharityReserve(token: string, body: { currency: string; charityAllocationBps: { charityId: string; bps: number }[] }) {
+    return apiRequest<{ assignmentId: string; currency: string; totalCents: number; paymentCount: number; failedTransfers: number }>(
+      '/api/admin/charity-reserve/assign',
+      { token, method: 'POST', body }
+    );
   },
 
   /** PATCH /api/admin/logo-drop/prices/:licenseeId */

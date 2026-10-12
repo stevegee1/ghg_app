@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { CheckoutService } from '../services/checkout.service';
 import { generateOrderNumber } from './orders.route';
 import { MerchCatalogueError, priceOrder } from '../services/merch-catalogue.service';
+import { SplitConfigMissingError } from '../services/split-config.service';
 
 export function createCheckoutRouter(
   checkoutService: CheckoutService,
@@ -79,6 +80,10 @@ export function createCheckoutRouter(
       return res.status(200).json(session);
     } catch (err: unknown) {
       if (err instanceof MerchCatalogueError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof SplitConfigMissingError) {
+        console.error('[CHECKOUT SESSION ROUTE ERROR] No active split configuration. An administrator must save one.');
+        return res.status(503).json({ error: 'The shop cannot take payments yet. Please try again later.' });
+      }
       console.error('[CHECKOUT SESSION ROUTE ERROR]', err);
       return res.status(500).json({ error: 'Failed to start checkout. Please try again.' });
     }
@@ -87,7 +92,7 @@ export function createCheckoutRouter(
   /**
    * GET /api/checkout/order-summary
    * Returns verified transaction provenance, reconciled settlement status,
-   * 15% statutory charity split breakdown, and live parcel tracking reference.
+   * the charity split breakdown, and the parcel tracking reference.
    */
   router.get('/api/checkout/order-summary', async (req: Request, res: Response) => {
     const { session_id, tx_id } = req.query as { session_id?: string; tx_id?: string };
@@ -120,70 +125,82 @@ export function createCheckoutRouter(
         });
       }
 
-      // If not found by tx_id, check stripePaymentIntentId or session metadata
-      if (!transaction && session_id && stripe) {
+      // Contact and delivery details the customer gave Stripe, used when the order record is first made.
+      let stripeCustomer: { email: string | null; name: string | null; shipping: unknown } | null = null;
+
+      // Read the Stripe session: it finds the transaction when no tx_id matched, and confirms payment
+      if (session_id && stripe) {
         try {
-          const session = await stripe.checkout.sessions.retrieve(session_id);
-          const metaTxId = session.metadata?.transactionId;
-          const piId = typeof session.payment_intent === 'string' ? session.payment_intent : null;
+          const retrieved = await stripe.checkout.sessions.retrieve(session_id);
+          // A session only speaks for the transaction it was created for.
+          const session = !transaction || retrieved.metadata?.transactionId === transaction.id ? retrieved : null;
+          if (session) {
+            stripeCustomer = {
+              email: session.customer_details?.email ?? null,
+              name: session.customer_details?.name ?? null,
+              shipping: session.shipping_details?.address ?? null,
+            };
+            const metaTxId = session.metadata?.transactionId;
+            const piId = typeof session.payment_intent === 'string' ? session.payment_intent : null;
 
-          if (metaTxId) {
-            transaction = await prisma.transaction.findUnique({
-              where: { id: metaTxId },
-              include: {
-                financialSplit: {
-                  include: {
-                    charityAllocations: { include: { charity: true } },
+            if (!transaction && metaTxId) {
+              transaction = await prisma.transaction.findUnique({
+                where: { id: metaTxId },
+                include: {
+                  financialSplit: {
+                    include: {
+                      charityAllocations: { include: { charity: true } },
+                    },
                   },
+                  triggerEvent: true,
+                  souvenirOrder: true,
+                  customKeepsakeSpec: true,
                 },
-                triggerEvent: true,
-                souvenirOrder: true,
-                customKeepsakeSpec: true,
-              },
-            });
-          }
-
-          if (!transaction && piId) {
-            transaction = await prisma.transaction.findFirst({
-              where: { stripePaymentIntentId: piId },
-              include: {
-                financialSplit: {
-                  include: {
-                    charityAllocations: { include: { charity: true } },
-                  },
-                },
-                triggerEvent: true,
-                souvenirOrder: true,
-                customKeepsakeSpec: true,
-              },
-            });
-          }
-
-          // Reconcile status to SETTLED if Stripe confirmed payment
-          if (transaction && session.payment_status === 'paid' && transaction.status !== TransactionStatus.SETTLED) {
-            transaction = await prisma.transaction.update({
-              where: { id: transaction.id },
-              data: {
-                status: TransactionStatus.SETTLED,
-                stripePaymentIntentId: piId || transaction.stripePaymentIntentId,
-              },
-              include: {
-                financialSplit: {
-                  include: {
-                    charityAllocations: { include: { charity: true } },
-                  },
-                },
-                triggerEvent: true,
-                souvenirOrder: true,
-                customKeepsakeSpec: true,
-              },
-            });
-
-            if (transaction.financialSplit && !transaction.financialSplit.settledAt) {
-              await prisma.financialSplit.update({
-                where: { transactionId: transaction.id },
-                data: { settledAt: new Date() },
               });
+            }
+
+            if (!transaction && piId) {
+              transaction = await prisma.transaction.findFirst({
+                where: { stripePaymentIntentId: piId },
+                include: {
+                  financialSplit: {
+                    include: {
+                      charityAllocations: { include: { charity: true } },
+                    },
+                  },
+                  triggerEvent: true,
+                  souvenirOrder: true,
+                  customKeepsakeSpec: true,
+                },
+              });
+            }
+
+            // Reconcile status to SETTLED if Stripe confirmed payment
+            if (transaction && session.payment_status === 'paid' && transaction.status !== TransactionStatus.SETTLED) {
+              transaction = await prisma.transaction.update({
+                where: { id: transaction.id },
+                data: {
+                  status: TransactionStatus.SETTLED,
+                  stripePaymentIntentId: piId || transaction.stripePaymentIntentId,
+                },
+                include: {
+                  financialSplit: {
+                    include: {
+                      charityAllocations: { include: { charity: true } },
+                    },
+                  },
+                  triggerEvent: true,
+                  souvenirOrder: true,
+                  customKeepsakeSpec: true,
+                },
+              });
+
+              if (transaction.financialSplit && !transaction.financialSplit.settledAt) {
+                await prisma.financialSplit.update({
+                  where: { transactionId: transaction.id },
+                  data: { settledAt: new Date() },
+                });
+              }
             }
           }
         } catch (sErr: any) {
@@ -195,39 +212,38 @@ export function createCheckoutRouter(
         return res.status(404).json({ error: 'Transaction record not found.' });
       }
 
-      // 2. Ensure SouvenirOrder exists for this transaction (order tracking)
+      // 2. Ensure an order record exists for tracking, once the customer's email is known.
       let souvenirOrder = transaction.souvenirOrder;
-      if (!souvenirOrder) {
-        const orderNumber = generateOrderNumber();
-        const rawPayload = (transaction.triggerEvent?.rawPayload as any) || {};
-        const keepsakeSpec = transaction.customKeepsakeSpec;
-
-        const customerEmail = rawPayload.customerEmail || keepsakeSpec?.customerEmail || 'orders@ghgemissionlogs.com';
-        const customerName = rawPayload.customerName || keepsakeSpec?.customerName || 'Verified Supporter';
+      const rawPayload = (transaction.triggerEvent?.rawPayload as Record<string, any> | null) || {};
+      const keepsakeSpec = transaction.customKeepsakeSpec;
+      const customerEmail: string | null = rawPayload.customerEmail || keepsakeSpec?.customerEmail || stripeCustomer?.email || null;
+      if (!souvenirOrder && customerEmail && transaction.financialSplit) {
         const eventName = keepsakeSpec
           ? `${keepsakeSpec.sportType || 'Official'} Keepsake: ${keepsakeSpec.frenzyClub || keepsakeSpec.garmentModel}`
-          : (rawPayload.itemTitle || 'NFTYLOGS Climate Action Apparel');
-
-        const shippingAddress = rawPayload.shippingAddress || keepsakeSpec?.shippingAddress || null;
+          : rawPayload.itemTitle || 'NFTYLOGS merchandise';
 
         souvenirOrder = await prisma.souvenirOrder.create({
           data: {
-            orderNumber,
+            orderNumber: generateOrderNumber(),
             customerEmail,
-            customerName,
+            customerName: rawPayload.customerName || keepsakeSpec?.customerName || stripeCustomer?.name || null,
             eventCategory: 'SPORTS',
             eventName,
             logoDropCount: 1,
             itemType: 'GHG_MERCH',
-            shippingAddress,
+            shippingAddress: rawPayload.shippingAddress || keepsakeSpec?.shippingAddress || stripeCustomer?.shipping || null,
             status: transaction.status === TransactionStatus.SETTLED ? 'SPLIT_DISBURSED' : 'ORDER_PLACED',
             grossAmountCents: transaction.grossAmountCents,
-            licensorCents: transaction.financialSplit?.licensorRoyaltyCents || Math.round(transaction.grossAmountCents * 0.85),
-            charityCents: transaction.financialSplit?.charityGiftCents || Math.round(transaction.grossAmountCents * 0.15),
+            licensorCents: transaction.financialSplit.licensorRoyaltyCents,
+            charityCents: transaction.financialSplit.charityGiftCents,
             transactionId: transaction.id,
             stripeSessionId: session_id || null,
           },
         });
+      }
+
+      if (!souvenirOrder) {
+        return res.status(202).json({ success: false, pending: true, transactionId: transaction.id, status: transaction.status });
       }
 
       return res.status(200).json({
@@ -243,7 +259,7 @@ export function createCheckoutRouter(
         currency: transaction.currency || 'GBP',
         createdAt: transaction.createdAt,
         shippingAddress: souvenirOrder.shippingAddress,
-        courierName: souvenirOrder.courierName || 'Royal Mail Tracked 48 / DHL Express',
+        courierName: souvenirOrder.courierName,
         trackingNumber: souvenirOrder.trackingNumber || null,
         trackingUrl: `/track/${souvenirOrder.orderNumber}`,
         invoicePdfUrl: `/api/orders/${souvenirOrder.orderNumber}/invoice-pdf`,

@@ -277,6 +277,7 @@ export async function recordPaidFleetInvoice(prisma: PrismaClient, stripe: Strip
       charityGiftCents,
       settledAt: new Date(),
       charityAllocations: computeCharityAllocations(charityGiftCents, split.charityAllocationBps),
+      holdCharityShare: split.charityAllocationBps.length === 0,
     },
     });
   } catch (err) {

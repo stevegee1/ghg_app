@@ -44,44 +44,7 @@ export class CheckoutService {
   async initiateCheckout(input: InitiateCheckoutInput) {
     const { licenseeId, checkoutReferenceId, grossAmountCents, currency = DEFAULT_CHECKOUT_CURRENCY, triggerEvent } = input;
 
-    // 1. Look up Licensee & verify payment onboarding (or auto-provision platform licensee)
-    let licensee = await this.prisma.licensee.findUnique({
-      where: { id: licenseeId },
-    });
-
-    if (licenseeId === PLATFORM_LICENSEE_ID) {
-      if (!licensee) {
-        licensee = await this.prisma.licensee.create({
-          data: {
-            id: PLATFORM_LICENSEE_ID,
-            name: 'NFTYLOGS Official Store',
-            vertical: Vertical.B2C_SPORTS_MERCH,
-            stripeConnectedAccountId: getPlatformStripeAccountId(),
-          },
-        });
-      } else if (!licensee.stripeConnectedAccountId) {
-        licensee = await this.prisma.licensee.update({
-          where: { id: licensee.id },
-          data: { stripeConnectedAccountId: getPlatformStripeAccountId() },
-        });
-      }
-    }
-
-    if (!licensee) {
-      throw new Error(`Licensee not found: ${licenseeId}`);
-    }
-
-    if (!licensee.stripeConnectedAccountId) {
-      throw new Error(`Licensee is not fully onboarded for payments: ${licenseeId} missing stripeConnectedAccountId`);
-    }
-
-    // 2. Resolve currently active split configuration (per-licensee or platform default)
-    const resolvedConfig = await resolveActiveSplitConfig(this.prisma, licenseeId);
-
-    // Compute exact integer split server-side
-    const licensorRoyaltyCents = Math.round((grossAmountCents * resolvedConfig.royaltyBps) / 10000);
-    const charityGiftCents = grossAmountCents - licensorRoyaltyCents;
-    const charityAllocations = computeCharityAllocations(charityGiftCents, resolvedConfig.charityAllocationBps);
+    const { licensorRoyaltyCents, charityGiftCents, charityAllocations, holdCharityShare } = await this.prepareSplit(licenseeId, grossAmountCents);
 
     let transaction: any = null;
 
@@ -154,6 +117,7 @@ export class CheckoutService {
             licensorRoyaltyCents,
             charityGiftCents,
             charityAllocations,
+            holdCharityShare,
           },
         });
       } catch (createErr: any) {
@@ -240,6 +204,58 @@ export class CheckoutService {
   }
 
   /**
+   * Confirms the payee can be paid and computes the split from the active configuration.
+   * A split with no charities holds the charity share until an administrator assigns it.
+   */
+  private async prepareSplit(licenseeId: string, grossAmountCents: number) {
+    // 1. Look up Licensee & verify payment onboarding (or auto-provision platform licensee)
+    let licensee = await this.prisma.licensee.findUnique({
+      where: { id: licenseeId },
+    });
+
+    if (licenseeId === PLATFORM_LICENSEE_ID) {
+      if (!licensee) {
+        licensee = await this.prisma.licensee.create({
+          data: {
+            id: PLATFORM_LICENSEE_ID,
+            name: 'NFTYLOGS Official Store',
+            vertical: Vertical.B2C_SPORTS_MERCH,
+            stripeConnectedAccountId: getPlatformStripeAccountId(),
+          },
+        });
+      } else if (!licensee.stripeConnectedAccountId) {
+        licensee = await this.prisma.licensee.update({
+          where: { id: licensee.id },
+          data: { stripeConnectedAccountId: getPlatformStripeAccountId() },
+        });
+      }
+    }
+
+    if (!licensee) {
+      throw new Error(`Licensee not found: ${licenseeId}`);
+    }
+
+    if (!licensee.stripeConnectedAccountId) {
+      throw new Error(`Licensee is not fully onboarded for payments: ${licenseeId} missing stripeConnectedAccountId`);
+    }
+
+    // 2. Resolve currently active split configuration (per-licensee or platform default)
+    const resolvedConfig = await resolveActiveSplitConfig(this.prisma, licenseeId);
+
+    // Compute exact integer split server-side
+    const licensorRoyaltyCents = Math.round((grossAmountCents * resolvedConfig.royaltyBps) / 10000);
+    const charityGiftCents = grossAmountCents - licensorRoyaltyCents;
+    const charityAllocations = computeCharityAllocations(charityGiftCents, resolvedConfig.charityAllocationBps);
+
+    return {
+      licensorRoyaltyCents,
+      charityGiftCents,
+      charityAllocations,
+      holdCharityShare: resolvedConfig.charityAllocationBps.length === 0,
+    };
+  }
+
+  /**
    * Creates a real Stripe Checkout Session for live redirect to https://checkout.stripe.com
    */
   async createCheckoutSession(params: {
@@ -260,12 +276,14 @@ export class CheckoutService {
   }) {
     const { licenseeId, itemTitle, itemDescription, grossAmountCents, currency = DEFAULT_CHECKOUT_CURRENCY, successUrl, cancelUrl, customerEmail, deliveryType = DeliveryType.PHYSICAL, shippingAddress, metadata } = params;
 
-    const refId = `stripe_cs_${crypto.randomUUID()}`;
-    const checkoutResult = await this.initiateCheckout({
+    // The Checkout Session creates its own PaymentIntent, so only the pending transaction is recorded here.
+    const { licensorRoyaltyCents, charityGiftCents, charityAllocations, holdCharityShare } = await this.prepareSplit(licenseeId, grossAmountCents);
+    const transaction = await this.transactionService.createTransactionWithTrigger({
       licenseeId,
-      checkoutReferenceId: refId,
+      checkoutReferenceId: `stripe_cs_${crypto.randomUUID()}`,
       grossAmountCents,
       currency,
+      status: TransactionStatus.PENDING,
       triggerEvent: {
         verificationSource: params.verificationSource ?? VerificationSource.CONSUMER_OPT_IN,
         attestationNote: params.attestationNote,
@@ -277,17 +295,11 @@ export class CheckoutService {
           shippingAddress: shippingAddress || null,
         },
       },
+      financialSplit: { licensorRoyaltyCents, charityGiftCents, charityAllocations, holdCharityShare },
     });
+    if (!transaction) throw new Error('Pending transaction could not be recorded.');
 
     try {
-      if (!this.stripe.checkout?.sessions?.create) {
-        return {
-          sessionUrl: null,
-          sessionId: null,
-          transactionId: checkoutResult.transactionId,
-          clientSecret: checkoutResult.clientSecret,
-        };
-      }
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         ...(customerEmail ? { customer_email: customerEmail } : {}),
@@ -309,7 +321,7 @@ export class CheckoutService {
               currency: currency.toLowerCase(),
               product_data: {
                 name: itemTitle,
-                description: itemDescription || 'Authentic NFTYLOGS merchandise with verified 15% statutory ESG charitable split.',
+                ...(itemDescription ? { description: itemDescription } : {}),
               },
               unit_amount: grossAmountCents,
             },
@@ -317,10 +329,12 @@ export class CheckoutService {
           },
         ],
         mode: 'payment',
-        success_url: `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}&tx_id=${checkoutResult.transactionId}`,
+        // Refund and failure events arrive on the PaymentIntent, so it carries the transaction too.
+        payment_intent_data: { metadata: { transactionId: transaction.id } },
+        success_url: `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}&tx_id=${transaction.id}`,
         cancel_url: cancelUrl,
         metadata: {
-          transactionId: checkoutResult.transactionId,
+          transactionId: transaction.id,
           licenseeId,
           ...(customerEmail ? { customerEmail } : {}),
           ...(metadata || {}),
@@ -330,7 +344,7 @@ export class CheckoutService {
       return {
         sessionUrl: session?.url || null,
         sessionId: session?.id || null,
-        transactionId: checkoutResult.transactionId,
+        transactionId: transaction.id,
       };
     } catch (sessionErr: unknown) {
       // Never redirect to a success URL that Stripe did not issue. The pending transaction

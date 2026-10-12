@@ -52,8 +52,8 @@ model Licensee {
   fleetDeviceBindings      FleetDeviceBinding[]
   fleetSubscription        FleetSubscription?
   routingEvents            ServiceRoutingEvent[]
-  fleetProjects FleetProject[]
-  scope3Chains Scope3Chain[]
+  fleetProjects            FleetProject[]
+  scope3Chains             Scope3Chain[]
 }
 
 enum Vertical {
@@ -171,19 +171,40 @@ model FinancialSplit {
 }
 
 model CharityAllocation {
-  id               String         @id @default(cuid())
-  financialSplitId String
-  financialSplit   FinancialSplit @relation(fields: [financialSplitId], references: [id], onDelete: Cascade)
-  charityId        String
-  charity          Charity        @relation(fields: [charityId], references: [id])
-  amountCents      Int
-  stripeTransferId String?
-  transferFailed   Boolean        @default(false)
-  retryCount       Int            @default(0)
-  createdAt        DateTime       @default(now())
+  id                  String                    @id @default(cuid())
+  financialSplitId    String
+  financialSplit      FinancialSplit            @relation(fields: [financialSplitId], references: [id], onDelete: Cascade)
+  charityId           String
+  charity             Charity                   @relation(fields: [charityId], references: [id])
+  amountCents         Int
+  stripeTransferId    String?
+  transferFailed      Boolean                   @default(false)
+  retryCount          Int                       @default(0)
+  createdAt           DateTime                  @default(now())
+  /// Set when the allocation came from assigning held charity funds; null when made at checkout.
+  reserveAssignmentId String?
+  reserveAssignment   CharityReserveAssignment? @relation(fields: [reserveAssignmentId], references: [id])
 
   @@index([financialSplitId])
   @@index([charityId])
+  @@index([reserveAssignmentId])
+}
+
+/// An administrator assigning the charity share held from payments taken while no charity was set.
+model CharityReserveAssignment {
+  id                   String     @id @default(cuid())
+  assignedByUserId     String
+  assignedByUser       PortalUser @relation(fields: [assignedByUserId], references: [id])
+  /// The charities and basis points applied, as [{ charityId, bps }]
+  charityAllocationBps Json
+  currency             String
+  splitCount           Int
+  totalCents           Int
+  createdAt            DateTime   @default(now())
+
+  allocations CharityAllocation[]
+
+  @@index([assignedByUserId])
 }
 
 model PortalUser {
@@ -209,13 +230,14 @@ model PortalUser {
   emailVerificationExpiresAt DateTime? // Expiration timestamp for verification token
   createdAt                  DateTime    @default(now())
 
-  splitConfigs        SplitConfigHistory[]
-  submittedJobReports JobCreationReport[]
-  fleetImportBatches  FleetImportBatch[]
-  fleetApiKeys        FleetApiKey[]
-  fleetSetupRequests  FleetSetupRequest[]
-  fleetDataProviders  FleetDataProvider[]
-  emissionFactors     EmissionFactor[]
+  splitConfigs              SplitConfigHistory[]
+  charityReserveAssignments CharityReserveAssignment[]
+  submittedJobReports       JobCreationReport[]
+  fleetImportBatches        FleetImportBatch[]
+  fleetApiKeys              FleetApiKey[]
+  fleetSetupRequests        FleetSetupRequest[]
+  fleetDataProviders        FleetDataProvider[]
+  emissionFactors           EmissionFactor[]
 
   @@index([licenseeId])
   @@index([passwordResetToken])
@@ -986,25 +1008,25 @@ model MerchEnquiry {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model FulfillmentPartnerApplication {
-  id                   String                   @id @default(cuid())
-  companyName          String
-  workEmail            String
-  countryCode          String
-  regionOfOperation    String
-  capabilities         String[] // EMBROIDERY, SCREEN_PRINT, CUT_SEW, WAREHOUSING
-  monthlyCapacityUnits String // UNDER_500 | 500_2000 | 2000_10000 | OVER_10000
-  certifications       String[] // GOTS, OEKO_TEX, B_CORP, ISO_14001, NONE
-  message              String?
-  status               FulfillmentPartnerStatus @default(PENDING)
-  reviewedAt           DateTime?
-  reviewNotes          String?
-  ipAddress            String?
+  id                       String                   @id @default(cuid())
+  companyName              String
+  workEmail                String
+  countryCode              String
+  regionOfOperation        String
+  capabilities             String[] // EMBROIDERY, SCREEN_PRINT, CUT_SEW, WAREHOUSING
+  monthlyCapacityUnits     String // UNDER_500 | 500_2000 | 2000_10000 | OVER_10000
+  certifications           String[] // GOTS, OEKO_TEX, B_CORP, ISO_14001, NONE
+  message                  String?
+  status                   FulfillmentPartnerStatus @default(PENDING)
+  reviewedAt               DateTime?
+  reviewNotes              String?
+  ipAddress                String?
   /// Set when the applicant confirms their work email. Unverified applications are not shown to admins.
   emailVerifiedAt          DateTime?
   emailVerificationHash    String?                  @unique
   emailVerificationExpires DateTime?
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
 
   @@index([status])
   @@index([countryCode])
@@ -1351,14 +1373,14 @@ model FleetAsset {
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
 
-  readings  FleetReading[]
+  readings           FleetReading[]
   projectAssignments FleetProjectAsset[]
   weatherExposures   FleetWeatherExposure[]
   finance            FleetAssetFinance?
   valuations         FleetAssetValuation[]
-  snapshots FleetTelemetrySnapshot[]
-  faults    FleetFaultCode[]
-  bindings  FleetDeviceBinding[]
+  snapshots          FleetTelemetrySnapshot[]
+  faults             FleetFaultCode[]
+  bindings           FleetDeviceBinding[]
 
   @@unique([licenseeId, assetTag])
   @@index([licenseeId, active])
@@ -1697,24 +1719,24 @@ enum MarketIndexFeed {
 
 /// A market input used to cost contract activity (fuel, carbon, materials). Values are dated and sourced.
 model MarketIndex {
-  id          String              @id @default(cuid())
-  code        String              @unique
-  name        String
-  category    MarketIndexCategory
+  id               String                 @id @default(cuid())
+  code             String                 @unique
+  name             String
+  category         MarketIndexCategory
   /// Unit of each value, e.g. GBP_PER_LITRE, GBP_PER_TONNE_CO2E, GBP_PER_TONNE
-  unit        String
-  currency    String
+  unit             String
+  currency         String
   /// Fleet fuel types this index prices (FUEL indices only)
-  fuelTypes   FleetFuelType[]
-  feed        MarketIndexFeed     @default(MANUAL)
+  fuelTypes        FleetFuelType[]
+  feed             MarketIndexFeed        @default(MANUAL)
   /// Column the feed reads, e.g. ULSD for diesel in the UK weekly road fuel prices
-  feedColumn  String?
-  source      String
-  sourceUrl   String?
-  active      Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @default(now()) @updatedAt
-  values      MarketIndexValue[]
+  feedColumn       String?
+  source           String
+  sourceUrl        String?
+  active           Boolean                @default(true)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @default(now()) @updatedAt
+  values           MarketIndexValue[]
   projectMaterials FleetProjectMaterial[]
 }
 
@@ -1741,20 +1763,20 @@ enum FleetProjectStatus {
 /// A contract the client runs machines on. Its value and budgeted margin are the baseline for
 /// measuring what fuel, carbon and idle time cost the contract.
 model FleetProject {
-  id                 String               @id @default(cuid())
+  id                 String                 @id @default(cuid())
   licenseeId         String
-  licensee           Licensee             @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  licensee           Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
   name               String
   reference          String?
   contractValuePence BigInt
   /// Budgeted margin in basis points of contract value (1200 = 12%)
   budgetedMarginBps  Int
   currency           String
-  startDate          DateTime             @db.Date
-  endDate            DateTime?            @db.Date
-  status             FleetProjectStatus   @default(ACTIVE)
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @default(now()) @updatedAt
+  startDate          DateTime               @db.Date
+  endDate            DateTime?              @db.Date
+  status             FleetProjectStatus     @default(ACTIVE)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @default(now()) @updatedAt
   assignments        FleetProjectAsset[]
   materials          FleetProjectMaterial[]
   costRuns           FleetProjectCostRun[]
@@ -1784,16 +1806,16 @@ model FleetProjectAsset {
 /// A material the contract buys, with the unit price it was budgeted at. Its exposure is the
 /// difference between the current market index value and the budgeted price, times the quantity.
 model FleetProjectMaterial {
-  id                   String       @id @default(cuid())
-  licenseeId           String
-  projectId            String
-  project              FleetProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  indexId              String
-  index                MarketIndex  @relation(fields: [indexId], references: [id])
-  quantity             Decimal      @db.Decimal(16, 3)
+  id              String       @id @default(cuid())
+  licenseeId      String
+  projectId       String
+  project         FleetProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  indexId         String
+  index           MarketIndex  @relation(fields: [indexId], references: [id])
+  quantity        Decimal      @db.Decimal(16, 3)
   /// Budgeted price per index unit, in the index currency
-  budgetUnitPrice      Decimal      @db.Decimal(14, 6)
-  createdAt            DateTime     @default(now())
+  budgetUnitPrice Decimal      @db.Decimal(14, 6)
+  createdAt       DateTime     @default(now())
 
   @@unique([projectId, indexId])
 }
@@ -1900,14 +1922,14 @@ enum Scope3EnteredBy {
 
 /// One purchased material or product line, followed from raw material to delivery.
 model Scope3Chain {
-  id         String           @id @default(cuid())
+  id         String                 @id @default(cuid())
   licenseeId String
-  licensee   Licensee         @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  licensee   Licensee               @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
   name       String
   category   Scope3Category
   projectId  String?
-  project    FleetProject?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  createdAt  DateTime         @default(now())
+  project    FleetProject?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt  DateTime               @default(now())
   records    Scope3Record[]
   invites    Scope3SupplierInvite[]
 
@@ -1919,27 +1941,27 @@ model Scope3Chain {
 /// Records are never edited; a correction is a new record that supersedes the old one. They are
 /// removed only with their client account.
 model Scope3Record {
-  id                String          @id @default(cuid())
-  licenseeId        String
-  chainId           String
-  chain             Scope3Chain     @relation(fields: [chainId], references: [id], onDelete: Cascade)
-  stage             Scope3Stage
-  description       String
-  supplierName      String
-  quantity          Decimal         @db.Decimal(16, 4)
-  unit              String
-  factorKgCo2ePerUnit Decimal       @db.Decimal(14, 6)
-  factorSource      String
-  kgCo2e            Decimal         @db.Decimal(18, 4)
-  occurredOn        DateTime        @db.Date
-  enteredBy         Scope3EnteredBy
-  enteredByUserId   String?
-  inviteId          String?
-  supersedesId      String?         @unique
-  supersedes        Scope3Record?   @relation("Scope3Correction", fields: [supersedesId], references: [id], onDelete: Cascade)
-  supersededBy      Scope3Record?   @relation("Scope3Correction")
-  recordSha256      String
-  createdAt         DateTime        @default(now())
+  id                  String          @id @default(cuid())
+  licenseeId          String
+  chainId             String
+  chain               Scope3Chain     @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  stage               Scope3Stage
+  description         String
+  supplierName        String
+  quantity            Decimal         @db.Decimal(16, 4)
+  unit                String
+  factorKgCo2ePerUnit Decimal         @db.Decimal(14, 6)
+  factorSource        String
+  kgCo2e              Decimal         @db.Decimal(18, 4)
+  occurredOn          DateTime        @db.Date
+  enteredBy           Scope3EnteredBy
+  enteredByUserId     String?
+  inviteId            String?
+  supersedesId        String?         @unique
+  supersedes          Scope3Record?   @relation("Scope3Correction", fields: [supersedesId], references: [id], onDelete: Cascade)
+  supersededBy        Scope3Record?   @relation("Scope3Correction")
+  recordSha256        String
+  createdAt           DateTime        @default(now())
 
   @@index([licenseeId, chainId, occurredOn])
 }
@@ -1979,20 +2001,20 @@ model WeatherThresholdSet {
 /// Hours a machine worked on one day, and how many of them were in each harsh condition.
 /// Derived from telemetry location and hourly weather; the location itself is not stored here.
 model FleetWeatherExposure {
-  id               String              @id @default(cuid())
-  licenseeId       String
-  assetId          String
-  asset            FleetAsset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  date             DateTime            @db.Date
-  operatingHours   Decimal             @db.Decimal(8, 3)
-  heatHours        Decimal             @db.Decimal(8, 3)
-  frostHours       Decimal             @db.Decimal(8, 3)
-  heavyRainHours   Decimal             @db.Decimal(8, 3)
-  highWindHours    Decimal             @db.Decimal(8, 3)
-  thresholdSetId   String
-  thresholdSet     WeatherThresholdSet @relation(fields: [thresholdSetId], references: [id])
-  source           String
-  computedAt       DateTime            @default(now())
+  id             String              @id @default(cuid())
+  licenseeId     String
+  assetId        String
+  asset          FleetAsset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  date           DateTime            @db.Date
+  operatingHours Decimal             @db.Decimal(8, 3)
+  heatHours      Decimal             @db.Decimal(8, 3)
+  frostHours     Decimal             @db.Decimal(8, 3)
+  heavyRainHours Decimal             @db.Decimal(8, 3)
+  highWindHours  Decimal             @db.Decimal(8, 3)
+  thresholdSetId String
+  thresholdSet   WeatherThresholdSet @relation(fields: [thresholdSetId], references: [id])
+  source         String
+  computedAt     DateTime            @default(now())
 
   @@unique([assetId, date])
   @@index([licenseeId, date])
@@ -2030,14 +2052,14 @@ model WearCoefficientSet {
 }
 
 model WearCoefficient {
-  id          String             @id @default(cuid())
-  setId       String
-  set         WearCoefficientSet @relation(fields: [setId], references: [id], onDelete: Cascade)
-  category    FleetAssetCategory
-  heatPctPerHour  Decimal        @db.Decimal(9, 6)
-  frostPctPerHour Decimal        @db.Decimal(9, 6)
-  rainPctPerHour  Decimal        @db.Decimal(9, 6)
-  windPctPerHour  Decimal        @db.Decimal(9, 6)
+  id              String             @id @default(cuid())
+  setId           String
+  set             WearCoefficientSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  category        FleetAssetCategory
+  heatPctPerHour  Decimal            @db.Decimal(9, 6)
+  frostPctPerHour Decimal            @db.Decimal(9, 6)
+  rainPctPerHour  Decimal            @db.Decimal(9, 6)
+  windPctPerHour  Decimal            @db.Decimal(9, 6)
 
   @@unique([setId, category])
 }

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
@@ -8,13 +9,16 @@ import { resolveActiveSplitConfig } from '../src/services/split-config.service';
 import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
+const checkoutSessionsCreate = jest.fn();
 const stripe = {
-  paymentIntents: {
-    create: jest.fn().mockResolvedValue({ id: 'pi_drop_mock', client_secret: 'pi_drop_mock_secret' }),
-    retrieve: jest.fn(),
-  },
+  paymentIntents: { create: jest.fn(), retrieve: jest.fn() },
+  checkout: { sessions: { create: checkoutSessionsCreate } },
   webhooks: { constructEvent: jest.fn() },
 } as unknown as Stripe;
+
+beforeEach(() => {
+  checkoutSessionsCreate.mockImplementation(async () => ({ id: `cs_drop_${crypto.randomUUID()}`, url: 'https://checkout.stripe.com/c/pay/cs_drop' }));
+});
 const app = createApp(stripe);
 
 const token = (licenseeId: string) =>

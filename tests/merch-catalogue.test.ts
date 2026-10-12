@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
@@ -8,14 +9,18 @@ import { seed } from './fixtures/sample-data';
 
 const prisma = new PrismaClient();
 
-// Stripe double: payment intents only, so checkout sessions return the recorded transaction.
+// Stripe double: a Checkout Session per order; a separate PaymentIntent should never be created.
+const paymentIntentsCreate = jest.fn();
+const checkoutSessionsCreate = jest.fn();
 const stripe = {
-  paymentIntents: {
-    create: jest.fn().mockResolvedValue({ id: 'pi_merch_mock', client_secret: 'pi_merch_mock_secret' }),
-    retrieve: jest.fn(),
-  },
+  paymentIntents: { create: paymentIntentsCreate, retrieve: jest.fn() },
+  checkout: { sessions: { create: checkoutSessionsCreate, retrieve: jest.fn() } },
   webhooks: { constructEvent: jest.fn() },
 } as unknown as Stripe;
+
+beforeEach(() => {
+  checkoutSessionsCreate.mockImplementation(async () => ({ id: `cs_merch_${crypto.randomUUID()}`, url: 'https://checkout.stripe.com/c/pay/cs_merch' }));
+});
 const app = createApp(stripe);
 
 const adminToken = jwt.sign({ userId: 'admin', role: 'ADMIN', licenseeId: '' }, JWT_SECRET, { expiresIn: '1h' });
@@ -44,6 +49,29 @@ describe('Merch checkout is priced on the server', () => {
     const tx = await prisma.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
     expect(tx.grossAmountCents).toBe(cap.pricePence! * 2);
     expect(tx.licenseeId).toBe(cap.licenseeId);
+
+    // The Checkout Session makes the only PaymentIntent, and it carries the transaction for refunds.
+    expect(paymentIntentsCreate).not.toHaveBeenCalled();
+    const sessionParams = checkoutSessionsCreate.mock.calls[0][0];
+    expect(sessionParams.payment_intent_data.metadata.transactionId).toBe(tx.id);
+    expect(sessionParams.line_items[0].price_data.unit_amount).toBe(cap.pricePence! * 2);
+  });
+
+  it('says the shop cannot take payments when no split is configured, instead of a generic failure', async () => {
+    const cap = await prisma.merchProduct.findUniqueOrThrow({ where: { id: 'item_nfty_cap' } });
+    const active = await prisma.splitConfigHistory.findMany({
+      where: { isActive: true, OR: [{ licenseeId: null }, { licenseeId: cap.licenseeId }] },
+      select: { id: true },
+    });
+    const ids = active.map((c) => c.id);
+    await prisma.splitConfigHistory.updateMany({ where: { id: { in: ids } }, data: { isActive: false } });
+    try {
+      const res = await request(app).post('/api/checkout/session').send({ productId: 'item_nfty_cap' }).expect(503);
+      expect(res.body.error).toBe('The shop cannot take payments yet. Please try again later.');
+      expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+    } finally {
+      await prisma.splitConfigHistory.updateMany({ where: { id: { in: ids } }, data: { isActive: true } });
+    }
   });
 
   it('refuses enquiry-only, unknown, inactive and wrong-kind products and bad quantities', async () => {

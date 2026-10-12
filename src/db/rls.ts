@@ -15,7 +15,8 @@ export interface UserAuthScope {
 export async function runWithRls<T>(
   prisma: PrismaClient,
   user: UserAuthScope,
-  fn: (tx: Prisma.TransactionClient) => Promise<T>
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  options?: { isolationLevel?: Prisma.TransactionIsolationLevel }
 ): Promise<T> {
   const isAdmin = user.role === 'ADMIN';
   const licenseeId = user.licenseeId || '';
@@ -39,5 +40,5 @@ export async function runWithRls<T>(
     );
 
     return fn(tx);
-  });
+  }, options);
 }

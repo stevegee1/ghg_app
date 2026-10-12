@@ -40,6 +40,7 @@ export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
    * Deactivates the prior active config for the scope (licensee or platform-default)
    * and creates a new SplitConfigHistory row with previousConfigId chaining.
    * Body: { licenseeId?, royaltyBps, charityAllocationBps: [{ charityId, bps }] }
+   * An empty charityAllocationBps holds the charity share until an administrator assigns it.
    */
   router.post('/api/admin/split-config', requireAdmin, async (req: Request, res: Response) => {
     const { licenseeId, royaltyBps, charityAllocationBps } = req.body || {};
@@ -50,8 +51,9 @@ export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
       return res.status(400).json({ error: 'Invalid input: royaltyBps must be an integer between 0 and 10000.' });
     }
 
-    if (!Array.isArray(charityAllocationBps) || charityAllocationBps.length === 0) {
-      return res.status(400).json({ error: 'Invalid input: charityAllocationBps must be a non-empty array.' });
+    // An empty list is allowed: the charity share is then held and assigned to charities later.
+    if (!Array.isArray(charityAllocationBps)) {
+      return res.status(400).json({ error: 'Invalid input: charityAllocationBps must be an array.' });
     }
 
     let bpsSum = 0;
@@ -65,7 +67,7 @@ export function createAdminSplitConfigRouter(prisma: PrismaClient): Router {
       charityIds.push(alloc.charityId);
     }
 
-    if (bpsSum !== 10000) {
+    if (charityAllocationBps.length > 0 && bpsSum !== 10000) {
       return res.status(400).json({ error: 'Invalid input: charityAllocationBps must sum to 10000 (100.00%).' });
     }
 

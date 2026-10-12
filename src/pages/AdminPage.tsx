@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
 import { EmissionFactorsAdmin } from '../components/admin/EmissionFactorsAdmin';
+import { CharityReserveAdmin } from '../components/admin/CharityReserveAdmin';
 import { AdminReadinessTracker } from '../components/admin/AdminReadinessTracker';
 import { ReviewQueue } from '../components/admin/review/ReviewQueue';
 import { FleetSetupRequestsAdmin } from '../components/admin/FleetSetupRequestsAdmin';
@@ -204,8 +205,8 @@ export const AdminPage: React.FC = () => {
         if (isMounted) {
           setHistory(list);
           const activeCfg = list.find((c: any) => c.isActive) || list[0];
+          if (activeCfg) setRoyaltyBps(typeof activeCfg.royaltyBps === 'number' ? activeCfg.royaltyBps : null);
           if (activeCfg && Array.isArray(activeCfg.charityAllocationBps) && activeCfg.charityAllocationBps.length > 0) {
-            setRoyaltyBps(typeof activeCfg.royaltyBps === 'number' ? activeCfg.royaltyBps : null);
             setCharities(
               activeCfg.charityAllocationBps.map((c: any) => ({
                 charityId: c.charityId,
@@ -240,6 +241,8 @@ export const AdminPage: React.FC = () => {
   }, [token, licenseeId, activeAdminTab]);
 
   const charityBpsSum = charities.reduce((sum, c) => sum + c.bps, 0);
+  // With no charities the charity share is held and assigned later from the held charity share panel.
+  const charitySplitValid = charities.length === 0 || charityBpsSum === 10000;
 
   const handleOpenConfirm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +253,7 @@ export const AdminPage: React.FC = () => {
       setError('Enter the licensor royalty in basis points (0 to 10000).');
       return;
     }
-    if (charityBpsSum !== 10000) {
+    if (!charitySplitValid) {
       setError(`Charity allocation basis points must sum to exactly 10000 (100.0%). Current sum: ${charityBpsSum} bps.`);
       return;
     }
@@ -1098,12 +1101,12 @@ export const AdminPage: React.FC = () => {
                         fontWeight: 700,
                         padding: '3px 8px',
                         borderRadius: '9999px',
-                        backgroundColor: charityBpsSum === 10000 ? '#ecfdf5' : '#fef2f2',
-                        color: charityBpsSum === 10000 ? '#059669' : '#dc2626',
-                        border: `1px solid ${charityBpsSum === 10000 ? '#a7f3d0' : '#fecaca'}`,
+                        backgroundColor: charitySplitValid ? '#ecfdf5' : '#fef2f2',
+                        color: charitySplitValid ? '#059669' : '#dc2626',
+                        border: `1px solid ${charitySplitValid ? '#a7f3d0' : '#fecaca'}`,
                       }}
                     >
-                      {charityBpsSum === 10000 ? 'Valid: 10,000 / 10,000 bps (100%)' : `Invalid: ${charityBpsSum} / 10,000 bps`}
+                      {charities.length === 0 ? 'No charities: share held' : charitySplitValid ? 'Valid: 10,000 / 10,000 bps (100%)' : `Invalid: ${charityBpsSum} / 10,000 bps`}
                     </span>
                   </div>
 
@@ -1120,7 +1123,7 @@ export const AdminPage: React.FC = () => {
                           border: '1px solid var(--border-light, #e2e8f0)',
                         }}
                       >
-                        Loading statutory charities from database...
+                        No active charities. The charity share will be held and can be assigned below once a charity is active.
                       </div>
                     ) : (
                       charities.map((ch, idx) => (
@@ -1186,7 +1189,7 @@ export const AdminPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={charityBpsSum !== 10000}
+                  disabled={!charitySplitValid}
                   className="btn btn-primary"
                   style={{
                     width: '100%',
@@ -1194,14 +1197,14 @@ export const AdminPage: React.FC = () => {
                     fontSize: '0.9rem',
                     fontWeight: 700,
                     borderRadius: '8px',
-                    backgroundColor: charityBpsSum === 10000 ? '#1a73e8' : '#94a3b8',
-                    borderColor: charityBpsSum === 10000 ? '#1a73e8' : '#94a3b8',
-                    cursor: charityBpsSum === 10000 ? 'pointer' : 'not-allowed',
+                    backgroundColor: charitySplitValid ? '#1a73e8' : '#94a3b8',
+                    borderColor: charitySplitValid ? '#1a73e8' : '#94a3b8',
+                    cursor: charitySplitValid ? 'pointer' : 'not-allowed',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.5rem',
-                    boxShadow: charityBpsSum === 10000 ? '0 1px 3px rgba(26, 115, 232, 0.3)' : 'none',
+                    boxShadow: charitySplitValid ? '0 1px 3px rgba(26, 115, 232, 0.3)' : 'none',
                   }}
                 >
                   <span>Review &amp; Activate Configuration</span>
@@ -1327,6 +1330,7 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
           )}
+          {token && <CharityReserveAdmin token={token} />}
         </div>
       )}
 

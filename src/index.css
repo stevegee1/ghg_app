@@ -12309,3 +12309,62 @@ a:not([class]):hover {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Held charity share (admin, Splits tab) */
+.reserve-balance {
+  border-top: 1px solid var(--border-light, #e2e8f0);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+.reserve-balance-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.reserve-balance-head strong {
+  font-size: 1.25rem;
+}
+.reserve-assign {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.reserve-assign-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.reserve-assign-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.reserve-assign-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.reserve-assign-share input {
+  width: 6rem;
+}
+.reserve-history-title {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.95rem;
+}
+.reserve-history {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+@media (min-width: 768px) {
+  .reserve-assign {
+    max-width: 32rem;
+  }
+}

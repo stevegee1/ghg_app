@@ -48,6 +48,8 @@ export interface CreateTransactionInput {
     charityStripeAccountId?: string;
     settledAt?: Date;
     charityAllocations?: CharityAllocationResult[];
+    /** Keep the charity share unallocated, to be assigned to charities later by an administrator. */
+    holdCharityShare?: boolean;
   };
 }
 
@@ -95,7 +97,9 @@ export class TransactionService {
 
     // Resolve allocations: use provided allocations or compute default equal split across active charities
     let allocations = input.financialSplit.charityAllocations;
-    if (!allocations || allocations.length === 0) {
+    if (input.financialSplit.holdCharityShare) {
+      allocations = [];
+    } else if (!allocations || allocations.length === 0) {
       allocations = await getOrComputeDefaultCharityAllocations(this.prisma, charityGiftCents);
     }
 

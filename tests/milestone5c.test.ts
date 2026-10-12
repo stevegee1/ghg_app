@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import request from 'supertest';
 import Stripe from 'stripe';
 import { PrismaClient, VerificationSource, DeliveryType } from '@prisma/client';
@@ -405,5 +406,95 @@ describe('Milestone 5c: Versioned Split Configuration & Audit Trail Tests', () =
     } as unknown as PrismaClient;
 
     await expect(resolveActiveSplitConfig(emptyPrisma, 'lic_without_config')).rejects.toBeInstanceOf(SplitConfigMissingError);
+  });
+
+  // Test 8: A split with no charities holds the charity share; an administrator assigns it later
+  test('8. A split with no charities holds the charity share until an administrator assigns and pays it', async () => {
+    const runId = Date.now();
+    const licenseeId = `lic_reserve_${runId}`;
+    // A currency no other test uses, so the held balance belongs to this test alone.
+    const currency = 'CHF';
+    const { stripe, mockPaymentIntentsCreate, mockTransfersCreate } = createMockStripe();
+    const checkoutService = new CheckoutService(prisma, stripe);
+    const app = createApp(stripe);
+
+    await prisma.licensee.create({
+      data: { id: licenseeId, name: 'Reserve Test Licensee', vertical: 'B2B_CLEAN_TECH', stripeConnectedAccountId: 'acct_reserve_123' },
+    });
+
+    const saved = await request(app)
+      .post('/api/admin/split-config')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ licenseeId, royaltyBps: 8000, charityAllocationBps: [] });
+    expect(saved.status).toBe(201);
+
+    mockPaymentIntentsCreate.mockResolvedValue({ id: `pi_reserve_${runId}`, client_secret: `pi_reserve_secret_${runId}` });
+    const checkout = await checkoutService.initiateCheckout({
+      licenseeId,
+      checkoutReferenceId: `ref_reserve_${runId}`,
+      grossAmountCents: 10000,
+      currency,
+      triggerEvent: { verificationSource: VerificationSource.CONSUMER_OPT_IN, deliveryType: DeliveryType.DIGITAL },
+    });
+
+    const held = await prisma.financialSplit.findUniqueOrThrow({
+      where: { transactionId: checkout.transactionId },
+      include: { charityAllocations: true },
+    });
+    expect(held.charityGiftCents).toBe(2000);
+    expect(held.charityAllocations).toHaveLength(0);
+    expect(held.allocationsFinalized).toBe(false);
+
+    // Unpaid payments are not part of the reserve.
+    let reserve = await request(app).get('/api/admin/charity-reserve').set('Authorization', `Bearer ${adminToken}`);
+    expect(reserve.status).toBe(200);
+    expect(reserve.body.balances.find((b: { currency: string }) => b.currency === currency)).toBeUndefined();
+
+    await prisma.transaction.update({ where: { id: checkout.transactionId }, data: { status: 'SETTLED' } });
+    reserve = await request(app).get('/api/admin/charity-reserve').set('Authorization', `Bearer ${adminToken}`);
+    expect(reserve.body.balances).toContainEqual({ currency, totalCents: 2000, paymentCount: 1 });
+
+    await request(app).get('/api/admin/charity-reserve').set('Authorization', `Bearer ${partnerToken}`).expect(403);
+    await request(app)
+      .post('/api/admin/charity-reserve/assign')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ currency, charityAllocationBps: [{ charityId: 'charity_green_earth', bps: 6000 }] })
+      .expect(400);
+
+    mockTransfersCreate.mockImplementation(async () => ({ id: `tr_reserve_${crypto.randomUUID()}` }));
+    const assigned = await request(app)
+      .post('/api/admin/charity-reserve/assign')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        currency,
+        charityAllocationBps: [
+          { charityId: 'charity_green_earth', bps: 7500 },
+          { charityId: 'charity_ocean_clean', bps: 2500 },
+        ],
+      });
+    expect(assigned.status).toBe(201);
+    expect(assigned.body).toMatchObject({ currency, totalCents: 2000, paymentCount: 1, failedTransfers: 0 });
+
+    const after = await prisma.financialSplit.findUniqueOrThrow({
+      where: { transactionId: checkout.transactionId },
+      include: { charityAllocations: { orderBy: { amountCents: 'desc' } } },
+    });
+    expect(after.allocationsFinalized).toBe(true);
+    expect(after.charityAllocations.map((a) => [a.charityId, a.amountCents])).toEqual([
+      ['charity_green_earth', 1500],
+      ['charity_ocean_clean', 500],
+    ]);
+    expect(after.charityAllocations.every((a) => a.reserveAssignmentId === assigned.body.assignmentId && a.stripeTransferId)).toBe(true);
+    expect(mockTransfersCreate).toHaveBeenCalledTimes(2);
+
+    // The same funds cannot be assigned twice.
+    await request(app)
+      .post('/api/admin/charity-reserve/assign')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ currency, charityAllocationBps: [{ charityId: 'charity_green_earth', bps: 10000 }] })
+      .expect(409);
+
+    // Deactivate this licensee's split so later tests fall back to the platform default.
+    await prisma.splitConfigHistory.updateMany({ where: { licenseeId }, data: { isActive: false } });
   });
 });
