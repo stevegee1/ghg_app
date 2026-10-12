@@ -67,6 +67,33 @@ async function apiRequest<T>(
   return data as T;
 }
 
+/** A credential as the public verification endpoint describes it. */
+export interface CredentialVerification {
+  credentialId: string;
+  licenseeName: string;
+  status: string;
+  valid: boolean;
+  selectedFrameworks: string[];
+  clientMessage: string;
+  issuedAt: string;
+  warrantyExpiresAt: string | null;
+  verificationSeal: string | null;
+  assessedAgainst: { frameworkCode: string; frameworkName: string; version: string; standardReference: string; versionEffectiveFrom: string } | null;
+  scopeStatement: string;
+}
+
+/** One of the signed-in client's credentials, for the website badge panel. */
+export interface MyCredential {
+  id: string;
+  status: string;
+  valid: boolean;
+  hasBadgeImage: boolean;
+  selectedFrameworks: string[];
+  warrantyExpiresAt: string | null;
+  clientMessage: string;
+  createdAt: string;
+}
+
 export interface CharityReserveView {
   balances: { currency: string; totalCents: number; paymentCount: number }[];
   assignments: {
@@ -686,6 +713,16 @@ export const api = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
+  },
+
+  /** GET /api/credentials/:id/verify: public record of one credential. */
+  async verifyCredential(id: string): Promise<CredentialVerification> {
+    return apiRequest(`/api/credentials/${encodeURIComponent(id)}/verify`);
+  },
+
+  /** GET /api/credentials/my, typed for the website badge panel. */
+  async listMyCredentials(token: string): Promise<{ credentials: MyCredential[] }> {
+    return apiRequest('/api/credentials/my', { token });
   },
 
   async getBadgeStatus(licenseeId: string, origin?: string): Promise<any> {

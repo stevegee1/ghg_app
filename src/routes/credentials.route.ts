@@ -265,6 +265,30 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
     }
   });
 
+  /**
+   * GET /api/credentials/:id/badge.png: the dual-logo image issued with the credential (NFTYLOGS mark,
+   * the client's logo and their message), for display on the client's own website. Only valid
+   * credentials are served, so an expired or revoked badge stops showing.
+   */
+  router.get('/api/credentials/:id/badge.png', async (req: Request, res: Response) => {
+    try {
+      const credential = await prisma.auditWarrantyCredential.findUnique({
+        where: { id: req.params.id },
+        select: { status: true, warrantyExpiresAt: true, compositeBadgeUrl: true },
+      });
+      const match = credential?.compositeBadgeUrl?.match(/^data:(image\/png|image\/svg\+xml);base64,([A-Za-z0-9+/=]+)$/);
+      if (!credential || !isCredentialValid(credential) || !match) {
+        return res.status(404).send('Badge not available.');
+      }
+      res.setHeader('Content-Type', match[1]);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.status(200).send(Buffer.from(match[2], 'base64'));
+    } catch (err: unknown) {
+      console.error('[CREDENTIALS BADGE IMAGE ERROR]', err);
+      return res.status(500).send('Failed to load badge.');
+    }
+  });
+
   router.get('/api/credentials/my', authenticateToken, async (req: Request, res: Response) => {
     const user = req.user;
     if (!user?.licenseeId) {
@@ -286,11 +310,16 @@ export function createCredentialsRouter(prisma: PrismaClient): Router {
             verificationSeal: true,
             clientMessage: true,
             createdAt: true,
+            compositeBadgeUrl: true,
           },
         });
       });
 
-      return res.status(200).json({ success: true, credentials });
+      // The image itself is served from badge.png; the list says whether one exists.
+      return res.status(200).json({
+        success: true,
+        credentials: credentials.map(({ compositeBadgeUrl, ...c }) => ({ ...c, valid: isCredentialValid(c), hasBadgeImage: Boolean(compositeBadgeUrl) })),
+      });
     } catch (err: unknown) {
       console.error('[CREDENTIALS LIST ERROR]', err);
       return res.status(500).json({ error: 'Failed to fetch credentials.' });

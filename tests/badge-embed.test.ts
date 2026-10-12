@@ -119,8 +119,46 @@ describe('Badge Embed & Live Trust Seal Endpoints', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.licenseeId).toBe(testLicenseeId);
-      expect(res.body.badgeStatus).toBeDefined();
-      expect(res.body.statutoryEpochExpiresAt).toBeDefined();
+      expect(res.body.status).toBe('VERIFIED');
+      expect(res.body.verificationPath).toBe(`/verify/credential/${res.body.credentialId}`);
+      expect(res.body.badgeImageUrl).toBe(`/api/credentials/${res.body.credentialId}/badge.png`);
+    });
+
+    it('never shows a company as verified without a valid credential, and invents no framework', async () => {
+      const bare = await prisma.licensee.create({ data: { name: 'No Credential Ltd', vertical: 'B2B_CLEAN_TECH' } });
+      try {
+        const res = await request(testApp).get(`/api/v1/badges/status?licenseeId=${bare.id}`).expect(200);
+        expect(res.body.status).toBe('NOT_VERIFIED');
+        expect(res.body.credentialId).toBeUndefined();
+        expect(JSON.stringify(res.body)).not.toMatch(/ISO|SECR/);
+      } finally {
+        await prisma.licensee.delete({ where: { id: bare.id } });
+      }
+    });
+  });
+
+  describe('GET /api/credentials/:id/badge.png', () => {
+    it('serves the issued dual-logo image only while the credential is valid', async () => {
+      const credential = await prisma.auditWarrantyCredential.findFirstOrThrow({ where: { licenseeId: testLicenseeId } });
+      const ok = await request(testApp).get(`/api/credentials/${credential.id}/badge.png`).expect(200);
+      expect(ok.headers['content-type']).toMatch(/image\/svg\+xml/);
+
+      await prisma.auditWarrantyCredential.update({ where: { id: credential.id }, data: { warrantyExpiresAt: new Date(Date.now() - 1000) } });
+      try {
+        await request(testApp).get(`/api/credentials/${credential.id}/badge.png`).expect(404);
+        const status = await request(testApp).get(`/api/v1/badges/status?licenseeId=${testLicenseeId}`).set('Origin', 'https://corp.example.com');
+        expect(status.body.status).toBe('NOT_VERIFIED');
+      } finally {
+        await prisma.auditWarrantyCredential.update({ where: { id: credential.id }, data: { warrantyExpiresAt: new Date(Date.now() + 200 * 24 * 60 * 60 * 1000) } });
+      }
+    });
+  });
+
+  describe('GET /embed/seal.js safety', () => {
+    it('builds the badge with DOM text nodes, never innerHTML', async () => {
+      const res = await request(testApp).get('/embed/seal.js').expect(200);
+      expect(res.text).not.toContain('innerHTML');
+      expect(res.text).toContain('textContent');
     });
   });
 

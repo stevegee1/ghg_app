@@ -19,6 +19,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.portalUser.deleteMany({ where: { email } });
   if (seedAdmin) await prisma.portalUser.update({ where: { id: LEGACY_SEED_ADMIN_ID }, data: seedAdmin });
+  else await prisma.portalUser.deleteMany({ where: { id: LEGACY_SEED_ADMIN_ID } });
   await prisma.$disconnect();
 });
 
@@ -58,28 +59,18 @@ describe('Administrator bootstrap', () => {
   });
 
   it('retires the seed administrator once the configured administrator exists, so it cannot sign in or be recovered', async () => {
+    // Start from an active seed administrator: earlier tests in this file may already have retired it.
     const legacyEmail = `seed.${s}@ghglogodrop-test.example`;
-    const before = await prisma.portalUser.findUnique({ where: { id: LEGACY_SEED_ADMIN_ID } });
-    if (!before) {
-      await prisma.portalUser.create({ data: { id: LEGACY_SEED_ADMIN_ID, email: legacyEmail, passwordHash: 'x', role: 'ADMIN' } });
-    }
-    try {
-      const r = await ensureAdministrator(prisma, { ADMIN_EMAIL: email, ADMIN_PASSWORD: 'Another-Long-Password-7' });
-      expect(r.retiredSeedAdmin).toBe(true);
-      const retired = await prisma.portalUser.findUniqueOrThrow({ where: { id: LEGACY_SEED_ADMIN_ID } });
-      expect(retired).toMatchObject({ role: 'PARTNER', passwordHash: '!retired' });
-      expect(retired.email.endsWith('.invalid')).toBe(true);
-      expect((await ensureAdministrator(prisma, { ADMIN_EMAIL: email, ADMIN_PASSWORD: 'Another-Long-Password-7' })).retiredSeedAdmin).toBe(false);
-    } finally {
-      // Other suites sign in as the seed administrator; put the record back as it was.
-      if (before) {
-        await prisma.portalUser.update({
-          where: { id: LEGACY_SEED_ADMIN_ID },
-          data: { email: before.email, passwordHash: before.passwordHash, role: before.role, licenseeId: before.licenseeId },
-        });
-      } else {
-        await prisma.portalUser.delete({ where: { id: LEGACY_SEED_ADMIN_ID } });
-      }
-    }
+    await prisma.portalUser.upsert({
+      where: { id: LEGACY_SEED_ADMIN_ID },
+      update: { email: legacyEmail, passwordHash: 'x', role: 'ADMIN' },
+      create: { id: LEGACY_SEED_ADMIN_ID, email: legacyEmail, passwordHash: 'x', role: 'ADMIN' },
+    });
+    const r = await ensureAdministrator(prisma, { ADMIN_EMAIL: email, ADMIN_PASSWORD: 'Another-Long-Password-7' });
+    expect(r.retiredSeedAdmin).toBe(true);
+    const retired = await prisma.portalUser.findUniqueOrThrow({ where: { id: LEGACY_SEED_ADMIN_ID } });
+    expect(retired).toMatchObject({ role: 'PARTNER', passwordHash: '!retired' });
+    expect(retired.email.endsWith('.invalid')).toBe(true);
+    expect((await ensureAdministrator(prisma, { ADMIN_EMAIL: email, ADMIN_PASSWORD: 'Another-Long-Password-7' })).retiredSeedAdmin).toBe(false);
   });
 });

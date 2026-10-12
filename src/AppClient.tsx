@@ -26,6 +26,7 @@ import { CharityPartnersPage } from './pages/CharityPartnersPage';
 import { DeliveryPartnersPage } from './pages/DeliveryPartnersPage';
 import { PartnerEmailVerifyPage } from './pages/PartnerEmailVerifyPage';
 import { VerifyRecordPage } from './pages/VerifyRecordPage';
+import { VerifyCredentialPage } from './pages/VerifyCredentialPage';
 import { SupplierSubmitPage } from './pages/SupplierSubmitPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -94,6 +95,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="partners/delivery" element={<DeliveryPartnersPage />} />
         <Route path="partners/verify-email" element={<PartnerEmailVerifyPage />} />
         <Route path="verify/record" element={<VerifyRecordPage />} />
+        <Route path="verify/credential/:id" element={<VerifyCredentialPage />} />
         <Route path="supply-chain/submit" element={<SupplierSubmitPage />} />
         <Route path="partnerships" element={<PartnersPage />} />
         <Route path="partner" element={<PartnersPage />} />

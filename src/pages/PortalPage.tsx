@@ -3,7 +3,7 @@ import { useSearchParams, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
-import { SoftwareEmbedBuilder } from '../components/SoftwareEmbedBuilder';
+import { WebsiteBadgePanel } from '../components/portal/WebsiteBadgePanel';
 import { PipelineWorkspace } from '../components/pipeline/PipelineWorkspace';
 import { PreparationChecklistConsole } from '../components/checklist/PreparationChecklistConsole';
 import { PortalOverviewView } from '../components/portal/PortalOverviewView';
@@ -583,7 +583,7 @@ export const PortalPage: React.FC = () => {
       case 'jobs':
         return 'Section 106 Filings & Local Labour Ledger';
       case 'embed':
-        return 'Website Trust Seal & HTML Embed Generator';
+        return 'Website badge';
       case 'transactions':
         return 'Payments';
       case 'legal':
@@ -605,7 +605,6 @@ export const PortalPage: React.FC = () => {
   });
 
   // A client is verified for the embed once they hold an issued credential.
-  const hasIssuedCredential = credentials.some((c) => c.status === 'ISSUED');
 
   // Every figure below comes from the API: settled payments, their recorded splits, credentials and filings.
   const settledTxs = Array.isArray(transactions) ? transactions.filter((t: any) => t.status === 'SETTLED') : [];
@@ -849,6 +848,14 @@ export const PortalPage: React.FC = () => {
           <span className="portal-nav-icon"><GoogleIcons.Shield /></span>
           <span className="portal-nav-label">Verified Credentials</span>
           {credentials.length > 0 && <span className="portal-nav-badge count">{credentials.length}</span>}
+        </button>
+        <button
+          type="button"
+          className={`portal-nav-btn ${activeView === 'embed' ? 'active' : ''}`}
+          onClick={() => { setActiveView('embed'); onNav?.(); }}
+        >
+          <span className="portal-nav-icon"><GoogleIcons.Shield /></span>
+          <span className="portal-nav-label">Website Badge</span>
         </button>
 
         {/* FINANCE & GOVERNANCE */}
@@ -1257,20 +1264,9 @@ export const PortalPage: React.FC = () => {
         />
       )}
 
-      {/* ── VIEW 7: Software Embed & Live Trust Seal ──────────────────────── */}
-      {activeView === 'embed' && (
-        <div>
-          <SoftwareEmbedBuilder
-            licenseeId={user?.licenseeId || 'client-licensee'}
-            partnerName={user?.companyName || user?.email}
-            clientLogoUrl={user?.logoUrl || undefined}
-            allowedOrigins={['*']}
-            token={token || undefined}
-            isVerified={hasIssuedCredential}
-            isPaid={hasIssuedCredential}
-            onNavigateWorkflow={() => handleNavigateWorkflow(auditScope)}
-          />
-        </div>
+      {/* ── VIEW 7: Website badge ──────────────────────────────────────────── */}
+      {activeView === 'embed' && token && (
+        <WebsiteBadgePanel token={token} companyName={user?.companyName || 'Your organisation'} onStart={() => handleNavigateWorkflow(auditScope)} />
       )}
 
       {/* ── VIEW 8: Legal & Statutory Covenants ───────────────────────────── */}
