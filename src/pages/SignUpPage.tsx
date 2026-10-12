@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { validateWorkEmail } from '../utils/emailValidation';
@@ -19,7 +19,7 @@ export const SignUpPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,6 +68,9 @@ export const SignUpPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Signed-in users already have an account: send them to their workspace.
+  if (isAuthenticated) return <Navigate to={isAdmin ? '/admin' : '/portal'} replace />;
 
   return (
     <div className="cerebrium-auth-page">

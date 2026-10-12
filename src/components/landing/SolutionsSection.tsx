@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import type { ClientService } from '../onboarding/onboardingServices';
 
 interface Solution {
   id: string;
@@ -10,8 +12,22 @@ interface Solution {
   cta: { label: string; to: string };
 }
 
+/**
+ * Where a service's button leads. Visitors create an account; signed-in clients go to onboarding's
+ * add-service step, which sends them straight to the service when they already hold it.
+ */
+function useServiceEntry(): (service: ClientService) => string {
+  const { isAuthenticated, isAdmin } = useAuth();
+  return (service) => {
+    if (!isAuthenticated) return '/create-account';
+    if (isAdmin) return '/admin';
+    return `/onboarding?add=${service}`;
+  };
+}
+
 /** The four solutions. Every point here describes something the product does today. */
 export const SolutionsSection: React.FC<{ charityShare: string | null }> = ({ charityShare }) => {
+  const entryFor = useServiceEntry();
   const solutions: Solution[] = [
     {
       id: 'ghg',
@@ -23,7 +39,7 @@ export const SolutionsSection: React.FC<{ charityShare: string | null }> = ({ ch
         'Evidence stored privately, each file fingerprinted so changes are detectable',
         'Lead Auditor review, then a credential anyone can verify online',
       ],
-      cta: { label: 'Start with GHG', to: '/create-account' },
+      cta: { label: 'Start with GHG', to: entryFor('GHG') },
     },
     {
       id: 'fleet',
@@ -35,7 +51,7 @@ export const SolutionsSection: React.FC<{ charityShare: string | null }> = ({ ch
         'Fuel, engine hours, idle time and CO2e by asset, site and month',
         'Download reports, or pull your data into your own systems by API',
       ],
-      cta: { label: 'Start with Fleet', to: '/create-account' },
+      cta: { label: 'Start with Fleet', to: entryFor('FLEET') },
     },
     {
       id: 'workforce',
@@ -47,7 +63,7 @@ export const SolutionsSection: React.FC<{ charityShare: string | null }> = ({ ch
         'Each assessment records the version of the standard it was assessed against',
         'Lead Auditor review, then a credential you can share with councils and buyers',
       ],
-      cta: { label: 'Start with Workforce', to: '/create-account' },
+      cta: { label: 'Start with Workforce', to: entryFor('WORKFORCE') },
     },
     {
       id: 'merch',

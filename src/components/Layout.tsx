@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Footer } from './Footer';
+import { ScrollManager } from './ScrollManager';
 
 /** The four solutions, in the order the landing page presents them. */
 const SOLUTION_LINKS = [
@@ -165,10 +166,10 @@ export const Layout: React.FC = () => {
                   {mobileSolutionsOpen && (
                     <div className="mobile-accordion-content mobile-only-solutions">
                       {SOLUTION_LINKS.map((item) => (
-                        <a key={item.href} href={item.href} className="mobile-sublink" onClick={closeDropdowns}>
+                        <Link key={item.href} to={item.href} className="mobile-sublink" onClick={closeDropdowns}>
                           <div className="mobile-sublink-title">{item.title}</div>
                           <div className="mobile-sublink-desc">{item.description}</div>
-                        </a>
+                        </Link>
                       ))}
                     </div>
                   )}
@@ -177,13 +178,13 @@ export const Layout: React.FC = () => {
                     <div className="mega-menu-panel desktop-only-solutions nav-solutions-panel" role="region" aria-label="Solutions">
                       <div className="nav-solutions-grid">
                         {SOLUTION_LINKS.map((item) => (
-                          <a key={item.href} href={item.href} className="nav-solution-link" onClick={closeDropdowns}>
+                          <Link key={item.href} to={item.href} className="nav-solution-link" onClick={closeDropdowns}>
                             <span className="nav-solution-dot" style={{ background: item.colour }} aria-hidden="true" />
                             <span>
                               <span className="nav-solution-title">{item.title}</span>
                               <span className="nav-solution-desc">{item.description}</span>
                             </span>
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     </div>
@@ -550,6 +551,7 @@ export const Layout: React.FC = () => {
       </header>
 
       <main className="main-content">
+        <ScrollManager />
         <Outlet />
       </main>
 
