@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import type { ClientSubmission, PipelineFee } from '../../api/pipeline.types';
 import { formatDate, formatFee } from './pipelineFormat';
 
@@ -118,6 +119,9 @@ export const PipelineCredentialSetup: React.FC<{ token: string; submission: Clie
   submission,
   onIssued,
 }) => {
+  const { user } = useAuth();
+  const hasProfileLogo = Boolean(user?.logoUrl);
+  const [useProfileLogo, setUseProfileLogo] = useState(hasProfileLogo);
   const [logo, setLogo] = useState<File | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -125,12 +129,13 @@ export const PipelineCredentialSetup: React.FC<{ token: string; submission: Clie
 
   const issue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!logo) return setError('Choose your logo.');
+    const usingSaved = hasProfileLogo && useProfileLogo;
+    if (!usingSaved && !logo) return setError('Choose your logo.');
     if (!message.trim()) return setError('Write the message shown on your credential.');
     setIssuing(true);
     setError(null);
     try {
-      await api.issuePipelineCredential(token, submission.id, logo, message.trim());
+      await api.issuePipelineCredential(token, submission.id, usingSaved ? null : logo, message.trim());
       onIssued();
     } catch (err) {
       setError((err as Error).message);
@@ -142,10 +147,18 @@ export const PipelineCredentialSetup: React.FC<{ token: string; submission: Clie
     <form className="pipeline-panel pipeline-stage-panel pipeline-form" onSubmit={issue} noValidate>
       <h3>Set up your credential</h3>
       <p>Your logo and message appear on the credential next to ours. Both are fixed once it is issued.</p>
-      <label>
-        Your logo (PNG, JPG, SVG or WEBP, up to 5 MB)
-        <input type="file" accept=".png,.jpg,.jpeg,.svg,.webp" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
-      </label>
+      {hasProfileLogo && (
+        <label className="pipeline-check">
+          <input type="checkbox" checked={useProfileLogo} onChange={(e) => setUseProfileLogo(e.target.checked)} />
+          Use the logo saved in Settings
+        </label>
+      )}
+      {(!hasProfileLogo || !useProfileLogo) && (
+        <label>
+          Your logo (PNG, JPG, SVG or WEBP, up to 5 MB)
+          <input type="file" accept=".png,.jpg,.jpeg,.svg,.webp" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
+        </label>
+      )}
       <label>
         Credential message
         <textarea rows={2} maxLength={MESSAGE_MAX} value={message} onChange={(e) => setMessage(e.target.value)} aria-describedby="pipeline-message-count" />

@@ -288,6 +288,17 @@ export const api = {
     return apiRequest('/api/admin/logo-drop/prices', { token });
   },
 
+  /** PUT /api/portal/profile/logo: saves or replaces the profile logo. */
+  async uploadProfileLogo(token: string, file: File): Promise<{ logoUrl: string }> {
+    const form = new FormData();
+    form.append('logo', file);
+    return apiRequest('/api/portal/profile/logo', { token, method: 'PUT', form });
+  },
+
+  async removeProfileLogo(token: string): Promise<{ logoUrl: null }> {
+    return apiRequest('/api/portal/profile/logo', { token, method: 'DELETE' });
+  },
+
   // ── Fleet maintenance (client) ─────────────────────────────────────────
 
   async getMaintenanceInsights(token: string): Promise<MaintenanceInsights> {
@@ -1351,9 +1362,11 @@ export const api = {
     return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/checkout-session`, { method: 'POST', token });
   },
 
-  async issuePipelineCredential(token: string, submissionId: string, logo: File, clientMessage: string): Promise<{ credentialId: string }> {
+  /** With no file, the saved profile logo is used. */
+  async issuePipelineCredential(token: string, submissionId: string, logo: File | null, clientMessage: string): Promise<{ credentialId: string }> {
     const form = new FormData();
-    form.append('clientLogo', logo);
+    if (logo) form.append('clientLogo', logo);
+    else form.append('useProfileLogo', 'true');
     form.append('clientMessage', clientMessage);
     return apiRequest(`/api/workflow/submissions/${encodeURIComponent(submissionId)}/badge-setup`, { method: 'POST', token, form });
   },

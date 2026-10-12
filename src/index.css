@@ -13175,3 +13175,72 @@ a:not([class]):hover {
     grid-template-columns: minmax(0, 1fr) 320px;
   }
 }
+
+/* Portal settings: organisation logo */
+.profile-logo-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-light);
+}
+.profile-logo-preview {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.profile-logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.profile-logo-body {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.profile-logo-body h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.profile-logo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.profile-logo-actions label.btn {
+  cursor: pointer;
+}
+.profile-logo-actions label.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.google-avatar-circle img,
+.google-popover-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.pipeline-form label.pipeline-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}

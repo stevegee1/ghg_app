@@ -1,5 +1,6 @@
 import React from 'react';
 import { INDUSTRY_SECTOR_OPTIONS, PRIMARY_ROLE_OPTIONS } from './profileOptions';
+import { ProfileLogoCard } from './ProfileLogoCard';
 
 interface PortalProfileViewProps {
   user: any;
@@ -105,7 +106,7 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
                 </div>
               )}
               <div style={{ fontSize: '0.78rem', color: 'var(--color-green)', fontWeight: 600, marginTop: '2px' }}>
-                ● Verified Statutory Licensee
+                ● Client account
               </div>
             </div>
           </div>
@@ -124,15 +125,8 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
               <span style={{ color: 'var(--text-muted)' }}>Security Role:</span>
               <strong style={{ color: 'var(--text-main)' }}>{user?.role || 'PARTNER'}</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Transport Security:</span>
-              <span style={{ color: 'var(--color-sky)', fontWeight: 600 }}>256-bit TLS Encrypted</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Assurance Standard:</span>
-              <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>ISO 19011:2026 Ready</span>
-            </div>
           </div>
+          <ProfileLogoCard />
         </div>
       </div>
 

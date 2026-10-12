@@ -1,8 +1,10 @@
+import fs from 'fs';
 import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { PrismaClient, WorkflowType, WorkflowStatus, DeliveryType, EvidenceCategory } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { discardLogoOnFailure, logoUpload } from '../middleware/logo-upload.middleware';
+import { copyProfileLogoForCredential } from '../services/profile-logo.service';
 import { evidenceUpload } from '../middleware/evidence-upload.middleware';
 import { storeEvidenceFile } from '../services/evidence-file.service';
 import {
@@ -821,7 +823,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     const user = req.user!;
     const clientMessage = typeof req.body?.clientMessage === 'string' ? req.body.clientMessage : '';
 
-    if (!req.file) {
+    const useProfileLogo = req.body?.useProfileLogo === 'true';
+    if (!req.file && !useProfileLogo) {
       return res.status(400).json({ error: 'clientLogo image file is required.' });
     }
     if (!clientMessage.trim()) {
@@ -831,12 +834,24 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       return res.status(400).json({ error: `clientMessage must not exceed ${CREDENTIAL_MESSAGE_MAX_LENGTH} characters.` });
     }
 
+    // The profile logo is copied, so the credential keeps its own file if the profile logo changes.
+    let profileLogoCopy: string | null = null;
+    if (!req.file) {
+      if (!user.licenseeId) return res.status(400).json({ error: 'clientLogo image file is required.' });
+      profileLogoCopy = await copyProfileLogoForCredential(prisma, user.licenseeId);
+      if (!profileLogoCopy) return res.status(400).json({ error: 'No profile logo is saved. Upload your logo here or in Settings.' });
+    }
+    const clientLogoPath = req.file ? req.file.path : (profileLogoCopy as string);
+    const discardCopy = () => {
+      if (profileLogoCopy) fs.unlink(profileLogoCopy, () => undefined);
+    };
+
     try {
       // Runs on the root client: badge compositing can exceed the RLS transaction timeout.
       // issueCredential enforces licensee ownership itself.
       const result = await workflowService.issueCredential(
         id,
-        { clientMessage, clientLogoPath: req.file.path },
+        { clientMessage, clientLogoPath },
         { userId: user.userId, role: user.role, licenseeId: user.licenseeId }
       );
 
@@ -851,6 +866,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         badgePath: `/api/credentials/${result.credential.id}/badge.svg`,
       });
     } catch (err: unknown) {
+      discardCopy();
       if (err instanceof InvalidWorkflowTransitionError) {
         return res.status(409).json({ error: 'A credential can be issued once, when the submission is ready for it (approved, and paid where the service charges).' });
       }

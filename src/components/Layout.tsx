@@ -3,6 +3,7 @@ import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Footer } from './Footer';
 import { ScrollManager } from './ScrollManager';
+import { useProfileLogo } from './portal/useProfileLogo';
 
 /** The four solutions, in the order the landing page presents them. */
 const SOLUTION_LINKS = [
@@ -13,7 +14,8 @@ const SOLUTION_LINKS = [
 ];
 
 export const Layout: React.FC = () => {
-  const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const { isAuthenticated, isAdmin, user, logout, token } = useAuth();
+  const logoSrc = useProfileLogo(token, user?.logoUrl);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<'SOLUTIONS' | null>(null);
   const [mobileSolutionsOpen, setMobileSolutionsOpen] = useState(false);
@@ -35,6 +37,7 @@ export const Layout: React.FC = () => {
 
   const displayName = user?.companyName || (user?.email ? user.email.split('@')[0] : 'User');
   const userInitial = (user?.companyName?.[0] || user?.email?.[0] || 'U').toUpperCase();
+  const avatarContent = logoSrc ? <img src={logoSrc} alt="" /> : userInitial;
 
   const copyAccountId = () => {
     if (user?.licenseeId) {
@@ -208,7 +211,7 @@ export const Layout: React.FC = () => {
                   <div className="mobile-account-card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div className="google-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '0.9rem' }}>
-                        {userInitial}
+                        {avatarContent}
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -300,13 +303,13 @@ export const Layout: React.FC = () => {
                     aria-expanded={accountMenuOpen}
                     title={user?.companyName ? `${user.companyName} (${user.email})` : (user?.email || 'Account Profile')}
                   >
-                    <div className="google-avatar-circle">{userInitial}</div>
+                    <div className="google-avatar-circle">{avatarContent}</div>
                   </button>
 
                   {accountMenuOpen && (
                     <div className="google-account-popover" role="dialog" aria-label="Account details">
                       <div className="google-popover-header">
-                        <div className="google-popover-avatar">{userInitial}</div>
+                        <div className="google-popover-avatar">{avatarContent}</div>
                         <div className="google-popover-identity">
                           <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: 1.3 }}>
                             {user?.companyName || (isAdmin ? 'GHG Platform Administration' : user?.email)}
@@ -423,13 +426,13 @@ export const Layout: React.FC = () => {
                     aria-expanded={accountMenuOpen}
                     title={user?.companyName ? `${user.companyName} (${user.email})` : (user?.email || 'Account Profile')}
                   >
-                    <div className="google-avatar-circle">{userInitial}</div>
+                    <div className="google-avatar-circle">{avatarContent}</div>
                   </button>
 
                   {accountMenuOpen && (
                     <div className="google-account-popover" role="dialog" aria-label="Account details">
                       <div className="google-popover-header">
-                        <div className="google-popover-avatar">{userInitial}</div>
+                        <div className="google-popover-avatar">{avatarContent}</div>
                         <div className="google-popover-identity">
                           <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: 1.3 }}>
                             {user?.companyName || (isAdmin ? 'GHG Platform Administration' : user?.email)}

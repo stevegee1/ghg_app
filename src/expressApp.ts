@@ -25,6 +25,7 @@ import { createAdminCharityReserveRouter } from './routes/admin-charity-reserve.
 import { createAdminNewsletterRouter } from './routes/admin-newsletter.route';
 import { createFleetMaintenanceRouter } from './routes/fleet-maintenance.route';
 import { createHealthRouter } from './routes/health.route';
+import { createProfileLogoRouter } from './routes/profile-logo.route';
 import { createCredentialsRouter } from './routes/credentials.route';
 import { createBadgeEmbedRouter } from './routes/badge-embed.route';
 import { createDemoBookingRouter } from './routes/demo-booking.route';
@@ -187,6 +188,7 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createWorkflowRouter(prisma, checkoutService));
   app.use(createFleetRouter(prisma, stripe));
   app.use(createFleetMaintenanceRouter(prisma));
+  app.use(createProfileLogoRouter(prisma));
   app.use(createFleetApiRouter(prisma));
   app.use(createFleetConnectionRouter(prisma));
   app.use(createFleetProviderRouter(prisma));
