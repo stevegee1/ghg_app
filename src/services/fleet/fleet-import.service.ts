@@ -78,7 +78,7 @@ function requireColumns(headers: string[], required: readonly string[]): void {
   }
 }
 
-function parseDecimal(raw: string, field: string, required: boolean): Prisma.Decimal | null {
+export function parseDecimal(raw: string, field: string, required: boolean): Prisma.Decimal | null {
   if (raw === '') {
     if (required) throw new Error(`${field} is required.`);
     return null;
@@ -89,7 +89,7 @@ function parseDecimal(raw: string, field: string, required: boolean): Prisma.Dec
   return new Prisma.Decimal(raw);
 }
 
-function parseDate(raw: string, field: string): Date {
+export function parseDate(raw: string, field: string): Date {
   const m = DATE_PATTERN.exec(raw);
   if (!m) throw new Error(`${field} must be a date in YYYY-MM-DD format.`);
   const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
@@ -99,7 +99,7 @@ function parseDate(raw: string, field: string): Date {
   return date;
 }
 
-function parseEnum<T extends string>(raw: string, field: string, allowed: Record<string, T>): T {
+export function parseEnum<T extends string>(raw: string, field: string, allowed: Record<string, T>): T {
   const key = raw.trim().toUpperCase().replace(/[\s-]+/g, '_');
   const value = (Object.values(allowed) as string[]).find((v) => v === key);
   if (!value) {
@@ -119,7 +119,7 @@ function sha256(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex');
 }
 
-function parseFile(text: string, required: readonly string[]) {
+export function parseFile(text: string, required: readonly string[]) {
   try {
     const table = parseCsv(text, { maxRows: FLEET_IMPORT_MAX_ROWS });
     requireColumns(table.headers, required);

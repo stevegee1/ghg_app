@@ -47,6 +47,9 @@ model Licensee {
   fleetImportBatches       FleetImportBatch[]
   fleetSnapshots           FleetTelemetrySnapshot[]
   fleetFaultCodes          FleetFaultCode[]
+  fleetMaintenancePlans    FleetMaintenancePlan[]
+  fleetMaintenanceEvents   FleetMaintenanceEvent[]
+  modelTrainingConsent     ModelTrainingConsent?
   fleetApiKeys             FleetApiKey[]
   fleetSetupRequests       FleetSetupRequest[]
   fleetDeviceBindings      FleetDeviceBinding[]
@@ -1381,6 +1384,8 @@ model FleetAsset {
   snapshots          FleetTelemetrySnapshot[]
   faults             FleetFaultCode[]
   bindings           FleetDeviceBinding[]
+  maintenancePlan    FleetMaintenancePlan?
+  maintenanceEvents  FleetMaintenanceEvent[]
 
   @@unique([licenseeId, assetTag])
   @@index([licenseeId, active])
@@ -2096,4 +2101,71 @@ model McpQueryLog {
   createdAt  DateTime @default(now())
 
   @@index([licenseeId, createdAt])
+}
+
+enum FleetMaintenanceEventType {
+  SCHEDULED_SERVICE
+  INSPECTION
+  BREAKDOWN
+  UNPLANNED_REPAIR
+}
+
+enum FleetMaintenanceEventSource {
+  PORTAL
+  CSV_IMPORT
+}
+
+/// The service interval a client set for one machine, from the maker's manual or their own policy.
+model FleetMaintenancePlan {
+  id                   String     @id @default(cuid())
+  licenseeId           String
+  licensee             Licensee   @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetId              String     @unique
+  asset                FleetAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  serviceIntervalHours Decimal    @db.Decimal(10, 2)
+  /// Where the interval comes from, e.g. "Maker's manual, 500-hour service"
+  intervalSource       String
+  updatedByUserId      String
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@index([licenseeId])
+}
+
+/// A service, inspection, breakdown or unplanned repair on one machine. Breakdowns and unplanned
+/// repairs are the outcomes the predictive model learns from.
+model FleetMaintenanceEvent {
+  id              String                      @id @default(cuid())
+  licenseeId      String
+  licensee        Licensee                    @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  assetId         String
+  asset           FleetAsset                  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  type            FleetMaintenanceEventType
+  occurredAt      DateTime
+  /// Engine hours meter at the time, when known
+  operatingHours  Decimal?                    @db.Decimal(12, 2)
+  downtimeHours   Decimal?                    @db.Decimal(10, 2)
+  component       String?
+  description     String?
+  source          FleetMaintenanceEventSource
+  createdByUserId String
+  createdAt       DateTime                    @default(now())
+
+  @@unique([assetId, type, occurredAt])
+  @@index([licenseeId, occurredAt])
+  @@index([assetId, occurredAt])
+}
+
+/// A client's agreement that their anonymised machine data may train the shared maintenance model.
+/// Withdrawal stops their data being used in any later training run.
+model ModelTrainingConsent {
+  id                String    @id @default(cuid())
+  licenseeId        String    @unique
+  licensee          Licensee  @relation(fields: [licenseeId], references: [id], onDelete: Cascade)
+  consentText       String
+  grantedAt         DateTime
+  grantedByUserId   String
+  withdrawnAt       DateTime?
+  withdrawnByUserId String?
+  updatedAt         DateTime  @updatedAt
 }

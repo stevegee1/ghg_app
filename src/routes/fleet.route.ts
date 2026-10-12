@@ -21,6 +21,7 @@ import {
   createEmissionFactor,
   retireEmissionFactor,
 } from '../services/fleet/fleet-asset.service';
+import { MAINTENANCE_CSV_COLUMNS } from '../services/fleet/fleet-maintenance.service';
 import { getFleetSummary, buildFleetReportPdf, estimateFuelEmissions } from '../services/fleet/fleet-reporting.service';
 import { EmissionFactorMissingError } from '../services/fleet/emission-factor.service';
 import {
@@ -31,7 +32,7 @@ import {
   syncFleetQuantity,
 } from '../services/fleet/fleet-billing.service';
 
-const csvUpload = multer({
+export const csvUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
@@ -46,6 +47,7 @@ const TEMPLATES: Record<string, readonly string[]> = {
   assets: ASSET_CSV_COLUMNS,
   readings: READING_CSV_COLUMNS,
   'fuel-card': FUEL_CARD_CSV_COLUMNS,
+  maintenance: MAINTENANCE_CSV_COLUMNS,
 };
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -62,7 +64,7 @@ export function parseRange(req: Request): { from: Date; to: Date } | null {
   return { from: start, to: endExclusive };
 }
 
-function sendError(res: Response, err: unknown, logTag: string) {
+export function sendError(res: Response, err: unknown, logTag: string) {
   if (err instanceof FleetValidationError || err instanceof FleetBillingError) {
     return res.status(err.status).json({ error: err.message });
   }
