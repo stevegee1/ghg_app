@@ -962,13 +962,16 @@ h4 {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 290px;
+  /* Anchored to the avatar's right edge; never wider than the screen minus a margin. */
+  width: min(290px, calc(100vw - 24px));
+  max-height: calc(100vh - 88px);
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.05);
   z-index: 1100;
-  overflow: hidden;
   animation: googlePopoverFade 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1010,6 +1013,7 @@ h4 {
 .google-popover-identity {
   min-width: 0;
   flex: 1;
+  overflow-wrap: anywhere;
 }
 
 .google-popover-email {
@@ -1028,6 +1032,13 @@ h4 {
   align-items: center;
   gap: 0.3rem;
   margin-top: 2px;
+  overflow-wrap: normal;
+}
+
+.google-popover-client-id > span,
+.google-popover-client-id .google-copy-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .google-popover-client-id code {
@@ -8500,15 +8511,6 @@ a:not([class]):hover {
   /* Hide text labels in nav — icon-only on very small */
   .nav-label-hide-mobile {
     display: none;
-  }
-
-  /* Google account popover — full width on mobile */
-  .google-account-popover {
-    right: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
   }
 
   /* Main content padding after fixed header */
