@@ -68,7 +68,8 @@ const CheckoutCard: React.FC<{ product: MerchProduct; charityShare: string | nul
   );
 };
 
-const EnquiryCard: React.FC<{ product: MerchProduct }> = ({ product }) => {
+/** Contact-for-order form. `details` (for example a Frenzy Studio design) is sent with the message as it is when submitted. */
+export const EnquiryCard: React.FC<{ product: MerchProduct; details?: string }> = ({ product, details }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -87,7 +88,7 @@ const EnquiryCard: React.FC<{ product: MerchProduct }> = ({ product }) => {
         itemTitle: product.title,
         contactName: name.trim(),
         contactEmail: email.trim(),
-        message: message.trim() || undefined,
+        message: [details, message.trim()].filter(Boolean).join('\n\n') || undefined,
       });
       setSent(true);
     } catch (err) {

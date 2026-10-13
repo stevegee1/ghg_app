@@ -1697,6 +1697,8 @@ model MerchProduct {
   description       String?
   category          String?
   imageUrl          String?
+  /// Uploaded photo on the storage volume; imageUrl then points at its public route
+  imageStorageKey   String?
   imagePosition     String?
   pricePence        Int?
   supplierCostPence Int?

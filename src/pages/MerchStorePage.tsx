@@ -19,7 +19,8 @@ export const MerchStorePage: React.FC = () => {
 
   const products = catalogue.status === 'ready' ? catalogue.products : [];
   const catalogItems = products.filter((p) => p.kind === 'CATALOGUE' && p.imageUrl);
-  const garments = products.filter((p) => p.kind === 'CUSTOM_GARMENT' && p.pricePence !== null);
+  // Garments without a price are sold by enquiry (contact for order) inside Frenzy Studio.
+  const garments = products.filter((p) => p.kind === 'CUSTOM_GARMENT');
 
   return (
     <main className="merch-page">

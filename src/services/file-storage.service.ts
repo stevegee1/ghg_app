@@ -6,7 +6,7 @@ import path from 'path';
  * Private file storage on the persistent volume at FILE_STORAGE_DIR. Files are never served
  * statically; callers stream them through authenticated, ownership-checked endpoints.
  */
-export type StorageArea = 'evidence' | 'logos';
+export type StorageArea = 'evidence' | 'logos' | 'merch';
 
 const SAFE_SEGMENT = /^[A-Za-z0-9_-]{1,128}$/;
 const SAFE_EXTENSION = /^\.[a-z0-9]{1,8}$/;

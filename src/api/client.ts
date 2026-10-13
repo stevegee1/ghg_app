@@ -265,9 +265,24 @@ export const api = {
   async updateMerchProduct(
     token: string,
     id: string,
-    change: { title?: string; description?: string | null; pricePence?: number | null; active?: boolean; sortOrder?: number }
+    change: { title?: string; description?: string | null; category?: string | null; pricePence?: number | null; active?: boolean; sortOrder?: number }
   ): Promise<{ product: AdminMerchProduct }> {
     return apiRequest(`/api/admin/merch/products/${encodeURIComponent(id)}`, { token, method: 'PATCH', body: change });
+  },
+
+  /** POST /api/admin/merch/products: a shop item or Frenzy Studio garment; pricePence null means contact for order. */
+  async createMerchProduct(
+    token: string,
+    product: { kind: 'CATALOGUE' | 'CUSTOM_GARMENT'; title: string; description: string | null; category: string | null; pricePence: number | null; active: boolean }
+  ): Promise<{ product: AdminMerchProduct }> {
+    return apiRequest('/api/admin/merch/products', { token, method: 'POST', body: product });
+  },
+
+  /** PUT /api/admin/merch/products/:id/image (multipart). */
+  async uploadMerchProductImage(token: string, id: string, file: File): Promise<{ product: AdminMerchProduct }> {
+    const form = new FormData();
+    form.append('image', file);
+    return apiRequest(`/api/admin/merch/products/${encodeURIComponent(id)}/image`, { token, method: 'PUT', form });
   },
 
   /** Starts Stripe Checkout for a catalogue item. The server sets the price from the merch catalogue. */

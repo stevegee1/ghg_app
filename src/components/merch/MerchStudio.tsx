@@ -4,6 +4,7 @@ import type { MerchProduct } from '../../api/merch.types';
 import { formatPence } from './useMerchProducts';
 import { MAJOR_SPORTS, PLACEMENT_OPTIONS, THREAD_COLORS } from './studioOptions';
 import { MerchPartnerLinks } from './MerchPartnerLinks';
+import { EnquiryCard } from './MerchOrderPanel';
 
 interface Props {
   garments: MerchProduct[];
@@ -13,7 +14,7 @@ interface Props {
 const QUOTE_MAX = 80;
 const CUSTOM = '__custom__';
 
-/** Custom embroidered commemorations: configure the moment and garment, then pay through Stripe. */
+/** Frenzy Studio: configure the moment and garment, then pay through Stripe, or send an enquiry for contact-for-order garments. */
 export const MerchStudio: React.FC<Props> = ({ garments, charityShare }) => {
   const [sportId, setSportId] = useState(MAJOR_SPORTS[0].id);
   const sport = MAJOR_SPORTS.find((s) => s.id === sportId) ?? MAJOR_SPORTS[0];
@@ -34,7 +35,8 @@ export const MerchStudio: React.FC<Props> = ({ garments, charityShare }) => {
   const thread = THREAD_COLORS.find((t) => t.id === threadColor) ?? THREAD_COLORS[0];
   const placementLabel = PLACEMENT_OPTIONS.find((p) => p.id === placement)?.label ?? placement;
   const clubName = (customClub ?? club).trim();
-  const total = (garment.pricePence as number) * quantity;
+  const priced = garment.pricePence !== null;
+  const total = (garment.pricePence ?? 0) * quantity;
 
   const changeSport = (id: string) => {
     const next = MAJOR_SPORTS.find((s) => s.id === id) ?? MAJOR_SPORTS[0];
@@ -153,7 +155,7 @@ export const MerchStudio: React.FC<Props> = ({ garments, charityShare }) => {
               <select className="form-input" value={garment.id} onChange={(e) => setGarmentId(e.target.value)}>
                 {garments.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.title}, {formatPence(g.pricePence as number, g.currency)}
+                    {g.title}, {g.pricePence === null ? 'price on request' : formatPence(g.pricePence, g.currency)}
                   </option>
                 ))}
               </select>
@@ -205,6 +207,14 @@ export const MerchStudio: React.FC<Props> = ({ garments, charityShare }) => {
             <dd>{placementLabel}</dd>
           </div>
         </dl>
+        {!priced && (
+          <EnquiryCard
+            key={garment.id}
+            product={garment}
+            details={`Frenzy Studio design: ${clubName || 'team not chosen'}${moment ? `, ${moment}` : ''}${minute ? ` (${minute})` : ''}. Inscription: "${(quote.trim() || '').slice(0, QUOTE_MAX)}". Thread: ${thread.label}. Placement: ${placementLabel}.`}
+          />
+        )}
+        {priced && (
         <div className="merch-order-section">
           <div className="merch-qty">
             <span id="studio-qty-label">Quantity</span>
@@ -235,6 +245,7 @@ export const MerchStudio: React.FC<Props> = ({ garments, charityShare }) => {
             {charityShare ? `${charityShare}% of this order goes to our charity partners.` : 'A share of this order goes to our charity partners.'}
           </p>
         </div>
+        )}
         <MerchPartnerLinks />
       </aside>
     </div>
