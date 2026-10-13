@@ -265,6 +265,19 @@ export const ReviewDossierView: React.FC<Props> = ({ token, submissionId, onBack
                           <span className="pipeline-muted review-hash">
                             {formatFileSize(q.evidence.fileSizeBytes)} · SHA-256 {q.evidence.sha256Hash}
                           </span>
+                          {q.evidence.integrity === 'verified' && (
+                            <span className="review-integrity is-verified">Fingerprint checked: unchanged since upload.</span>
+                          )}
+                          {q.evidence.integrity === 'changed' && (
+                            <span className="review-integrity is-changed" role="alert">
+                              This file no longer matches its fingerprint: it changed after upload. Ask the client to upload it again.
+                            </span>
+                          )}
+                          {q.evidence.integrity === 'missing' && (
+                            <span className="review-integrity is-changed" role="alert">
+                              The stored file is missing. Ask the client to upload it again.
+                            </span>
+                          )}
                         </>
                       ) : (
                         'None attached'

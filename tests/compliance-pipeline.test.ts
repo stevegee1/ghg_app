@@ -150,9 +150,8 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
     carbonFrameworkId = ppn.id;
     jobFrameworkId = s106.id;
 
-    // 6. Complete assessment + provision ready checklists to pass statutory gating
-    // Each test licensee needs: hasCompletedAssessment=true, a ComplianceRecommendation,
-    // and a PreparationChecklist with isReadyToIngest=true.
+    // 6. Complete the assessment and accept a mandatory recommendation to pass the gates
+    // Each test licensee needs hasCompletedAssessment=true and a ComplianceRecommendation.
     const setupPipeline = async (
       licenseeId: string,
       wfType: WorkflowType,
@@ -196,16 +195,6 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
           estimatedEffort: 'MEDIUM',
           clientAccepted: true,
           displayOrder: 1,
-        },
-      });
-
-      await prisma.preparationChecklist.create({
-        data: {
-          recommendationId: rec.id,
-          licenseeId,
-          totalItems: 1,
-          completedItems: 1,
-          isReadyToIngest: true,
         },
       });
 
@@ -738,7 +727,7 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
     });
 
     it('Granting entitlement allows access', async () => {
-      // Provision the assessment + checklist so statutory gate passes
+      // Provision the assessment so the gate passes
       await prisma.licensee.update({
         where: { id: ungatedLicensee.id },
         data: { hasCompletedAssessment: true },
@@ -775,16 +764,6 @@ describe('Compliance Pipeline: Per-pipeline E2E Tests', () => {
           estimatedEffort: 'MEDIUM',
           clientAccepted: true,
           displayOrder: 1,
-        },
-      });
-
-      await prisma.preparationChecklist.create({
-        data: {
-          recommendationId: rec.id,
-          licenseeId: ungatedLicensee.id,
-          totalItems: 1,
-          completedItems: 1,
-          isReadyToIngest: true,
         },
       });
 

@@ -3,9 +3,6 @@ import {
   IntakeAssessmentInput,
 } from '../src/services/assessment.service';
 import {
-  FRAMEWORK_CHECKLIST_TEMPLATES,
-} from '../src/services/preparation-checklist.service';
-import {
   OrganisationSize,
   RevenueBand,
   IndustrySector,
@@ -203,57 +200,16 @@ describe('Assessment Layer & Decision Engine (Sprint 0)', () => {
       });
     });
   });
-
-  describe('FRAMEWORK_CHECKLIST_TEMPLATES', () => {
-    it('provides exhaustive templates for all statutory frameworks', () => {
-      const expectedCodes = [
-        'UK_SECR',
-        'UK_PPN_006',
-        'UK_SECTION_106',
-        'UK_GREEN_CLAIMS_CODE',
-        'UK_LCHS',
-        'ISO_14064_1',
-        'ISO_50001',
-        'SOCIAL_VALUE_JOBS',
-      ];
-
-      for (const code of expectedCodes) {
-        const templates = FRAMEWORK_CHECKLIST_TEMPLATES[code];
-        expect(templates).toBeDefined();
-        expect(templates.length).toBeGreaterThan(0);
-
-        for (const item of templates) {
-          expect(item.itemCode).toBeDefined();
-          expect(item.plainEnglishLabel).toBeDefined();
-          expect(item.plainEnglishGuidance).toBeDefined();
-          expect(item.isoClauseReference).toBeDefined();
-          expect(item.dataType).toBeDefined();
-          expect(typeof item.isMandatory).toBe('boolean');
-        }
-      }
-    });
-
-    it('ensures UK_SECR template includes electricity, gas, intensity metric and narrative', () => {
-      const templates = FRAMEWORK_CHECKLIST_TEMPLATES.UK_SECR;
-      const codes = templates.map((t) => t.itemCode);
-
-      expect(codes).toContain('SECR_ELECTRICITY_USAGE');
-      expect(codes).toContain('SECR_GAS_COMBUSTION');
-      expect(codes).toContain('SECR_INTENSITY_METRIC');
-      expect(codes).toContain('SECR_ENERGY_EFFICIENCY_NARRATIVE');
-    });
-  });
 });
 
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { createApp } from '../src/expressApp';
-import { evidenceCategoryFor } from '../src/utils/evidenceCategory';
-import { EvidenceCategory } from '@prisma/client';
+import { syncFrameworkRegistry } from '../src/services/framework-registry';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
 
-describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
+describe('Assessment API and Admin Readiness Tracker', () => {
   const prisma = new PrismaClient();
   const testApp = createApp();
 
@@ -265,8 +221,6 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
 
   let createdAssessmentId: string;
   let recommendationId: string;
-  let checklistId: string;
-  let sampleItemId: string;
 
   beforeAll(async () => {
     const licensee = await prisma.licensee.create({
@@ -325,12 +279,7 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
 
   afterAll(async () => {
     if (testLicenseeId) {
-      await prisma.preparationChecklistItem.deleteMany({
-        where: { checklist: { licenseeId: testLicenseeId } },
-      });
-      await prisma.preparationChecklist.deleteMany({
-        where: { licenseeId: testLicenseeId },
-      });
+      await prisma.workflowSubmission.deleteMany({ where: { licenseeId: testLicenseeId } });
       await prisma.complianceRecommendation.deleteMany({
         where: { licenseeId: testLicenseeId },
       });
@@ -368,7 +317,7 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
       expect(res.body.error).toContain('Valid organisationSize is required');
     });
 
-    it('submits the GHG onboarding, generates recommendations and checklists, marks licensee completed', async () => {
+    it('submits the GHG onboarding, generates recommendations, marks licensee completed', async () => {
       const intakePayload = {
         service: 'GHG',
         organisationCountry: 'GB',
@@ -404,15 +353,8 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
       expect(lic?.hasCompletedAssessment).toBe(true);
       expect(lic?.industrySector).toBe('MANUFACTURING');
 
-      // Check checklists auto-generated for accepted recommendations
-      const checklists = await prisma.preparationChecklist.findMany({
-        where: { licenseeId: testLicenseeId },
-        include: { items: true },
-      });
-      expect(checklists.length).toBeGreaterThan(0);
-      checklistId = checklists[0].id;
-      expect(checklists[0].items.length).toBeGreaterThan(0);
-      sampleItemId = checklists[0].items[0].id;
+      // Preparation is part of the questionnaire now: onboarding creates no separate checklist.
+      expect(await prisma.preparationChecklist.count({ where: { licenseeId: testLicenseeId } })).toBe(0);
     });
   });
 
@@ -462,104 +404,7 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
     });
   });
 
-  describe('3. Preparation Checklist Console Endpoints', () => {
-    it('lists all preparation checklists with completion rates', async () => {
-      const res = await request(testApp)
-        .get('/api/checklists')
-        .set('Authorization', `Bearer ${partnerToken}`);
-
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.checklists)).toBe(true);
-      expect(res.body.checklists.length).toBeGreaterThan(0);
-    });
-
-    it('fetches single preparation checklist by id with full items', async () => {
-      const res = await request(testApp)
-        .get(`/api/checklists/${checklistId}`)
-        .set('Authorization', `Bearer ${partnerToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.checklist.id).toBe(checklistId);
-      expect(Array.isArray(res.body.checklist.items)).toBe(true);
-      // Client view must not expose raw internal clause reference in customer facing fields
-      expect(res.body.checklist.items[0].plainEnglishLabel).toBeDefined();
-    });
-
-    it('updates checklist item status to COMPLETE', async () => {
-      const res = await request(testApp)
-        .patch(`/api/checklists/items/${sampleItemId}`)
-        .set('Authorization', `Bearer ${partnerToken}`)
-        .send({
-          status: 'COMPLETE',
-        });
-
-      expect(res.status).toBe(200);
-      expect(res.body.checklist).toBeDefined();
-      const updatedItem = res.body.checklist.items.find((i: any) => i.id === sampleItemId);
-      expect(updatedItem).toBeDefined();
-      expect(updatedItem.status).toBe('COMPLETE');
-      expect(updatedItem.completedAt).toBeDefined();
-    });
-
-    it('uploads evidence from the checklist and links it to the item', async () => {
-      const checklist = (await request(testApp).get(`/api/checklists/${checklistId}`).set('Authorization', `Bearer ${partnerToken}`)).body.checklist;
-      const item = checklist.items[1] ?? checklist.items[0];
-
-      // Same call the checklist console makes.
-      const upload = await request(testApp)
-        .post('/api/portal/iso/evidence/upload-file')
-        .set('Authorization', `Bearer ${partnerToken}`)
-        .field('category', evidenceCategoryFor(item.itemCode))
-        .attach('file', Buffer.from('%PDF-1.4 checklist proof'), { filename: 'proof.pdf', contentType: 'application/pdf' });
-      expect(upload.status).toBe(201);
-      const docId = upload.body.evidenceDoc.id;
-
-      const linked = await request(testApp)
-        .patch(`/api/checklists/items/${item.id}`)
-        .set('Authorization', `Bearer ${partnerToken}`)
-        .send({ status: 'COMPLETE', linkedEvidenceDocId: docId });
-      expect(linked.status).toBe(200);
-      const updated = linked.body.checklist.items.find((i: any) => i.id === item.id);
-      expect(updated.linkedEvidenceDocId).toBe(docId);
-      expect(updated.linkedEvidenceDoc?.sha256Hash).toMatch(/^[0-9a-f]{64}$/);
-    });
-
-    it('sends a category the server accepts for every checklist item', () => {
-      const allowed = Object.values(EvidenceCategory) as string[];
-      const codes = Object.values(FRAMEWORK_CHECKLIST_TEMPLATES).flat().map((t: any) => t.itemCode);
-      expect(codes.length).toBeGreaterThan(0);
-      for (const code of codes) expect(allowed).toContain(evidenceCategoryFor(code));
-    });
-  });
-
-  describe('4. Auditor Item Waiver and Admin Readiness Tracker', () => {
-    it('forbids partner user from waiving a checklist item', async () => {
-      const res = await request(testApp)
-        .post(`/api/admin/checklists/items/${sampleItemId}/waive`)
-        .set('Authorization', `Bearer ${partnerToken}`)
-        .send({
-          reason: 'Partner attempting self waiver',
-        });
-
-      expect(res.status).toBe(403);
-    });
-
-    it('allows Admin / Lead Auditor to waive an item with audit reason', async () => {
-      const res = await request(testApp)
-        .post(`/api/admin/checklists/items/${sampleItemId}/waive`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          reason: 'Auditor inspection confirmed utility meters consolidated under parent holding entity.',
-        });
-
-      expect(res.status).toBe(200);
-      expect(res.body.checklist).toBeDefined();
-      const waivedItem = res.body.checklist.items.find((i: any) => i.id === sampleItemId);
-      expect(waivedItem).toBeDefined();
-      expect(waivedItem.status).toBe('WAIVED');
-      expect(waivedItem.waivedReason).toContain('Auditor inspection confirmed');
-    });
-
+  describe('3. Admin Readiness Tracker', () => {
     it('forbids partner user from querying Admin Readiness Tracker', async () => {
       const res = await request(testApp)
         .get('/api/admin/readiness-tracker')
@@ -568,19 +413,49 @@ describe('Assessment and Preparation Checklist API End-to-End Suite', () => {
       expect(res.status).toBe(403);
     });
 
-    it('returns full readiness overview across all licensees for Admin', async () => {
-      const res = await request(testApp)
-        .get('/api/admin/readiness-tracker')
-        .set('Authorization', `Bearer ${adminToken}`);
+    it('shows each framework with how far its submission has got', async () => {
+      await syncFrameworkRegistry(prisma);
+      const rec = await prisma.complianceRecommendation.findFirstOrThrow({ where: { id: recommendationId } });
+      const framework = await prisma.workflowFramework.findUniqueOrThrow({
+        where: { code: rec.frameworkCode },
+        include: { versions: { where: { retiredAt: null }, orderBy: { publishedAt: 'desc' }, include: { questions: { orderBy: { orderIndex: 'asc' } } } } },
+      });
+      const version = framework.versions[0];
+      const [first, second] = version.questions;
+      await prisma.workflowSubmission.create({
+        data: {
+          licenseeId: testLicenseeId,
+          workflowType: framework.workflowType,
+          frameworkId: framework.id,
+          frameworkVersionId: version.id,
+          answers: {
+            create: [
+              { questionId: first.id, value: 'true' },
+              { questionId: second.id, value: '' },
+            ],
+          },
+        },
+      });
 
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.licensees)).toBe(true);
+      const res = await request(testApp).get('/api/admin/readiness-tracker').set('Authorization', `Bearer ${adminToken}`).expect(200);
+      const row = res.body.licensees.find((l: any) => l.licenseeId === testLicenseeId);
+      expect(row).toBeDefined();
+      expect(row.hasCompletedAssessment).toBe(true);
+      expect(row.primaryContact.email).toMatch(/^partner\.compliance\./);
+      expect(row).not.toHaveProperty('readinessPercentage');
 
-      const targetLicensee = res.body.licensees.find((l: any) => l.licenseeId === testLicenseeId);
-      expect(targetLicensee).toBeDefined();
-      expect(targetLicensee.hasCompletedAssessment).toBe(true);
-      expect(typeof targetLicensee.readinessPercentage).toBe('number');
-      expect(Array.isArray(targetLicensee.frameworks)).toBe(true);
+      const entry = row.frameworks.find((f: any) => f.frameworkCode === rec.frameworkCode);
+      expect(entry.submission).toMatchObject({
+        status: 'DRAFT',
+        answeredCount: 1,
+        questionCount: version.questions.length,
+        missingEvidenceCount: version.questions.filter((q) => q.evidenceRequired).length,
+      });
+      const untouched = row.frameworks.filter((f: any) => f.frameworkCode !== rec.frameworkCode);
+      for (const f of untouched) expect(f.submission).toBeNull();
+
+      // The platform's own account is not a client.
+      expect(res.body.licensees.some((l: any) => l.licenseeId === 'lic_ghg_official')).toBe(false);
     });
   });
 });
@@ -625,8 +500,6 @@ describe('Onboarding routes each client to isolated services', () => {
 
   afterAll(async () => {
     const where = { licenseeId: { in: created.licenseeIds } };
-    await prisma.preparationChecklistItem.deleteMany({ where: { checklist: where } });
-    await prisma.preparationChecklist.deleteMany({ where });
     await prisma.complianceRecommendation.deleteMany({ where });
     await prisma.clientAssessment.deleteMany({ where });
     await prisma.serviceRoutingEvent.deleteMany({ where });
@@ -672,7 +545,7 @@ describe('Onboarding routes each client to isolated services', () => {
       .send({ ...org, service: 'GHG', ...ghgAnswers })
       .expect(200);
 
-    expect(res.body.destination).toBe('/portal?tab=checklist&scope=CARBON_EMISSION');
+    expect(res.body.destination).toBe('/portal?tab=workflow&scope=CARBON_EMISSION');
     expect((await entitlement(client.licenseeId, 'GHG'))!.status).toBe('ACTIVE');
     expect((await entitlement(client.licenseeId, 'CARBON'))!.status).toBe('ACTIVE');
     expect(await entitlement(client.licenseeId, 'JOB')).toBeNull();
@@ -694,7 +567,7 @@ describe('Onboarding routes each client to isolated services', () => {
       .send({ ...org, services: ['WORKFORCE', 'GHG'], ...ghgAnswers, hasPlanningConsent: true })
       .expect(200);
 
-    expect(res.body.destination).toBe('/portal?tab=checklist&scope=CARBON_EMISSION');
+    expect(res.body.destination).toBe('/portal?tab=workflow&scope=CARBON_EMISSION');
     expect((await entitlement(client.licenseeId, 'GHG'))!.status).toBe('ACTIVE');
     expect((await entitlement(client.licenseeId, 'JOB'))!.status).toBe('ACTIVE');
     expect(await entitlement(client.licenseeId, 'FLEET')).toBeNull();
@@ -714,9 +587,6 @@ describe('Onboarding routes each client to isolated services', () => {
     expect(current.body.assessment.id).toBe(second.body.assessment.id);
     expect(current.body.assessment.recommendations.map((r: { frameworkCode: string }) => r.frameworkCode)).not.toContain('UK_PPN_006');
 
-    const lists = await request(app).get('/api/checklists').set('Authorization', `Bearer ${client.token}`).expect(200);
-    const listed = (lists.body.checklists ?? lists.body) as { recommendation: { assessmentId: string } }[];
-    expect(listed.every((c) => c.recommendation.assessmentId === second.body.assessment.id)).toBe(true);
   });
 
   it('adds Workforce later as a separate service and refuses to add it twice', async () => {
@@ -728,7 +598,7 @@ describe('Onboarding routes each client to isolated services', () => {
       .set('Authorization', `Bearer ${client.token}`)
       .send({ service: 'WORKFORCE', isUKPublicContractor: true, hasPlanningConsent: true })
       .expect(200);
-    expect(added.body.destination).toBe('/portal?tab=checklist&scope=JOB_REPORTING');
+    expect(added.body.destination).toBe('/portal?tab=workflow&scope=JOB_REPORTING');
     expect((await entitlement(client.licenseeId, 'JOB'))!.status).toBe('ACTIVE');
 
     const assessment = await prisma.clientAssessment.findFirst({

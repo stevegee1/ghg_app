@@ -104,7 +104,7 @@ type AdminTab = (typeof ADMIN_TABS)[number];
 
 /** One line per tab: what it is for and who it serves. Shown under the tab bar and as the tab's tooltip. */
 const ADMIN_TAB_DESCRIPTIONS: Record<AdminTab, string> = {
-  READINESS_TRACKER: 'Every client account, the services they signed up for and how far their preparation has got.',
+  READINESS_TRACKER: 'Every client account, its services, and how far each framework submission has got (answers, missing evidence, review).',
   SUBMISSIONS: 'GHG and Workforce submissions waiting for a Lead Auditor decision, with the audit engine pre-screen as advice.',
   DEMOS: 'Requests from the "Book a demo" form on the website.',
   MERCH_ENQUIRIES: 'Questions from the shop, including "contact for order" items. Each one is also emailed to ADMIN_EMAIL.',

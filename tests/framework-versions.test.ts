@@ -136,8 +136,7 @@ describe('Versioned compliance standards', () => {
       .send({ answers: [{ questionId: 'tv1_q1', value: 'true' }, { questionId: 'tv1_q2', value: '12' }] })
       .expect(200);
     // Every question of version 2026.1 is answered; the newer version's questions are not required.
-    // Submitted as an administrator, who is not gated on the preparation checklist.
-    const res = await request(app).post(`/api/workflow/submissions/${v1SubmissionId}/submit`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+    const res = await request(app).post(`/api/workflow/submissions/${v1SubmissionId}/submit`).set('Authorization', `Bearer ${clientToken}`).expect(200);
     expect(res.body.submission.status).toBe('SUBMITTED');
   });
 

@@ -19,8 +19,8 @@ export const SERVICE_LINES: Record<ClientService, ServiceLine[]> = {
 
 /** Where the client lands after choosing the service. */
 export const SERVICE_DESTINATIONS: Record<ClientService, string> = {
-  GHG: '/portal?tab=checklist&scope=CARBON_EMISSION',
-  WORKFORCE: '/portal?tab=checklist&scope=JOB_REPORTING',
+  GHG: '/portal?tab=workflow&scope=CARBON_EMISSION',
+  WORKFORCE: '/portal?tab=workflow&scope=JOB_REPORTING',
   FLEET: '/portal?tab=fleet',
 };
 

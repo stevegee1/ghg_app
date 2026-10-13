@@ -10,9 +10,8 @@ import {
 } from '@prisma/client';
 
 /**
- * Satisfies the statutory gates a licensee must pass before using a workflow pipeline:
- * an ACTIVE service entitlement, a completed intake assessment, and a mandatory
- * recommendation whose preparation checklist is ready to ingest.
+ * Satisfies the gates a licensee must pass before using a workflow pipeline: an ACTIVE
+ * service entitlement, a completed intake assessment and an accepted mandatory recommendation.
  */
 export async function grantPipelineAccess(
   prisma: PrismaClient,
@@ -62,16 +61,6 @@ export async function grantPipelineAccess(
       estimatedEffort: ComplianceEffort.MEDIUM,
       clientAccepted: true,
       displayOrder: 1,
-    },
-  });
-
-  await prisma.preparationChecklist.create({
-    data: {
-      recommendationId: recommendation.id,
-      licenseeId,
-      totalItems: 1,
-      completedItems: 1,
-      isReadyToIngest: true,
     },
   });
 }

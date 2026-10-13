@@ -52,6 +52,7 @@ describe('Workflow client view: frameworks, fees, withheld AI findings and revis
     await prisma.workflowReviewDecision.deleteMany({ where: { submissionId: { in: ids } } });
     await prisma.workflowAnswer.deleteMany({ where: { submissionId: { in: ids } } });
     await prisma.workflowSubmission.deleteMany({ where: { id: { in: ids } } });
+    await prisma.auditEvidenceDocument.deleteMany({ where: { licenseeId: { in: licenseeIds } } });
     await prisma.portalUser.deleteMany({ where: { id: { in: [userA?.id, userB?.id, admin?.id].filter(Boolean) } } });
     for (const id of licenseeIds) {
       await prisma.licensee.delete({ where: { id } }).catch(() => {});
@@ -78,9 +79,9 @@ describe('Workflow client view: frameworks, fees, withheld AI findings and revis
       code: 'ISO_14064_1',
       entitled: true,
       isLegallyMandatory: true,
-      preparation: { totalItems: 1, completedItems: 1, ready: true },
       latestSubmission: null,
     });
+    expect(ghg.body.frameworks[0]).not.toHaveProperty('preparation');
 
     const workforce = await request(app).get('/api/workflow/my-frameworks?service=WORKFORCE').set('Authorization', `Bearer ${tokenA}`).expect(200);
     expect(workforce.body.frameworks).toHaveLength(0);
@@ -95,13 +96,18 @@ describe('Workflow client view: frameworks, fees, withheld AI findings and revis
     submissionId = draft.body.submission.id;
 
     const res = await request(app).get('/api/workflow/my-frameworks?service=GHG').set('Authorization', `Bearer ${tokenA}`).expect(200);
-    expect(res.body.frameworks[0].latestSubmission).toMatchObject({ id: submissionId, status: 'DRAFT', open: true });
-
     const framework = await prisma.workflowFramework.findUnique({
       where: { id: 'fwk_iso_14064' },
       include: { questions: { orderBy: { orderIndex: 'asc' } } },
     });
     questionIds = framework!.questions.map((q) => q.id);
+    expect(res.body.frameworks[0].latestSubmission).toMatchObject({
+      id: submissionId,
+      status: 'DRAFT',
+      open: true,
+      answeredCount: 0,
+      questionCount: questionIds.length,
+    });
   });
 
   it('withholds the AI pre-screen from the client but not from the auditor', async () => {
@@ -174,5 +180,21 @@ describe('Workflow client view: frameworks, fees, withheld AI findings and revis
     await request(app).get(`/api/workflow/submissions/${submissionId}`).set('Authorization', `Bearer ${tokenB}`).expect(404);
     const list = await request(app).get('/api/workflow/submissions').set('Authorization', `Bearer ${tokenB}`).expect(200);
     expect(list.body.submissions).toHaveLength(0);
+  });
+
+  it("lists only the organisation's own earlier uploads, so a file can be reused", async () => {
+    const upload = await request(app)
+      .post('/api/workflow/evidence/upload')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .attach('file', Buffer.from('%PDF-1.4 meter readings'), { filename: 'meter-readings.pdf', contentType: 'application/pdf' })
+      .expect(201);
+    const mine = await request(app).get('/api/workflow/evidence/mine').set('Authorization', `Bearer ${tokenA}`).expect(200);
+    expect(mine.body.files[0]).toMatchObject({ id: upload.body.evidenceDocument.id, fileName: 'meter-readings.pdf' });
+    expect(mine.body.files[0].sha256Hash).toMatch(/^[0-9a-f]{64}$/);
+
+    const other = await request(app).get('/api/workflow/evidence/mine').set('Authorization', `Bearer ${tokenB}`).expect(200);
+    expect(other.body.files.some((f: { id: string }) => f.id === upload.body.evidenceDocument.id)).toBe(false);
+    await request(app).get('/api/workflow/evidence/mine').set('Authorization', `Bearer ${adminToken}`).expect(403);
+    await request(app).get('/api/workflow/evidence/mine').expect(401);
   });
 });

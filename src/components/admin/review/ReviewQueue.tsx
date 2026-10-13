@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import type { ReviewQueueItem, ReviewQueueStage } from '../../../api/review.types';
 import { formatDate } from '../../pipeline/pipelineFormat';
@@ -16,7 +17,16 @@ export const ReviewQueue: React.FC<{ token: string }> = ({ token }) => {
   const [stage, setStage] = useState<ReviewQueueStage>('awaiting');
   const [items, setItems] = useState<ReviewQueueItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  // ?review=<submission id> opens that dossier directly, for example from the Readiness Tracker.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openId = searchParams.get('review');
+  const setOpenId = (id: string | null) =>
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (id) next.set('review', id);
+      else next.delete('review');
+      return next;
+    });
 
   const load = useCallback(async () => {
     setError(null);

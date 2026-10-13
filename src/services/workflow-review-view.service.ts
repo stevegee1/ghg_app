@@ -1,8 +1,9 @@
 import { Prisma, PrismaClient, WorkflowStatus } from '@prisma/client';
+import { FileIntegrity, checkStoredFile } from './file-storage.service';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-/** Submissions waiting on the Lead Auditor. AI_SCREENED is waiting too: the AI only advises. */
+/** Submissions waiting on the Lead Auditor. AI_SCREENED is waiting too: the audit engine only advises. */
 export const AWAITING_REVIEW: WorkflowStatus[] = [WorkflowStatus.SUBMITTED, WorkflowStatus.AI_SCREENED, WorkflowStatus.UNDER_REVIEW];
 
 export const REVIEW_QUEUE_STAGES = ['awaiting', 'decided', 'all'] as const;
@@ -98,6 +99,15 @@ export async function getReviewDossier(db: Db, submissionId: string) {
   });
   if (!s) return null;
 
+  // Re-check every stored file's fingerprint, so the auditor knows each one is the file the client uploaded.
+  const integrityByEvidence = new Map<string, FileIntegrity>();
+  await Promise.all(
+    s.answers.map(async (a) => {
+      const e = a.evidenceDocument;
+      if (e?.storageKey) integrityByEvidence.set(e.id, (await checkStoredFile(e.storageKey, e.sha256Hash)).integrity);
+    })
+  );
+
   const aiByQuestion = new Map(readAiFindings(s.aiClauseFindings).map((f) => [f.questionId, f]));
   const answerByQuestion = new Map(s.answers.map((a) => [a.questionId, a]));
   const previous = readDecisions(s.reviewDecision?.perQuestionDecisions);
@@ -130,7 +140,15 @@ export async function getReviewDossier(db: Db, submissionId: string) {
         guidanceNotes: q.guidanceNotes,
         answer: a ? a.value : null,
         evidence: e
-          ? { id: e.id, fileName: e.fileName, fileUrl: e.fileUrl, fileSizeBytes: e.fileSizeBytes, sha256Hash: e.sha256Hash, stored: Boolean(e.storageKey) }
+          ? {
+              id: e.id,
+              fileName: e.fileName,
+              fileUrl: e.fileUrl,
+              fileSizeBytes: e.fileSizeBytes,
+              sha256Hash: e.sha256Hash,
+              stored: Boolean(e.storageKey),
+              integrity: integrityByEvidence.get(e.id) ?? null,
+            }
           : null,
         aiFinding: aiByQuestion.get(q.id) ?? null,
         previousDecision: previous.get(q.id) ?? null,

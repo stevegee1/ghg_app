@@ -13,8 +13,8 @@ import {
 } from '../components/onboarding/onboardingServices';
 
 const SERVICE_DESTINATIONS: Record<ClientService, string> = {
-  GHG: '/portal?tab=checklist&scope=CARBON_EMISSION',
-  WORKFORCE: '/portal?tab=checklist&scope=JOB_REPORTING',
+  GHG: '/portal?tab=workflow&scope=CARBON_EMISSION',
+  WORKFORCE: '/portal?tab=workflow&scope=JOB_REPORTING',
   FLEET: '/portal?tab=fleet',
 };
 
@@ -218,7 +218,7 @@ export const OnboardingPage: React.FC = () => {
     }
   };
 
-  const handleLaunchChecklist = () => {
+  const handleOpenService = () => {
     navigate(destination || SERVICE_DESTINATIONS[services[0] || 'GHG']);
   };
 
@@ -332,7 +332,7 @@ export const OnboardingPage: React.FC = () => {
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: step >= 3 ? '#090d1a' : '#64748b', fontFamily: 'var(--font-heading)' }}>
                   Compliance Roadmap
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Frameworks &amp; preparation</div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Your frameworks</div>
               </div>
             </div>
           </div>
@@ -741,7 +741,7 @@ export const OnboardingPage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={handleLaunchChecklist}
+                  onClick={handleOpenService}
                   style={{
                     padding: '0.75rem 1.5rem',
                     borderRadius: '8px',
@@ -756,7 +756,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  Go to preparation
+                  Start your review
                 </button>
               </div>
 
@@ -925,7 +925,7 @@ export const OnboardingPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={handleLaunchChecklist}
+                  onClick={handleOpenService}
                   style={{
                     padding: '0.85rem 2.25rem',
                     borderRadius: '8px',
@@ -939,7 +939,7 @@ export const OnboardingPage: React.FC = () => {
                     transition: 'all 0.18s ease',
                   }}
                 >
-                  {services[0] === 'WORKFORCE' ? 'Start Workforce preparation' : 'Start GHG preparation'}
+                  {services[0] === 'WORKFORCE' ? 'Start your Workforce review' : 'Start your GHG review'}
                 </button>
               </div>
             </div>

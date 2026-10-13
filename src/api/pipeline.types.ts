@@ -40,7 +40,6 @@ export interface ClientFramework {
   enforcementBody: string | null;
   estimatedEffort: string;
   entitled: boolean;
-  preparation: { totalItems: number; completedItems: number; ready: boolean } | null;
   latestSubmission: {
     id: string;
     status: WorkflowStatus;
@@ -48,6 +47,8 @@ export interface ClientFramework {
     open: boolean;
     version: string;
     newerVersionAvailable: boolean;
+    answeredCount: number;
+    questionCount: number;
   } | null;
 }
 
@@ -112,4 +113,14 @@ export interface AnswerInput {
   questionId: string;
   value: string;
   evidenceDocumentId?: string | null;
+}
+
+/** A file the organisation uploaded earlier, which can be attached to another question. */
+export interface EarlierEvidenceFile {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileSizeBytes: number;
+  sha256Hash: string;
+  createdAt: string;
 }

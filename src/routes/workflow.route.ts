@@ -165,39 +165,8 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
           code: 'INTAKE_ASSESSMENT_REQUIRED',
         });
       }
-
-      const checklists = await prisma.preparationChecklist.findMany({
-        where: {
-          licenseeId,
-          recommendation: {
-            workflowType: workflowType as WorkflowType,
-            assessment: { supersededAt: null },
-          },
-        },
-        include: {
-          recommendation: true,
-        },
-      });
-
-      if (checklists.length === 0) {
-        return res.status(403).json({
-          error: 'Statutory preparation checklist incomplete. You must complete all mandatory preparation items before launching the assurance diagnostic.',
-          code: 'PREPARATION_INCOMPLETE',
-        });
-      }
-
-      const mandatoryLists = checklists.filter(
-        (c) => c.recommendation?.isLegallyMandatory && c.recommendation?.clientAccepted !== false
-      );
-      const relevantLists = mandatoryLists.length > 0 ? mandatoryLists : checklists;
-      const allReady = relevantLists.every((c) => c.isReadyToIngest);
-
-      if (!allReady) {
-        return res.status(403).json({
-          error: 'Preparation checklist incomplete. You must complete all mandatory preparation items before launching the assurance diagnostic.',
-          code: 'PREPARATION_INCOMPLETE',
-        });
-      }
+      // No separate preparation gate: each item is asked once, with its evidence, in the
+      // questionnaire, and submitting checks every answer and required file.
     }
 
     try {
@@ -400,33 +369,6 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
           throw new Error('Forbidden: Licensee mismatch.');
         }
 
-        if (user.role !== 'ADMIN') {
-          const checklists = await tx.preparationChecklist.findMany({
-            where: {
-              licenseeId: existing.licenseeId,
-              recommendation: {
-                workflowType: existing.workflowType,
-                assessment: { supersededAt: null },
-              },
-            },
-            include: { recommendation: true },
-          });
-
-          if (checklists.length === 0) {
-            throw new Error('Preparation checklist incomplete. You must complete all mandatory preparation items before submitting for assurance review.');
-          }
-
-          const mandatoryLists = checklists.filter(
-            (c) => c.recommendation?.isLegallyMandatory && c.recommendation?.clientAccepted !== false
-          );
-          const relevantLists = mandatoryLists.length > 0 ? mandatoryLists : checklists;
-          const allReady = relevantLists.every((c) => c.isReadyToIngest);
-
-          if (!allReady) {
-            throw new Error('Preparation checklist incomplete. You must complete all mandatory preparation items before submitting for assurance review.');
-          }
-        }
-
         return new WorkflowEngineService(tx).transitionStatus(
           id,
           WorkflowStatus.SUBMITTED,
@@ -619,7 +561,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
 
   /**
    * GET /api/workflow/submissions/:id/review-dossier
-   * Admin-only: each question with the client's answer, evidence and the AI pre-screen finding.
+   * Admin-only: each question with the client's answer, evidence (fingerprint re-checked) and the audit engine pre-screen finding.
    */
   router.get('/api/workflow/submissions/:id/review-dossier', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
@@ -1018,6 +960,30 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
     } catch (err: any) {
       console.error('[WORKFLOW TELEMETRY KEYS LIST ERROR]', err);
       return res.status(500).json({ error: err.message || 'Failed to list telemetry keys.' });
+    }
+  });
+
+  /**
+   * GET /api/workflow/evidence/mine
+   * The organisation's stored evidence files, newest first, so a file uploaded once (for example
+   * during the old preparation checklist) can be attached to a question without uploading it again.
+   */
+  router.get('/api/workflow/evidence/mine', authenticateToken, async (req: Request, res: Response) => {
+    const user = req.user!;
+    if (!user.licenseeId) return res.status(403).json({ error: 'A client account is required.' });
+    try {
+      const files = await runWithRls(prisma, user, (tx) =>
+        tx.auditEvidenceDocument.findMany({
+          where: { licenseeId: user.licenseeId!, storageKey: { not: null } },
+          select: { id: true, fileName: true, fileUrl: true, fileSizeBytes: true, sha256Hash: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 200,
+        })
+      );
+      return res.status(200).json({ files });
+    } catch (err: unknown) {
+      console.error('[WORKFLOW EVIDENCE LIST ERROR]', err);
+      return res.status(500).json({ error: 'Failed to list your files.' });
     }
   });
 

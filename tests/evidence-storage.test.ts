@@ -95,7 +95,40 @@ describe('Evidence storage: private files, real hashes and ownership', () => {
       expect(res.headers['cache-control']).toContain('no-store');
       expect(res.headers['content-disposition']).toContain('meter_reads.csv');
       expect(sha256(res.body)).toBe(sha256(content));
+      expect(res.headers['x-evidence-integrity']).toBe('verified');
     }
+  });
+
+  it('refuses a file that changed after upload, and warns the reviewer', async () => {
+    const { body } = await uploadAsA(Buffer.from('%PDF-1.4 gas bill'), 'gas_bill.pdf').expect(201);
+    const doc = body.evidenceDocument;
+
+    const draft = await request(app).post('/api/workflow/draft').set('Authorization', `Bearer ${tokenA}`).send({ workflowType: 'GHG', frameworkId: 'fwk_iso_14064' });
+    const submissionId = draft.status === 201 ? draft.body.submission.id : (await prisma.workflowSubmission.findFirstOrThrow({ where: { licenseeId: licenseeA.id, status: 'DRAFT' } })).id;
+    const question = (await prisma.workflowFramework.findUniqueOrThrow({ where: { id: 'fwk_iso_14064' }, include: { questions: { orderBy: { orderIndex: 'asc' } } } })).questions[0];
+    await request(app)
+      .patch(`/api/workflow/submissions/${submissionId}/answers`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ answers: [{ questionId: question.id, value: 'true', evidenceDocumentId: doc.id }] })
+      .expect(200);
+
+    const dossierEvidence = async () => {
+      const res = await request(app).get(`/api/workflow/submissions/${submissionId}/review-dossier`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+      return res.body.submission.questions.find((q: { id: string }) => q.id === question.id).evidence;
+    };
+    expect((await dossierEvidence()).integrity).toBe('verified');
+
+    // Someone edits the stored file directly on the volume.
+    const stored = await prisma.auditEvidenceDocument.findUniqueOrThrow({ where: { id: doc.id } });
+    fs.writeFileSync(resolveStorageKey(stored.storageKey!), Buffer.from('%PDF-1.4 gas bill (edited)'));
+
+    const res = await request(app).get(doc.fileUrl).set('Authorization', `Bearer ${adminToken}`).expect(409);
+    expect(res.body.code).toBe('INTEGRITY_MISMATCH');
+    expect((await dossierEvidence()).integrity).toBe('changed');
+
+    fs.unlinkSync(resolveStorageKey(stored.storageKey!));
+    await request(app).get(doc.fileUrl).set('Authorization', `Bearer ${tokenA}`).expect(404);
+    expect((await dossierEvidence()).integrity).toBe('missing');
   });
 
   it('hides another licensee\'s evidence and refuses anonymous downloads', async () => {

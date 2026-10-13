@@ -8,10 +8,9 @@ interface Props {
   starting: string | null;
   onStart: (framework: ClientFramework) => void;
   onOpen: (submissionId: string) => void;
-  onPrepare: () => void;
 }
 
-export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starting, onStart, onOpen, onPrepare }) => {
+export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starting, onStart, onOpen }) => {
   if (frameworks.length === 0) {
     return (
       <div className="pipeline-panel pipeline-empty">
@@ -25,7 +24,7 @@ export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starti
     <ul className="pipeline-frameworks">
       {frameworks.map((f) => {
         const latest = f.latestSubmission;
-        const prepReady = f.preparation?.ready ?? false;
+        const inProgress = latest?.open && (latest.status === 'DRAFT' || latest.status === 'REJECTED');
         return (
           <li key={f.frameworkId} className="pipeline-panel pipeline-framework">
             <div className="pipeline-framework-head">
@@ -49,6 +48,16 @@ export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starti
                 <span className="pipeline-muted">Updated {formatDate(latest.updatedAt)}</span>
               </p>
             )}
+            {inProgress && (
+              <div className="pipeline-framework-progress">
+                <div className="pipeline-meter" role="progressbar" aria-valuemin={0} aria-valuemax={latest.questionCount} aria-valuenow={latest.answeredCount} aria-label="Questions answered">
+                  <span style={{ width: `${latest.questionCount ? Math.round((latest.answeredCount / latest.questionCount) * 100) : 0}%` }} />
+                </div>
+                <span className="pipeline-muted">
+                  {latest.answeredCount} of {latest.questionCount} answered
+                </span>
+              </div>
+            )}
             {latest?.open && latest.newerVersionAvailable && (
               <p className="pipeline-muted">
                 This submission is on version {latest.version}. Version {f.currentVersion.version} is now current and applies to your next
@@ -59,16 +68,6 @@ export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starti
             <div className="pipeline-actions">
               {!f.entitled ? (
                 <p className="pipeline-muted">This service is not active on your account. Contact us to activate it.</p>
-              ) : !prepReady ? (
-                <>
-                  <p className="pipeline-muted">
-                    Finish preparation first
-                    {f.preparation ? ` (${f.preparation.completedItems} of ${f.preparation.totalItems} items done)` : ''}.
-                  </p>
-                  <button type="button" className="btn btn-secondary" onClick={onPrepare}>
-                    Go to preparation
-                  </button>
-                </>
               ) : latest?.open ? (
                 <button type="button" className="btn btn-primary" onClick={() => onOpen(latest.id)}>
                   {latest.status === 'DRAFT' || latest.status === 'REJECTED' ? 'Continue' : 'View'}
@@ -86,7 +85,7 @@ export const PipelineFrameworkList: React.FC<Props> = ({ frameworks, fee, starti
                     disabled={starting !== null}
                     onClick={() => onStart(f)}
                   >
-                    {starting === f.frameworkId ? 'Starting...' : latest ? 'Start a new submission' : 'Start questionnaire'}
+                    {starting === f.frameworkId ? 'Starting...' : latest ? 'Start a new submission' : 'Start'}
                   </button>
                 </>
               )}

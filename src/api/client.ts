@@ -36,7 +36,7 @@ import type {
   TrainingConsentView,
 } from './fleet.types';
 import type { ReviewDecisionPayload, ReviewDossier, ReviewQueueItem, ReviewQueueStage } from './review.types';
-import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, PipelineFee, PipelineService } from './pipeline.types';
+import type { AnswerInput, ClientEvidence, ClientFramework, ClientSubmission, EarlierEvidenceFile, PipelineFee, PipelineService } from './pipeline.types';
 import type { AdminMerchProduct, MerchProduct } from './merch.types';
 import type { MarketIndex, MarketIndexValue } from './market.types';
 import type { AnchorBatch, AnchorOverview, VerifyResult } from './anchor.types';
@@ -777,50 +777,6 @@ export const api = {
 
   // -- ISO Audit-Readiness & Carbon Compliance -----------------------------
 
-  async uploadEvidenceProofFile(
-    token: string,
-    params: { file: File; licenseeId?: string; questionId?: string; matrixRowId?: string; reportId?: string; category?: string }
-  ): Promise<any> {
-    const form = new FormData();
-    form.append('file', params.file);
-    if (params.licenseeId) form.append('licenseeId', params.licenseeId);
-    if (params.questionId) form.append('questionId', params.questionId);
-    if (params.matrixRowId) form.append('matrixRowId', params.matrixRowId);
-    if (params.reportId) form.append('reportId', params.reportId);
-    if (params.category) form.append('category', params.category);
-
-    // Without a time limit a stalled connection leaves the upload button spinning forever.
-    let res: Response;
-    try {
-      res = await fetch('/api/portal/iso/evidence/upload-file', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-        signal: AbortSignal.timeout(EVIDENCE_UPLOAD_TIMEOUT_MS),
-      });
-    } catch (err) {
-      if (err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
-        throw new Error('The upload took too long and was stopped. Check your connection, or try a smaller file.');
-      }
-      throw new Error('The upload could not reach the server. Check your connection and try again.');
-    }
-    const text = await res.text();
-    let data: any = {};
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch {
-      data = {};
-    }
-    if (!res.ok) {
-      const errorMsg =
-        (typeof data?.error === 'string' && data.error) ||
-        (typeof data?.message === 'string' && data.message) ||
-        (text && text.length < 150 && !text.startsWith('<') ? text : `Upload failed with HTTP ${res.status}`);
-      throw new Error(errorMsg);
-    }
-    return data;
-  },
-
   /** Downloads a stored evidence file through the authenticated endpoint and saves it locally. */
   async downloadEvidenceFile(token: string, fileUrl: string, fileName: string): Promise<void> {
     const res = await fetch(fileUrl, { headers: { Authorization: `Bearer ${token}` } });
@@ -1291,61 +1247,6 @@ export const api = {
     return data;
   },
 
-  // ── Preparation Checklists ────────────────────────────────────────────────
-  async getChecklists(token: string): Promise<{ checklists: any[] }> {
-    const res = await fetch('/api/checklists', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
-  async getChecklist(token: string, id: string): Promise<{ checklist: any }> {
-    const res = await fetch(`/api/checklists/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
-  async updateChecklistItem(
-    token: string,
-    itemId: string,
-    params: { status: string; linkedEvidenceDocId?: string }
-  ): Promise<{ message: string; checklist: any }> {
-    const res = await fetch(`/api/checklists/items/${itemId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(params),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
-  async adminWaiveChecklistItem(
-    token: string,
-    itemId: string,
-    reason: string
-  ): Promise<{ message: string; checklist: any }> {
-    const res = await fetch(`/api/admin/checklists/items/${itemId}/waive`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reason }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
   // ── GHG and Workforce pipelines (workflow engine) ───────────────────────
 
   async getMyFrameworks(token: string, service: PipelineService): Promise<{ frameworks: ClientFramework[] }> {
@@ -1371,6 +1272,11 @@ export const api = {
       token,
       body: { answers },
     });
+  },
+
+  /** GET /api/workflow/evidence/mine: files this organisation already uploaded, to reuse on another question. */
+  async getMyEvidenceFiles(token: string): Promise<{ files: EarlierEvidenceFile[] }> {
+    return apiRequest('/api/workflow/evidence/mine', { token });
   },
 
   async uploadPipelineEvidence(token: string, file: File): Promise<{ evidenceDocument: ClientEvidence & { createdAt: string } }> {

@@ -90,3 +90,22 @@ export function resolveStorageKey(storageKey: string): string {
   }
   return absolute;
 }
+
+export type FileIntegrity = 'verified' | 'changed' | 'missing';
+
+/**
+ * Re-hashes a stored file and compares it with the SHA-256 recorded at upload, so a file changed
+ * after upload (on disk or in a backup restore) is detected rather than served as if unchanged.
+ */
+export async function checkStoredFile(storageKey: string, expectedSha256: string): Promise<{ integrity: FileIntegrity; absolute: string }> {
+  const absolute = resolveStorageKey(storageKey);
+  let content: Buffer;
+  try {
+    content = await fs.promises.readFile(absolute);
+  } catch {
+    return { integrity: 'missing', absolute };
+  }
+  const actual = crypto.createHash('sha256').update(content).digest('hex');
+  return { integrity: actual === expectedSha256.toLowerCase() ? 'verified' : 'changed', absolute };
+}
+

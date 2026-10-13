@@ -40,8 +40,8 @@ const OPEN_STATUSES: WorkflowStatus[] = [
 
 /**
  * The frameworks a client works through in one pipeline service: their current, accepted
- * recommendations matched to the framework registry, with preparation readiness and the
- * latest submission for each, so the client can start or resume.
+ * recommendations matched to the framework registry, with the latest submission for each and
+ * how far it has got, so the client can start or resume.
  */
 export async function listClientFrameworks(db: Db, licenseeId: string, service: PipelineService) {
   const workflowTypes = pipelineWorkflowTypes(service);
@@ -53,7 +53,6 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
     }),
     db.complianceRecommendation.findMany({
       where: { ...currentRecommendationWhere(licenseeId), workflowType: { in: workflowTypes }, clientAccepted: true },
-      include: { checklist: { select: { totalItems: true, completedItems: true, isReadyToIngest: true } } },
       orderBy: { displayOrder: 'asc' },
     }),
   ]);
@@ -71,7 +70,8 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
         status: true,
         frameworkId: true,
         updatedAt: true,
-        frameworkVersion: { select: { id: true, version: true } },
+        frameworkVersion: { select: { id: true, version: true, _count: { select: { questions: true } } } },
+        answers: { select: { value: true } },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -100,13 +100,6 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
         enforcementBody: r.enforcementBody,
         estimatedEffort: r.estimatedEffort,
         entitled: entitledLines.has(framework.workflowType as string as ServiceLine),
-        preparation: r.checklist
-          ? {
-              totalItems: r.checklist.totalItems,
-              completedItems: r.checklist.completedItems,
-              ready: r.checklist.isReadyToIngest,
-            }
-          : null,
         latestSubmission: latest
           ? {
               id: latest.id,
@@ -115,6 +108,8 @@ export async function listClientFrameworks(db: Db, licenseeId: string, service: 
               open: OPEN_STATUSES.includes(latest.status),
               version: latest.frameworkVersion.version,
               newerVersionAvailable: latest.frameworkVersion.id !== current.id,
+              answeredCount: latest.answers.filter((a) => a.value.trim() !== '').length,
+              questionCount: latest.frameworkVersion._count.questions,
             }
           : null,
       };

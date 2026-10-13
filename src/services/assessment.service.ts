@@ -11,8 +11,8 @@ import {
   Prisma,
   RoutingEventType,
   ServiceLine,
+  WorkflowStatus,
 } from '@prisma/client';
-import { PreparationChecklistService } from './preparation-checklist.service';
 import {
   ClientService,
   SERVICE_DESTINATIONS,
@@ -21,6 +21,7 @@ import {
   recordRoutingEvent,
 } from './service-routing.service';
 import { currentRecommendationWhere } from './assessment-scope';
+import { PLATFORM_LICENSEE_ID } from './platform-account.service';
 
 export interface FleetProfile {
   assetCountBand: (typeof FLEET_ASSET_COUNT_BANDS)[number];
@@ -323,16 +324,12 @@ async function createRecommendations(
 }
 
 export class AssessmentService {
-  private readonly checklistService: PreparationChecklistService;
-
-  constructor(private readonly prisma: PrismaClient) {
-    this.checklistService = new PreparationChecklistService(prisma);
-  }
+  constructor(private readonly prisma: PrismaClient) {}
 
   /**
    * Completes onboarding: supersedes any previous assessment (history is kept), records the
-   * answers, routes the client to the chosen service, generates that service's recommendations
-   * and checklists, and logs the routing decision with the answers that drove it.
+   * answers, routes the client to the chosen service, generates that service's recommendations,
+   * and logs the routing decision with the answers that drove it.
    */
   async submitAssessment(
     licenseeId: string,
@@ -392,9 +389,6 @@ export class AssessmentService {
       return { assessment, created };
     });
 
-    for (const rec of created) {
-      await this.checklistService.createChecklistForRecommendation(rec.id, licenseeId, rec.frameworkCode);
-    }
 
     return {
       assessment,
@@ -403,23 +397,12 @@ export class AssessmentService {
     };
   }
 
-  /** The licensee's current (not superseded) assessment with recommendations and checklists. */
+  /** The licensee's current (not superseded) assessment with its recommendations. */
   async getAssessment(licenseeId: string) {
     return this.prisma.clientAssessment.findFirst({
       where: { licenseeId, supersededAt: null },
       include: {
-        recommendations: {
-          include: {
-            checklist: {
-              include: {
-                items: {
-                  orderBy: [{ isMandatory: 'desc' }, { createdAt: 'asc' }],
-                },
-              },
-            },
-          },
-          orderBy: { displayOrder: 'asc' },
-        },
+        recommendations: { orderBy: { displayOrder: 'asc' } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -427,7 +410,7 @@ export class AssessmentService {
 
   /**
    * Adds another service for an onboarded client. Merges that service's answers into the current
-   * assessment, adds its recommendations and checklists, activates it and logs the decision.
+   * assessment, adds its recommendations, activates it and logs the decision.
    * Each service keeps its own isolated pipeline.
    */
   async addService(
@@ -490,9 +473,6 @@ export class AssessmentService {
       return recs;
     });
 
-    for (const rec of created) {
-      await this.checklistService.createChecklistForRecommendation(rec.id, licenseeId, rec.frameworkCode);
-    }
 
     return { destination: SERVICE_DESTINATIONS[service] };
   }
@@ -500,9 +480,6 @@ export class AssessmentService {
   async listCurrentRecommendations(licenseeId: string) {
     return this.prisma.complianceRecommendation.findMany({
       where: currentRecommendationWhere(licenseeId),
-      include: {
-        checklist: { select: { id: true, totalItems: true, completedItems: true, isReadyToIngest: true } },
-      },
       orderBy: { displayOrder: 'asc' },
     });
   }
@@ -513,13 +490,6 @@ export class AssessmentService {
   async getRecommendations(licenseeId: string) {
     return this.prisma.complianceRecommendation.findMany({
       where: currentRecommendationWhere(licenseeId),
-      include: {
-        checklist: {
-          include: {
-            items: true,
-          },
-        },
-      },
       orderBy: { displayOrder: 'asc' },
     });
   }
@@ -554,114 +524,133 @@ export class AssessmentService {
         deferredReason: !clientAccepted ? deferredReason || 'Deferred by client' : null,
         clientReviewedAt: new Date(),
       },
-      include: {
-        checklist: {
-          include: { items: true },
-        },
-      },
     });
-
-    // If accepted and checklist missing, create it
-    if (clientAccepted && !updated.checklist) {
-      await this.checklistService.createChecklistForRecommendation(
-        rec.id,
-        licenseeId,
-        rec.frameworkCode
-      );
-    }
 
     return updated;
   }
 
   /**
-   * Admin view: Aggregated client readiness and assessment progress tracker.
+   * Admin Readiness Tracker: every client account, its services, and for each framework it must
+   * report against, how far its submission has got (answers, missing evidence, review status).
    */
-  async getAdminReadinessOverview() {
-    const licensees: any[] = await this.prisma.licensee.findMany({
-      include: {
+  async getAdminReadinessOverview(): Promise<ReadinessTrackerRow[]> {
+    const licensees = await this.prisma.licensee.findMany({
+      where: { id: { not: PLATFORM_LICENSEE_ID } },
+      select: {
+        id: true,
+        name: true,
+        organisationCountry: true,
+        industrySector: true,
+        hasCompletedAssessment: true,
         clientAssessments: {
+          where: { supersededAt: null },
           orderBy: { createdAt: 'desc' },
           take: 1,
-          include: {
+          select: {
+            completedAt: true,
             recommendations: {
-              include: {
-                checklist: {
-                  include: {
-                    items: true,
-                  },
-                },
-              },
+              where: { clientAccepted: { not: false } },
+              orderBy: { displayOrder: 'asc' },
+              select: { frameworkCode: true, frameworkName: true, isLegallyMandatory: true, workflowType: true },
             },
           },
         },
-        entitlements: {
-          select: {
-            serviceLine: true,
-            status: true,
-            grantedAt: true,
-          },
-          orderBy: { serviceLine: 'asc' },
-        },
+        entitlements: { select: { serviceLine: true, status: true, grantedAt: true }, orderBy: { serviceLine: 'asc' } },
         portalUsers: {
+          where: { role: 'PARTNER' },
+          orderBy: { createdAt: 'asc' },
+          take: 1,
+          select: { id: true, email: true, firstName: true, lastName: true, jobTitle: true },
+        },
+        workflowSubmissions: {
+          orderBy: { createdAt: 'desc' },
           select: {
             id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            jobTitle: true,
-            primaryRole: true,
-            isOnboardingComplete: true,
+            status: true,
+            updatedAt: true,
+            submittedAt: true,
+            framework: { select: { code: true } },
+            frameworkVersion: { select: { questions: { select: { id: true, evidenceRequired: true } } } },
+            answers: { select: { questionId: true, value: true, evidenceDocumentId: true } },
           },
         },
       },
       orderBy: { createdAt: 'desc' },
-    } as any);
+    });
 
     return licensees.map((lic) => {
-      const latestAssessment = lic.clientAssessments[0] || null;
-      const recommendations: any[] = latestAssessment?.recommendations || [];
-
-      let totalItems = 0;
-      let completedItems = 0;
-      let readyFrameworks = 0;
-
-      recommendations.forEach((r: any) => {
-        if (r.checklist) {
-          totalItems += r.checklist.totalItems;
-          completedItems += r.checklist.completedItems;
-          if (r.checklist.isReadyToIngest) {
-            readyFrameworks += 1;
-          }
-        }
+      const assessment = lic.clientAssessments[0] ?? null;
+      const frameworks = (assessment?.recommendations ?? []).map((rec) => {
+        const latest = lic.workflowSubmissions.find((sub) => sub.framework.code === rec.frameworkCode) ?? null;
+        return {
+          frameworkCode: rec.frameworkCode,
+          frameworkName: rec.frameworkName,
+          isLegallyMandatory: rec.isLegallyMandatory,
+          workflowType: rec.workflowType,
+          submission: latest ? summariseSubmission(latest) : null,
+        };
       });
-
-      const readinessPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-
       return {
         licenseeId: lic.id,
         licenseeName: lic.name,
         country: lic.organisationCountry || 'GB',
         industrySector: lic.industrySector,
         hasCompletedAssessment: lic.hasCompletedAssessment,
-        assessmentCompletedAt: latestAssessment?.completedAt || null,
-        totalFrameworksRecommended: recommendations.length,
-        mandatoryFrameworksCount: recommendations.filter((r: any) => r.isLegallyMandatory).length,
-        readyFrameworksCount: readyFrameworks,
-        totalChecklistItems: totalItems,
-        completedChecklistItems: completedItems,
-        readinessPercentage,
-        primaryContact: (lic as any).portalUsers?.[0] || null,
-        serviceEntitlements: (lic as any).entitlements ?? [],
-        frameworks: recommendations.map((r: any) => ({
-          frameworkCode: r.frameworkCode,
-          frameworkName: r.frameworkName,
-          isLegallyMandatory: r.isLegallyMandatory,
-          clientAccepted: r.clientAccepted,
-          isReadyToIngest: r.checklist?.isReadyToIngest ?? false,
-          totalItems: r.checklist?.totalItems ?? 0,
-          completedItems: r.checklist?.completedItems ?? 0,
-        })),
+        assessmentCompletedAt: assessment?.completedAt ?? null,
+        primaryContact: lic.portalUsers[0] ?? null,
+        serviceEntitlements: lic.entitlements,
+        frameworks,
       };
     });
   }
+}
+
+/** One submission as the Readiness Tracker shows it. */
+function summariseSubmission(sub: {
+  id: string;
+  status: WorkflowStatus;
+  updatedAt: Date;
+  submittedAt: Date | null;
+  frameworkVersion: { questions: { id: string; evidenceRequired: boolean }[] };
+  answers: { questionId: string; value: string; evidenceDocumentId: string | null }[];
+}): ReadinessSubmissionSummary {
+  const byQuestion = new Map(sub.answers.map((a) => [a.questionId, a]));
+  const questions = sub.frameworkVersion.questions;
+  return {
+    id: sub.id,
+    status: sub.status,
+    answeredCount: questions.filter((q) => (byQuestion.get(q.id)?.value ?? '').trim() !== '').length,
+    questionCount: questions.length,
+    missingEvidenceCount: questions.filter((q) => q.evidenceRequired && !byQuestion.get(q.id)?.evidenceDocumentId).length,
+    updatedAt: sub.updatedAt,
+    submittedAt: sub.submittedAt,
+  };
+}
+
+export interface ReadinessSubmissionSummary {
+  id: string;
+  status: WorkflowStatus;
+  answeredCount: number;
+  questionCount: number;
+  missingEvidenceCount: number;
+  updatedAt: Date;
+  submittedAt: Date | null;
+}
+
+export interface ReadinessTrackerRow {
+  licenseeId: string;
+  licenseeName: string;
+  country: string;
+  industrySector: string | null;
+  hasCompletedAssessment: boolean;
+  assessmentCompletedAt: Date | null;
+  primaryContact: { id: string; email: string; firstName: string | null; lastName: string | null; jobTitle: string | null } | null;
+  serviceEntitlements: { serviceLine: string; status: string; grantedAt: Date | null }[];
+  frameworks: {
+    frameworkCode: string;
+    frameworkName: string;
+    isLegallyMandatory: boolean;
+    workflowType: string;
+    submission: ReadinessSubmissionSummary | null;
+  }[];
 }

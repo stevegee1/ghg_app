@@ -43,7 +43,6 @@ import { createScope3Router } from './routes/scope3.route';
 import { createWeatherRouter } from './routes/weather.route';
 import { createMcpRouter } from './routes/mcp.route';
 import { createAssessmentRouter } from './routes/assessment.route';
-import { createPreparationChecklistRouter } from './routes/preparation-checklist.route';
 import { CheckoutService } from './services/checkout.service';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -205,7 +204,6 @@ export function createApp(stripeInstance?: Stripe): Express {
   app.use(createWeatherRouter(prisma));
   app.use(createMcpRouter(prisma));
   app.use(createAssessmentRouter(prisma));
-  app.use(createPreparationChecklistRouter(prisma));
 
   // SPA Wildcard fallback: serve index.html for all non-API routes
   app.get('*', (req, res) => {

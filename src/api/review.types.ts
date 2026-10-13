@@ -32,7 +32,16 @@ export interface ReviewQuestion {
   clauseReference: string;
   guidanceNotes: string | null;
   answer: string | null;
-  evidence: { id: string; fileName: string; fileUrl: string; fileSizeBytes: number; sha256Hash: string; stored: boolean } | null;
+  evidence: {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileSizeBytes: number;
+    sha256Hash: string;
+    stored: boolean;
+    /** Fingerprint re-checked when the dossier loaded; null when no file is stored. */
+    integrity: 'verified' | 'changed' | 'missing' | null;
+  } | null;
   aiFinding: ReviewAiFinding | null;
   previousDecision: { accepted: boolean; reasonIfRejected: string | null } | null;
 }

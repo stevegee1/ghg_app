@@ -16,7 +16,6 @@ import { SERVICE_TITLES, STAGES, STATUS_LABELS, stageIndex, statusTone } from '.
 interface Props {
   token: string;
   service: PipelineService;
-  onPrepare: () => void;
 }
 
 /**
@@ -24,7 +23,7 @@ interface Props {
  * submission the questionnaire, review, payment and credential. The open submission is kept in
  * the URL (submission_id) so a refresh or a return from Stripe resumes it.
  */
-export const PipelineWorkspace: React.FC<Props> = ({ token, service, onPrepare }) => {
+export const PipelineWorkspace: React.FC<Props> = ({ token, service }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const submissionId = searchParams.get('submission_id');
   const paymentParam = searchParams.get('payment');
@@ -141,7 +140,6 @@ export const PipelineWorkspace: React.FC<Props> = ({ token, service, onPrepare }
               starting={starting}
               onStart={start}
               onOpen={openSubmission}
-              onPrepare={onPrepare}
             />
           )}
         </>
