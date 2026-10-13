@@ -291,6 +291,18 @@ export const ReviewDossierView: React.FC<Props> = ({ token, submissionId, onBack
                     <strong>Engine advice: {AI_FINDING_LABELS[q.aiFinding.status] ?? q.aiFinding.status}.</strong> {q.aiFinding.findings}
                   </p>
                 )}
+                {q.aiFinding && q.evidence && (
+                  <p className={`review-ai-evidence${q.aiFinding.evidenceVerified ? ' is-supported' : ''}`}>
+                    <strong>
+                      {q.aiFinding.evidenceVerified
+                        ? 'Engine read the file: it supports the answer.'
+                        : q.aiFinding.evidenceRead
+                          ? 'Engine read the file: it does not clearly support the answer.'
+                          : 'Engine did not read the file.'}
+                    </strong>{' '}
+                    {q.aiFinding.evidenceNotes}
+                  </p>
+                )}
                 {q.previousDecision && !q.previousDecision.accepted && q.previousDecision.reasonIfRejected && (
                   <p className="pipeline-muted">
                     {dossier.canDecide ? 'Reason given in the previous round' : 'Revision reason sent to the client'}: {q.previousDecision.reasonIfRejected}

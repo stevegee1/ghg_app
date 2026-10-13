@@ -9,7 +9,12 @@ export interface ClauseReviewFinding {
   isoClause?: string;
   status: 'CONFORMANT' | 'NON_CONFORMANT' | 'INSUFFICIENT_EVIDENCE';
   findings: string;
+  /** True when the engine supported the answer after reading the file's contents. */
   evidenceVerified: boolean;
+  /** Whether the engine read the evidence file (false when there is none, or it could not be read). */
+  evidenceRead?: boolean;
+  /** What the file shows, any mismatch with the answer, or why it was not read. */
+  evidenceNotes?: string;
 }
 
 export interface AuditReviewResult {

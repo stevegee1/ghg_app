@@ -1,7 +1,7 @@
 /**
  * gemini.provider.ts
  *
- * Google Gemini LLM provider for the AI Audit Screener.
+ * Google Gemini model provider for the NFTYLOGS audit engine. PDFs and images are sent inline.
  * Activated when GEMINI_API_KEY and GEMINI_MODEL are both set.
  * API:   https://generativelanguage.googleapis.com/v1beta/models
  */
@@ -11,6 +11,8 @@ import {
   LlmCompletionOptions,
   LlmCompletionResult,
   LlmMessage,
+  contentParts,
+  contentText,
   readProviderConfig,
   fetchWithTimeout,
 } from './llm-provider.interface';
@@ -32,12 +34,15 @@ export class GeminiProvider implements ILlmProvider {
     const maxOutputTokens = options.maxTokens ?? 4096;
 
     // Convert to Gemini's content format
-    const systemInstruction = messages.find((m) => m.role === 'system')?.content || '';
+    const system = messages.find((m) => m.role === 'system');
+    const systemInstruction = system ? contentText(system.content) : '';
     const userMessages = messages.filter((m) => m.role !== 'system');
 
     const contents = userMessages.map((m) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
+      parts: contentParts(m.content).map((p) =>
+        p.type === 'text' ? { text: p.text } : { inline_data: { mime_type: p.mimeType, data: p.data.toString('base64') } }
+      ),
     }));
 
     // The API key is sent as a header, never in the URL, so it cannot leak into proxy or access logs.
@@ -57,7 +62,7 @@ export class GeminiProvider implements ILlmProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.apiKey },
       body: JSON.stringify(body),
-    });
+    }, options.timeoutMs);
 
     if (!response.ok) {
       const errBody = await response.text();

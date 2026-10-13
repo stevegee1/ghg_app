@@ -56,6 +56,8 @@ interface AiFinding {
   status: string;
   findings: string;
   evidenceVerified: boolean;
+  evidenceRead: boolean;
+  evidenceNotes: string | null;
   confidence: number | null;
 }
 
@@ -68,6 +70,8 @@ function readAiFindings(value: Prisma.JsonValue | null): AiFinding[] {
       status: typeof f.status === 'string' ? f.status : 'UNKNOWN',
       findings: typeof f.findings === 'string' ? f.findings : '',
       evidenceVerified: f.evidenceVerified === true,
+      evidenceRead: f.evidenceRead === true,
+      evidenceNotes: typeof f.evidenceNotes === 'string' && f.evidenceNotes ? f.evidenceNotes : null,
       confidence: typeof f.confidence === 'number' ? f.confidence : null,
     }));
 }

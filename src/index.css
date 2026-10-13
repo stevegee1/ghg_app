@@ -13781,3 +13781,16 @@ a:not([class]):hover {
   color: var(--google-red);
   font-weight: 600;
 }
+
+.review-ai-evidence {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid #f9ab00;
+  background: #fef7e0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.review-ai-evidence.is-supported {
+  border-left-color: var(--color-green);
+  background: var(--color-green-light);
+}

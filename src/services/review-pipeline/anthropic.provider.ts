@@ -1,7 +1,7 @@
 /**
  * anthropic.provider.ts
  *
- * Anthropic Claude LLM provider for the AI Audit Screener.
+ * Anthropic Claude model provider for the NFTYLOGS audit engine. PDFs go as document blocks, images as image blocks.
  * Activated when ANTHROPIC_API_KEY and ANTHROPIC_MODEL are both set.
  * API:   https://api.anthropic.com/v1/messages
  */
@@ -11,6 +11,8 @@ import {
   LlmCompletionOptions,
   LlmCompletionResult,
   LlmMessage,
+  contentParts,
+  contentText,
   readProviderConfig,
   fetchWithTimeout,
 } from './llm-provider.interface';
@@ -31,10 +33,18 @@ export class AnthropicProvider implements ILlmProvider {
     const temperature = options.temperature ?? 0.2;
     const maxTokens = options.maxTokens ?? 4096;
 
-    const systemMsg = messages.find((m) => m.role === 'system')?.content;
+    const system = messages.find((m) => m.role === 'system');
+    const systemMsg = system ? contentText(system.content) : undefined;
     const conversationMessages = messages
       .filter((m) => m.role !== 'system')
-      .map((m) => ({ role: m.role, content: m.content }));
+      .map((m) => ({
+        role: m.role,
+        content: contentParts(m.content).map((p) => {
+          if (p.type === 'text') return { type: 'text', text: p.text };
+          const source = { type: 'base64', media_type: p.mimeType, data: p.data.toString('base64') };
+          return p.mimeType === 'application/pdf' ? { type: 'document', source, title: p.fileName } : { type: 'image', source };
+        }),
+      }));
 
     const body: Record<string, any> = {
       model,
@@ -55,7 +65,7 @@ export class AnthropicProvider implements ILlmProvider {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(body),
-    });
+    }, options.timeoutMs);
 
     if (!response.ok) {
       const err = await response.text();
@@ -64,7 +74,7 @@ export class AnthropicProvider implements ILlmProvider {
     }
 
     const data: any = await response.json();
-    const content = data.content?.[0]?.text ?? '';
+    const content = (data.content ?? []).map((block: any) => (block.type === 'text' ? block.text : '')).join('');
 
     return {
       content,

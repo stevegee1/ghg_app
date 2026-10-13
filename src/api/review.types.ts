@@ -19,7 +19,11 @@ export interface ReviewAiFinding {
   questionId: string;
   status: string;
   findings: string;
+  /** The engine read the evidence file and found it supports the answer. */
   evidenceVerified: boolean;
+  /** The engine read the file's contents (false when there is none or it could not be read). */
+  evidenceRead: boolean;
+  evidenceNotes: string | null;
   confidence: number | null;
 }
 

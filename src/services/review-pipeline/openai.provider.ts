@@ -1,7 +1,7 @@
 /**
  * openai.provider.ts
  *
- * OpenAI GPT LLM provider for the AI Audit Screener.
+ * OpenAI model provider for the NFTYLOGS audit engine. Images go as image parts, PDFs as file parts.
  * Activated when OPENAI_API_KEY and OPENAI_MODEL are both set.
  * API:   https://api.openai.com/v1/chat/completions
  */
@@ -11,6 +11,7 @@ import {
   LlmCompletionOptions,
   LlmCompletionResult,
   LlmMessage,
+  contentParts,
   readProviderConfig,
   fetchWithTimeout,
 } from './llm-provider.interface';
@@ -36,7 +37,19 @@ export class OpenAiProvider implements ILlmProvider {
       temperature,
       max_tokens: maxTokens,
       response_format: { type: 'json_object' },
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      messages: messages.map((m) => ({
+        role: m.role,
+        content:
+          typeof m.content === 'string'
+            ? m.content
+            : contentParts(m.content).map((p) => {
+                if (p.type === 'text') return { type: 'text', text: p.text };
+                const dataUri = `data:${p.mimeType};base64,${p.data.toString('base64')}`;
+                return p.mimeType === 'application/pdf'
+                  ? { type: 'file', file: { filename: p.fileName, file_data: dataUri } }
+                  : { type: 'image_url', image_url: { url: dataUri } };
+              }),
+      })),
     };
 
     const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
@@ -46,7 +59,7 @@ export class OpenAiProvider implements ILlmProvider {
         Authorization: `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify(body),
-    });
+    }, options.timeoutMs);
 
     if (!response.ok) {
       const err = await response.text();

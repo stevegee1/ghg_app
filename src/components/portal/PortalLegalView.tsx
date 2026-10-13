@@ -17,7 +17,7 @@ export const PortalLegalView: React.FC = () => {
         <section className="review-terms-card">
           <h3>A structured readiness review</h3>
           <p>
-            You answer the questions for your chosen framework and attach evidence. The NFTYLOGS audit engine pre-screens it, flags gaps and advises only. A named Lead
+            You answer the questions for your chosen framework and attach evidence. The NFTYLOGS audit engine reads your answers and evidence files, flags gaps and advises only. A named Lead
             Auditor reviews every answer and makes the decision. If something needs work, you see the reason against each question.
           </p>
         </section>
@@ -26,7 +26,8 @@ export const PortalLegalView: React.FC = () => {
           <h3>Carried out remotely</h3>
           <p>
             {REVIEW_METHOD_STATEMENT} We review documents and evidence you upload, sample records, and ask questions where something is unclear. Each
-            file is stored privately with a SHA-256 fingerprint, so any later change to it can be detected.
+            file is stored privately with a SHA-256 fingerprint that is checked again whenever the file is opened, so a changed file is never
+            mistaken for the original.
           </p>
         </section>
 

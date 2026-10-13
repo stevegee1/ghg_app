@@ -1,21 +1,39 @@
 /**
  * llm-provider.interface.ts
  *
- * Provider-agnostic LLM abstraction for the AI Audit Screener.
+ * Provider-agnostic model abstraction behind the NFTYLOGS audit engine.
  * Each concrete provider (Gemini, Anthropic, OpenAI) implements ILlmProvider.
  * The AiAuditReviewer selects the active provider at runtime by inspecting
  * environment variables, making the system LLM-provider-independent.
  */
 
+/** A piece of a message: text, or a file (PDF or image) the model reads directly. */
+export type LlmContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'file'; fileName: string; mimeType: 'application/pdf' | 'image/png' | 'image/jpeg' | 'image/webp'; data: Buffer };
+
 export interface LlmMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | LlmContentPart[];
+}
+
+/** A message's content as parts, so providers handle plain text and files the same way. */
+export function contentParts(content: LlmMessage['content']): LlmContentPart[] {
+  return typeof content === 'string' ? [{ type: 'text', text: content }] : content;
+}
+
+/** A message's text only (system prompts are always text). */
+export function contentText(content: LlmMessage['content']): string {
+  return contentParts(content)
+    .map((p) => (p.type === 'text' ? p.text : ''))
+    .join('\n');
 }
 
 export interface LlmCompletionOptions {
   temperature?: number; // 0.0 to 1.0, default 0.2 for deterministic audit scoring
   maxTokens?: number;
   model?: string; // Override default model per provider
+  timeoutMs?: number; // Longer when the request carries documents
 }
 
 export interface LlmCompletionResult {
@@ -60,7 +78,7 @@ export function readProviderConfig(id: LlmProviderId): { apiKey: string; model: 
   return apiKey && model ? { apiKey, model } : null;
 }
 
-/** The provider the AI pre-screen will use, in the same priority order as resolveActiveProvider; null means rules only. */
+/** The provider the audit engine pre-screen will use, in the same priority order as resolveActiveProvider; null means rules only. */
 export function configuredLlmProviderId(): LlmProviderId | null {
   return (['gemini', 'anthropic', 'openai'] as LlmProviderId[]).find((id) => readProviderConfig(id) !== null) ?? null;
 }
@@ -78,9 +96,9 @@ export function validateLlmProviderConfig(): void {
 export const LLM_REQUEST_TIMEOUT_MS = 30000;
 
 /** fetch with an abort timeout so a stalled provider cannot hold an evaluation open. */
-export async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+export async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = LLM_REQUEST_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), LLM_REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } finally {
