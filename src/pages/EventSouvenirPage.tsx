@@ -122,7 +122,7 @@ export const EventSouvenirPage: React.FC = () => {
             Logo Drops (Active)
           </Link>
           <Link to="/merch" className="btn btn-secondary" style={{ fontSize: '0.8125rem', padding: '0.5rem 1.15rem', textDecoration: 'none' }}>
-            Custom Merch Studio
+            Frenzy Studio
           </Link>
         </div>
       </div>

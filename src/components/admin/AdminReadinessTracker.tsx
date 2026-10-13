@@ -273,6 +273,7 @@ export const AdminReadinessTracker: React.FC = () => {
         <div style={kpiCard}>
           <div style={kpiLabel}>Total Client Accounts</div>
           <div style={{ ...kpiValue, color: '#0f172a' }}>{totalCount}</div>
+          <div style={kpiHint}>Every organisation with a client account.</div>
         </div>
 
         <div style={kpiCard}>
@@ -281,16 +282,19 @@ export const AdminReadinessTracker: React.FC = () => {
             {completedAssessmentCount}
             <span style={kpiSub}>/ {totalCount}</span>
           </div>
+          <div style={kpiHint}>Finished the sign-up questions that pick their frameworks.</div>
         </div>
 
         <div style={kpiCard}>
           <div style={{ ...kpiLabel, color: '#d97706' }}>In Data Gathering</div>
           <div style={{ ...kpiValue, color: '#b45309' }}>{inPreparationCount}</div>
+          <div style={kpiHint}>Started gathering evidence but not finished (1% to 99%).</div>
         </div>
 
         <div style={kpiCard}>
           <div style={{ ...kpiLabel, color: '#15803d' }}>Audit-Ready Dossiers</div>
           <div style={{ ...kpiValue, color: '#16a34a' }}>{fullyReadyCount}</div>
+          <div style={kpiHint}>Gathered everything for at least one framework.</div>
         </div>
       </div>
 
@@ -350,7 +354,7 @@ export const AdminReadinessTracker: React.FC = () => {
             Live mirror of every licensee intake state, service line access, and audit dossier readiness.
             {filterLine !== 'ALL' && (
               <span style={{ marginLeft: '0.5rem', color: SERVICE_LINE_META[filterLine].color, fontWeight: 600 }}>
-                Filtered: {SERVICE_LINE_META[filterLine].label}
+                Showing only {SERVICE_LINE_META[filterLine].label} clients (click the pill again to show all)
               </span>
             )}
           </p>
@@ -367,9 +371,9 @@ export const AdminReadinessTracker: React.FC = () => {
             border: '1px solid var(--border-medium)',
             borderRadius: '8px',
             fontSize: '0.85rem',
-            minWidth: '240px',
-            flex: '1 1 240px',
-            maxWidth: '360px',
+            minWidth: '260px',
+            flex: '1 1 420px',
+            maxWidth: '560px',
             outline: 'none',
             transition: 'border-color 0.15s ease',
             fontFamily: 'inherit',
@@ -387,8 +391,8 @@ export const AdminReadinessTracker: React.FC = () => {
               <th style={th}>Primary Contact</th>
               <th style={th}>Service Lines</th>
               <th style={th}>Assessment</th>
-              <th style={th}>Preparation Progress</th>
-              <th style={th}>Audit Ingestion</th>
+              <th style={th} title="Evidence items gathered out of the total the client's frameworks need.">Preparation Progress</th>
+              <th style={th} title="READY when every item for a framework is gathered; GATHERING while in progress; AWAITING INTAKE before the sign-up questions.">Review Readiness</th>
               <th style={{ ...th, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
@@ -503,6 +507,7 @@ export const AdminReadinessTracker: React.FC = () => {
                         id={`inspect-${lic.licenseeId}`}
                         type="button"
                         onClick={() => handleInspectLicensee(lic)}
+                        title="See each evidence item for this client and waive any that do not apply"
                         style={{
                           padding: '0.35rem 0.75rem',
                           borderRadius: '5px',
@@ -514,7 +519,7 @@ export const AdminReadinessTracker: React.FC = () => {
                           cursor: 'pointer',
                         }}
                       >
-                        Inspect Dossier
+                        Open checklist
                       </button>
                     </td>
                   </tr>
@@ -793,6 +798,13 @@ const kpiCard: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: '10px',
   padding: '1.25rem',
+};
+
+const kpiHint: React.CSSProperties = {
+  fontSize: '0.75rem',
+  color: '#64748b',
+  marginTop: '0.35rem',
+  lineHeight: 1.4,
 };
 
 const kpiLabel: React.CSSProperties = {

@@ -74,7 +74,7 @@ export const LandingPage: React.FC = () => {
               )}
             </div>
             <div className="landing-frameworks">
-              <span>Standards covered</span>
+              <span>Standards we review against, including</span>
               <ul>
                 {FRAMEWORKS.map((f) => (
                   <li key={f}>{f}</li>

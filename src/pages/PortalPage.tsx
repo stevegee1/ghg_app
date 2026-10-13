@@ -714,6 +714,16 @@ export const PortalPage: React.FC = () => {
                 <span className="portal-nav-badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.68rem', padding: '1px 6px' }}>Intake Req.</span>
               ) : null}
             </button>
+
+            {/* Scope 3 supply chain records belong to the GHG pipeline. */}
+            <button
+              type="button"
+              className={`portal-nav-btn ${activeView === 'supply-chain' ? 'active' : ''}`}
+              onClick={() => { setActiveView('supply-chain'); onNav?.(); }}
+            >
+              <span className="portal-nav-icon"><GoogleIcons.Leaf /></span>
+              <span className="portal-nav-label">Supply Chain (Scope 3)</span>
+            </button>
           </>
         )}
 
@@ -829,14 +839,6 @@ export const PortalPage: React.FC = () => {
         >
           <span className="portal-nav-icon"><GoogleIcons.Leaf /></span>
           <span className="portal-nav-label">Fleet Emissions</span>
-        </button>
-        <button
-          type="button"
-          className={`portal-nav-btn ${activeView === 'supply-chain' ? 'active' : ''}`}
-          onClick={() => { setActiveView('supply-chain'); onNav?.(); }}
-        >
-          <span className="portal-nav-icon"><GoogleIcons.Leaf /></span>
-          <span className="portal-nav-label">Supply Chain (Scope 3)</span>
         </button>
 
         <div className="portal-nav-section-title" style={{ marginTop: '0.65rem' }}>VERIFICATION &amp; GOVERNANCE</div>
@@ -1275,7 +1277,7 @@ export const PortalPage: React.FC = () => {
       {activeView === 'fleet' && token && (
         <FleetWorkspace token={token} returnedFromCheckout={searchParams.get('subscription') === 'success'} />
       )}
-      {activeView === 'supply-chain' && token && <Scope3Workspace token={token} />}
+      {activeView === 'supply-chain' && token && isCarbonActive && <Scope3Workspace token={token} />}
 
       {/* ── Job Filing Modal ──────────────────────────────────────────────────── */}
       <JobFilingModal

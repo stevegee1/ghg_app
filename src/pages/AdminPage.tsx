@@ -102,6 +102,28 @@ const SvgClose = ({ size = 14 }: { size?: number }) => (
 const ADMIN_TABS = ['READINESS_TRACKER', 'SUBMISSIONS', 'DEMOS', 'SPLITS', 'MERCH_ENQUIRIES', 'KEEPSAKE_ORDERS', 'MERCH_ORDERS', 'CHARITIES', 'EMISSION_FACTORS', 'FLEET_SETUP', 'FLEET_DEVICES', 'DELIVERY_PARTNERS', 'MERCH_PRICES', 'MARKET_INPUTS', 'ANCHORS', 'WEATHER_WEAR', 'NEWSLETTER', 'MAINTENANCE_MODEL'] as const;
 type AdminTab = (typeof ADMIN_TABS)[number];
 
+/** One line per tab: what it is for and who it serves. Shown under the tab bar and as the tab's tooltip. */
+const ADMIN_TAB_DESCRIPTIONS: Record<AdminTab, string> = {
+  READINESS_TRACKER: 'Every client account, the services they signed up for and how far their preparation has got.',
+  SUBMISSIONS: 'GHG and Workforce submissions waiting for a Lead Auditor decision, with the audit engine pre-screen as advice.',
+  DEMOS: 'Requests from the "Book a demo" form on the website.',
+  MERCH_ENQUIRIES: 'Questions from the shop, including "contact for order" items. Each one is also emailed to ADMIN_EMAIL.',
+  MERCH_PRICES: 'Add merch products and set their prices, or mark them "contact for order". Changes show on the shop straight away.',
+  MERCH_ORDERS: 'Paid shop orders: move each through production and delivery, and add courier tracking for the customer.',
+  KEEPSAKE_ORDERS: 'Paid Frenzy Studio custom merch orders: update production status and tracking.',
+  CHARITIES: 'Charity partner applications and the active charities that receive the charity share of payments.',
+  EMISSION_FACTORS: 'Published CO2e conversion factors (fuel to emissions) used for every Fleet calculation.',
+  FLEET_SETUP: 'Fleet clients who asked for help connecting a machine (book the call, then mark it done).',
+  FLEET_DEVICES: 'Telematics providers and tracking devices, with the field mapping that turns their data into Fleet readings.',
+  MARKET_INPUTS: 'Fuel, carbon and material prices with their source and date, used in Fleet contract cost and value figures.',
+  ANCHORS: 'Daily batches of record fingerprints and their publication on the public blockchain (powers "Verify a record").',
+  WEATHER_WEAR: 'Weather thresholds and wear estimates per equipment type, used for Fleet weather exposure and machine value.',
+  MAINTENANCE_MODEL: 'Publish the maintenance rules, then train and publish the breakdown model behind Fleet predictive maintenance.',
+  DELIVERY_PARTNERS: 'Delivery and production partner applications (shown after the applicant confirms their work email).',
+  NEWSLETTER: 'Confirmed newsletter subscribers and their consent; export the list to your email tool to send issues.',
+  SPLITS: 'How each payment is split between NFTYLOGS and the charity share. Merch checkout needs a saved split.',
+};
+
 export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
@@ -672,9 +694,9 @@ export const AdminPage: React.FC = () => {
             { key: 'SUBMISSIONS', label: 'Review Queue', badge: null },
             { key: 'DEMOS', label: 'Demo Leads', badge: demoBookings.length },
             { key: 'MERCH_ENQUIRIES', label: 'Merch Enquiries', badge: merchEnquiries.filter((e) => e.status === 'PENDING').length },
-            { key: 'MERCH_PRICES', label: 'Merch Prices', badge: null },
+            { key: 'MERCH_PRICES', label: 'Merch Products', badge: null },
             { key: 'MERCH_ORDERS', label: 'Merch Orders', badge: souvenirOrders.length },
-            { key: 'KEEPSAKE_ORDERS', label: 'Keepsake Fulfil', badge: keepsakeOrders.length },
+            { key: 'KEEPSAKE_ORDERS', label: 'Frenzy Studio Orders', badge: keepsakeOrders.length },
             { key: 'CHARITIES', label: 'Charities', badge: charityDashboard?.committedCount ?? (charityDashboard?.slots ? charityDashboard.slots.filter((s: any) => s.status === 'ACTIVE').length : 0) },
             { key: 'EMISSION_FACTORS', label: 'Emission Factors', badge: null },
             { key: 'FLEET_SETUP', label: 'Fleet Set-up Calls', badge: null },
@@ -695,6 +717,7 @@ export const AdminPage: React.FC = () => {
                 id={`admin-tab-${key.toLowerCase()}`}
                 role="tab"
                 aria-selected={isActive}
+                title={ADMIN_TAB_DESCRIPTIONS[key]}
                 onClick={() => setActiveAdminTab(key)}
                 style={{
                   padding: '0.5rem 0.95rem',
@@ -732,6 +755,9 @@ export const AdminPage: React.FC = () => {
             );
           })}
         </div>
+        <p className="admin-tab-description" role="note">
+          {ADMIN_TAB_DESCRIPTIONS[activeAdminTab]}
+        </p>
       </div>
 
       {/* Tab content remounts on "Refresh all", so every tab reloads its own data. */}
@@ -1624,15 +1650,15 @@ export const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB: CUSTOM KEEPSAKE ORDERS FULFILMENT */}
+      {/* TAB: FRENZY STUDIO ORDERS FULFILMENT */}
       {activeAdminTab === 'KEEPSAKE_ORDERS' && (
         <div>
           {/* Tab Context Header */}
           <div className="admin-tab-section-header">
             <div>
-              <h2 className="admin-tab-section-title">Custom Keepsake Fulfillment</h2>
+              <h2 className="admin-tab-section-title">Frenzy Studio Orders</h2>
               <p className="admin-tab-section-desc">
-                Manage and update the fulfillment status and tracking for personalised keepsake garment orders.
+                Update the fulfilment status and tracking for Frenzy Studio custom merch orders.
               </p>
             </div>
             <div className="admin-stat-row">
@@ -1698,14 +1724,14 @@ export const AdminPage: React.FC = () => {
           {loadingKeepsake ? (
             <div className="admin-loading-state">
               <span className="admin-spinner" />
-              Loading custom keepsake orders...
+              Loading Frenzy Studio orders...
             </div>
           ) : filteredKeepsakeOrders.length === 0 ? (
             <div className="admin-empty-state">
               <div className="admin-empty-state-icon">
                 <SvgAward />
               </div>
-              <div className="admin-empty-state-title">No Keepsake Orders</div>
+              <div className="admin-empty-state-title">No Frenzy Studio orders</div>
               <div className="admin-empty-state-desc">No custom keepsake orders match the current filter ({keepsakeStatusFilter}).</div>
             </div>
           ) : (

@@ -7,7 +7,7 @@ import { MerchStudio } from '../components/merch/MerchStudio';
 
 type StoreTab = 'catalog' | 'studio';
 
-/** The merch shop: the catalogue, priced from the database, and the custom commemoration studio. */
+/** The merch shop: the catalogue, priced from the database, and Frenzy Studio, for custom merch. */
 export const MerchStorePage: React.FC = () => {
   useEffect(() => {
     document.title = 'Support Extreme Weather Survivor - NFTYLOGS';
@@ -48,7 +48,7 @@ export const MerchStorePage: React.FC = () => {
             onClick={() => setTab('studio')}
             disabled={catalogue.status === 'ready' && garments.length === 0}
           >
-            Custom studio
+            Frenzy Studio
           </button>
         </div>
 

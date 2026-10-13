@@ -13314,3 +13314,10 @@ a:not([class]):hover {
   margin: 0;
   color: var(--text-muted);
 }
+
+.admin-tab-description {
+  margin: 0.6rem 0.25rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

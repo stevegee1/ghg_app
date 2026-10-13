@@ -24,21 +24,21 @@ const Check: React.FC<{ ok: boolean | null; yes: string; no: string; unknown: st
 const MatchCard: React.FC<{ m: VerifyMatch }> = ({ m }) => (
   <article className="transparency-card verify-card">
     <h3>{KIND_LABELS[m.kind] ?? m.kind}</h3>
-    <p className="transparency-note">Fingerprinted {new Date(m.fingerprintedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+    <p className="transparency-note">Recorded {new Date(m.fingerprintedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
     <ul className="verify-checks">
-      <Check ok={m.formulaHolds} yes="The fingerprint matches this record's hash." no="The fingerprint does not match the record's hash." unknown="" />
+      <Check ok={m.formulaHolds} yes="This file or record is exactly the one we recorded." no="This does not match what we recorded." unknown="" />
       <Check
         ok={m.proofValid}
-        yes="The fingerprint is proven to be in its batch."
-        no="The proof does not lead to the batch root."
-        unknown="Waiting for the next daily batch."
+        yes="It is included in that day's sealed batch."
+        no="It could not be matched to its daily batch."
+        unknown="It will be added to tonight's daily batch."
       />
       {m.batch && (
         <Check
           ok={m.chain.status === 'NOT_PUBLISHED' ? null : m.chain.rootOnChainMatches}
-          yes={`The batch root is on ${m.batch.network ?? 'chain'} and matches.`}
-          no="The root on chain does not match this batch."
-          unknown={m.chain.status === 'NOT_PUBLISHED' ? 'The batch root has not been published yet.' : 'Published; the on-chain check is not available right now.'}
+          yes={`The batch is published on the public ${m.batch.network ?? 'blockchain'} record and matches.`}
+          no="The published record does not match this batch."
+          unknown={m.chain.status === 'NOT_PUBLISHED' ? 'The batch has not been published yet.' : 'Published; the public record cannot be read right now.'}
         />
       )}
     </ul>
@@ -50,7 +50,7 @@ const MatchCard: React.FC<{ m: VerifyMatch }> = ({ m }) => (
       </p>
     )}
     <details className="verify-details">
-      <summary>Technical details</summary>
+      <summary>Technical details (for developers and auditors)</summary>
       <dl>
         <dt>Record SHA-256</dt>
         <dd>{m.recordSha256}</dd>
@@ -83,7 +83,7 @@ export const VerifyRecordPage: React.FC = () => {
 
   const lookup = async (hash: string) => {
     const clean = hash.trim().toLowerCase();
-    if (!/^[0-9a-f]{64}$/.test(clean)) return setState({ status: 'error', message: 'Enter a SHA-256 hash: 64 hexadecimal characters.' });
+    if (!/^[0-9a-f]{64}$/.test(clean)) return setState({ status: 'error', message: 'Enter the 64-character fingerprint code, or choose the file instead.' });
     setState({ status: 'loading' });
     setParams({ hash: clean }, { replace: true });
     try {
@@ -113,10 +113,26 @@ export const VerifyRecordPage: React.FC = () => {
         <p className="partners-eyebrow">Verification</p>
         <h1>Verify a record</h1>
         <p>
-          Paste a record&apos;s SHA-256, or choose the file. Files are hashed in your browser and never uploaded. We show whether the record was
-          fingerprinted, the proof that it is in a batch, and the public blockchain transaction carrying that batch.
+          Check that a document or record from NFTYLOGS has not been changed since we recorded it. Choose the file, or paste the code printed on
+          the document. Your file stays on your device: it is never uploaded.
         </p>
       </header>
+
+      <section className="transparency-section" aria-labelledby="verify-what-title">
+        <h2 id="verify-what-title">What we check</h2>
+        <ol className="partners-points">
+          <li>
+            <strong>Is it unchanged?</strong> Every file and record gets a unique code (a SHA-256 fingerprint) when we receive it. Changing even
+            one character produces a different code.
+          </li>
+          <li>
+            <strong>Was it sealed?</strong> Each night, the day&apos;s codes are combined into one sealed batch.
+          </li>
+          <li>
+            <strong>Is the seal public?</strong> The batch is published on a public blockchain, where nobody, including us, can alter it later.
+          </li>
+        </ol>
+      </section>
 
       <form
         className="verify-form"
@@ -126,8 +142,8 @@ export const VerifyRecordPage: React.FC = () => {
         }}
       >
         <label className="verify-field">
-          <span>SHA-256</span>
-          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="64 hexadecimal characters" spellCheck={false} />
+          <span>Fingerprint code (SHA-256)</span>
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="64 letters and numbers" spellCheck={false} />
         </label>
         <button type="submit" className="btn btn-primary" disabled={state.status === 'loading'}>
           {state.status === 'loading' ? 'Checking...' : 'Check'}
@@ -145,7 +161,10 @@ export const VerifyRecordPage: React.FC = () => {
           </p>
         )}
         {state.status === 'done' && state.result.matches.length === 0 && (
-          <p className="transparency-note">No record with this hash has been fingerprinted. New records are fingerprinted once a day.</p>
+          <p className="transparency-note">
+            We have no record of this file or code. If it was issued today, check again tomorrow: new records are sealed once a day. If the file was
+            edited after we issued it, it will not match.
+          </p>
         )}
         {state.status === 'done' && state.result.matches.length > 0 && (
           <div className="transparency-cards">
@@ -156,7 +175,7 @@ export const VerifyRecordPage: React.FC = () => {
         )}
         {state.status === 'done' && (
           <details className="verify-details">
-            <summary>How to check this yourself</summary>
+            <summary>Technical method (for developers and auditors)</summary>
             <ul>
               {state.result.method.map((line) => (
                 <li key={line}>{line}</li>

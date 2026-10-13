@@ -225,7 +225,7 @@ export class DashboardService {
         id: `order_${ord.id}`,
         date: ord.createdAt.toISOString(),
         type: 'MERCH_ORDER',
-        title: `Keepsake Merch Order: ${ord.eventName || ord.orderNumber}`,
+        title: `Merch order: ${ord.eventName || ord.orderNumber}`,
         amountCents: ord.grossAmountCents,
         currency: 'GBP',
         status: ord.status,

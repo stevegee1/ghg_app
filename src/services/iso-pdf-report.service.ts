@@ -151,7 +151,7 @@ export class IsoPdfReportService {
           doc.text(`• Verified Green Jobs Created (Quarterly Filing): ${totalJobsCreated} jobs`);
         }
         if (totalArtisanHours > 0) {
-          doc.text(`• Local Artisan Keepsake Embroidery Labor: ${totalArtisanHours.toFixed(1)} verified hours`);
+          doc.text(`• Local embroidery labour: ${totalArtisanHours.toFixed(1)} verified hours`);
         }
         doc.moveDown(0.8);
 

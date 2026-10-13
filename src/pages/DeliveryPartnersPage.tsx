@@ -28,7 +28,7 @@ export const DeliveryPartnersPage: React.FC = () => {
             <li>Apply with your company work email and the area you cover.</li>
             <li>Confirm the email from the link we send you.</li>
             <li>We review the application and reply by email.</li>
-            <li>Approved partners receive orders in their area; customers follow each order on our tracking page.</li>
+            <li>Once approved, we contact you with the details of orders in your area; customers follow each order on our tracking page.</li>
           </ol>
         </div>
         <div className="partners-card">

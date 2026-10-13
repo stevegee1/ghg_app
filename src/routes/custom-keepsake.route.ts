@@ -36,7 +36,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       return res.status(200).json({ preview });
     } catch (err: any) {
       if (err instanceof MerchCatalogueError) return res.status(err.status).json({ error: err.message });
-      return res.status(400).json({ error: err.message || 'Failed to generate keepsake preview.' });
+      return res.status(400).json({ error: err.message || 'Failed to generate the Frenzy Studio preview.' });
     }
   });
 
@@ -74,7 +74,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       }
 
       if (isGoalFrenzy && (!frenzyClub || typeof frenzyClub !== 'string' || !frenzyClub.trim())) {
-        return res.status(400).json({ error: 'Invalid input: frenzyClub is required for Goal Frenzy orders.' });
+        return res.status(400).json({ error: 'Invalid input: frenzyClub is required for Frenzy Studio orders.' });
       }
 
       // Price from the catalogue; the request never sets the price or the seller.
@@ -94,13 +94,13 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
       // 1. One pending transaction and its Stripe Checkout Session. The session collects payment and
       // delivery; without it there is no order, so a Stripe failure is reported, never hidden.
-      const itemDesc = frenzyClub ? `${sportType} Keepsake: ${frenzyClub}` : `${sportType} Keepsake`;
+      const itemDesc = frenzyClub ? `${sportType}: ${frenzyClub}` : `${sportType}`;
       const origin = req.get('origin') || `${req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http'}://${req.get('host')}`;
       let session: { sessionUrl: string | null; sessionId: string | null; transactionId: string };
       try {
         session = await checkoutService.createCheckoutSession({
           licenseeId,
-          itemTitle: `NFTYLOGS Custom Keepsake (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
+          itemTitle: `NFTYLOGS Frenzy Studio (${preview.garmentModel} - Size ${garmentSize}): ${itemDesc}`,
           grossAmountCents: preview.financialSummary.grossAmountCents,
           currency,
           successUrl: `${origin}/checkout/success`,
@@ -152,7 +152,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       });
 
       return res.status(201).json({
-        message: 'Custom milestone keepsake order successfully initiated.',
+        message: 'Frenzy Studio order started.',
         transactionId: session.transactionId,
         sessionUrl: session.sessionUrl,
         sessionId: session.sessionId,
@@ -163,7 +163,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
     } catch (err: any) {
       if (err instanceof MerchCatalogueError) return res.status(err.status).json({ error: err.message });
       console.error('[CUSTOM KEEPSAKE CHECKOUT ERROR]', err);
-      return res.status(400).json({ error: err.message || 'Failed to initiate custom keepsake checkout.' });
+      return res.status(400).json({ error: err.message || 'Failed to start the Frenzy Studio checkout.' });
     }
   });
 
@@ -338,7 +338,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       return res.status(200).json({ success: true, count: orders.length, orders });
     } catch (err: any) {
       console.error('[ADMIN GET KEEPSAKE ORDERS ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to fetch custom keepsake orders.' });
+      return res.status(500).json({ error: err.message || 'Failed to fetch Frenzy Studio orders.' });
     }
   });
 
@@ -358,7 +358,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
 
       const existing = await prisma.customKeepsakeSpec.findUnique({ where: { id } });
       if (!existing) {
-        return res.status(404).json({ error: 'Custom keepsake order not found.' });
+        return res.status(404).json({ error: 'Frenzy Studio order not found.' });
       }
 
       const updated = await prisma.customKeepsakeSpec.update({
@@ -372,7 +372,7 @@ export function createCustomKeepsakeRouter(prisma: PrismaClient, checkoutService
       return res.status(200).json({ success: true, updated });
     } catch (err: any) {
       console.error('[ADMIN PATCH KEEPSAKE ORDER ERROR]', err);
-      return res.status(500).json({ error: err.message || 'Failed to update custom keepsake order.' });
+      return res.status(500).json({ error: err.message || 'Failed to update the Frenzy Studio order.' });
     }
   });
 

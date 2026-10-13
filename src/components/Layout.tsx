@@ -10,7 +10,7 @@ const SOLUTION_LINKS = [
   { href: '/#ghg', title: 'GHG & Carbon Emissions', description: 'Scope 1 to 3 reporting, reviewed and credentialed', colour: 'var(--color-green)' },
   { href: '/#fleet', title: 'Fleet Emissions & Telematics', description: 'One dashboard for every machine and vehicle', colour: 'var(--accent-primary)' },
   { href: '/#workforce', title: 'Social & Workforce', description: 'Section 106 and social value evidence', colour: 'var(--google-amber)' },
-  { href: '/merch', title: 'Merch & Custom Merch', description: 'Printed merch, delivered by local partners', colour: '#9334e6' },
+  { href: '/merch', title: 'Merch & Frenzy Studio', description: 'Printed merch, delivered by local partners', colour: '#9334e6' },
 ];
 
 export const Layout: React.FC = () => {

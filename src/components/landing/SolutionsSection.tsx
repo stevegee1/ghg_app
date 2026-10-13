@@ -68,10 +68,10 @@ export const SolutionsSection: React.FC<{ charityShare: string | null }> = ({ ch
     {
       id: 'merch',
       tone: 'merch',
-      name: 'Merch & Custom Merch',
+      name: 'Merch & Frenzy Studio',
       promise: 'Printed merchandise with a smaller delivery footprint.',
       points: [
-        'Branded and custom merch for teams, events and campaigns',
+        'Branded merch, and custom pieces from Frenzy Studio for teams, events and campaigns',
         'Delivery arranged with partners as close to your customers as possible',
         charityShare ? `${charityShare}% of every payment shared between our charity partners` : 'A share of every payment goes to our charity partners',
       ],

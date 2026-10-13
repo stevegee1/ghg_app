@@ -143,7 +143,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
         .fontSize(12)
         .font('Helvetica')
         .fillColor('#0f172a')
-        .text('Survivors Donation Keepsake: ESG Tax & Audit Invoice', { align: 'center' });
+        .text('NFTYLOGS Merch Order Invoice', { align: 'center' });
       doc.moveDown(0.25);
       doc
         .fontSize(9)
@@ -167,7 +167,7 @@ export function createOrdersRouter(prisma: PrismaClient): Router {
       doc.moveDown(0.75);
 
       // Event Details
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Order & Keepsake Specifications');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#0f172a').text('Order details');
       doc.moveDown(0.25);
       doc.fontSize(10).font('Helvetica').fillColor('#334155');
       doc.text(`Category:       ${order.eventCategory.replace(/_/g, ' ')}`);

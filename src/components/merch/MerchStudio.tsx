@@ -183,7 +183,7 @@ export const MerchStudio: React.FC<Props> = ({ garments, charityShare }) => {
       </div>
 
       <aside className="merch-order" aria-labelledby="studio-order-title">
-        <h2 id="studio-order-title" className="merch-order-title">Your commemoration</h2>
+        <h2 id="studio-order-title" className="merch-order-title">Your Frenzy Studio order</h2>
         <dl className="merch-summary">
           <div>
             <dt>Team</dt>

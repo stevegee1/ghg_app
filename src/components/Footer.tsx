@@ -147,7 +147,7 @@ export const Footer: React.FC = () => {
               <li><a href="/#ghg" className="cerebrium-footer-link">GHG &amp; Carbon Emissions</a></li>
               <li><a href="/#fleet" className="cerebrium-footer-link">Fleet Emissions &amp; Telematics</a></li>
               <li><a href="/#workforce" className="cerebrium-footer-link">Social &amp; Workforce</a></li>
-              <li><Link to="/merch" className="cerebrium-footer-link">Merch &amp; Custom Merch</Link></li>
+              <li><Link to="/merch" className="cerebrium-footer-link">Merch &amp; Frenzy Studio</Link></li>
             </ul>
           </div>
 
