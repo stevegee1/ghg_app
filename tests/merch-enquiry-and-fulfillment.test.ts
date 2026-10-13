@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/expressApp';
 import { JWT_SECRET } from '../src/middleware/auth.middleware';
+import { emailService } from '../src/services/email.service';
 
 const prisma = new PrismaClient();
 const app = createApp();
@@ -127,6 +128,35 @@ describe('Merchandise Enquiries and Keepsake Fulfillment Pipeline', () => {
       expect(record?.contactName).toBe('Alex Mercer');
       expect(record?.contactEmail).toBe('alex.mercer@corporate-client.org');
       expect(record?.status).toBe('PENDING');
+    });
+
+    it('emails the team and acknowledges the customer', async () => {
+      const savedAdmin = process.env.ADMIN_EMAIL;
+      process.env.ADMIN_EMAIL = 'team@nftylogslabs.com';
+      const notify = jest.spyOn(emailService, 'sendMerchEnquiryNotification').mockResolvedValue({ success: true, provider: 'TEST' });
+      const ack = jest.spyOn(emailService, 'sendMerchEnquiryAcknowledgement').mockResolvedValue({ success: true, provider: 'TEST' });
+      try {
+        await request(app)
+          .post('/api/merch/enquiry')
+          .send({ itemId: 'tee', itemTitle: 'Team T-shirt', contactName: 'Sam', contactEmail: 'sam@club-example.org', message: '40 shirts' })
+          .expect(201);
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({ toEmail: 'team@nftylogslabs.com', itemTitle: 'Team T-shirt', contactEmail: 'sam@club-example.org', message: '40 shirts' })
+        );
+        expect(ack).toHaveBeenCalledWith({ toEmail: 'sam@club-example.org', contactName: 'Sam', itemTitle: 'Team T-shirt' });
+      } finally {
+        if (savedAdmin === undefined) delete process.env.ADMIN_EMAIL;
+        else process.env.ADMIN_EMAIL = savedAdmin;
+      }
+    });
+
+    it('still saves the enquiry when email delivery fails', async () => {
+      jest.spyOn(emailService, 'sendMerchEnquiryAcknowledgement').mockRejectedValue(new Error('provider down'));
+      const res = await request(app)
+        .post('/api/merch/enquiry')
+        .send({ itemId: 'tee', itemTitle: 'Team T-shirt', contactName: 'Kim', contactEmail: 'kim@club-example.org' })
+        .expect(201);
+      expect(await prisma.merchEnquiry.findUnique({ where: { id: res.body.enquiryId } })).not.toBeNull();
     });
   });
 

@@ -1,7 +1,7 @@
 /**
- * Production-Ready Email Dispatcher Service
- * Supports Resend, SendGrid, Postmark, and standard SMTP transports.
- * Falls back to structured logging in development if API keys are not provided.
+ * Transactional email through Resend (or SendGrid), sent from EMAIL_FROM (info@nftylogslabs.com).
+ * Every message has an HTML and a plain-text part. In development without a provider key,
+ * messages are logged instead of sent.
  */
 
 export interface SendPasswordResetEmailParams {
@@ -18,6 +18,40 @@ export interface SendVerificationEmailParams {
   expiresInHours?: number;
 }
 
+const SENDER_NAME = 'NFTYLOGS';
+/** Sending address, verified on Resend. EMAIL_FROM may be a bare address or "Name <address>". */
+export function senderAddress(): string {
+  const configured = (process.env.EMAIL_FROM || 'info@nftylogslabs.com').trim();
+  const match = configured.match(/<([^>]+)>/);
+  return match ? match[1].trim() : configured;
+}
+
+export const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/** Plain-text part for an HTML email: links keep their address, tags and entities are removed. */
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<a\s[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, label: string) => `${label.replace(/<[^>]+>/g, '').trim()}: ${href}`)
+    .replace(/<\/(p|h[1-6]|div|li|tr)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&#(\d+);/g, (_m, code: string) => String.fromCharCode(Number(code)))
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/[ \t]+/g, ' ')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line, i, all) => line !== '' || (i > 0 && all[i - 1] !== ''))
+    .join('\n')
+    .trim();
+}
+
+const CARD_STYLE =
+  "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;";
+const BUTTON_STYLE =
+  'background-color: #1a73e8; color: #ffffff; padding: 12px 24px; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 6px; display: inline-block;';
+const FOOTER_HTML = '<p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.</p>';
+
 export class EmailService {
   private static instance: EmailService;
 
@@ -28,218 +62,73 @@ export class EmailService {
     return EmailService.instance;
   }
 
-  /**
-   * Dispatches password reset instructions via configured production email provider
-   */
+  /** Password reset link. */
   async sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<{ success: boolean; provider: string }> {
-    const { toEmail, resetUrl, appName = 'NFTYLOGS Assurance Suite', expiresInHours = 1 } = params;
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const sendgridApiKey = process.env.SENDGRID_API_KEY;
-
-    const htmlContent = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <div style="margin-bottom: 24px;">
-          <h2 style="color: #0f172a; margin: 0 0 8px 0; font-size: 20px; font-weight: 800;">Password Reset Request</h2>
-          <p style="color: #64748b; font-size: 14px; margin: 0;">${appName}</p>
-        </div>
+    const { toEmail, resetUrl, expiresInHours = 1 } = params;
+    const html = `
+      <div style="${CARD_STYLE}">
+        <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">Reset your password</h2>
         <p style="color: #334155; font-size: 15px; line-height: 1.6;">
-          We received a request to reset the password for your account associated with <strong>${toEmail}</strong>.
+          We received a request to reset the password for the NFTYLOGS account <strong>${escapeHtml(toEmail)}</strong>.
         </p>
-        <div style="margin: 28px 0; text-align: center;">
-          <a href="${resetUrl}" style="background-color: #0284c7; color: #ffffff; padding: 12px 28px; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 9999px; display: inline-block;">
-            Reset Your Password →
-          </a>
-        </div>
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${resetUrl}" style="${BUTTON_STYLE}">Reset password</a>
+        </p>
         <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
-          This secure link will expire in <strong>${expiresInHours} hour</strong>. If you did not initiate this request, you can safely ignore this email; your password will remain unchanged.
+          The link expires in ${expiresInHours} hour${expiresInHours === 1 ? '' : 's'}. If you did not ask for this, ignore this email; your password stays the same.
         </p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-        <p style="color: #94a3b8; font-size: 11px; margin: 0;">
-          NFTYLOGS Limited, company no. 15230476.
-        </p>
-      </div>
-    `;
-
-    // 1. Resend Provider
-    if (resendApiKey) {
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: process.env.EMAIL_FROM || 'security@ghgemissionlogs.com',
-            to: [toEmail],
-            subject: `Reset your ${appName} password`,
-            html: htmlContent,
-          }),
-        });
-
-        if (response.ok) {
-          console.log(`[EMAIL DISPATCH - RESEND] Password reset dispatched to ${toEmail}`);
-          return { success: true, provider: 'RESEND' };
-        } else {
-          const errData = await response.json();
-          console.error('[EMAIL RESEND ERROR]', errData);
-        }
-      } catch (err) {
-        console.error('[EMAIL RESEND EXCEPTION]', err);
-      }
-    }
-
-    // 2. SendGrid Provider
-    if (sendgridApiKey) {
-      try {
-        const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${sendgridApiKey}`,
-          },
-          body: JSON.stringify({
-            personalizations: [{ to: [{ email: toEmail }] }],
-            from: { email: process.env.EMAIL_FROM || 'security@ghgemissionlogs.com', name: appName },
-            subject: `Reset your ${appName} password`,
-            content: [{ type: 'text/html', value: htmlContent }],
-          }),
-        });
-
-        if (response.ok || response.status === 202) {
-          console.log(`[EMAIL DISPATCH - SENDGRID] Password reset dispatched to ${toEmail}`);
-          return { success: true, provider: 'SENDGRID' };
-        }
-      } catch (err) {
-        console.error('[EMAIL SENDGRID EXCEPTION]', err);
-      }
-    }
-
-    // 3. Fallback / Local Development Logger
-    console.log(`\n======================================================`);
-    console.log(`[SECURE EMAIL DISPATCH - LOCAL / STAGING DEV]`);
-    console.log(`To: ${toEmail}`);
-    console.log(`Action: Password Reset`);
-    console.log(`Reset Link: ${resetUrl}`);
-    console.log(`======================================================\n`);
-
-    return { success: true, provider: 'LOCAL_LOG' };
+        ${FOOTER_HTML}
+      </div>`;
+    return this.deliver(toEmail, 'Reset your NFTYLOGS password', html, `Password reset: ${resetUrl}`);
   }
 
-  /**
-   * Dispatches corporate work email verification instructions via configured production provider
-   */
+  /** Work email verification link sent at sign-up. */
   async sendVerificationEmail(params: SendVerificationEmailParams): Promise<{ success: boolean; provider: string }> {
-    const { toEmail, verificationUrl, appName = 'NFTYLOGS Assurance Suite', expiresInHours = 24 } = params;
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const sendgridApiKey = process.env.SENDGRID_API_KEY;
-
-    const htmlContent = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #090d16;">
-        <div style="margin-bottom: 24px;">
-          <div style="font-size: 11px; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Enterprise Sovereign Security</div>
-          <h2 style="color: #090d16; margin: 0 0 6px 0; font-size: 22px; font-weight: 800;">Verify Your Work Email Address</h2>
-          <p style="color: #64748b; font-size: 13px; margin: 0;">${appName}</p>
-        </div>
+    const { toEmail, verificationUrl, expiresInHours = 24 } = params;
+    const html = `
+      <div style="${CARD_STYLE}">
+        <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">Confirm your work email</h2>
         <p style="color: #334155; font-size: 15px; line-height: 1.6;">
-          An account registration was initiated for <strong>${toEmail}</strong> on the NFTYLOGS Sovereign Provenance Platform.
+          An NFTYLOGS account was created for <strong>${escapeHtml(toEmail)}</strong>. Confirm the address to finish setting up your account.
         </p>
-        <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
-          To verify ownership of this corporate domain and activate full cryptographic evidence-signing authority, please verify your email address below.
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${verificationUrl}" style="${BUTTON_STYLE}">Confirm email</a>
         </p>
-        <div style="margin: 32px 0; text-align: center;">
-          <a href="${verificationUrl}" style="background-color: #0f172a; color: #ffffff; padding: 13px 32px; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);">
-            Verify Work Email Address
-          </a>
-        </div>
         <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
-          This security link expires in <strong>${expiresInHours} hours</strong>. If you did not register this account, no further action is required and the pending record will expire automatically.
+          The link expires in ${expiresInHours} hours. If you did not create this account, ignore this email.
         </p>
-        <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 24px 0;" />
-        <p style="color: #64748b; font-size: 11px; margin: 0; line-height: 1.4;">
-          NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.
-        </p>
-      </div>
-    `;
-
-    // 1. Resend Provider
-    if (resendApiKey) {
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: process.env.EMAIL_FROM || 'security@ghgemissionlogs.com',
-            to: [toEmail],
-            subject: `Verify your ${appName} work email`,
-            html: htmlContent,
-          }),
-        });
-
-        if (response.ok) {
-          console.log(`[EMAIL DISPATCH - RESEND] Verification email dispatched to ${toEmail}`);
-          return { success: true, provider: 'RESEND' };
-        } else {
-          const errData = await response.json();
-          console.error('[EMAIL RESEND ERROR]', errData);
-        }
-      } catch (err) {
-        console.error('[EMAIL RESEND EXCEPTION]', err);
-      }
-    }
-
-    // 2. SendGrid Provider
-    if (sendgridApiKey) {
-      try {
-        const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${sendgridApiKey}`,
-          },
-          body: JSON.stringify({
-            personalizations: [{ to: [{ email: toEmail }] }],
-            from: { email: process.env.EMAIL_FROM || 'security@ghgemissionlogs.com', name: appName },
-            subject: `Verify your ${appName} work email`,
-            content: [{ type: 'text/html', value: htmlContent }],
-          }),
-        });
-
-        if (response.ok || response.status === 202) {
-          console.log(`[EMAIL DISPATCH - SENDGRID] Verification email dispatched to ${toEmail}`);
-          return { success: true, provider: 'SENDGRID' };
-        }
-      } catch (err) {
-        console.error('[EMAIL SENDGRID EXCEPTION]', err);
-      }
-    }
-
-    // 3. Fallback / Local Development Logger
-    console.log(`\n======================================================`);
-    console.log(`[SECURE EMAIL DISPATCH - LOCAL / STAGING DEV]`);
-    console.log(`To: ${toEmail}`);
-    console.log(`Action: Email Verification`);
-    console.log(`Verification Link: ${verificationUrl}`);
-    console.log(`======================================================\n`);
-
-    return { success: true, provider: 'LOCAL_LOG' };
+        ${FOOTER_HTML}
+      </div>`;
+    return this.deliver(toEmail, 'Confirm your NFTYLOGS work email', html, `Verification: ${verificationUrl}`);
   }
 
   /**
-   * Sends one email through the configured provider (Resend, then SendGrid). In development
-   * without a provider the message is logged instead. Returns the provider used.
+   * Sends one email through the configured provider (Resend, then SendGrid), with a plain-text
+   * part generated from the HTML. In development without a provider the message is logged instead.
    */
-  private async deliver(toEmail: string, subject: string, html: string, logLine: string): Promise<{ success: boolean; provider: string }> {
-    const from = process.env.EMAIL_FROM || 'security@ghgemissionlogs.com';
+  private async deliver(
+    toEmail: string,
+    subject: string,
+    html: string,
+    logLine: string,
+    options: { headers?: Record<string, string>; replyTo?: string } = {}
+  ): Promise<{ success: boolean; provider: string }> {
+    const address = senderAddress();
+    const text = htmlToText(html);
     if (process.env.RESEND_API_KEY) {
       try {
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
-          body: JSON.stringify({ from, to: [toEmail], subject, html }),
+          body: JSON.stringify({
+            from: `${SENDER_NAME} <${address}>`,
+            to: [toEmail],
+            subject,
+            html,
+            text,
+            ...(options.replyTo ? { reply_to: options.replyTo } : {}),
+            ...(options.headers ? { headers: options.headers } : {}),
+          }),
         });
         if (response.ok) return { success: true, provider: 'RESEND' };
         console.error('[EMAIL RESEND ERROR]', await response.text());
@@ -254,9 +143,14 @@ export class EmailService {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.SENDGRID_API_KEY}` },
           body: JSON.stringify({
             personalizations: [{ to: [{ email: toEmail }] }],
-            from: { email: from, name: 'NFTYLOGS' },
+            from: { email: address, name: SENDER_NAME },
+            ...(options.replyTo ? { reply_to: { email: options.replyTo } } : {}),
             subject,
-            content: [{ type: 'text/html', value: html }],
+            content: [
+              { type: 'text/plain', value: text },
+              { type: 'text/html', value: html },
+            ],
+            ...(options.headers ? { headers: options.headers } : {}),
           }),
         });
         if (response.ok || response.status === 202) return { success: true, provider: 'SENDGRID' };
@@ -329,7 +223,40 @@ export class EmailService {
           <a href="${params.unsubscribeUrl}" style="color: #64748b;">Unsubscribe</a> · NFTYLOGS Limited. Registered in England and Wales, company no. 15230476.
         </p>
       </div>`;
-    return this.deliver(params.toEmail, 'Confirm your NFTYLOGS newsletter subscription', html, `Newsletter confirm: ${params.confirmUrl}`);
+    return this.deliver(params.toEmail, 'Confirm your NFTYLOGS newsletter subscription', html, `Newsletter confirm: ${params.confirmUrl}`, {
+      headers: { 'List-Unsubscribe': `<${params.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    });
+  }
+
+  /** Tells the team a merch enquiry arrived; replying goes straight to the customer. */
+  async sendMerchEnquiryNotification(params: { toEmail: string; itemTitle: string; contactName: string; contactEmail: string; message: string | null; adminUrl: string }) {
+    const html = `
+      <div style="${CARD_STYLE}">
+        <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">New merch enquiry</h2>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+          <strong>${escapeHtml(params.contactName)}</strong> (${escapeHtml(params.contactEmail)}) asked about <strong>${escapeHtml(params.itemTitle)}</strong>.
+        </p>
+        ${params.message ? `<p style="color: #334155; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(params.message)}</p>` : ''}
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${params.adminUrl}" style="${BUTTON_STYLE}">Open merch enquiries</a>
+        </p>
+        ${FOOTER_HTML}
+      </div>`;
+    return this.deliver(params.toEmail, `Merch enquiry: ${params.itemTitle}`, html, `Merch enquiry from ${params.contactEmail}`, { replyTo: params.contactEmail });
+  }
+
+  /** Confirms to the customer that their merch enquiry reached us. */
+  async sendMerchEnquiryAcknowledgement(params: { toEmail: string; contactName: string; itemTitle: string }) {
+    const html = `
+      <div style="${CARD_STYLE}">
+        <h2 style="color: #0f172a; margin: 0 0 12px 0; font-size: 20px;">We received your enquiry</h2>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+          Hello ${escapeHtml(params.contactName)}, thank you for asking about <strong>${escapeHtml(params.itemTitle)}</strong>.
+          Our team will reply within 1 to 2 business days. You can reply to this email to add anything.
+        </p>
+        ${FOOTER_HTML}
+      </div>`;
+    return this.deliver(params.toEmail, `Your NFTYLOGS enquiry: ${params.itemTitle}`, html, `Merch enquiry acknowledgement to ${params.toEmail}`);
   }
 }
 

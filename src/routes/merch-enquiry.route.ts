@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { emailService } from '../services/email.service';
 
 export function createMerchEnquiryRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -34,6 +35,25 @@ export function createMerchEnquiryRouter(prisma: PrismaClient): Router {
           ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || null,
         },
       });
+
+      // Notify the team and acknowledge the customer. The enquiry is saved either way.
+      const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const notifications: Promise<unknown>[] = [
+        emailService.sendMerchEnquiryAcknowledgement({ toEmail: enquiry.contactEmail, contactName: enquiry.contactName, itemTitle: enquiry.itemTitle }),
+      ];
+      if (process.env.ADMIN_EMAIL) {
+        notifications.push(
+          emailService.sendMerchEnquiryNotification({
+            toEmail: process.env.ADMIN_EMAIL,
+            itemTitle: enquiry.itemTitle,
+            contactName: enquiry.contactName,
+            contactEmail: enquiry.contactEmail,
+            message: enquiry.message,
+            adminUrl: `${baseUrl}/admin?tab=MERCH_ENQUIRIES`,
+          })
+        );
+      }
+      await Promise.allSettled(notifications);
 
       return res.status(201).json({
         success: true,

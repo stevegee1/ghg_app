@@ -44,6 +44,17 @@ export function createPublicSiteRouter(prisma: PrismaClient): Router {
     }
   });
 
+  /** One-click unsubscribe from the mail client (RFC 8058): the token is in the query string. */
+  router.post('/api/newsletter/unsubscribe', async (req: Request, res: Response) => {
+    try {
+      const ok = await unsubscribe(prisma, req.query.token);
+      return res.status(ok ? 200 : 404).json({ unsubscribed: ok });
+    } catch (err) {
+      console.error('[NEWSLETTER ONE-CLICK UNSUBSCRIBE ERROR]', err);
+      return res.status(500).json({ unsubscribed: false });
+    }
+  });
+
   /**
    * GET /api/public/charity-share: the share of each payment that goes to partner charities, from the
    * platform's active split configuration. Null when no split is configured, so the site shows no figure.

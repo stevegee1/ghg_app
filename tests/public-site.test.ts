@@ -29,7 +29,7 @@ const pathOf = (url: string) => {
 };
 
 afterAll(async () => {
-  await prisma.newsletterSubscriber.deleteMany({ where: { email: { in: [EMAIL, 'second.' + EMAIL] } } });
+  await prisma.newsletterSubscriber.deleteMany({ where: { email: { in: [EMAIL, 'second.' + EMAIL, 'third.' + EMAIL] } } });
   await prisma.$disconnect();
 });
 
@@ -78,6 +78,16 @@ describe('Newsletter double opt-in', () => {
 
     const bogus = await request(app).get('/api/newsletter/unsubscribe?token=this-token-does-not-exist-anywhere').expect(303);
     expect(bogus.headers.location).toBe('/newsletter?status=invalid');
+  });
+
+  it('supports one-click unsubscribe from the mail client (POST)', async () => {
+    const email = 'third.' + EMAIL;
+    const sent = captureEmails();
+    await request(app).post('/api/newsletter/subscribe').send({ email, consent: true }).expect(202);
+    const res = await request(app).post(pathOf(sent[0].unsubscribeUrl)).expect(200);
+    expect(res.body).toEqual({ unsubscribed: true });
+    expect((await prisma.newsletterSubscriber.findUnique({ where: { email } }))!.status).toBe('UNSUBSCRIBED');
+    await request(app).post('/api/newsletter/unsubscribe?token=unknown-token-value').expect(404);
   });
 
   it('reports a failure to send instead of pretending to subscribe', async () => {
