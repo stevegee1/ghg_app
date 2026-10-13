@@ -19,6 +19,8 @@ export interface User {
   emailVerified?: boolean;
   logoUrl?: string | null;
   websiteUrl?: string | null;
+  /** Whether the organisation chose to appear on the public transparency page. */
+  listedOnTransparency?: boolean;
 }
 
 interface AuthContextType {

@@ -75,7 +75,8 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           id: licenseeId,
           name: companyName.trim(),
           vertical: 'B2B_CLEAN_TECH',
-          isPubliclyVisible: true,
+          // Companies are listed on the public transparency page only when they opt in from Settings.
+          isPubliclyVisible: false,
           stripeConnectedAccountId: getPlatformStripeAccountId(),
           organisationCountry: (organisationCountry?.trim() || 'GB').toUpperCase().slice(0, 2),
           industrySector: industrySector || null,
@@ -224,6 +225,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           industrySector: user.licensee?.industrySector || null,
           logoUrl: user.licensee?.logoUrl || null,
           websiteUrl: user.licensee?.websiteUrl || null,
+          listedOnTransparency: user.licensee?.isPubliclyVisible ?? false,
         },
       });
     } catch (err) {
@@ -403,6 +405,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           industrySector: user.licensee?.industrySector || null,
           logoUrl: user.licensee?.logoUrl || null,
           websiteUrl: user.licensee?.websiteUrl || null,
+          listedOnTransparency: user.licensee?.isPubliclyVisible ?? false,
         },
       });
     } catch {
@@ -435,7 +438,12 @@ export function createAuthRouter(prisma: PrismaClient): Router {
         industrySector,
         websiteUrl,
         companyRegistrationNo,
+        listedOnTransparency,
       } = req.body || {};
+
+      if (listedOnTransparency !== undefined && typeof listedOnTransparency !== 'boolean') {
+        return res.status(400).json({ error: 'listedOnTransparency must be true or false.' });
+      }
 
       if (primaryRole !== undefined && !(Object.values(PrimaryRole) as string[]).includes(primaryRole)) {
         return res.status(400).json({ error: 'Choose a role from the list.' });
@@ -477,6 +485,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
               companyRegistrationNo !== undefined
                 ? companyRegistrationNo?.trim()
                 : user.licensee?.companyRegistrationNo,
+            isPubliclyVisible: listedOnTransparency !== undefined ? listedOnTransparency : user.licensee?.isPubliclyVisible,
           },
         });
       }
@@ -504,6 +513,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
           organisationCountry: updatedUser!.licensee?.organisationCountry || 'GB',
           industrySector: updatedUser!.licensee?.industrySector || null,
           websiteUrl: updatedUser!.licensee?.websiteUrl || null,
+          listedOnTransparency: updatedUser!.licensee?.isPubliclyVisible ?? false,
         },
       });
     } catch (err: any) {

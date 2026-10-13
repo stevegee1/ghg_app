@@ -1164,6 +1164,7 @@ export const api = {
     industrySector?: string;
     websiteUrl?: string;
     companyRegistrationNo?: string;
+    listedOnTransparency?: boolean;
   }): Promise<{ message: string; user: any }> {
     const res = await fetch('/api/auth/profile', {
       method: 'PATCH',

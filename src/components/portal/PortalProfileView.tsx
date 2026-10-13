@@ -1,6 +1,7 @@
 import React from 'react';
 import { INDUSTRY_SECTOR_OPTIONS, PRIMARY_ROLE_OPTIONS } from './profileOptions';
 import { ProfileLogoCard } from './ProfileLogoCard';
+import { TransparencyListingCard } from './TransparencyListingCard';
 
 interface PortalProfileViewProps {
   user: any;
@@ -127,6 +128,7 @@ export const PortalProfileView: React.FC<PortalProfileViewProps> = ({
             </div>
           </div>
           <ProfileLogoCard />
+          <TransparencyListingCard />
         </div>
       </div>
 

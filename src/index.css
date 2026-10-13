@@ -13229,6 +13229,13 @@ a:not([class]):hover {
   opacity: 0.6;
   pointer-events: none;
 }
+.profile-listing-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
 .google-avatar-circle img,
 .google-popover-avatar img {
   width: 100%;

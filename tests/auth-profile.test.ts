@@ -26,6 +26,20 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
+describe('Sign-up', () => {
+  it('does not list a new organisation on the transparency page', async () => {
+    const email = `signup.${suffix}@acme-test.co.uk`;
+    await request(app)
+      .post('/api/auth/register')
+      .send({ firstName: 'Ada', lastName: 'Lovelace', email, password: 'correct-horse-9', companyName: `Signup ${suffix}` })
+      .expect(201);
+    const user = await prisma.portalUser.findUniqueOrThrow({ where: { email }, include: { licensee: true } });
+    expect(user.licensee?.isPubliclyVisible).toBe(false);
+    await prisma.portalUser.delete({ where: { id: user.id } });
+    await prisma.licensee.delete({ where: { id: user.licenseeId! } });
+  });
+});
+
 describe('Profile settings', () => {
   it('saves every role and industry the form offers', async () => {
     for (const role of PRIMARY_ROLE_OPTIONS) {
@@ -48,6 +62,22 @@ describe('Profile settings', () => {
     const sector = await request(app).patch('/api/auth/profile').set('Authorization', `Bearer ${token}`).send({ industrySector: 'TECH' }).expect(400);
     expect(sector.body.error).toBe('Choose an industry from the list.');
     expect(JSON.stringify(sector.body)).not.toMatch(/prisma|invocation/i);
+  });
+
+  it('lists the organisation on the transparency page only after it opts in', async () => {
+    const ledger = async () => (await request(app).get('/api/v1/transparency-ledger').expect(200)).body;
+    const listed = (body: any) => JSON.stringify(body).includes(licenseeId);
+    expect(listed(await ledger())).toBe(false);
+
+    const on = await request(app).patch('/api/auth/profile').set('Authorization', `Bearer ${token}`).send({ listedOnTransparency: true }).expect(200);
+    expect(on.body.user.listedOnTransparency).toBe(true);
+    expect(listed(await ledger())).toBe(true);
+
+    const off = await request(app).patch('/api/auth/profile').set('Authorization', `Bearer ${token}`).send({ listedOnTransparency: false }).expect(200);
+    expect(off.body.user.listedOnTransparency).toBe(false);
+    expect(listed(await ledger())).toBe(false);
+
+    await request(app).patch('/api/auth/profile').set('Authorization', `Bearer ${token}`).send({ listedOnTransparency: 'yes' }).expect(400);
   });
 
   it('asks an expired session to sign in again', async () => {
