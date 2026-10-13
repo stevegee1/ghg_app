@@ -1,9 +1,11 @@
 /**
  * ai-audit-reviewer.service.ts
  *
- * AI Assurance Agent for GHG Protocol & ISO Audit-Ready Workflow (Workflow 1).
+ * The NFTYLOGS audit engine: pre-screens GHG and Workforce submissions for the Lead Auditor.
+ * Clients and admins only ever see it as the "NFTYLOGS audit engine"; the model provider
+ * behind it is internal and is logged, never shown.
  *
- * This agent:
+ * The engine:
  *   1. Loads the full submission dossier (answers, questions, evidence metadata)
  *   2. Builds a structured prompt reflecting ISO 14064-1:2018, ISO 50001:2018,
  *      GHG Protocol Corporate Standard, and UK SECR requirements
@@ -22,10 +24,13 @@ import { IAuditReviewer, AuditReviewResult, ClauseReviewFinding } from './audit-
 import { ILlmProvider, resolveActiveProvider } from './llm-provider.interface';
 
 /**
- * Label recorded when no AI provider produced the findings (none configured, or the provider
- * call or response failed). The Lead Auditor must be able to see that no AI model reviewed it.
+ * Label recorded when only the rules produced the findings (no model configured, or the model
+ * call or response failed). The Lead Auditor must be able to see that the full engine did not run.
  */
-export const RULES_ENGINE_REVIEWER = 'Rules Engine (no AI model review)';
+export const RULES_ENGINE_REVIEWER = 'NFTYLOGS audit engine (rules only)';
+
+/** Label recorded when the full engine produced the findings. */
+export const AUDIT_ENGINE_REVIEWER = 'NFTYLOGS audit engine';
 import { GeminiProvider } from './gemini.provider';
 import { AnthropicProvider } from './anthropic.provider';
 import { OpenAiProvider } from './openai.provider';
@@ -72,14 +77,14 @@ function evaluateClauseByRules(input: RulesEvaluationInput): {
     if (!isYes) {
       return {
         status: 'NON_CONFORMANT',
-        findings: `Negative response recorded against ${isoClauseReference}: "${questionText}". This constitutes a non-conformity requiring corrective action prior to audit readiness certification.`,
+        findings: `Negative response recorded against ${isoClauseReference}: "${questionText}". This is a gap to close before the review can pass.`,
         confidence: 0.92,
         points: 0,
       };
     }
     return {
       status: 'CONFORMANT',
-      findings: `Affirmative response with ${hasEvidence ? 'supporting documentary evidence verified' : 'no evidence reference: acceptable for non-evidence-required clauses'} under ${isoClauseReference}.`,
+      findings: `Affirmative response under ${isoClauseReference}. ${hasEvidence ? 'Evidence is attached for the Lead Auditor to check.' : 'No evidence attached; acceptable because this item does not require it.'}`,
       confidence: hasEvidence ? 0.88 : 0.72,
       points: hasEvidence ? 5 : 3,
     };
@@ -106,7 +111,7 @@ function evaluateClauseByRules(input: RulesEvaluationInput): {
     }
     return {
       status: 'CONFORMANT',
-      findings: `Numeric value of ${num} confirmed plausible for ${isoClauseReference}. ${hasEvidence ? 'Supporting meter/ledger evidence hash verified.' : 'Source data reference recommended for ISO 14064-1 Clause 6.2 verification trail.'}`,
+      findings: `Numeric value of ${num} is plausible for ${isoClauseReference}. ${hasEvidence ? 'Evidence is attached for the Lead Auditor to check.' : 'Attaching the source data is recommended.'}`,
       confidence: hasEvidence ? 0.85 : 0.68,
       points: hasEvidence ? 5 : 3,
     };
@@ -154,7 +159,9 @@ function buildAuditPrompt(
     return 'ISO 14064-1:2018, ISO 50001:2018, and applicable UK statutory requirements';
   })();
 
-  const system = `You are a Senior Lead Verification Auditor for the NFTYLOGS platform, operating under ISO 19011:2026 remote auditing guidelines. You pre-screen compliance questionnaire submissions across four service pipelines before a human Lead Auditor makes the final decision.
+  const system = `You are the NFTYLOGS audit engine. You pre-screen readiness review submissions and advise a human Lead Auditor, who makes every decision. Reviews follow the guidance on remote audit methods in ISO 19011:2026. You do not certify or verify anything, and you never describe your advice as certification or verification.
+
+You see each answer and whether evidence is attached, but not the contents of the evidence. Never state that evidence was checked or verified, and always return "evidenceVerified": false.
 
 Governing standard for this submission: ${pipelineContext}
 
@@ -232,7 +239,7 @@ export class AiAuditReviewer implements IAuditReviewer {
     });
 
     if (!submission) {
-      throw new Error(`AI Audit Reviewer: Submission '${submissionId}' not found.`);
+      throw new Error(`Audit engine: submission '${submissionId}' not found.`);
     }
 
     // 2. Build answer index
@@ -263,7 +270,8 @@ export class AiAuditReviewer implements IAuditReviewer {
           { temperature: 0.2, maxTokens: 4096 }
         );
         llmResponse = result.content;
-        reviewedBy = `AI Assurance Agent (${result.provider} / ${result.model})`;
+        reviewedBy = AUDIT_ENGINE_REVIEWER;
+        console.log(`[AUDIT_ENGINE] Pre-screen by ${result.provider} / ${result.model} for submission ${submission.id}`);
       } catch (err: any) {
         // LLM call failed: fall back to deterministic engine
         console.warn(`[AI_AUDIT_REVIEWER] LLM call failed (${activeProvider.providerName}): ${err.message}. Falling back to rules engine.`);
@@ -286,7 +294,8 @@ export class AiAuditReviewer implements IAuditReviewer {
             ? f.status
             : 'INSUFFICIENT_EVIDENCE',
           findings: String(f.findings || ''),
-          evidenceVerified: Boolean(f.evidenceVerified),
+          // The engine does not read evidence contents yet, so nothing it returns counts as verified.
+          evidenceVerified: false,
           confidence: typeof f.confidence === 'number' ? f.confidence : 0.7,
         }));
 
@@ -295,7 +304,7 @@ export class AiAuditReviewer implements IAuditReviewer {
           : this.calculateScore(clauseFindings, questions.length);
 
         recommendedDecision = parsed.recommendedDecision === 'APPROVE' ? 'APPROVE' : 'REQUIRE_REVISION';
-        executiveSummary = parsed.executiveSummary || 'AI pre-screen completed.';
+        executiveSummary = parsed.executiveSummary || 'Audit engine pre-screen completed.';
       } catch (_parseErr) {
         // JSON parse failed: fall back to deterministic engine
         console.warn(`[AI_AUDIT_REVIEWER] Failed to parse LLM response JSON. Falling back to rules engine.`);
@@ -393,7 +402,7 @@ export class AiAuditReviewer implements IAuditReviewer {
         isoClause: q.isoClauseReference,
         status: result.status,
         findings: result.findings,
-        evidenceVerified: hasEvidence,
+        evidenceVerified: false,
       });
 
       totalPoints += result.points;
@@ -408,7 +417,7 @@ export class AiAuditReviewer implements IAuditReviewer {
       nonConformantCount === 0 && overallScore >= 75 ? 'APPROVE' : 'REQUIRE_REVISION';
 
     const executiveSummary =
-      `Deterministic ISO 19011:2026 rules-based pre-screen completed for ${submission.licensee.name}. ` +
+      `Rules-only pre-screen completed for ${submission.licensee.name}. ` +
       `${clauseFindings.filter((f) => f.status === 'CONFORMANT').length} of ${questions.length} clauses evaluated as conformant. ` +
       `${nonConformantCount} clause(s) require attention. ` +
       `Overall pre-screen score: ${overallScore}%. ` +
@@ -474,7 +483,7 @@ export class AiAuditReviewer implements IAuditReviewer {
             submissionId,
             previousStatus: WorkflowStatus.SUBMITTED,
             newStatus: WorkflowStatus.AI_SCREENED,
-            triggeredBy: 'AI_AGENT_ASSURANCE_ENGINE',
+            triggeredBy: 'NFTYLOGS_AUDIT_ENGINE',
             triggerReason: `${data.reviewedBy} pre-screen: score ${data.overallScore}%, recommendation ${data.recommendedDecision}`,
           },
         });
@@ -482,143 +491,5 @@ export class AiAuditReviewer implements IAuditReviewer {
         await tx.workflowSubmission.update({ where: { id: submissionId }, data: aiFields });
       }
     });
-  }
-
-  /**
-   * Evaluates an ISO audit-readiness diagnostic submission using Google Gemini
-   * (or deterministic fallback), following ISO 19011:2026 guidance on remote audit methods.
-   */
-  async evaluateIsoSubmission(params: {
-    licenseeName: string;
-    selectedFrameworks: string[];
-    answers: Array<{ questionId: string; questionText?: string; answer: string; isoClause?: string }>;
-    evidenceFileNames?: string[];
-  }): Promise<{
-    decision: 'APPROVE' | 'REQUIRE_REVISION';
-    targetStatus: 'AUDIT_READY' | 'REVISION_REQUIRED';
-    complianceScore: number;
-    reviewerNotes: string;
-    clauseFindings: Array<{
-      questionId: string;
-      isoClause: string;
-      status: 'CONFORMANT' | 'NON_CONFORMANT' | 'INSUFFICIENT_EVIDENCE';
-      findings: string;
-      evidenceVerified: boolean;
-    }>;
-    reviewedBy: string;
-    reviewedAt: Date;
-  }> {
-    const activeProvider = resolveActiveProvider(this.providers);
-    const answers = params.answers || [];
-    const frameworks = params.selectedFrameworks || ['ISO_14064_1'];
-
-    // 1. Try LLM evaluation if provider is active
-    if (activeProvider) {
-      try {
-        const systemPrompt = `You are the NFTYLOGS Senior Lead Auditor AI. You evaluate corporate submissions for ISO audit readiness under ISO 14064-1:2018, ISO 14001:2026, ISO 50001:2018, and the ISO 19011:2026 guidance on remote auditing protocols.
-Rules:
-1. Evaluate each answer and evidence reference against the governing ISO clause.
-2. If evidence is attached or verifiable data is cited, mark status as CONFORMANT.
-3. If no evidence document or audit trail is attached, mark as INSUFFICIENT_EVIDENCE or NON_CONFORMANT.
-4. Calculate an overallScore (0-100). Minimum 80% is required for APPROVE / AUDIT_READY.
-5. Return JSON ONLY with this exact schema:
-{
-  "clauseFindings": [
-    {
-      "questionId": "string",
-      "isoClause": "string",
-      "status": "CONFORMANT" | "NON_CONFORMANT" | "INSUFFICIENT_EVIDENCE",
-      "findings": "string (2-3 sentences)",
-      "evidenceVerified": boolean
-    }
-  ],
-  "overallScore": number,
-  "recommendedDecision": "APPROVE" | "REQUIRE_REVISION",
-  "executiveSummary": "string (Lead auditor summary)"
-}`;
-
-        const userPrompt = `Client: ${params.licenseeName}
-Selected Frameworks: ${frameworks.join(', ')}
-Responses:
-${answers.map((a, i) => `${i + 1}. [${a.questionId}] (${a.isoClause || 'Standard'}): ${a.answer}`).join('\n')}
-Evidence Files Attached: ${(params.evidenceFileNames || []).join(', ') || 'None'}`;
-
-        const result = await activeProvider.complete([
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ], { temperature: 0.1, maxTokens: 4096 });
-
-        let jsonStr = result.content.trim();
-        if (jsonStr.startsWith('```')) {
-          jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-        }
-        const parsed = JSON.parse(jsonStr);
-
-        const clauseFindings = (parsed.clauseFindings || []).map((f: any) => ({
-          questionId: String(f.questionId || ''),
-          isoClause: String(f.isoClause || ''),
-          status: ['CONFORMANT', 'NON_CONFORMANT', 'INSUFFICIENT_EVIDENCE'].includes(f.status) ? f.status : 'INSUFFICIENT_EVIDENCE',
-          findings: String(f.findings || 'Evidence reviewed; no specific finding recorded.'),
-          evidenceVerified: Boolean(f.evidenceVerified),
-        }));
-
-        const score = typeof parsed.overallScore === 'number'
-          ? Math.min(100, Math.max(0, Math.round(parsed.overallScore)))
-          : 75;
-
-        const isApproved = score >= 80 && parsed.recommendedDecision === 'APPROVE';
-
-        return {
-          decision: isApproved ? 'APPROVE' : 'REQUIRE_REVISION',
-          targetStatus: isApproved ? 'AUDIT_READY' : 'REVISION_REQUIRED',
-          complianceScore: score,
-          reviewerNotes: parsed.executiveSummary || (isApproved ? 'Pre-screen passed. The Lead Auditor makes the decision.' : 'Pre-screen found gaps to address before the Lead Auditor review.'),
-          clauseFindings,
-          reviewedBy: `${activeProvider.providerName} (${result.model})`,
-          reviewedAt: new Date(),
-        };
-      } catch (err: any) {
-        console.warn(`[AI_AUDIT_REVIEWER] Gemini review failed or timed out: ${err.message}. Invoking deterministic ISO rules engine.`);
-      }
-    }
-
-    // 2. Deterministic Rules Engine (ISO 19011:2026) - active when no LLM key is configured
-    const clauseFindings = answers.map((a) => {
-      const wordCount = (a.answer || '').trim().split(/\s+/).filter(Boolean).length;
-      // hasEvidenceDocument / evidenceDocumentId is set by the route when a file is attached
-      const hasEvidence = Boolean(
-        (a as any).hasEvidenceDocument ||
-        (a as any).evidenceDocumentId
-      );
-      const isConformant = wordCount >= 5 || hasEvidence;
-      const status: 'CONFORMANT' | 'INSUFFICIENT_EVIDENCE' = isConformant ? 'CONFORMANT' : 'INSUFFICIENT_EVIDENCE';
-
-      return {
-        questionId: a.questionId,
-        isoClause: a.isoClause || 'ISO 19011:2026',
-        status,
-        findings: isConformant
-          ? `Response meets minimum documentary threshold for ${a.isoClause || 'this clause'}. ${hasEvidence ? 'Supporting evidence document registered in the evidence locker.' : 'Narrative response provided; evidence document recommended for a stronger audit trail.'}`
-          : `Response for ${a.isoClause || 'this clause'} is insufficient (${wordCount} words, no evidence attached). A substantive response with supporting documentation is required for this review.`,
-        evidenceVerified: hasEvidence,
-      };
-    });
-
-    const conformantCount = clauseFindings.filter((f) => f.status === 'CONFORMANT').length;
-    const total = Math.max(1, clauseFindings.length);
-    const score = Math.min(100, Math.round((conformantCount / total) * 100));
-    const isApproved = score >= 80;
-
-    return {
-      decision: isApproved ? 'APPROVE' : 'REQUIRE_REVISION',
-      targetStatus: isApproved ? 'AUDIT_READY' : 'REVISION_REQUIRED',
-      complianceScore: score,
-      reviewerNotes: isApproved
-        ? `Deterministic pre-screen: ${conformantCount}/${total} clauses conformant (score ${score}%). Satisfies 80% threshold. Lead Auditor manual sign-off required.`
-        : `Deterministic pre-screen: ${conformantCount}/${total} clauses conformant (score ${score}%). Below 80% threshold. Additional evidence or narrative required.`,
-      clauseFindings,
-      reviewedBy: RULES_ENGINE_REVIEWER,
-      reviewedAt: new Date(),
-    };
   }
 }

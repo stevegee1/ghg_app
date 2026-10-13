@@ -110,7 +110,7 @@ describe('Workflow client view: frameworks, fees, withheld AI findings and revis
       data: {
         status: WorkflowStatus.UNDER_REVIEW,
         aiScreenedAt: new Date(),
-        aiReviewer: 'Rules Engine (no AI model review)',
+        aiReviewer: 'NFTYLOGS audit engine (rules only)',
         aiScore: 41,
         aiRecommendation: 'REJECT',
         aiSummary: 'Internal advisory summary',

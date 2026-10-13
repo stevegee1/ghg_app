@@ -176,6 +176,24 @@ describe('Claims the platform must not make', () => {
     });
     expect(offending).toEqual([]);
   });
+
+  // White label: the review engine is the NFTYLOGS audit engine. Screens and API messages never say "AI".
+  it('never calls the review engine AI in screens or API messages', () => {
+    const ALLOWED = [/AI symposiums/, /GreenTech AI Summit/];
+    const withoutComments = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+    const files = [
+      ...sourceFiles(path.join(process.cwd(), 'src', 'components')),
+      ...sourceFiles(path.join(process.cwd(), 'src', 'pages')),
+      ...sourceFiles(path.join(process.cwd(), 'src', 'routes')),
+    ];
+    const offending = files.flatMap((file) =>
+      withoutComments(fs.readFileSync(file, 'utf8'))
+        .split('\n')
+        .filter((line) => /\bAI\b/.test(line) && !/console\./.test(line) && !ALLOWED.some((re) => re.test(line)))
+        .map((line) => `${path.relative(process.cwd(), file)}: ${line.trim()}`)
+    );
+    expect(offending).toEqual([]);
+  });
 });
 
 describe('Error reporting settings', () => {

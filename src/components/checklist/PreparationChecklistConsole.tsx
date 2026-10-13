@@ -1087,7 +1087,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               Preparation Dossier Complete
             </div>
             <div style={{ fontSize: '0.88rem', color: '#166534', maxWidth: '600px', lineHeight: 1.5 }}>
-              All statutory items for {getPlainEnglishFrameworkTitle(recommendation?.frameworkName || 'this framework')} are complete. You can now launch automated ISO telemetry ingestion and AI audit screening.
+              All statutory items for {getPlainEnglishFrameworkTitle(recommendation?.frameworkName || 'this framework')} are complete. Continue to the review questions.
             </div>
           </div>
 
@@ -1107,7 +1107,7 @@ export const PreparationChecklistConsole: React.FC<PreparationChecklistConsolePr
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
             }}
           >
-            Launch Ingestion &amp; AI Verification
+            Continue to the review questions
           </button>
         </div>
       )}

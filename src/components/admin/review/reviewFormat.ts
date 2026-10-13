@@ -1,12 +1,12 @@
 import type { WorkflowStatus } from '../../../api/pipeline.types';
 
-/** Status wording for the Lead Auditor, who does see that the AI pre-screen has run. */
+/** Status wording for the Lead Auditor, who does see that the audit engine pre-screen has run. */
 export const REVIEW_STATUS_LABELS: Record<WorkflowStatus, string> = {
   ASSESSMENT_PENDING: 'Assessment pending',
   PREPARATION: 'Preparing',
   DRAFT: 'Draft',
   SUBMITTED: 'Submitted, not screened',
-  AI_SCREENED: 'AI screened, awaiting you',
+  AI_SCREENED: 'Engine screened, awaiting you',
   UNDER_REVIEW: 'In your review',
   APPROVED: 'Approved, awaiting payment',
   REJECTED: 'Revision requested',

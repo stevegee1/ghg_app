@@ -495,7 +495,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return res.status(404).json({ error: 'Submission not found.' });
       }
       if (submission.status !== WorkflowStatus.SUBMITTED && submission.status !== WorkflowStatus.AI_SCREENED) {
-        return res.status(409).json({ error: `AI pre-screen cannot run while the submission is ${submission.status}.` });
+        return res.status(409).json({ error: `The audit engine pre-screen cannot run while the submission is ${submission.status}.` });
       }
 
       const { AiAuditReviewer } = await import('../services/review-pipeline/ai-audit-reviewer.service');
@@ -506,7 +506,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       return res.status(202).json({ success: true, submissionId: id });
     } catch (err: unknown) {
       console.error('[AI_SCREEN INIT ERROR]', err);
-      return res.status(500).json({ error: 'Failed to start AI pre-screen.' });
+      return res.status(500).json({ error: 'Failed to start the audit engine pre-screen.' });
     }
   });
 
@@ -537,7 +537,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
         return res.status(404).json({ error: 'Submission not found.' });
       }
       if (!submission.aiScreenedAt) {
-        return res.status(404).json({ error: 'No AI pre-screen has been recorded for this submission yet.' });
+        return res.status(404).json({ error: 'No audit engine pre-screen has been recorded for this submission yet.' });
       }
 
       return res.status(200).json({
@@ -554,7 +554,7 @@ export function createWorkflowRouter(prisma: PrismaClient, checkoutService?: Che
       });
     } catch (err: unknown) {
       console.error('[AI_FINDINGS GET ERROR]', err);
-      return res.status(500).json({ error: 'Failed to retrieve AI pre-screen findings.' });
+      return res.status(500).json({ error: 'Failed to retrieve the audit engine pre-screen findings.' });
     }
   });
 

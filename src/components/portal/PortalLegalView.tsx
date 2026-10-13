@@ -17,7 +17,7 @@ export const PortalLegalView: React.FC = () => {
         <section className="review-terms-card">
           <h3>A structured readiness review</h3>
           <p>
-            You answer the questions for your chosen framework and attach evidence. An automated pre-screen flags gaps and advises only. A named Lead
+            You answer the questions for your chosen framework and attach evidence. The NFTYLOGS audit engine pre-screens it, flags gaps and advises only. A named Lead
             Auditor reviews every answer and makes the decision. If something needs work, you see the reason against each question.
           </p>
         </section>

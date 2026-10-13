@@ -49,7 +49,7 @@ export const ReviewQueue: React.FC<{ token: string }> = ({ token }) => {
     <section className="pipeline-workspace" aria-labelledby="review-queue-title">
       <header className="pipeline-header">
         <h2 id="review-queue-title">Review queue</h2>
-        <p className="pipeline-muted">GHG and Workforce submissions. The AI pre-screen is advice; every decision is yours.</p>
+        <p className="pipeline-muted">GHG and Workforce submissions. The audit engine pre-screen is advice; every decision is yours.</p>
       </header>
 
       <div className="review-segmented" role="tablist" aria-label="Queue filter">
@@ -100,7 +100,7 @@ export const ReviewQueue: React.FC<{ token: string }> = ({ token }) => {
                   <span className={`pipeline-chip tone-${reviewStatusTone(item.status)}`}>{REVIEW_STATUS_LABELS[item.status]}</span>
                   {item.ai && (
                     <span className="pipeline-muted">
-                      AI advice: {item.ai.recommendation === 'APPROVE' ? 'approve' : 'revise'}
+                      Engine advice: {item.ai.recommendation === 'APPROVE' ? 'approve' : 'revise'}
                       {item.ai.score !== null ? `, ${item.ai.score}%` : ''}
                     </span>
                   )}

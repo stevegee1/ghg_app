@@ -168,11 +168,11 @@ export const ReviewDossierView: React.FC<Props> = ({ token, submissionId, onBack
       )}
 
       <div className="pipeline-panel review-ai">
-        <h3>AI pre-screen (advice only)</h3>
+        <h3>Audit engine pre-screen (advice only)</h3>
         {!aiProvider && (
           <p className="pipeline-notice" role="status">
-            No AI model is configured, so pre-screens use the rules engine only. To enable AI review, set ANTHROPIC_API_KEY and
-            ANTHROPIC_MODEL (or the Gemini or OpenAI equivalents) in the server environment.
+            The audit engine is running on rules only. To enable full engine review, set ANTHROPIC_API_KEY and ANTHROPIC_MODEL (or the
+            Gemini or OpenAI equivalents) in the server environment.
           </p>
         )}
         {dossier.ai ? (
@@ -275,7 +275,7 @@ export const ReviewDossierView: React.FC<Props> = ({ token, submissionId, onBack
 
                 {q.aiFinding && (
                   <p className="review-ai-finding">
-                    <strong>AI advice: {AI_FINDING_LABELS[q.aiFinding.status] ?? q.aiFinding.status}.</strong> {q.aiFinding.findings}
+                    <strong>Engine advice: {AI_FINDING_LABELS[q.aiFinding.status] ?? q.aiFinding.status}.</strong> {q.aiFinding.findings}
                   </p>
                 )}
                 {q.previousDecision && !q.previousDecision.accepted && q.previousDecision.reasonIfRejected && (
@@ -361,7 +361,7 @@ export const ReviewDossierView: React.FC<Props> = ({ token, submissionId, onBack
             </label>
             <label className="review-attest">
               <input type="checkbox" checked={attested} onChange={(e) => setAttested(e.target.checked)} />
-              I, {reviewerName}, reviewed these answers and the evidence myself. The AI pre-screen informed but did not make this decision.
+              I, {reviewerName}, reviewed these answers and the evidence myself. The audit engine pre-screen informed but did not make this decision.
             </label>
             {errors.attested && <p className="pipeline-error-text">{errors.attested}</p>}
             {formError && (

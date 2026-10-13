@@ -18,7 +18,7 @@ export interface AuditReviewResult {
   complianceScore: number; // 0 to 100
   reviewerNotes: string;
   clauseFindings?: ClauseReviewFinding[];
-  reviewedBy: string; // e.g. "Lead Auditor (Manual)" or "Gemini 1.5 Pro (AI Worker)"
+  reviewedBy: string; // e.g. "Lead Auditor (Manual)" or "NFTYLOGS audit engine"
   reviewedAt: Date;
 }
 

@@ -25,9 +25,9 @@ export const FleetMcpPanel: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <div className="fleet-panel">
-      <h3 className="fleet-panel-title">AI assistants (MCP)</h3>
+      <h3 className="fleet-panel-title">Assistant connections (MCP)</h3>
       <p className="fleet-muted">
-        Connect an AI assistant that supports the Model Context Protocol to read your machines, activity, weather exposure, machine value and ownership
+        Connect an assistant that supports the Model Context Protocol to read your machines, activity, weather exposure, machine value and ownership
         cost, contract costs and climate ledger. Access is read-only. Create a key above with the <code>fleet:read</code> scope and use it as the bearer
         token.
       </p>
@@ -41,7 +41,7 @@ export const FleetMcpPanel: React.FC<{ token: string }> = ({ token }) => {
         </p>
       )}
       {!entries && !error && <p className="fleet-state">Loading...</p>}
-      {entries && entries.length === 0 && <p className="fleet-muted">No AI requests yet.</p>}
+      {entries && entries.length === 0 && <p className="fleet-muted">No assistant requests yet.</p>}
       {entries && entries.length > 0 && (
         <ul className="fleet-project-assignments">
           {entries.map((e) => (

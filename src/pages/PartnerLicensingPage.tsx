@@ -136,7 +136,7 @@ export const PartnerLicensingPage: React.FC = () => {
               {/* Features List */}
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 3rem 0', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                 {[
-                  'Data & calculation tools with AI validation',
+                  'Data & calculation tools checked by the NFTYLOGS audit engine',
                   'Carbon reporting & compliance',
                   'Insightful dashboards & visualizations',
                   'Robust support & guidance',

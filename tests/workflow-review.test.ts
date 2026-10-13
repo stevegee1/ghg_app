@@ -62,7 +62,7 @@ describe('Lead Auditor review queue and dossier', () => {
           ...(ai
             ? {
                 aiScreenedAt: new Date(),
-                aiReviewer: 'Rules Engine (no AI model review)',
+                aiReviewer: 'NFTYLOGS audit engine (rules only)',
                 aiScore: 70,
                 aiRecommendation: 'REQUIRE_REVISION',
                 aiSummary: 'One question lacks support.',
