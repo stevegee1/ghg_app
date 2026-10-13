@@ -233,15 +233,6 @@ export const Layout: React.FC = () => {
                           <NavLink to="/admin" className="nav-link" onClick={closeDropdowns}>
                             Admin Console
                           </NavLink>
-                          <NavLink to="/admin?tab=SUBMISSIONS" className="nav-link" onClick={closeDropdowns}>
-                            Audit Review Queue
-                          </NavLink>
-                          <NavLink to="/admin?tab=SPLITS" className="nav-link" onClick={closeDropdowns}>
-                            Royalty splits
-                          </NavLink>
-                          <NavLink to="/admin?tab=DEMOS" className="nav-link" onClick={closeDropdowns}>
-                            Demo Inquiries
-                          </NavLink>
                         </>
                       ) : (
                         <>
@@ -347,27 +338,6 @@ export const Layout: React.FC = () => {
                             >
                               <span>Admin Console</span>
                             </NavLink>
-                            <NavLink
-                              to="/admin?tab=SUBMISSIONS"
-                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Audit Review Queue</span>
-                            </NavLink>
-                            <NavLink
-                              to="/admin?tab=SPLITS"
-                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Royalty splits</span>
-                            </NavLink>
-                            <NavLink
-                              to="/admin?tab=DEMOS"
-                              className={({ isActive }) => `google-popover-link ${isActive ? 'active' : ''}`}
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Demo Inquiries</span>
-                            </NavLink>
                           </>
                         ) : (
                           <>
@@ -469,27 +439,6 @@ export const Layout: React.FC = () => {
                               onClick={() => setAccountMenuOpen(false)}
                             >
                               <span>Admin Console</span>
-                            </NavLink>
-                            <NavLink
-                              to="/admin?tab=SUBMISSIONS"
-                              className="google-popover-link"
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Audit Review Queue</span>
-                            </NavLink>
-                            <NavLink
-                              to="/admin?tab=SPLITS"
-                              className="google-popover-link"
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Royalty splits</span>
-                            </NavLink>
-                            <NavLink
-                              to="/admin?tab=DEMOS"
-                              className="google-popover-link"
-                              onClick={() => setAccountMenuOpen(false)}
-                            >
-                              <span>Demo Inquiries</span>
                             </NavLink>
                           </>
                         ) : (

@@ -81,6 +81,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!token) return;
     try {
       const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        // The saved session has expired or was revoked: sign out so the site stops treating it as signed in.
+        setToken(null);
+        setUser(null);
+        try {
+          localStorage.removeItem('ghg_auth_token');
+          localStorage.removeItem('ghg_auth_user');
+          sessionStorage.removeItem('ghg_auth_token');
+          sessionStorage.removeItem('ghg_auth_user');
+        } catch {
+          // Ignore storage errors
+        }
+        return;
+      }
       if (!res.ok) return;
       const data = await res.json();
       if (data?.user) {

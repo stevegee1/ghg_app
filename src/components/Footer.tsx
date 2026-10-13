@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export const Footer: React.FC = () => {
+  const { isAuthenticated, isAdmin } = useAuth();
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
   const [consentText, setConsentText] = useState('I agree to receive the NFTYLOGS newsletter by email. I can unsubscribe at any time.');
@@ -182,8 +184,18 @@ export const Footer: React.FC = () => {
           <div>
             <div className="cerebrium-footer-col-title">Account</div>
             <ul className="cerebrium-footer-links">
-              <li><Link to="/create-account" className="cerebrium-footer-link">Create account</Link></li>
-              <li><Link to="/portal/login" className="cerebrium-footer-link">Sign in</Link></li>
+              {isAuthenticated ? (
+                <li>
+                  <Link to={isAdmin ? '/admin' : '/portal'} className="cerebrium-footer-link">
+                    {isAdmin ? 'Admin console' : 'Your dashboard'}
+                  </Link>
+                </li>
+              ) : (
+                <>
+                  <li><Link to="/create-account" className="cerebrium-footer-link">Create account</Link></li>
+                  <li><Link to="/portal/login" className="cerebrium-footer-link">Sign in</Link></li>
+                </>
+              )}
             </ul>
           </div>
         </div>

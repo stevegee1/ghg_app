@@ -889,7 +889,7 @@ export const PortalPage: React.FC = () => {
           style={{ padding: '0.5rem 0.75rem' }}
         >
           <span className="portal-nav-icon"><GoogleIcons.Profile /></span>
-          <span className="portal-nav-label">Settings &amp; API Keys</span>
+          <span className="portal-nav-label">Settings</span>
         </button>
 
         <button

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { validateWorkEmail } from '../utils/emailValidation';
@@ -11,7 +11,7 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,6 +54,11 @@ export const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Already signed in (the saved session is checked with the server on load): go straight to the dashboard.
+  if (isAuthenticated && !loading) {
+    return <Navigate to={isAdmin ? '/admin' : '/portal'} replace />;
+  }
 
   return (
     <div className="cerebrium-auth-page">

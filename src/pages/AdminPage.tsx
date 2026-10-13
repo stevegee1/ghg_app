@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { FinancialSplitBar } from '../components/FinancialSplitBar';
@@ -98,11 +99,20 @@ const SvgClose = ({ size = 14 }: { size?: number }) => (
   </svg>
 );
 
+const ADMIN_TABS = ['READINESS_TRACKER', 'SUBMISSIONS', 'DEMOS', 'SPLITS', 'MERCH_ENQUIRIES', 'KEEPSAKE_ORDERS', 'MERCH_ORDERS', 'CHARITIES', 'EMISSION_FACTORS', 'FLEET_SETUP', 'FLEET_DEVICES', 'DELIVERY_PARTNERS', 'MERCH_PRICES', 'MARKET_INPUTS', 'ANCHORS', 'WEATHER_WEAR', 'NEWSLETTER', 'MAINTENANCE_MODEL'] as const;
+type AdminTab = (typeof ADMIN_TABS)[number];
+
 export const AdminPage: React.FC = () => {
   const { token, isAdmin } = useAuth();
 
   // Active top-level admin tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'READINESS_TRACKER' | 'SUBMISSIONS' | 'DEMOS' | 'SPLITS' | 'MERCH_ENQUIRIES' | 'KEEPSAKE_ORDERS' | 'MERCH_ORDERS' | 'CHARITIES' | 'EMISSION_FACTORS' | 'FLEET_SETUP' | 'FLEET_DEVICES' | 'DELIVERY_PARTNERS' | 'MERCH_PRICES' | 'MARKET_INPUTS' | 'ANCHORS' | 'WEATHER_WEAR' | 'NEWSLETTER' | 'MAINTENANCE_MODEL'>('READINESS_TRACKER');
+  // The open tab lives in the URL (?tab=...), so menu links such as /admin?tab=SUBMISSIONS open it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab') as AdminTab | null;
+  const activeAdminTab: AdminTab = requestedTab && ADMIN_TABS.includes(requestedTab) ? requestedTab : 'READINESS_TRACKER';
+  const setActiveAdminTab = (tab: AdminTab) => setSearchParams({ tab });
+  // Bumped by "Refresh all" to remount the open tab so it reloads.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Merch Enquiries state
   const [merchEnquiries, setMerchEnquiries] = useState<any[]>([]);
@@ -621,6 +631,7 @@ export const AdminPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              setRefreshKey((k) => k + 1);
               loadDemoBookings();
               loadMerchEnquiries();
               loadSouvenirOrders();
@@ -636,7 +647,7 @@ export const AdminPage: React.FC = () => {
             style={{ fontSize: '0.8125rem', padding: '0.45rem 0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', borderRadius: '6px' }}
           >
             <span>↻</span>
-            <span>Refresh All Streams</span>
+            <span>Refresh all</span>
           </button>
         </div>
       </div>
@@ -723,6 +734,8 @@ export const AdminPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Tab content remounts on "Refresh all", so every tab reloads its own data. */}
+      <React.Fragment key={refreshKey}>
       {/* TAB: READINESS TRACKER (CLIENT ONBOARDING & PREPARATION MIRROR) */}
       {activeAdminTab === 'READINESS_TRACKER' && (
         <div style={{ marginBottom: '2.5rem' }}>
@@ -2340,7 +2353,7 @@ export const AdminPage: React.FC = () => {
           </div>
         </div>
       )}
-
+      </React.Fragment>
     </div>
   );
 };
